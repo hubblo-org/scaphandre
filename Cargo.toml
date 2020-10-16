@@ -1,9 +1,14 @@
 [package]
 name = "scaphandre"
 version = "0.1.0"
-authors = ["Benoit Petit <bpetit@b0rk.in>"]
+authors = ["Benoit Petit <bpetit@hubblo.org>"]
 edition = "2018"
+license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+loggerv = "0.7.2"
+log = "0.4"
+clap = "2.33.3"
+regex = "1"
