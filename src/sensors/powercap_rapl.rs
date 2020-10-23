@@ -3,13 +3,10 @@ use std::fs;
 use regex::Regex;
 use crate::sensors::Sensor as Sensor;
 use crate::sensors::Topology as Topology;
-use crate::sensors::CPUSocket as CPUSocket;
-use crate::sensors::Domain as Domain;
 use crate::sensors::Record as Record;
 
 pub struct PowercapRAPLSensor {
     base_path: String,
-    driver: String,
     topology: Option<Topology>,
 }
 
@@ -17,7 +14,6 @@ impl PowercapRAPLSensor {
     pub fn new<'a>() -> PowercapRAPLSensor {
         PowercapRAPLSensor{
             base_path: String::from("/sys/class/powercap"),
-            driver: String::from("intel-rapl"),
             topology: None
         }
     }
@@ -26,22 +22,9 @@ impl PowercapRAPLSensor {
 impl Sensor for PowercapRAPLSensor {
     fn generate_topology(&self) -> Result<Topology, Box<dyn Error>> {
         let mut topo = Topology::new();
-        //let re_socket = Regex::new(r"^.*/intel-rapl:\d+$").unwrap();
         let re_domain = Regex::new(r"^.*/intel-rapl:\d+:\d+$").unwrap();
         for folder in fs::read_dir(&self.base_path).unwrap(){
             let folder_name =  String::from(folder.unwrap().path().to_str().unwrap());
-            println!("Working on folder: {}", &folder_name);
-            // let's catch socket folders
-            //if re_socket.is_match(&folder_name){
-            //    // let's get the first number of the intel-rapl:X string
-            //    let mut splitted = folder_name.split(":");
-            //    let _ = splitted.next();
-            //    let socket_id = String::from(splitted.next().unwrap()).parse().unwrap();
-            //    println!("Safe adding socket {} to topo.", socket_id);
-            //    topo.safe_add_socket(
-            //        socket_id, vec![], vec![],
-            //        format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id));
-            //}
             // let's catch domain folders
             if re_domain.is_match(&folder_name) {                    
                 // let's get the second number of the intel-rapl:X:X string

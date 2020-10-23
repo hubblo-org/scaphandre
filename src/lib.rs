@@ -1,14 +1,13 @@
 mod sensors;
-use sensors::{Topology, Sensor, powercap_rapl::PowercapRAPLSensor};
+use sensors::{Sensor, powercap_rapl::PowercapRAPLSensor};
 
 pub fn run() {
     let mut sensor = PowercapRAPLSensor::new();
-    let mut topology = *sensor.get_topology();
+    let topology = *sensor.get_topology();
     let topology = match topology {
         Some(topo) => topo,
         None => panic!("Topology has not been generated.")
     };
-    println!("topology: {:?}\n\n\n\n", topology);
     for socket in &topology.sockets {
         println!("Browsing socket {}", socket.id);
         println!(

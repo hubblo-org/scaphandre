@@ -47,7 +47,7 @@ impl Topology {
     }
 
     pub fn safe_add_domain_to_socket(&mut self, socket_id: u16, domain_id: u16, name: &str, uj_counter: &str) {
-        let mut iterator = self.sockets.iter_mut();
+        let iterator = self.sockets.iter_mut();
         for socket in iterator {
             if socket.id == socket_id {
                 socket.safe_add_domain(
@@ -120,7 +120,7 @@ impl fmt::Display for Domain {
 /// tied to a domain.
 #[derive(Debug)]
 pub struct Record{
-    cpu_id: u16,
+    socket_id: u16,
     domain_id: u16,
     value: u128,
     timestamp: SystemTime
@@ -129,7 +129,7 @@ pub struct Record{
 impl Record {
     fn new(cpu_id: u16, domain_id: u16) -> Record{
         Record {
-            cpu_id: cpu_id,
+            socket_id: cpu_id,
             domain_id: domain_id,
             value: 1268916298,
             timestamp: SystemTime::now()
