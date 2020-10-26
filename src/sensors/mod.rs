@@ -1,10 +1,17 @@
 pub mod powercap_rapl;
+pub mod units;
+pub mod utils;
 
 use std::error::Error;
 
 use std::collections::HashMap;
 use std::{fmt, fs};
-use std::time::{SystemTime};
+use std::time::{SystemTime, Duration};
+use uom::si::energy::{
+    joule, millijoule, microjoule,
+    watt_hour, milliwatt_hour, microwatt_hour,
+    kilowatt_hour, Energy     
+};
 
 // !!!!!!!!!!!!!!!!! Topology !!!!!!!!!!!!!!!!!!!!!!!
 /// Topology struct represents the whole CPUSocket architecture,
@@ -115,25 +122,19 @@ impl fmt::Display for Domain {
     }
 }
 
+
 // !!!!!!!!!!!!!!!!! Record !!!!!!!!!!!!!!!!!!!!!!!
 /// Record struct represents an electricity consumption measurement
 /// tied to a domain.
 #[derive(Debug)]
 pub struct Record{
-    socket_id: u16,
-    domain_id: u16,
-    value: u128,
-    timestamp: SystemTime
+    timestamp: SystemTime,
+    value: i128
 }
 
 impl Record {
-    fn new(cpu_id: u16, domain_id: u16) -> Record{
-        Record {
-            socket_id: cpu_id,
-            domain_id: domain_id,
-            value: 1268916298,
-            timestamp: SystemTime::now()
-        }
+    fn new(timestamp: SystemTime, value: i128) -> Record{
+        Record{ timestamp, value }
     }
 }
 
@@ -147,6 +148,6 @@ impl fmt::Display for Record {
 /// Sensor trait, the Sensor API.
 pub trait Sensor {
     fn get_topology(&mut self) -> Box<Option<&Topology>>;
-    fn get_record(&self) -> Record;
+    //fn get_record(&self) -> Record;
     fn generate_topology (&self) -> Result<Topology, Box<dyn Error>>;
 }

@@ -57,9 +57,9 @@ impl Sensor for PowercapRAPLSensor {
         Box::new(self.topology.as_ref())
     }
 
-    fn get_record(&self) -> Record {
-        Record::new(0, 0)
-    }
+    //fn get_record(&self) -> Record {
+        //Record::new(0, 0)
+    //}
 }
 
 #[cfg(test)]
