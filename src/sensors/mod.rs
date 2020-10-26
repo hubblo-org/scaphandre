@@ -1,17 +1,11 @@
 pub mod powercap_rapl;
 pub mod units;
-pub mod utils;
 
 use std::error::Error;
 
 use std::collections::HashMap;
 use std::{fmt, fs};
 use std::time::{SystemTime, Duration};
-use uom::si::energy::{
-    joule, millijoule, microjoule,
-    watt_hour, milliwatt_hour, microwatt_hour,
-    kilowatt_hour, Energy     
-};
 
 // !!!!!!!!!!!!!!!!! Topology !!!!!!!!!!!!!!!!!!!!!!!
 /// Topology struct represents the whole CPUSocket architecture,

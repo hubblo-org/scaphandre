@@ -1,5 +1,3 @@
-use crate::sensors::utils::type_of;
-
 // !!!!!!!!!!!!!!!!! Unit !!!!!!!!!!!!!!!!!!!!!!!
 #[derive(Debug)]
 pub enum EnergyUnit {
