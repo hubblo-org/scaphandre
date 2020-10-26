@@ -123,18 +123,19 @@ impl fmt::Display for Domain {
 #[derive(Debug)]
 pub struct Record{
     timestamp: SystemTime,
-    value: i128
+    value: i128,
+    unit: units::EnergyUnit
 }
 
 impl Record {
-    fn new(timestamp: SystemTime, value: i128) -> Record{
-        Record{ timestamp, value }
+    fn new(timestamp: SystemTime, value: i128, unit: units::EnergyUnit) -> Record{
+        Record{ timestamp, value, unit }
     }
 }
 
 impl fmt::Display for Record {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "recorded {} µJoules", self.value)
+        write!(f, "recorded {} {}", self.value, self.unit)
     }
 }
 

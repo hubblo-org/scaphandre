@@ -58,7 +58,7 @@ impl Sensor for PowercapRAPLSensor {
     }
 
     //fn get_record(&self) -> Record {
-        //Record::new(0, 0)
+    //    Record::new(0, 0, )
     //}
 }
 

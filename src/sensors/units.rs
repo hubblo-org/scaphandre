@@ -1,3 +1,5 @@
+use std::fmt;
+
 // !!!!!!!!!!!!!!!!! Unit !!!!!!!!!!!!!!!!!!!!!!!
 #[derive(Debug)]
 pub enum EnergyUnit {
@@ -26,6 +28,17 @@ impl EnergyUnit {
             }   
         }
         Ok(measure * mult)
+    }
+}
+
+impl fmt::Display for EnergyUnit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EnergyUnit::Joule => write!(f, "Joules"),
+            EnergyUnit::MilliJoule => write!(f, "milli-Joules"),
+            EnergyUnit::MicroJoule => write!(f, "uJoules"),
+            _ => write!(f, "unknown unit")
+        }
     }
 }
 
