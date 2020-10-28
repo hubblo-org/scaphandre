@@ -5,7 +5,12 @@ use std::error::Error;
 
 use std::collections::HashMap;
 use std::{fmt, fs};
-use std::time::{SystemTime, Duration};
+use std::time::SystemTime;
+
+
+pub trait RecordGenerator{
+    fn get_record(&self) -> Record;
+}
 
 // !!!!!!!!!!!!!!!!! Topology !!!!!!!!!!!!!!!!!!!!!!!
 /// Topology struct represents the whole CPUSocket architecture,
@@ -68,11 +73,22 @@ pub struct CPUSocket {
     pub id: u16,
     pub domains: Vec<Domain>,
     pub attributes: Vec<Vec<HashMap<String, String>>>,
-    pub counter_uj_path: String
+    pub counter_uj_path: String,
+    last_counter_value_uj: String,
+    current_counter_value_uj: String
+}
+impl RecordGenerator for CPUSocket {
+    fn get_record(&self) -> Record {
+        Record::new(
+            SystemTime::now(),
+            self.read_counter_uj().unwrap().parse().unwrap(),
+            units::EnergyUnit::MicroJoule
+        )
+    }
 }
 impl CPUSocket {
     fn new(id: u16, domains: Vec<Domain>, attributes: Vec<Vec<HashMap<String, String>>>, counter_uj_path: String) -> CPUSocket {
-        CPUSocket { id, domains, attributes, counter_uj_path }
+        CPUSocket { id, domains, attributes, counter_uj_path, last_counter_value_uj: String::from(""), current_counter_value_uj: String::from("") }
     }
 
     fn safe_add_domain(&mut self, domain: Domain) {

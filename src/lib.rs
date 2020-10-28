@@ -1,8 +1,9 @@
 mod sensors;
 use sensors::{powercap_rapl::PowercapRAPLSensor};
 mod exporters;
-use exporters::{Exporter, stdout::StdoutExporter};
+use exporters::{Exporter, ExporterOption, stdout::StdoutExporter};
 use clap::ArgMatches;
+use std::collections::HashMap;
 
 pub fn run(matches: ArgMatches) {
     let sensor = match matches.value_of("sensor").unwrap() {
@@ -11,10 +12,23 @@ pub fn run(matches: ArgMatches) {
     };
     let sensor_boxed = Box::new(sensor);
 
-    let mut exporter = match matches.value_of("exporter").unwrap() {
-        "stdout" => StdoutExporter::new(sensor_boxed),
-        _ => StdoutExporter::new(sensor_boxed),
-    };
+    let exporter_required = matches.subcommand_matches("stdout");
+    if exporter_required.is_some() {
+        let exporter_required = exporter_required.unwrap();
+        let mut exporter = StdoutExporter::new(
+                sensor_boxed, String::from(exporter_required.value_of("timeout").unwrap())
+            );
+        exporter.run();
+    } else {
+        eprintln!("exporter is None");
+    }
+}
 
-    exporter.run();
+pub fn get_exporters_options() -> HashMap<String, HashMap<String, ExporterOption>> {
+    let mut options = HashMap::new();
+    options.insert(
+        String::from("stdout"),
+        exporters::stdout::StdoutExporter::get_options()
+    );
+    options
 }
