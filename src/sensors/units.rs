@@ -21,7 +21,6 @@ impl EnergyUnit {
                mult = mult * 1000.0; 
             }
         } else if pos_dest < pos_source {
-            println!("COUCOU");
             // source > dest
             for _ in 0..(pos_source - pos_dest) {
                mult = mult / 1000.0; 
@@ -36,8 +35,7 @@ impl fmt::Display for EnergyUnit {
         match self {
             EnergyUnit::Joule => write!(f, "Joules"),
             EnergyUnit::MilliJoule => write!(f, "milli-Joules"),
-            EnergyUnit::MicroJoule => write!(f, "uJoules"),
-            _ => write!(f, "unknown unit")
+            EnergyUnit::MicroJoule => write!(f, "uJoules")
         }
     }
 }

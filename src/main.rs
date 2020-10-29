@@ -19,13 +19,27 @@ fn main() {
         .arg(
             Arg::with_name("sensor")
                 .value_name("sensor")
-                .help("The sensor module to apply on the host to get energy consumption metrics.")
+                .help("Sensor module to apply on the host to get energy consumption metrics.")
                 .required(true)
                 .takes_value(true)
                 .default_value("powercap_rapl")
                 .possible_values(&sensors)
                 .short("s")
                 .long("sensor")
+        ).arg(
+            Arg::with_name("sensor-buffer-per-domain-max-kB")
+                .value_name("sensor-buffer-per-domain-max-kB")
+                .help("Maximum memory size allowed, in KiloBytes, for storing energy consumption of each domain.")
+                .required(false)
+                .takes_value(true)
+                .default_value("1")
+        ).arg(
+            Arg::with_name("sensor-buffer-per-socket-max-kB")
+                .value_name("sensor-buffer-per-socket-max-kB")
+                .help("Maximum memory size allowed, in KiloBytes, for storing energy consumption of each socket.")
+                .required(false)
+                .takes_value(true)
+                .default_value("2")
         );
     for exp in res {
         let mut subcmd = SubCommand::with_name(exp);

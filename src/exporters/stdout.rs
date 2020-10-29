@@ -2,7 +2,7 @@ use std::time::{Instant, Duration};
 use std::thread;
 use std::collections::HashMap;
 use crate::exporters::{Exporter, ExporterOption};
-use crate::sensors::Sensor;
+use crate::sensors::{Sensor, RecordGenerator};
 
 
 pub struct StdoutExporter {
@@ -52,21 +52,26 @@ impl StdoutExporter {
         }
     }
     fn iteration(&mut self) {
-        let topology = *self.sensor.get_topology();
-        let topology = match topology {
-            Some(topo) => topo,
+        let topology = *self.sensor.get_topology(); //Box<Option<&Topology>>
+        //topology = Option<&Topology>
+        let topol = match topology {
+            Some(topo) => topo, // topol = &Topology
             None => panic!("Topology has not been generated.")
         };
-        for socket in &topology.sockets {
+        for mut socket in topol.sockets {
+            let socket_id = socket.id;
             println!(
                 "socket {} | counter (uJ) {}",
-                socket.id,
-                socket.read_counter_uj().unwrap()
+                socket_id, socket.read_counter_uj().unwrap()
             );
-            for domain in &socket.domains {
+            println!("{}", socket.get_record());
+            for domain in socket.get_domains() {
                 println!(
                     "socket {} | domain {} {} | counter (uJ) {}",
-                    socket.id, domain.id, domain.name, domain.read_counter_uj().unwrap()
+                    socket_id, domain.id, domain.name, domain.read_counter_uj().unwrap()
+                );
+                println!(
+                    "{}", domain.get_record()
                 );
             }
         }

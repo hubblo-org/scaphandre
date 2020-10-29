@@ -3,18 +3,21 @@ use std::fs;
 use regex::Regex;
 use crate::sensors::Sensor as Sensor;
 use crate::sensors::Topology as Topology;
-use crate::sensors::Record as Record;
 
 pub struct PowercapRAPLSensor {
     base_path: String,
-    topology: Option<Topology>,
+    buffer_per_socket_max_kB: u16,
+    buffer_per_domain_max_kB: u16,
 }
 
 impl PowercapRAPLSensor {
-    pub fn new<'a>() -> PowercapRAPLSensor {
+    pub fn new(
+        buffer_per_socket_max_kB: u16, buffer_per_domain_max_kB: u16
+    ) -> PowercapRAPLSensor {
         PowercapRAPLSensor{
             base_path: String::from("/sys/class/powercap"),
-            topology: None
+            buffer_per_socket_max_kB,
+            buffer_per_domain_max_kB
         }
     }
 }
@@ -34,27 +37,26 @@ impl Sensor for PowercapRAPLSensor {
                 let domain_id = String::from(splitted.next().unwrap()).parse().unwrap();
                 topo.safe_add_socket(
                     socket_id, vec![], vec![],
-                    format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id)
+                    format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
+                    self.buffer_per_socket_max_kB
                 );
                 topo.safe_add_domain_to_socket(
                     socket_id, domain_id,
                     &fs::read_to_string(format!("{}/name", folder_name)).unwrap(),
-                    &format!("{}/intel-rapl:{}:{}/energy_uj", self.base_path, socket_id, domain_id)
+                    &format!("{}/intel-rapl:{}:{}/energy_uj", self.base_path, socket_id, domain_id),
+                    self.buffer_per_domain_max_kB
                 );
             }
         }
         Ok(topo)
     }
 
-    fn get_topology(&mut self) -> Box<Option<&Topology>> {
-        if self.topology.is_none() {
-            println!("\n\nGenerating topology \n\n");
-            self.topology = self.generate_topology().ok();                
-            if self.topology.is_none() {
-                eprintln!("Couldn't generate the topology !");
-            }
+    fn get_topology(&self) -> Box<Option<Topology>> {
+        let topology = self.generate_topology().ok();                
+        if topology.is_none() {
+            eprintln!("Couldn't generate the topology !");
         }
-        Box::new(self.topology.as_ref())
+        Box::new(topology)
     }
 
     //fn get_record(&self) -> Record {
@@ -72,7 +74,7 @@ mod tests {
     }
     #[test]
     fn get_topology_returns_topology_type() {
-        let mut sensor = PowercapRAPLSensor::new();
+        let sensor = PowercapRAPLSensor::new(1, 1);
         let topology = sensor.get_topology();
         assert_eq!("alloc::boxed::Box<core::option::Option<&scaphandre::sensors::Topology>>", type_of(topology))
     }

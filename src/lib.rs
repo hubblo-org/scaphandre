@@ -7,8 +7,14 @@ use std::collections::HashMap;
 
 pub fn run(matches: ArgMatches) {
     let sensor = match matches.value_of("sensor").unwrap() {
-        "powercap_rapl" => PowercapRAPLSensor::new(),
-        _ => PowercapRAPLSensor::new()
+        "powercap_rapl" => PowercapRAPLSensor::new(
+            matches.value_of("sensor-buffer-per-socket-max-kB").unwrap().parse().unwrap(),
+            matches.value_of("sensor-buffer-per-domain-max-kB").unwrap().parse().unwrap()
+        ),
+        _ => PowercapRAPLSensor::new(
+            matches.value_of("sensor-buffer-per-socket-max-kB").unwrap().parse().unwrap(),
+            matches.value_of("sensor-buffer-per-domain-max-kB").unwrap().parse().unwrap()
+        )
     };
     let sensor_boxed = Box::new(sensor);
 
