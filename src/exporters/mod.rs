@@ -13,5 +13,6 @@ pub struct ExporterOption {
     pub possible_values: Vec<String>,
     pub short: String,
     pub long: String,
-    pub value: String
+    pub value: String,
+    pub help: String
 }

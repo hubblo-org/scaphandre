@@ -26,7 +26,8 @@ impl Exporter for StdoutExporter {
                 required: false,
                 takes_value: true,
                 possible_values: vec![],
-                value: String::from("")
+                value: String::from(""),
+                help: String::from("Maximum time spent measuring, in seconds.")
             }
         );
         options

@@ -42,7 +42,13 @@ fn main() {
                 .default_value("2")
         );
     for exp in res {
-        let mut subcmd = SubCommand::with_name(exp);
+        let mut subcmd = SubCommand::with_name(exp).about(
+            match exp {
+                "stdout" => "StdoutExporter allows you to output the power consumption data in the terminal, either in human readable format, JSON, or prometheus exporters like syntax.",
+                _ => "Unknown exporter.",
+            }
+        );
+            
         for (key, opt) in exporters_options.get(exp).unwrap().iter() {
             subcmd = subcmd.arg(                
                Arg::with_name(key) 
@@ -51,6 +57,7 @@ fn main() {
                 .default_value(&opt.default_value)
                 .short(&opt.short)
                 .long(&opt.long)
+                .help(&opt.help)
             );
         }
         matches = matches.subcommand(subcmd);
