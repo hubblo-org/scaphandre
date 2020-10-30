@@ -4,9 +4,31 @@ Generic sensor and transmission agent for energy consumption related metrics.
 
 ## Usage
 
-Example: use scaphandre to collect energy consumption data, using the [powercap_rapl sensor]() and the [stdout exporter]() on the local host.
+Here are some examples.
 
-    scaphandre -s powercap_rapl -s stdout
+Collect energy consumption data, using the [powercap_rapl]() [sensor]() and show the data on the terminal using the [stdout]() [exporter]():
+
+    scaphandre stdout
+
+A more complete command is:
+
+    scaphandre -s powercap_rapl stdout # powercap_rapl sensor is the default one
+
+You can also add a different timeout that the default 5 seconds:
+
+    scaphandre stdout -t 10 # measure and print data for 10 seconds
+
+General usage is:
+
+    scaphandre [-s SENSOR] EXPORTER [-t timeout]
+
+Available exporters, as of today, are:
+
+- [stdout]()
+
+Available sensors, as of today, are:
+
+- [powercap_rapl]()
 
 ## Structure
 
