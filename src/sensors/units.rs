@@ -26,8 +26,6 @@ impl Unit {
         let pos_dest_energy = energy_order.iter().position(|x| x == dest_unit);
         let pos_source_power = power_order.iter().position(|x| x == source_unit);
         let pos_dest_power = power_order.iter().position(|x| x == dest_unit);
-        let pos_source: Option<usize>;
-        let pos_dest: Option<usize>;
         if pos_source_energy.is_some() && pos_dest_energy.is_some() {
            let pos_source = pos_source_energy.unwrap();
            let pos_dest = pos_dest_energy.unwrap(); 
@@ -42,7 +40,6 @@ impl Unit {
     }
 
     fn get_mult(pos_source: usize, pos_dest: usize) -> f64{
-        println!("{} {}", pos_source, pos_dest);
         let mut mult: f64 = 1.0;
         if pos_dest > pos_source {
             // source < dest
@@ -63,8 +60,8 @@ impl fmt::Display for Unit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Unit::Joule => write!(f, "Joules"),
-            Unit::MilliJoule => write!(f, "milli-Joules"),
-            Unit::MicroJoule => write!(f, "uJoules"),
+            Unit::MilliJoule => write!(f, "MilliJoules"),
+            Unit::MicroJoule => write!(f, "MicroJoules"),
             Unit::MilliWatt => write!(f, "MilliWatts"),
             Unit::MicroWatt => write!(f, "MicroWatts"),
             Unit::Watt => write!(f, "Watts"),
@@ -78,6 +75,15 @@ impl Eq for Unit {}
 impl PartialEq for Unit{
     fn eq(&self, other: &Self) -> bool {
         format!("{:?}", self) == format!("{:?}", other)
+    }
+}
+
+
+impl Copy for Unit {}
+
+impl Clone for Unit {
+    fn clone(&self) -> Self {
+        *self
     }
 }
 

@@ -11,7 +11,9 @@ use std::mem::size_of_val;
 
 
 pub trait RecordGenerator{
-    fn get_record(&mut self) -> Record;
+    fn refresh_record(&mut self) -> Record;
+
+    fn get_records_passive(&self) -> Vec<Record>;
 }
 
 pub fn energy_records_to_power_record(
@@ -25,7 +27,6 @@ pub fn energy_records_to_power_record(
     );
     let joules = joules_1.unwrap() - joules_2.unwrap();
 
-    println!("joules: {}", joules);
     let t1 = measures.0.timestamp.as_secs();
     let t2 = measures.1.timestamp.as_secs();
     let time_diff =  t1 - t2;
@@ -107,7 +108,7 @@ pub struct CPUSocket {
     pub buffer_max_kbytes: u16
 }
 impl RecordGenerator for CPUSocket {
-    fn get_record(&mut self) -> Record {
+    fn refresh_record(&mut self) -> Record {
         let timestamp = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH){
             Ok(n) => n,
             Err(_) => panic!("Couldn't generate timestamp")
@@ -127,8 +128,9 @@ impl RecordGenerator for CPUSocket {
         );
 
         let record_buffer_ptr = &self.record_buffer;
-        let size_diff = size_of_val(record_buffer_ptr) - self.buffer_max_kbytes as usize;
-        if size_diff > 0 {
+        if size_of_val(record_buffer_ptr) > (self.buffer_max_kbytes*1000) as usize {
+            let size_diff = size_of_val(record_buffer_ptr) - (self.buffer_max_kbytes*1000) as usize;
+            println!("Cleaning socket records buffer !!!!!!!!!!!!!!!!!!!!");
             let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
             for _ in 1..nb_records_to_delete {
                 if self.record_buffer.len() > 0 {
@@ -137,6 +139,18 @@ impl RecordGenerator for CPUSocket {
             }
         }
         record
+    }
+
+    fn get_records_passive(&self) -> Vec<Record> {
+        let mut result = vec![];
+        for r in &self.record_buffer {
+            result.push(
+                Record::new(
+                    r.timestamp.clone(), r.value.clone(), units::Unit::MicroJoule
+                )
+            );
+        }
+        result
     }
 }
 impl CPUSocket {
@@ -180,7 +194,7 @@ pub struct Domain {
     pub buffer_max_kbytes: u16
 }
 impl RecordGenerator for Domain {
-    fn get_record(&mut self) -> Record {
+    fn refresh_record(&mut self) -> Record {
         let timestamp = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH){
             Ok(n) => n,
             Err(_) => panic!("Couldn't generate timestamp")
@@ -200,8 +214,9 @@ impl RecordGenerator for Domain {
         );
 
         let record_buffer_ptr = &self.record_buffer;
-        let size_diff = size_of_val(record_buffer_ptr) - self.buffer_max_kbytes as usize;
-        if size_diff > 0 {
+        if size_of_val(record_buffer_ptr) > (self.buffer_max_kbytes*1000) as usize {
+            let size_diff = size_of_val(record_buffer_ptr) - (self.buffer_max_kbytes*1000) as usize;
+            println!("Cleaning record buffer !!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
             for _ in 1..nb_records_to_delete {
                 if self.record_buffer.len() > 0 {
@@ -210,6 +225,18 @@ impl RecordGenerator for Domain {
             }
         }
         record
+    }
+
+    fn get_records_passive(&self) -> Vec<Record> {
+        let mut result = vec![];
+        for r in &self.record_buffer {
+            result.push(
+                Record::new(
+                    r.timestamp.clone(), r.value.clone(), units::Unit::MicroJoule
+                )
+            );
+        }
+        result
     }
 }
 impl Domain {
@@ -246,9 +273,10 @@ impl Record {
     }
 }
 
+
 impl fmt::Display for Record {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "recorded {} {} at {:?}", self.value, self.unit, self.timestamp)
+        write!(f, "recorded {} {} at {:?}", self.value.trim(), self.unit, self.timestamp)
     }
 }
 
