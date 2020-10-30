@@ -6,18 +6,18 @@ use crate::sensors::Topology as Topology;
 
 pub struct PowercapRAPLSensor {
     base_path: String,
-    buffer_per_socket_max_kB: u16,
-    buffer_per_domain_max_kB: u16,
+    buffer_per_socket_max_kbytes: u16,
+    buffer_per_domain_max_kbytes: u16,
 }
 
 impl PowercapRAPLSensor {
     pub fn new(
-        buffer_per_socket_max_kB: u16, buffer_per_domain_max_kB: u16
+        buffer_per_socket_max_kbytes: u16, buffer_per_domain_max_kbytes: u16
     ) -> PowercapRAPLSensor {
         PowercapRAPLSensor{
             base_path: String::from("/sys/class/powercap"),
-            buffer_per_socket_max_kB,
-            buffer_per_domain_max_kB
+            buffer_per_socket_max_kbytes,
+            buffer_per_domain_max_kbytes
         }
     }
 }
@@ -38,20 +38,20 @@ impl Sensor for PowercapRAPLSensor {
                 topo.safe_add_socket(
                     socket_id, vec![], vec![],
                     format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
-                    self.buffer_per_socket_max_kB
+                    self.buffer_per_socket_max_kbytes
                 );
                 topo.safe_add_domain_to_socket(
                     socket_id, domain_id,
                     &fs::read_to_string(format!("{}/name", folder_name)).unwrap(),
                     &format!("{}/intel-rapl:{}:{}/energy_uj", self.base_path, socket_id, domain_id),
-                    self.buffer_per_domain_max_kB
+                    self.buffer_per_domain_max_kbytes
                 );
             }
         }
         Ok(topo)
     }
 
-    fn get_topology(&self) -> Box<Option<Topology>> {
+    fn get_topology(&mut self) -> Box<Option<Topology>> {
         let topology = self.generate_topology().ok();                
         if topology.is_none() {
             eprintln!("Couldn't generate the topology !");
@@ -74,7 +74,7 @@ mod tests {
     }
     #[test]
     fn get_topology_returns_topology_type() {
-        let sensor = PowercapRAPLSensor::new(1, 1);
+        let mut sensor = PowercapRAPLSensor::new(1, 1);
         let topology = sensor.get_topology();
         assert_eq!("alloc::boxed::Box<core::option::Option<&scaphandre::sensors::Topology>>", type_of(topology))
     }

@@ -14,6 +14,25 @@ pub trait RecordGenerator{
     fn get_record(&mut self) -> Record;
 }
 
+pub fn energy_records_to_power_record(
+    measures: (&Record, &Record)) -> Result<Record, String>
+{
+    let joules_1 = units::Unit::to(
+        measures.0.value.trim().parse().unwrap(), &measures.0.unit, &units::Unit::Joule
+    );
+    let joules_2 = units::Unit::to(
+        measures.1.value.trim().parse().unwrap(), &measures.1.unit, &units::Unit::Joule
+    );
+    let joules = joules_1.unwrap() - joules_2.unwrap();
+
+    println!("joules: {}", joules);
+    let t1 = measures.0.timestamp.as_secs();
+    let t2 = measures.1.timestamp.as_secs();
+    let time_diff =  t1 - t2;
+    let result = joules / time_diff as f64; 
+    Ok(Record::new(measures.1.timestamp.clone(), result.to_string(), units::Unit::Watt))
+}
+
 // !!!!!!!!!!!!!!!!! Topology !!!!!!!!!!!!!!!!!!!!!!!
 /// Topology struct represents the whole CPUSocket architecture,
 /// from the electricity consumption point of view,
@@ -43,27 +62,32 @@ impl Topology {
     pub fn safe_add_socket(
         &mut self, socket_id: u16, domains: Vec<Domain>,
         attributes: Vec<Vec<HashMap<String, String>>>,
-        counter_uj_path: String, buffer_max_kB: u16
+        counter_uj_path: String, buffer_max_kbytes: u16
     ) {
         let result: Vec<&CPUSocket> = self.sockets.iter().filter(|s| s.id == socket_id).collect();
         if result.len() == 0 {
             let socket = CPUSocket::new(
-                socket_id, domains, attributes, counter_uj_path, buffer_max_kB
+                socket_id, domains, attributes, counter_uj_path, buffer_max_kbytes
             );
             self.sockets.push(socket);
         }
     }
 
+    pub fn get_sockets(&mut self) -> &mut Vec<CPUSocket> {
+        let mutref = &mut self.sockets;
+        mutref
+    }
+
     pub fn safe_add_domain_to_socket(
         &mut self, socket_id: u16, domain_id: u16,
-        name: &str, uj_counter: &str, buffer_max_kB: u16
+        name: &str, uj_counter: &str, buffer_max_kbytes: u16
     ) {
         let iterator = self.sockets.iter_mut();
         for socket in iterator {
             if socket.id == socket_id {
                 socket.safe_add_domain(
                     Domain::new(
-                        domain_id, String::from(name), String::from(uj_counter), buffer_max_kB
+                        domain_id, String::from(name), String::from(uj_counter), buffer_max_kbytes
                     )
                 );
             }
@@ -80,7 +104,7 @@ pub struct CPUSocket {
     pub attributes: Vec<Vec<HashMap<String, String>>>,
     pub counter_uj_path: String,
     pub record_buffer: Vec<Record>,
-    pub buffer_max_kB: u16
+    pub buffer_max_kbytes: u16
 }
 impl RecordGenerator for CPUSocket {
     fn get_record(&mut self) -> Record {
@@ -88,20 +112,39 @@ impl RecordGenerator for CPUSocket {
             Ok(n) => n,
             Err(_) => panic!("Couldn't generate timestamp")
         };
-        println!("counter_uj DEBUG: {}", self.read_counter_uj().unwrap());
-        Record::new(
+        let record = Record::new(
             timestamp,
             self.read_counter_uj().unwrap(),//.parse().unwrap(),
-            units::EnergyUnit::MicroJoule
-        )
+            units::Unit::MicroJoule
+        );
+
+        self.record_buffer.push(
+            Record::new(
+                record.timestamp.clone(),
+                record.value.clone(),
+                units::Unit::MicroJoule
+            )
+        );
+
+        let record_buffer_ptr = &self.record_buffer;
+        let size_diff = size_of_val(record_buffer_ptr) - self.buffer_max_kbytes as usize;
+        if size_diff > 0 {
+            let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
+            for _ in 1..nb_records_to_delete {
+                if self.record_buffer.len() > 0 {
+                    self.record_buffer.remove(0);
+                }
+            }
+        }
+        record
     }
 }
 impl CPUSocket {
     fn new(
         id: u16, domains: Vec<Domain>, attributes: Vec<Vec<HashMap<String, String>>>,
-        counter_uj_path: String, buffer_max_kB: u16
+        counter_uj_path: String, buffer_max_kbytes: u16
     ) -> CPUSocket {
-        CPUSocket { id, domains, attributes, counter_uj_path, record_buffer: vec![], buffer_max_kB }
+        CPUSocket { id, domains, attributes, counter_uj_path, record_buffer: vec![], buffer_max_kbytes }
     }
 
     fn safe_add_domain(&mut self, domain: Domain) {
@@ -134,7 +177,7 @@ pub struct Domain {
     pub name: String,
     pub counter_uj_path: String,
     pub record_buffer: Vec<Record>,
-    pub buffer_max_kB: u16
+    pub buffer_max_kbytes: u16
 }
 impl RecordGenerator for Domain {
     fn get_record(&mut self) -> Record {
@@ -145,27 +188,33 @@ impl RecordGenerator for Domain {
         let record = Record::new(
             timestamp,
             self.read_counter_uj().unwrap(),//.parse().unwrap(),
-            units::EnergyUnit::MicroJoule
+            units::Unit::MicroJoule
         );
 
         self.record_buffer.push(
             Record::new(
                 record.timestamp.clone(),
                 record.value.clone(),
-                units::EnergyUnit::MicroJoule
+                units::Unit::MicroJoule
             )
         );
 
         let record_buffer_ptr = &self.record_buffer;
-        if size_of_val(record_buffer_ptr) >= self.buffer_max_kB as usize {
-
+        let size_diff = size_of_val(record_buffer_ptr) - self.buffer_max_kbytes as usize;
+        if size_diff > 0 {
+            let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
+            for _ in 1..nb_records_to_delete {
+                if self.record_buffer.len() > 0 {
+                    self.record_buffer.remove(0);
+                }
+            }
         }
         record
     }
 }
 impl Domain {
-    fn new(id: u16, name: String, counter_uj_path: String, buffer_max_kB: u16) -> Domain{
-        Domain{ id, name, counter_uj_path, record_buffer: vec![], buffer_max_kB }
+    fn new(id: u16, name: String, counter_uj_path: String, buffer_max_kbytes: u16) -> Domain{
+        Domain{ id, name, counter_uj_path, record_buffer: vec![], buffer_max_kbytes }
     }
     pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
         match fs::read_to_string(&self.counter_uj_path) {
@@ -188,11 +237,11 @@ impl fmt::Display for Domain {
 pub struct Record{
     pub timestamp: Duration,
     pub value: String,
-    pub unit: units::EnergyUnit
+    pub unit: units::Unit
 }
 
 impl Record {
-    fn new(timestamp: Duration, value: String, unit: units::EnergyUnit) -> Record{
+    fn new(timestamp: Duration, value: String, unit: units::Unit) -> Record{
         Record{ timestamp, value, unit }
     }
 }
@@ -206,6 +255,6 @@ impl fmt::Display for Record {
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
 /// Sensor trait, the Sensor API.
 pub trait Sensor {
-    fn get_topology(&self) -> Box<Option<Topology>>;
+    fn get_topology(&mut self) -> Box<Option<Topology>>;
     fn generate_topology (&self) -> Result<Topology, Box<dyn Error>>;
 }
