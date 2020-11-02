@@ -6,6 +6,8 @@ use std::error::Error;
 use std::collections::HashMap;
 use std::{fmt, fs};
 use std::time::{SystemTime, Duration};
+use std::io::{self, prelude, BufReader, BufRead};
+use std::fs::File;
 
 use std::mem::size_of_val;
 
@@ -43,21 +45,41 @@ pub fn energy_records_to_power_record(
 pub struct Topology {
     pub sockets: Vec<CPUSocket>,
     pub remote: bool,
-    pub cpuinfo: String,
 }
 
 impl Topology {
     pub fn new() -> Topology {
         Topology {
             sockets: vec![],
-            cpuinfo: Topology::get_attributes_linux(),
             remote: false
         }
     }
 
-    pub fn get_attributes_linux() -> String{
-        let f = fs::read_to_string("/proc/cpuinfo");
-        f.unwrap()
+    pub fn generate_cpu_cores() -> Result<Vec<CPUCore>, io::Error>{
+        let f = File::open("/proc/cpuinfo")?;
+        let reader = BufReader::new(f);
+        let mut cores = vec![];
+        let mut map = HashMap::new();
+        let mut counter = 0;
+        for line in reader.lines() {
+            let parts = line.unwrap().trim().split(":").map(
+                |x| String::from(x)
+            ).collect::<Vec<String>>();
+            if parts.len() >= 2 {
+                let key = parts[0].trim();
+                let value = parts[1].trim();
+                if key == "processor" {
+                    if counter > 0 {
+                        cores.push(CPUCore::new(counter, map));
+                        map = HashMap::new();
+                    }
+                    counter += 1;
+                }
+                map.insert(String::from(key), String::from(value));
+            }
+        }
+        cores.push(CPUCore::new(counter, map));
+        Ok(cores)
     }
 
     pub fn safe_add_socket(
@@ -182,6 +204,22 @@ impl CPUSocket {
 
 }
 
+// !!!!!!!!!!!!!!!!! CPUCore !!!!!!!!!!!!!!!!!!!!!!!
+/// CPUCore reprensents each CPU core on the host,
+/// owned by a CPUSocket. CPUCores are instanciated regardless if
+/// HyperThreading is activated on the host.Topology
+#[derive(Debug)]
+pub struct CPUCore {
+    pub id: u16,
+    pub attributes: HashMap<String, String>,
+}
+
+impl CPUCore {
+    pub fn new(id: u16, attributes: HashMap<String, String>) -> CPUCore{
+        CPUCore { id, attributes }
+    }
+}
+
 // !!!!!!!!!!!!!!!!! Domain !!!!!!!!!!!!!!!!!!!!!!!
 /// Domain struct represents a part of a CPUSocket from the
 /// electricity consumption point of view.
@@ -285,4 +323,22 @@ impl fmt::Display for Record {
 pub trait Sensor {
     fn get_topology(&mut self) -> Box<Option<Topology>>;
     fn generate_topology (&self) -> Result<Topology, Box<dyn Error>>;
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn get_proc_cpuinfo() {
+        let cores = Topology::generate_cpu_cores().unwrap();
+        println!("cores: {} attributes in core 0: {}", cores.len(), cores[0].attributes.len());
+        for c in &cores {
+            println!("{:?}", c.attributes.get("processor"));
+        }
+        assert_eq!(cores.len() > 0, true);
+        for c in &cores {
+            assert_eq!(c.attributes.len() > 5, true);
+        }
+    }
 }
