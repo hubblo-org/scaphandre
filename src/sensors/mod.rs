@@ -55,6 +55,19 @@ impl Topology {
         }
     }
 
+    /// Parses /proc/cpuinfo and creates instances of CPUCore.
+    /// 
+    ///# Examples
+    ///
+    /// ```
+    /// use scaphandre::sensors::Topology;
+    /// 
+    /// let cores = Topology::generate_cpu_cores().unwrap();
+    /// println!("There are {} cores on this host.", cores.len());
+    /// for c in &cores {
+    ///     println!("Here is CPU Core number {}", c.attributes.get("processor").unwrap());
+    /// }
+    /// ```
     pub fn generate_cpu_cores() -> Result<Vec<CPUCore>, io::Error>{
         let f = File::open("/proc/cpuinfo")?;
         let reader = BufReader::new(f);
@@ -116,6 +129,28 @@ impl Topology {
             }
         }
     }
+
+    pub fn add_cpu_cores(&mut self) {
+        let mut cores = Topology::generate_cpu_cores().unwrap();
+        while cores.len() > 0 {
+            let c = cores.pop().unwrap();
+            let socket_id = &c.attributes.get("physical id").unwrap().parse::<u16>().unwrap();
+            let socket = self.sockets.iter_mut().filter(
+                |x| &x.id == socket_id
+            ).next().unwrap();
+            //for s in self.sockets.iter_mut() {
+            if socket_id == &socket.id {
+                socket.add_cpu_core(c);
+            }
+            //}
+        } 
+        //for mut s in self.sockets.iter_mut() {
+        //    let result = c.into_iter().filter(
+        //        |x| x.attributes.get("physicalid").unwrap().parse::<u16>().unwrap() == s.id
+        //    ).next().unwrap();
+        //    s.add_cpu_core(result);
+        //}
+    }
 }
 
 // !!!!!!!!!!!!!!!!! CPUSocket !!!!!!!!!!!!!!!!!!!!!!!
@@ -127,7 +162,8 @@ pub struct CPUSocket {
     pub attributes: Vec<Vec<HashMap<String, String>>>,
     pub counter_uj_path: String,
     pub record_buffer: Vec<Record>,
-    pub buffer_max_kbytes: u16
+    pub buffer_max_kbytes: u16,
+    pub cpu_cores: Vec<CPUCore>
 }
 impl RecordGenerator for CPUSocket {
     fn refresh_record(&mut self) -> Record {
@@ -176,11 +212,17 @@ impl RecordGenerator for CPUSocket {
     }
 }
 impl CPUSocket {
+    /// Simple creation of a CPUSocket instance with an empty buffer and no CPUCore owned yet.
     fn new(
         id: u16, domains: Vec<Domain>, attributes: Vec<Vec<HashMap<String, String>>>,
         counter_uj_path: String, buffer_max_kbytes: u16
     ) -> CPUSocket {
-        CPUSocket { id, domains, attributes, counter_uj_path, record_buffer: vec![], buffer_max_kbytes }
+        CPUSocket {
+            id, domains, attributes, counter_uj_path,
+            record_buffer: vec![], // buffer has to be empty first
+            buffer_max_kbytes,
+            cpu_cores: vec![] // cores are instantiated on a later step
+        }
     }
 
     fn safe_add_domain(&mut self, domain: Domain) {
@@ -200,6 +242,10 @@ impl CPUSocket {
     pub fn get_domains(&mut self) -> &mut Vec<Domain> {
         let mutref = &mut self.domains;
         mutref
+    }
+
+    pub fn add_cpu_core(&mut self, core: CPUCore) {
+        self.cpu_cores.push(core);
     }
 
 }

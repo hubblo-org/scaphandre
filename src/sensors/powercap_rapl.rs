@@ -48,6 +48,7 @@ impl Sensor for PowercapRAPLSensor {
                 );
             }
         }
+        topo.add_cpu_cores();
         Ok(topo)
     }
 

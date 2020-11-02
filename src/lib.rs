@@ -1,4 +1,4 @@
-mod sensors;
+pub mod sensors;
 use sensors::{powercap_rapl::PowercapRAPLSensor};
 mod exporters;
 use exporters::{Exporter, ExporterOption, stdout::StdoutExporter};
