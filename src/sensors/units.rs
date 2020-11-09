@@ -45,12 +45,12 @@ impl Unit {
         if pos_dest > pos_source {
             // source < dest
             for _ in 0..(pos_dest - pos_source) {
-               mult = mult * 1000.0; 
+               mult *= 1000.0; 
             }
         } else if pos_dest < pos_source {
             // source > dest
             for _ in 0..(pos_source - pos_dest) {
-               mult = mult / 1000.0; 
+               mult /= 1000.0; 
             }   
         }
         mult

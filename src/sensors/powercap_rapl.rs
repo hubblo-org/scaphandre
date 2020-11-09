@@ -31,7 +31,7 @@ impl Sensor for PowercapRAPLSensor {
             // let's catch domain folders
             if re_domain.is_match(&folder_name) {                    
                 // let's get the second number of the intel-rapl:X:X string
-                let mut splitted = folder_name.split(":");
+                let mut splitted = folder_name.split(':');
                 let _ = splitted.next();
                 let socket_id = String::from(splitted.next().unwrap()).parse().unwrap();
                 let domain_id = String::from(splitted.next().unwrap()).parse().unwrap();

@@ -1,15 +1,13 @@
 use std::time::{Instant, Duration};
 use std::thread;
 use std::collections::HashMap;
-use procfs::process;
-use crate::exporters::{Exporter, ExporterOption, ProcessTracker, ProcessRecord};
+use crate::exporters::{Exporter, ExporterOption};
 use crate::sensors::{Sensor, Record, Topology, RecordGenerator, energy_records_to_power_record};
 
 
 pub struct StdoutExporter {
     sensor: Box<dyn Sensor>,
     timeout: String,
-    proc_tracker: ProcessTracker
 }
 
 impl Exporter for StdoutExporter {
@@ -38,7 +36,7 @@ impl Exporter for StdoutExporter {
 
 impl StdoutExporter {
     pub fn new(sensor: Box<dyn Sensor>, timeout: String) -> StdoutExporter {
-        StdoutExporter { sensor, timeout, proc_tracker: ProcessTracker::new(3) }    
+        StdoutExporter { sensor, timeout }    
     }
 
     pub fn runner (&mut self) {
@@ -63,23 +61,7 @@ impl StdoutExporter {
             }
         }
     }
-    fn refresh_procs(&mut self) {
-        //! current_procs is the up to date list of processus running on the host
-        let current_procs = process::all_processes().unwrap();
-
-        for p in current_procs {
-            let pid = p.pid;
-            let res = self.proc_tracker.add_process_record(p);
-            match res {
-                Ok(msg) => {},
-                Err(msg) => panic!("Failed to track process with pid {} !\nGot: {}", pid, msg)
-            }
-        }
-    }
-
-    fn iteration(&mut self, mut topology: Topology, mut records: Vec<Record>, step: u64) -> (Topology, Vec<Record>){
-        self.refresh_procs();
-
+    fn iteration(&mut self, mut topology: Topology, mut records: Vec<Record>, _step: u64) -> (Topology, Vec<Record>){
         for socket in topology.get_sockets() {
             let socket_id = socket.id;
             records.push(socket.refresh_record());
@@ -106,20 +88,20 @@ impl StdoutExporter {
                 "socket:{} {} {} last3(uJ): {} {} {}",
                 socket_id, power, unit, rec_j_1, rec_j_2, rec_j_3
             );
-            let jiffries = socket.get_usage_jiffries().unwrap();
+            //let jiffies = socket.get_usage_jiffies().unwrap();
             //println!(
-            //    "user process jiffries: {}\n |
-            //    niced process jiffries: {}\n |
-            //    system process jiffries: {}\n",
-            //    jiffries[0].value,
-            //    jiffries[1].value,
-            //    jiffries[2].value,
+            //    "user process jiffies: {}\n |
+            //    niced process jiffies: {}\n |
+            //    system process jiffies: {}\n",
+            //    jiffies[0].value,
+            //    jiffies[1].value,
+            //    jiffies[2].value,
             //);
 
-            //let total_jiffries=
-            //    jiffries[0].value.parse::<u64>().unwrap()
-            //    + jiffries[1].value.parse::<u64>().unwrap()
-            //    + jiffries[2].value.parse::<u64>().unwrap();
+            //let total_jiffies=
+            //    jiffies[0].value.parse::<u64>().unwrap()
+            //    + jiffies[1].value.parse::<u64>().unwrap()
+            //    + jiffies[2].value.parse::<u64>().unwrap();
 
             for domain in socket.get_domains() {
                 domain.refresh_record();

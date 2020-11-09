@@ -1,19 +1,19 @@
 pub mod powercap_rapl;
 pub mod units;
 mod utils;
-
+use procfs::process;
 use std::error::Error;
-
 use std::collections::HashMap;
 use std::{fmt, fs};
 use std::time::{SystemTime, Duration};
 use std::io::{self, BufReader, BufRead};
 use std::fs::File;
 use regex::Regex;
-
+use utils::{ProcessRecord, ProcessTracker, current_system_time_since_epoch};
 use std::mem::size_of_val;
 
-
+/// Defines methods for Record instances creation
+/// and storage.
 pub trait RecordGenerator{
     fn refresh_record(&mut self) -> Record;
 
@@ -35,7 +35,7 @@ pub fn energy_records_to_power_record(
     let t2 = measures.1.timestamp.as_secs();
     let time_diff =  t1 - t2;
     let result = joules / time_diff as f64; 
-    Ok(Record::new(measures.1.timestamp.clone(), result.to_string(), units::Unit::Watt))
+    Ok(Record::new(measures.1.timestamp, result.to_string(), units::Unit::Watt))
 }
 
 // !!!!!!!!!!!!!!!!! Topology !!!!!!!!!!!!!!!!!!!!!!!
@@ -47,13 +47,15 @@ pub fn energy_records_to_power_record(
 pub struct Topology {
     pub sockets: Vec<CPUSocket>,
     pub remote: bool,
+    pub proc_tracker: ProcessTracker
 }
 
 impl Topology {
     pub fn new() -> Topology {
         Topology {
             sockets: vec![],
-            remote: false
+            remote: false,
+            proc_tracker: ProcessTracker::new(3)
         }
     }
 
@@ -77,9 +79,7 @@ impl Topology {
         let mut map = HashMap::new();
         let mut counter = 0;
         for line in reader.lines() {
-            let parts = line.unwrap().trim().split(":").map(
-                |x| String::from(x)
-            ).collect::<Vec<String>>();
+            let parts = line.unwrap().trim().split(':').map(String::from).collect::<Vec<String>>();
             if parts.len() >= 2 {
                 let key = parts[0].trim();
                 let value = parts[1].trim();
@@ -103,7 +103,7 @@ impl Topology {
         counter_uj_path: String, buffer_max_kbytes: u16
     ) {
         let result: Vec<&CPUSocket> = self.sockets.iter().filter(|s| s.id == socket_id).collect();
-        if result.len() == 0 {
+        if result.is_empty() {
             let socket = CPUSocket::new(
                 socket_id, domains, attributes, counter_uj_path, buffer_max_kbytes
             );
@@ -112,8 +112,7 @@ impl Topology {
     }
 
     pub fn get_sockets(&mut self) -> &mut Vec<CPUSocket> {
-        let mutref = &mut self.sockets;
-        mutref
+        &mut self.sockets
     }
 
     pub fn safe_add_domain_to_socket(
@@ -134,12 +133,12 @@ impl Topology {
 
     pub fn add_cpu_cores(&mut self) {
         let mut cores = Topology::generate_cpu_cores().unwrap();
-        while cores.len() > 0 {
+        while cores.is_empty() {
             let c = cores.pop().unwrap();
             let socket_id = &c.attributes.get("physical id").unwrap().parse::<u16>().unwrap();
-            let socket = self.sockets.iter_mut().filter(
+            let socket = self.sockets.iter_mut().find(
                 |x| &x.id == socket_id
-            ).next().unwrap();
+            ).unwrap();
             //for s in self.sockets.iter_mut() {
             if socket_id == &socket.id {
                 socket.add_cpu_core(c);
@@ -153,6 +152,46 @@ impl Topology {
         //    s.add_cpu_core(result);
         //}
     }
+
+    fn refresh_procs(&mut self) {
+        //! current_procs is the up to date list of processus running on the host
+        let current_procs = process::all_processes().unwrap();
+
+        for p in current_procs {
+            let pid = p.pid;
+            let res = self.proc_tracker.add_process_record(p);
+            match res {
+                Ok(_) => {},
+                Err(msg) => panic!("Failed to track process with pid {} !\nGot: {}", pid, msg)
+            }
+        }
+    }
+
+    fn get_proc_cons(&self, pid: i32, socket_time_spent: u64, socket_cons: u64) -> Result<Record, String>{
+        let result = self.proc_tracker.find_records(pid);
+
+        if result.is_some() {
+            let records = result.unwrap();
+            if records.len() > 1 {
+                let total_cpu_time = records[0].process.stat.utime + records[0].process.stat.stime;
+                let percentage = total_cpu_time / socket_time_spent * 100;
+                let proc_cons = percentage * socket_cons;
+                return Ok(
+                    Record::new(
+                        current_system_time_since_epoch().unwrap(),
+                        String::from(proc_cons.to_string()),
+                        crate::sensors::units::Unit::Watt
+                    )
+                )
+            }
+        }
+        Err(
+            String::from(
+                format!("Couldn't get consumption for process {}. Maybe the history is too short.", pid)
+            )
+        )
+    }
+
 }
 
 // !!!!!!!!!!!!!!!!! CPUSocket !!!!!!!!!!!!!!!!!!!!!!!
@@ -181,7 +220,7 @@ impl RecordGenerator for CPUSocket {
 
         self.record_buffer.push(
             Record::new(
-                record.timestamp.clone(),
+                record.timestamp,
                 record.value.clone(),
                 units::Unit::MicroJoule
             )
@@ -193,7 +232,7 @@ impl RecordGenerator for CPUSocket {
             println!("Cleaning socket records buffer !!!!!!!!!!!!!!!!!!!!");
             let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
             for _ in 1..nb_records_to_delete {
-                if self.record_buffer.len() > 0 {
+                if !self.record_buffer.is_empty() {
                     self.record_buffer.remove(0);
                 }
             }
@@ -206,7 +245,7 @@ impl RecordGenerator for CPUSocket {
         for r in &self.record_buffer {
             result.push(
                 Record::new(
-                    r.timestamp.clone(), r.value.clone(), units::Unit::MicroJoule
+                    r.timestamp, r.value.clone(), units::Unit::MicroJoule
                 )
             );
         }
@@ -242,15 +281,14 @@ impl CPUSocket {
     }
 
     pub fn get_domains(&mut self) -> &mut Vec<Domain> {
-        let mutref = &mut self.domains;
-        mutref
+        &mut self.domains
     }
 
     pub fn add_cpu_core(&mut self, core: CPUCore) {
         self.cpu_cores.push(core);
     }
 
-    /// Returns an array of Record instances containing a number of jiffries
+    /// Returns an array of Record instances containing a number of jiffies
     /// (time metrics relative to cpu vendor) elapsed. 
     /// 
     /// 1st column : user = normal processes executing in user mode
@@ -260,7 +298,7 @@ impl CPUSocket {
     /// 5th column : iowait = waiting for I/O to complete
     /// 6th column : irq = servicing interrupts
     /// 7th column : softirq = servicing softirqs
-    pub fn get_usage_jiffries(&self) -> Result<[Record; 3], String> {
+    pub fn get_usage_jiffies(&self) -> Result<[Record; 3], String> {
         let f = File::open("/proc/stat").unwrap();
         //let reader = BufReader(f);
         let reader = BufReader::new(f);
@@ -269,14 +307,12 @@ impl CPUSocket {
         for line in reader.lines() {
             let res =  line.unwrap();
             if re.is_match(&res) {
-                let parts = &res.split(" ").map(
-                    |x| String::from(x)
-                ).collect::<Vec<String>>();
+                let parts = &res.split(' ').map(String::from).collect::<Vec<String>>();
                 return Ok(
                     [
-                        utils::create_record_from_jiffries(parts[1].clone()),
-                        utils::create_record_from_jiffries(parts[2].clone()),
-                        utils::create_record_from_jiffries(parts[3].clone())
+                        utils::create_record_from_jiffies(parts[1].clone()),
+                        utils::create_record_from_jiffies(parts[2].clone()),
+                        utils::create_record_from_jiffies(parts[3].clone())
                     ]
                 )
             }
@@ -301,7 +337,7 @@ impl CPUCore {
         CPUCore { id, attributes }
     }
     
-    /// Returns an array of Record instances containing a number of jiffries
+    /// Returns an array of Record instances containing a number of jiffies
     /// (time metrics relative to cpu vendor) elapsed. 
     /// 
     /// 1st column : user = normal processes executing in user mode
@@ -311,7 +347,7 @@ impl CPUCore {
     /// 5th column : iowait = waiting for I/O to complete
     /// 6th column : irq = servicing interrupts
     /// 7th column : softirq = servicing softirqs
-    pub fn get_usage_jiffries(&self) -> Result<[Record; 3], String> {
+    pub fn get_usage_jiffies(&self) -> Result<[Record; 3], String> {
         let f = File::open("/proc/stat").unwrap();
         //let reader = BufReader(f);
         let reader = BufReader::new(f);
@@ -325,9 +361,9 @@ impl CPUCore {
                 ).collect::<Vec<String>>();
                 return Ok(
                     [
-                        utils::create_record_from_jiffries(parts[1].clone()),
-                        utils::create_record_from_jiffries(parts[2].clone()),
-                        utils::create_record_from_jiffries(parts[3].clone())
+                        utils::create_record_from_jiffies(parts[1].clone()),
+                        utils::create_record_from_jiffies(parts[2].clone()),
+                        utils::create_record_from_jiffies(parts[3].clone())
                     ]
                 )
             }
@@ -362,7 +398,7 @@ impl RecordGenerator for Domain {
 
         self.record_buffer.push(
             Record::new(
-                record.timestamp.clone(),
+                record.timestamp,
                 record.value.clone(),
                 units::Unit::MicroJoule
             )
@@ -371,10 +407,9 @@ impl RecordGenerator for Domain {
         let record_buffer_ptr = &self.record_buffer;
         if size_of_val(record_buffer_ptr) > (self.buffer_max_kbytes*1000) as usize {
             let size_diff = size_of_val(record_buffer_ptr) - (self.buffer_max_kbytes*1000) as usize;
-            println!("Cleaning record buffer !!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
             for _ in 1..nb_records_to_delete {
-                if self.record_buffer.len() > 0 {
+                if !self.record_buffer.is_empty() {
                     self.record_buffer.remove(0);
                 }
             }
@@ -387,7 +422,7 @@ impl RecordGenerator for Domain {
         for r in &self.record_buffer {
             result.push(
                 Record::new(
-                    r.timestamp.clone(), r.value.clone(), units::Unit::MicroJoule
+                    r.timestamp, r.value.clone(), units::Unit::MicroJoule
                 )
             );
         }
@@ -423,7 +458,7 @@ pub struct Record{
 }
 
 impl Record {
-    fn new(timestamp: Duration, value: String, unit: units::Unit) -> Record{
+    pub fn new(timestamp: Duration, value: String, unit: units::Unit) -> Record{
         Record{ timestamp, value, unit }
     }
 }
