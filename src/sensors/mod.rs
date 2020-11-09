@@ -1,13 +1,15 @@
 pub mod powercap_rapl;
 pub mod units;
+mod utils;
 
 use std::error::Error;
 
 use std::collections::HashMap;
 use std::{fmt, fs};
 use std::time::{SystemTime, Duration};
-use std::io::{self, prelude, BufReader, BufRead};
+use std::io::{self, BufReader, BufRead};
 use std::fs::File;
+use regex::Regex;
 
 use std::mem::size_of_val;
 
@@ -248,6 +250,40 @@ impl CPUSocket {
         self.cpu_cores.push(core);
     }
 
+    /// Returns an array of Record instances containing a number of jiffries
+    /// (time metrics relative to cpu vendor) elapsed. 
+    /// 
+    /// 1st column : user = normal processes executing in user mode
+    /// 2nd column : nice = niced processes executing in user mode
+    /// 3rd column : system = processes executing in kernel mode
+    /// 4th column : idle = twiddling thumbs
+    /// 5th column : iowait = waiting for I/O to complete
+    /// 6th column : irq = servicing interrupts
+    /// 7th column : softirq = servicing softirqs
+    pub fn get_usage_jiffries(&self) -> Result<[Record; 3], String> {
+        let f = File::open("/proc/stat").unwrap();
+        //let reader = BufReader(f);
+        let reader = BufReader::new(f);
+        let re_str = "cpu .*";
+        let re = Regex::new(&re_str).unwrap();
+        for line in reader.lines() {
+            let res =  line.unwrap();
+            if re.is_match(&res) {
+                let parts = &res.split(" ").map(
+                    |x| String::from(x)
+                ).collect::<Vec<String>>();
+                return Ok(
+                    [
+                        utils::create_record_from_jiffries(parts[1].clone()),
+                        utils::create_record_from_jiffries(parts[2].clone()),
+                        utils::create_record_from_jiffries(parts[3].clone())
+                    ]
+                )
+            }
+        }
+        Err(String::from("Could'nt generate records for cpu core."))
+    }
+
 }
 
 // !!!!!!!!!!!!!!!!! CPUCore !!!!!!!!!!!!!!!!!!!!!!!
@@ -264,6 +300,41 @@ impl CPUCore {
     pub fn new(id: u16, attributes: HashMap<String, String>) -> CPUCore{
         CPUCore { id, attributes }
     }
+    
+    /// Returns an array of Record instances containing a number of jiffries
+    /// (time metrics relative to cpu vendor) elapsed. 
+    /// 
+    /// 1st column : user = normal processes executing in user mode
+    /// 2nd column : nice = niced processes executing in user mode
+    /// 3rd column : system = processes executing in kernel mode
+    /// 4th column : idle = twiddling thumbs
+    /// 5th column : iowait = waiting for I/O to complete
+    /// 6th column : irq = servicing interrupts
+    /// 7th column : softirq = servicing softirqs
+    pub fn get_usage_jiffries(&self) -> Result<[Record; 3], String> {
+        let f = File::open("/proc/stat").unwrap();
+        //let reader = BufReader(f);
+        let reader = BufReader::new(f);
+        let re_str = format!("cpu{} .*", self.id);
+        let re = Regex::new(&re_str).unwrap();
+        for line in reader.lines() {
+            let res =  line.unwrap();
+            if re.is_match(&res) {
+                let parts = &res.split(" ").map(
+                    |x| String::from(x)
+                ).collect::<Vec<String>>();
+                return Ok(
+                    [
+                        utils::create_record_from_jiffries(parts[1].clone()),
+                        utils::create_record_from_jiffries(parts[2].clone()),
+                        utils::create_record_from_jiffries(parts[3].clone())
+                    ]
+                )
+            }
+        }
+        Err(String::from("Could'nt generate records for cpu core."))
+    }
+
 }
 
 // !!!!!!!!!!!!!!!!! Domain !!!!!!!!!!!!!!!!!!!!!!!

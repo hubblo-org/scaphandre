@@ -10,7 +10,8 @@ pub enum Unit {
     KiloWatt ,
     Watt,
     MilliWatt,
-    MicroWatt
+    MicroWatt,
+    Jiffries // time unit of usage, relative to the CPU
 }
 
 impl Unit {
@@ -67,6 +68,7 @@ impl fmt::Display for Unit {
             Unit::Watt => write!(f, "Watts"),
             Unit::KiloWatt => write!(f, "KiloWatts"),
             Unit::MegaWatt => write!(f, "MegaWatts"),
+            Unit::Jiffries => write!(f, "Jiffries")
         }
     }
 }
