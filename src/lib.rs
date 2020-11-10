@@ -1,10 +1,14 @@
 pub mod sensors;
+pub mod exporters;
 use sensors::{powercap_rapl::PowercapRAPLSensor};
-mod exporters;
 use exporters::{Exporter, ExporterOption, stdout::StdoutExporter};
 use clap::ArgMatches;
 use std::collections::HashMap;
 
+/// Matches the sensor and exporter name and options requested from the command line and
+/// creates the appropriate instances. Launchs the standardized entrypoint of
+/// the choosen exporter: run()
+/// This function should be updated to take new exporters and sensors into account.
 pub fn run(matches: ArgMatches) {
     let sensor = match matches.value_of("sensor").unwrap() {
         "powercap_rapl" => PowercapRAPLSensor::new(
@@ -30,6 +34,8 @@ pub fn run(matches: ArgMatches) {
     }
 }
 
+/// Returns options needed for each exporter as a HashMap.
+/// This function has to be updated to enable a new exporter.
 pub fn get_exporters_options() -> HashMap<String, HashMap<String, ExporterOption>> {
     let mut options = HashMap::new();
     options.insert(
