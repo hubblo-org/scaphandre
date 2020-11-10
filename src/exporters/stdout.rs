@@ -6,8 +6,8 @@ use crate::sensors::{Sensor, Record, Topology, RecordGenerator, energy_records_t
 
 
 pub struct StdoutExporter {
-    sensor: Box<dyn Sensor>,
     timeout: String,
+    topology: Topology
 }
 
 impl Exporter for StdoutExporter {
@@ -35,16 +35,14 @@ impl Exporter for StdoutExporter {
 }
 
 impl StdoutExporter {
-    pub fn new(sensor: Box<dyn Sensor>, timeout: String) -> StdoutExporter {
-        StdoutExporter { sensor, timeout }    
+    pub fn new(mut sensor: Box<dyn Sensor>, timeout: String) -> StdoutExporter {
+        let some_topology = *sensor.get_topology();
+        StdoutExporter { timeout, topology: some_topology.unwrap() }    
     }
 
     pub fn runner (&mut self) {
-        let mut records: Vec<Record> = vec![];
-        let some_topology = *self.sensor.get_topology(); //Box<Option<&Topology>>
-        let mut topology = some_topology.unwrap();
         if self.timeout.len() == 0 {
-            self.iteration(topology, records, 0);
+            self.iteration(0);
         } else {
             let now = Instant::now();
 
@@ -54,25 +52,24 @@ impl StdoutExporter {
             println!("Measurement step is: {}s", step);
 
             while now.elapsed().as_secs() <= timeout_secs {
-                let result = self.iteration(topology, records, step);
-                topology = result.0;
-                records = result.1;
+                self.iteration(step);
                 thread::sleep(Duration::new(step, 0)); 
             }
         }
     }
-    fn iteration(&mut self, mut topology: Topology, mut records: Vec<Record>, _step: u64) -> (Topology, Vec<Record>){
-        for socket in topology.get_sockets() {
+    fn iteration(&mut self, _step: u64){
+        for socket in self.topology.get_sockets() {
             let socket_id = socket.id;
-            records.push(socket.refresh_record());
+            socket.refresh_record();
+            let socket_records = socket.get_records_passive();
             let mut power = String::from("unknown");
             let mut unit = String::from("W");
-            let nb_records = records.len();
+            let nb_records = socket_records.len();
             if nb_records > 1 {
                 let power_record = &energy_records_to_power_record(
                    (
-                       records.get(nb_records - 1).unwrap(),
-                       records.get(nb_records - 2).unwrap()
+                       socket_records.get(nb_records - 1).unwrap(),
+                       socket_records.get(nb_records - 2).unwrap()
                    )
                 ).unwrap();
                 power = power_record.value.clone();
@@ -81,9 +78,9 @@ impl StdoutExporter {
             let mut rec_j_1 = String::from("unknown");
             let mut rec_j_2 = String::from("unknown");
             let mut rec_j_3 = String::from("unknown");
-            if records.len() > 2 { rec_j_1 = records.get(nb_records - 3).unwrap().value.to_string().trim().to_string(); }
-            if records.len() > 1 { rec_j_2 = records.get(nb_records - 2).unwrap().value.to_string().trim().to_string(); }
-            if records.len() > 0 { rec_j_3 = records.get(nb_records - 1).unwrap().value.to_string().trim().to_string(); }
+            if socket_records.len() > 2 { rec_j_1 = socket_records.get(nb_records - 3).unwrap().value.to_string().trim().to_string(); }
+            if socket_records.len() > 1 { rec_j_2 = socket_records.get(nb_records - 2).unwrap().value.to_string().trim().to_string(); }
+            if socket_records.len() > 0 { rec_j_3 = socket_records.get(nb_records - 1).unwrap().value.to_string().trim().to_string(); }
             println!(
                 "socket:{} {} {} last3(uJ): {} {} {}",
                 socket_id, power, unit, rec_j_1, rec_j_2, rec_j_3
@@ -131,7 +128,6 @@ impl StdoutExporter {
                 );
             }
         }
-        (topology, records)
     }
 }
 
