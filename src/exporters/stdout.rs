@@ -58,9 +58,9 @@ impl StdoutExporter {
         }
     }
     fn iteration(&mut self, _step: u64){
+        self.topology.refresh();
         for socket in self.topology.get_sockets() {
             let socket_id = socket.id;
-            socket.refresh_record();
             let socket_records = socket.get_records_passive();
             let mut power = String::from("unknown");
             let mut unit = String::from("W");
@@ -101,7 +101,6 @@ impl StdoutExporter {
             //    + jiffies[2].value.parse::<u64>().unwrap();
 
             for domain in socket.get_domains() {
-                domain.refresh_record();
                 let domain_records = domain.get_records_passive();
                 let mut power = String::from("unknown");
                 let mut unit = String::from("W");
