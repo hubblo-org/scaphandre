@@ -57,8 +57,59 @@ impl StdoutExporter {
             }
         }
     }
+
     fn iteration(&mut self, _step: u64){
         self.topology.refresh();
+        let topo_records = self.topology.get_records_passive();
+        let mut topo_power = String::from("n/a");
+        let mut topo_raw_power:f64 = 0.0;
+        if topo_records.len() > 1 {
+            topo_raw_power = energy_records_to_power_record(
+                (
+                    topo_records.get(topo_records.len() - 1).unwrap(),
+                    topo_records.get(topo_records.len() - 2).unwrap()
+                )
+            ).unwrap().value.parse::<f64>().unwrap();
+            topo_power = topo_raw_power.to_string();
+        let topo_records = self.topology.get_records_passive();
+        let mut topo_power = String::from("n/a");
+        if topo_records.len() > 1 {
+            topo_power = energy_records_to_power_record(
+                (
+                    topo_records.get(topo_records.len() - 1).unwrap(),
+                    topo_records.get(topo_records.len() - 2).unwrap()
+                )
+            ).unwrap().value.to_string();
+        }
+            topo_power = topo_raw_power.to_string();
+        }
+        let (topo_stats_user, topo_stats_nice, topo_stats_system) = match self.topology.get_stats_diff(){
+            Some(stat) => (stat.user.to_string(), stat.nice.to_string(), stat.system.to_string()),
+            None => (String::from("n/a"), String::from("n/a"), String::from("n/a"))
+        };
+        let mut counter = 0;
+        for p in self.topology.proc_tracker.get_alive_pids() {
+            let utime_value = match self.topology.proc_tracker.get_diff_utime(p) {
+                Some(time) => time.to_string(),
+                None => String::from("n/a")
+            };
+            let stime_value = match self.topology.proc_tracker.get_diff_stime(p) {
+                Some(time) => time.to_string(),
+                None => String::from("n/a")
+            };
+            let mut utime_percent = 0.0;
+            let mut stime_percent = 0.0;
+            if topo_stats_system != "n/a" && topo_stats_user != "n/a" && utime_value != "n/a" && stime_value != "n/a" {
+                utime_percent = utime_value.parse::<f64>().unwrap() / topo_stats_user.parse::<f64>().unwrap() * 100.0;
+                stime_percent = stime_value.parse::<f64>().unwrap() / topo_stats_system.parse::<f64>().unwrap() * 100.0;
+            } 
+            print!("| {} utime:{} stime:{} utime_t_%:{} s_time_t_%: {} power: {}",
+                p, utime_value, stime_value, utime_percent.to_string(), stime_percent.to_string(),
+                ((utime_percent + stime_percent) * topo_raw_power / 100.0)
+            );
+            if counter % 4 == 0 { println!(); }
+            counter += 1;
+        }
         for socket in self.topology.get_sockets() {
             let socket_id = socket.id;
             let socket_records = socket.get_records_passive();
@@ -81,24 +132,15 @@ impl StdoutExporter {
             if socket_records.len() > 2 { rec_j_1 = socket_records.get(nb_records - 3).unwrap().value.to_string().trim().to_string(); }
             if socket_records.len() > 1 { rec_j_2 = socket_records.get(nb_records - 2).unwrap().value.to_string().trim().to_string(); }
             if socket_records.len() > 0 { rec_j_3 = socket_records.get(nb_records - 1).unwrap().value.to_string().trim().to_string(); }
+            let (socket_stats_user, socket_stats_nice, socket_stats_system) = match socket.get_stats_diff(){
+                Some(stat) => (stat.user.to_string(), stat.nice.to_string(), stat.system.to_string()),
+                None => (String::from("n/a"), String::from("n/a"), String::from("n/a"))
+            };
             println!(
-                "socket:{} {} {} last3(uJ): {} {} {}",
-                socket_id, power, unit, rec_j_1, rec_j_2, rec_j_3
+                "socket:{} {} {} last3(uJ): {} {} {} user {} nice {} system {}",
+                socket_id, power, unit, rec_j_1, rec_j_2, rec_j_3,
+                socket_stats_user, socket_stats_nice, socket_stats_system
             );
-            //let jiffies = socket.get_usage_jiffies().unwrap();
-            //println!(
-            //    "user process jiffies: {}\n |
-            //    niced process jiffies: {}\n |
-            //    system process jiffies: {}\n",
-            //    jiffies[0].value,
-            //    jiffies[1].value,
-            //    jiffies[2].value,
-            //);
-
-            //let total_jiffies=
-            //    jiffies[0].value.parse::<u64>().unwrap()
-            //    + jiffies[1].value.parse::<u64>().unwrap()
-            //    + jiffies[2].value.parse::<u64>().unwrap();
 
             for domain in socket.get_domains() {
                 let domain_records = domain.get_records_passive();
@@ -127,6 +169,7 @@ impl StdoutExporter {
                 );
             }
         }
+        println!("topo stats: power: {}W user {} nice {} system {}", topo_power, topo_stats_user, topo_stats_nice, topo_stats_system);
     }
 }
 

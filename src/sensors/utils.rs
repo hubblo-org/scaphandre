@@ -1,15 +1,5 @@
-use crate::sensors::units;
-use crate::sensors::Record;
 use procfs::process::Process;
-use std::time::{Duration, SystemTime, SystemTimeError};
-
-pub fn create_record_from_jiffies(value: String) -> Record {
-    Record::new(
-        SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap(),
-        value,
-        units::Unit::Jiffries
-    )
-}
+use std::time::{Duration, SystemTime};
 
 #[derive(Debug)]
 pub struct ProcessTracker {
@@ -39,7 +29,7 @@ impl ProcessTracker {
         let process_record = ProcessRecord::new(process);
         if result.is_some() { // if a vector of process records has been found
             let vector = result.unwrap();
-            vector.push(process_record); // we add the process record to the vector
+            vector.insert(0, process_record); // we add the process record to the vector
             if filtered.next().is_some() {
                 panic!("Found more than one set of ProcessRecord (more than one pid) that matches the current process.");
             }
@@ -81,6 +71,53 @@ impl ProcessTracker {
         }
         None
     }
+
+    /// Returns the result of the substraction of utime between last and
+    /// previous ProcessRecord for a given pid.
+    pub fn get_diff_utime(&self, pid: i32) -> Option<u64> {
+        let records = self.find_records(pid).unwrap();
+        if records.len() > 1 {
+            return Some(records[0].process.stat.utime - records[1].process.stat.utime)
+        }
+        None
+    }
+    /// Returns the result of the substraction of stime between last and
+    /// previous ProcessRecord for a given pid.
+    pub fn get_diff_stime(&self, pid: i32) -> Option<u64> {
+        let records = self.find_records(pid).unwrap();
+        if records.len() > 1 {
+            return Some(records[0].process.stat.stime - records[1].process.stat.stime)
+        }
+        None
+    }
+
+    /// Returns all vectors of process records linked to a running, sleeping or waiting process.
+    /// (Not terminated or zombie)
+    pub fn get_alive_processes(&self) -> Vec<&Vec<ProcessRecord>>{
+        self.procs.iter().filter(
+            |x| !x.is_empty()
+                && !x[0].process.status().unwrap().state.contains("Z")
+                && !x[0].process.status().unwrap().state.contains("T")
+        ).collect()
+    }
+
+    /// Returns a vector containing pids of all running, sleeping or waiting current processes.
+    pub fn get_alive_pids(&self) -> Vec<i32> {
+        self.get_alive_processes().iter().filter(
+            |x| !x.is_empty()
+        ).map(
+            |x| x[0].process.pid
+        ).collect()
+    }
+
+    /// Returns a vector containing pids of all processes being tracked.
+    pub fn get_all_pids(&self) -> Vec<i32> {
+        self.procs.iter().filter(
+            |x| !x.is_empty()
+        ).map(
+            |x| x[0].process.pid
+        ).collect()
+    }
 }
 
 #[derive(Debug)]
@@ -93,13 +130,13 @@ impl ProcessRecord {
     pub fn new(process: Process) -> ProcessRecord {
         ProcessRecord {
             process,
-            timestamp: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap()
+            timestamp: current_system_time_since_epoch()
         }
     }
 }
 
-pub fn current_system_time_since_epoch() -> Result<Duration, SystemTimeError>{
-    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)
+pub fn current_system_time_since_epoch() -> Duration {
+    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap()
 }
 
 #[cfg(test)]
@@ -109,9 +146,9 @@ mod tests {
     fn process_records_added() {
         let proc = Process::myself().unwrap();
         let mut tracker = ProcessTracker::new(3);
-        assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
-        assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
-        assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
+        for _ in 0..2 {
+            assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
+        }
         assert_eq!(tracker.procs.len(), 1);
         assert_eq!(tracker.procs[0].len(), 3);
     }
@@ -120,20 +157,16 @@ mod tests {
     fn process_records_cleaned() {
         let proc = Process::myself().unwrap();
         let mut tracker = ProcessTracker::new(3);
-        assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
-        assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
-        assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
-        assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
+        for _ in 0..5 {
+            assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
+        }
         assert_eq!(tracker.procs.len(), 1);
         assert_eq!(tracker.procs[0].len(), 3);
-        assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
-        assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
-        assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
-        assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
-        assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
-        assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
-        assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
+        for _ in 0..15 {
+            assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
+        }
         assert_eq!(tracker.procs.len(), 1);
         assert_eq!(tracker.procs[0].len(), 3);
     }
+
 }

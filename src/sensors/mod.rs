@@ -9,14 +9,21 @@ use std::time::{SystemTime, Duration};
 use std::io::{self, BufReader, BufRead};
 use std::fs::File;
 use regex::Regex;
-use utils::{ProcessRecord, ProcessTracker, current_system_time_since_epoch};
+use utils::{ProcessTracker, current_system_time_since_epoch};
 use std::mem::size_of_val;
+
+// !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
+/// Sensor trait, the Sensor API.
+pub trait Sensor {
+    fn get_topology(&mut self) -> Box<Option<Topology>>;
+    fn generate_topology (&self) -> Result<Topology, Box<dyn Error>>;
+}
+
 
 /// Defines methods for Record instances creation
 /// and storage.
 pub trait RecordGenerator{
     fn refresh_record(&mut self) -> Record;
-
     fn get_records_passive(&self) -> Vec<Record>;
 }
 
@@ -47,7 +54,63 @@ pub fn energy_records_to_power_record(
 pub struct Topology {
     pub sockets: Vec<CPUSocket>,
     pub remote: bool,
-    pub proc_tracker: ProcessTracker
+    pub proc_tracker: ProcessTracker,
+    pub stat_buffer: Vec<CPUStat>,
+    pub record_buffer: Vec<Record>,
+    pub buffer_max_kbytes: u16,
+}
+
+impl RecordGenerator for Topology {
+    fn refresh_record(&mut self) -> Record {
+        let mut value: u64 = 0;
+        for s in self.get_sockets() {
+            let records = s.get_records_passive();
+            if !records.is_empty() {
+                value += records.get(records.len() - 1).unwrap().value.trim().parse::<u64>().unwrap();
+            }
+        }
+        let timestamp = current_system_time_since_epoch();
+        let record = Record::new(
+            timestamp,
+            value.to_string(),
+            units::Unit::MicroJoule
+        );
+
+        self.record_buffer.push(
+            Record::new(
+                record.timestamp,
+                record.value.clone(),
+                units::Unit::MicroJoule
+            )
+        );
+
+        println!("{:?}", self.record_buffer);
+
+        let record_buffer_ptr = &self.record_buffer;
+        if size_of_val(record_buffer_ptr) > (self.buffer_max_kbytes*1000) as usize {
+            let size_diff = size_of_val(record_buffer_ptr) - (self.buffer_max_kbytes*1000) as usize;
+            println!("Cleaning socket records buffer !!!!!!!!!!!!!!!!!!!!");
+            let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
+            for _ in 1..nb_records_to_delete {
+                if !self.record_buffer.is_empty() {
+                    self.record_buffer.remove(0);
+                }
+            }
+        }
+        record
+    }
+
+    fn get_records_passive(&self) -> Vec<Record> {
+        let mut result = vec![];
+        for r in &self.record_buffer {
+            result.push(
+                Record::new(
+                    r.timestamp, r.value.clone(), units::Unit::MicroJoule
+                )
+            );
+        }
+        result
+    }
 }
 
 impl Topology {
@@ -55,7 +118,10 @@ impl Topology {
         Topology {
             sockets: vec![],
             remote: false,
-            proc_tracker: ProcessTracker::new(3)
+            proc_tracker: ProcessTracker::new(3),
+            stat_buffer: vec![],
+            record_buffer: vec![],
+            buffer_max_kbytes: 8
         }
     }
 
@@ -85,7 +151,7 @@ impl Topology {
                 let value = parts[1].trim();
                 if key == "processor" {
                     if counter > 0 {
-                        cores.push(CPUCore::new(counter, map));
+                        cores.push(CPUCore::new(value.parse::<u16>().unwrap(), map));
                         map = HashMap::new();
                     }
                     counter += 1;
@@ -93,7 +159,7 @@ impl Topology {
                 map.insert(String::from(key), String::from(value));
             }
         }
-        cores.push(CPUCore::new(counter, map));
+        cores.push(CPUCore::new(map.get("processor").unwrap().parse::<u16>().unwrap(), map));
         Ok(cores)
     }
 
@@ -133,24 +199,39 @@ impl Topology {
 
     pub fn add_cpu_cores(&mut self) {
         let mut cores = Topology::generate_cpu_cores().unwrap();
-        while cores.is_empty() {
+        while !cores.is_empty() {
             let c = cores.pop().unwrap();
             let socket_id = &c.attributes.get("physical id").unwrap().parse::<u16>().unwrap();
             let socket = self.sockets.iter_mut().find(
                 |x| &x.id == socket_id
             ).unwrap();
-            //for s in self.sockets.iter_mut() {
             if socket_id == &socket.id {
                 socket.add_cpu_core(c);
             }
-            //}
         } 
-        //for mut s in self.sockets.iter_mut() {
-        //    let result = c.into_iter().filter(
-        //        |x| x.attributes.get("physicalid").unwrap().parse::<u16>().unwrap() == s.id
-        //    ).next().unwrap();
-        //    s.add_cpu_core(result);
-        //}
+    }
+
+    /// Triggers ProcessTracker refresh on process stats
+    /// and power consumption, CPU stats and cores power comsumption,
+    /// CPU sockets stats and power consumption.
+    pub fn refresh(&mut self) {
+        let sockets = &mut self.sockets;
+        for s in sockets {
+            // refresh each socket with new record
+            s.refresh_record();
+            s.refresh_stats();
+            let domains = s.get_domains();
+            for d in domains {
+                d.refresh_record();
+            }
+            //let cores = s.get_cores();
+            //for c in cores {
+            //    
+            //}
+        }
+        self.refresh_record();
+        self.refresh_procs();
+        self.refresh_stats();
     }
 
     fn refresh_procs(&mut self) {
@@ -167,6 +248,30 @@ impl Topology {
         }
     }
 
+    pub fn refresh_stats(&mut self) {
+        self.stat_buffer.insert(0, self.read_stats().unwrap());
+    }
+
+    pub fn get_stats_diff(&mut self) -> Option<CPUStat> {
+        if self.stat_buffer.len() > 1 {
+            let last = &self.stat_buffer[0];
+            let previous = &self.stat_buffer[1];
+            return Some(
+                CPUStat {
+                    user: last.user - previous.user,
+                    nice: last.nice - previous.nice,
+                    system: last.system - previous.system,
+                    idle: last.idle - previous.idle,
+                    iowait: last.iowait - previous.iowait,
+                    irq: last.irq - previous.irq,
+                    softirq: last.softirq - previous.softirq,
+
+                }
+            )
+        }
+        None
+    }
+
     fn get_proc_cons(&self, pid: i32, socket_time_spent: u64, socket_cons: u64) -> Result<Record, String>{
         let result = self.proc_tracker.find_records(pid);
 
@@ -178,7 +283,7 @@ impl Topology {
                 let proc_cons = percentage * socket_cons;
                 return Ok(
                     Record::new(
-                        current_system_time_since_epoch().unwrap(),
+                        current_system_time_since_epoch(),
                         String::from(proc_cons.to_string()),
                         crate::sensors::units::Unit::Watt
                     )
@@ -190,6 +295,31 @@ impl Topology {
                 format!("Couldn't get consumption for process {}. Maybe the history is too short.", pid)
             )
         )
+    }
+    /// Reads content from /proc/stat and extracts the stats of the whole CPU topology.
+    pub fn read_stats(&self) -> Option<CPUStat> {
+        let f = File::open("/proc/stat").unwrap();
+        let reader = BufReader::new(f);
+        let re_str = "cpu .*";
+        let re = Regex::new(&re_str).unwrap();
+        for line in reader.lines() {
+            let raw = line.unwrap();
+            if re.is_match(&raw) {
+                let res = &raw.split(' ').map(String::from).collect::<Vec<String>>();
+                return Some(
+                    CPUStat {
+                        user: res[2].parse::<u64>().unwrap(),
+                        nice: res[3].parse::<u64>().unwrap(),
+                        system: res[4].parse::<u64>().unwrap(),
+                        idle: res[5].parse::<u64>().unwrap(),
+                        iowait: res[6].parse::<u64>().unwrap(),
+                        irq: res[7].parse::<u64>().unwrap(),
+                        softirq: res[8].parse::<u64>().unwrap()
+                    }
+                )
+            }
+        }
+        None
     }
 
 }
@@ -204,7 +334,8 @@ pub struct CPUSocket {
     pub counter_uj_path: String,
     pub record_buffer: Vec<Record>,
     pub buffer_max_kbytes: u16,
-    pub cpu_cores: Vec<CPUCore>
+    pub cpu_cores: Vec<CPUCore>,
+    pub stat_buffer: Vec<CPUStat>
 }
 impl RecordGenerator for CPUSocket {
     fn refresh_record(&mut self) -> Record {
@@ -262,7 +393,8 @@ impl CPUSocket {
             id, domains, attributes, counter_uj_path,
             record_buffer: vec![], // buffer has to be empty first
             buffer_max_kbytes,
-            cpu_cores: vec![] // cores are instantiated on a later step
+            cpu_cores: vec![], // cores are instantiated on a later step
+            stat_buffer: vec![]
         }
     }
 
@@ -284,42 +416,62 @@ impl CPUSocket {
         &mut self.domains
     }
 
+    pub fn get_cores(&mut self) -> &mut Vec<CPUCore> {
+        &mut self.cpu_cores
+    }
+
     pub fn add_cpu_core(&mut self, core: CPUCore) {
         self.cpu_cores.push(core);
     }
 
-    /// Returns an array of Record instances containing a number of jiffies
-    /// (time metrics relative to cpu vendor) elapsed. 
-    /// 
-    /// 1st column : user = normal processes executing in user mode
-    /// 2nd column : nice = niced processes executing in user mode
-    /// 3rd column : system = processes executing in kernel mode
-    /// 4th column : idle = twiddling thumbs
-    /// 5th column : iowait = waiting for I/O to complete
-    /// 6th column : irq = servicing interrupts
-    /// 7th column : softirq = servicing softirqs
-    pub fn get_usage_jiffies(&self) -> Result<[Record; 3], String> {
-        let f = File::open("/proc/stat").unwrap();
-        //let reader = BufReader(f);
-        let reader = BufReader::new(f);
-        let re_str = "cpu .*";
-        let re = Regex::new(&re_str).unwrap();
-        for line in reader.lines() {
-            let res =  line.unwrap();
-            if re.is_match(&res) {
-                let parts = &res.split(' ').map(String::from).collect::<Vec<String>>();
-                return Ok(
-                    [
-                        utils::create_record_from_jiffies(parts[1].clone()),
-                        utils::create_record_from_jiffies(parts[2].clone()),
-                        utils::create_record_from_jiffies(parts[3].clone())
-                    ]
-                )
-            }
-        }
-        Err(String::from("Could'nt generate records for cpu core."))
+    pub fn refresh_stats(&mut self) {
+        self.stat_buffer.insert(0, self.read_stats().unwrap());
     }
 
+    /// Combines stats from all CPU cores owned byu the socket and returns
+    /// a CPUStat struct containing stats for the whole socket.
+    pub fn read_stats(&self) -> Option<CPUStat> {
+        let mut stats = CPUStat {
+            user: 0,
+            nice: 0,
+            system: 0,
+            idle: 0,
+            iowait: 0,
+            irq: 0,
+            softirq: 0
+        };
+        for c in &self.cpu_cores {
+            let c_stats = c.read_stats().unwrap();
+            stats.user += c_stats.user;
+            stats.nice += c_stats.nice;
+            stats.system += c_stats.system;
+            stats.idle += c_stats.idle;
+            stats.iowait += c_stats.iowait;
+            stats.irq += c_stats.irq;
+            stats.softirq += c_stats.softirq;
+        }
+        Some(stats)
+    }
+
+    pub fn get_stats_diff(&self) -> Option<CPUStat> {
+        if self.stat_buffer.len() > 1 {
+            let last = &self.stat_buffer[0];
+            let previous = &self.stat_buffer[1];
+            return Some(
+                CPUStat {
+                    user: last.user - previous.user,
+                    nice: last.nice - previous.nice,
+                    system: last.system - previous.system,
+                    idle: last.idle - previous.idle,
+                    iowait: last.iowait - previous.iowait,
+                    irq: last.irq - previous.irq,
+                    softirq: last.softirq - previous.softirq,
+
+                }
+            )
+        }
+        None
+    }
 }
 
 // !!!!!!!!!!!!!!!!! CPUCore !!!!!!!!!!!!!!!!!!!!!!!
@@ -337,38 +489,30 @@ impl CPUCore {
         CPUCore { id, attributes }
     }
     
-    /// Returns an array of Record instances containing a number of jiffies
-    /// (time metrics relative to cpu vendor) elapsed. 
-    /// 
-    /// 1st column : user = normal processes executing in user mode
-    /// 2nd column : nice = niced processes executing in user mode
-    /// 3rd column : system = processes executing in kernel mode
-    /// 4th column : idle = twiddling thumbs
-    /// 5th column : iowait = waiting for I/O to complete
-    /// 6th column : irq = servicing interrupts
-    /// 7th column : softirq = servicing softirqs
-    pub fn get_usage_jiffies(&self) -> Result<[Record; 3], String> {
+    /// Reads content from /proc/stat and extracts the stats of the socket
+    fn read_stats(&self) -> Option<CPUStat> {
         let f = File::open("/proc/stat").unwrap();
-        //let reader = BufReader(f);
         let reader = BufReader::new(f);
         let re_str = format!("cpu{} .*", self.id);
         let re = Regex::new(&re_str).unwrap();
         for line in reader.lines() {
-            let res =  line.unwrap();
-            if re.is_match(&res) {
-                let parts = &res.split(" ").map(
-                    |x| String::from(x)
-                ).collect::<Vec<String>>();
-                return Ok(
-                    [
-                        utils::create_record_from_jiffies(parts[1].clone()),
-                        utils::create_record_from_jiffies(parts[2].clone()),
-                        utils::create_record_from_jiffies(parts[3].clone())
-                    ]
+            let raw = line.unwrap();
+            if re.is_match(&raw) {
+                let res = &raw.split(' ').map(String::from).collect::<Vec<String>>();
+                return Some(
+                    CPUStat {
+                        user: res[1].parse::<u64>().unwrap(),
+                        nice: res[2].parse::<u64>().unwrap(),
+                        system: res[3].parse::<u64>().unwrap(),
+                        idle: res[4].parse::<u64>().unwrap(),
+                        iowait: res[5].parse::<u64>().unwrap(),
+                        irq: res[6].parse::<u64>().unwrap(),
+                        softirq: res[7].parse::<u64>().unwrap()
+                    }
                 )
             }
         }
-        Err(String::from("Could'nt generate records for cpu core."))
+        None
     }
 
 }
@@ -463,20 +607,24 @@ impl Record {
     }
 }
 
-
 impl fmt::Display for Record {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "recorded {} {} at {:?}", self.value.trim(), self.unit, self.timestamp)
     }
 }
 
-// !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
-/// Sensor trait, the Sensor API.
-pub trait Sensor {
-    fn get_topology(&mut self) -> Box<Option<Topology>>;
-    fn generate_topology (&self) -> Result<Topology, Box<dyn Error>>;
+// !!!!!!!!!!!!!!!!! CPUStat !!!!!!!!!!!!!!!!!!!!!!!
+/// Data representing an extract of /proc/stat for a given CPUCore or CPUSocket
+#[derive(Debug)]
+pub struct CPUStat {
+    pub user: u64,    // time (jiffies) spent executing normal processes in user mode
+    pub nice: u64,    // time (jiffies) spent executing niced processes in user mode
+    pub system: u64,  // time (jiffies) spent executing processes in kernel mode
+    pub idle: u64,    // time (jiffies) spent twiddling thumbs
+    pub iowait: u64,  // time (jiffies) spent waiting for I/O to complete
+    pub irq: u64,     // time (jiffies) spent servicing interrupts
+    pub softirq: u64, // time (jiffies) spent servicing softirqs
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -491,6 +639,33 @@ mod tests {
         assert_eq!(cores.len() > 0, true);
         for c in &cores {
             assert_eq!(c.attributes.len() > 5, true);
+        }
+    }
+
+    #[test]
+    fn read_topology_stats() {
+        let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8);
+        let topo = (*sensor.get_topology()).unwrap();
+        println!("{:?}", topo.read_stats()) ;
+    }
+
+    #[test]
+    fn read_core_stats() {
+        let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8);
+        let mut topo = (*sensor.get_topology()).unwrap();
+        for s in topo.get_sockets() {
+            for c in s.get_cores() {
+                println!("{:?}", c.read_stats());
+            }
+        }
+    }
+
+    #[test]
+    fn read_socket_stats() {
+        let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8);
+        let mut topo = (*sensor.get_topology()).unwrap();
+        for s in topo.get_sockets() {
+            println!("{:?}", s.read_stats());
         }
     }
 }
