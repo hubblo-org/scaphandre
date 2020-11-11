@@ -1,8 +1,10 @@
 use std::error::Error;
 use std::fs;
+use std::collections::HashMap;
 use regex::Regex;
 use crate::sensors::Sensor as Sensor;
 use crate::sensors::Topology as Topology;
+use procfs::{modules, KernelModule};
 
 pub struct PowercapRAPLSensor {
     base_path: String,
@@ -20,10 +22,29 @@ impl PowercapRAPLSensor {
             buffer_per_domain_max_kbytes
         }
     }
+
+    /// Checks if intel_rapl modules are present and activated.
+    pub fn check_module() -> Result<String, String> {
+        let modules = modules().unwrap();
+        let rapl_modules = modules.iter().filter(
+            |(_, v)| v.name == "intel_rapl_msr" || v.name == "intel_rapl_common"
+        ).collect::<HashMap<&String, &KernelModule>>();
+
+        if rapl_modules.len() > 1 {
+            Ok(String::from("intel_rapl_msr and intel_rapl_common modules found."))
+        } else {
+            Err(String::from("intel_rapl_common and intel_rapl_msr kernel modules not found."))
+        }
+    }
 }
 
 impl Sensor for PowercapRAPLSensor {
+    /// Creates a Topology instance.
     fn generate_topology(&self) -> Result<Topology, Box<dyn Error>> {
+        let modules_state = PowercapRAPLSensor::check_module();
+        if modules_state.is_err() {
+            panic!("Couldn't find intel_rapl modules.");
+        }
         let mut topo = Topology::new();
         let re_domain = Regex::new(r"^.*/intel-rapl:\d+:\d+$").unwrap();
         for folder in fs::read_dir(&self.base_path).unwrap(){
