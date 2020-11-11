@@ -94,11 +94,19 @@ impl ProcessTracker {
     /// Returns all vectors of process records linked to a running, sleeping or waiting process.
     /// (Not terminated or zombie)
     pub fn get_alive_processes(&self) -> Vec<&Vec<ProcessRecord>>{
-        self.procs.iter().filter(
-            |x| !x.is_empty()
-                && !x[0].process.status().unwrap().state.contains("Z")
-                && !x[0].process.status().unwrap().state.contains("T")
-        ).collect()
+        let mut res = vec![];
+        for p in self.procs.iter() {
+            if !p.is_empty() {
+                let status = p[0].process.status();
+                if status.is_ok() {
+                    let status_val = status.unwrap();
+                    if !&status_val.state.contains("Z") && !&status_val.state.contains("T") {
+                        res.push(p);
+                    }
+                }
+            }
+        }
+        res
     }
 
     /// Returns a vector containing pids of all running, sleeping or waiting current processes.
