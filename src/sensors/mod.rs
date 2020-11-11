@@ -1,14 +1,13 @@
 pub mod powercap_rapl;
 pub mod units;
 mod utils;
-use procfs::process;
+use procfs::{process, CpuTime, KernelStats, CpuInfo};
 use std::error::Error;
 use std::collections::HashMap;
 use std::{fmt, fs};
 use std::time::{SystemTime, Duration};
 use std::io::{self, BufReader, BufRead};
 use std::fs::File;
-use regex::Regex;
 use utils::{ProcessTracker, current_system_time_since_epoch};
 use std::mem::size_of_val;
 
@@ -55,7 +54,7 @@ pub struct Topology {
     pub sockets: Vec<CPUSocket>,
     pub remote: bool,
     pub proc_tracker: ProcessTracker,
-    pub stat_buffer: Vec<CPUStat>,
+    pub stat_buffer: Vec<CpuTime>,
     pub record_buffer: Vec<Record>,
     pub buffer_max_kbytes: u16,
 }
@@ -138,29 +137,43 @@ impl Topology {
     ///     println!("Here is CPU Core number {}", c.attributes.get("processor").unwrap());
     /// }
     /// ```
-    pub fn generate_cpu_cores() -> Result<Vec<CPUCore>, io::Error>{
-        let f = File::open("/proc/cpuinfo")?;
-        let reader = BufReader::new(f);
+    pub fn generate_cpu_cores() -> Result<Vec<CPUCore>, String>{
+        let cpuinfo = CpuInfo::new().unwrap();
         let mut cores = vec![];
-        let mut map = HashMap::new();
-        let mut counter = 0;
-        for line in reader.lines() {
-            let parts = line.unwrap().trim().split(':').map(String::from).collect::<Vec<String>>();
-            if parts.len() >= 2 {
-                let key = parts[0].trim();
-                let value = parts[1].trim();
-                if key == "processor" {
-                    if counter > 0 {
-                        cores.push(CPUCore::new(value.parse::<u16>().unwrap(), map));
-                        map = HashMap::new();
-                    }
-                    counter += 1;
-                }
-                map.insert(String::from(key), String::from(value));
+        for id in 0..(cpuinfo.num_cores()-1) {
+            let mut info = HashMap::new();
+            for (k, v) in cpuinfo.get_info(id).unwrap().iter() {
+                info.insert(String::from(*k), String::from(*v));
             }
+            cores.push(
+                CPUCore::new(
+                    id as u16,
+                    info
+                )
+            );
         }
-        cores.push(CPUCore::new(map.get("processor").unwrap().parse::<u16>().unwrap(), map));
-        Ok(cores)
+        Ok(cores) 
+        //let f = File::open("/proc/cpuinfo")?;
+        //let reader = BufReader::new(f);
+        //let mut map = HashMap::new();
+        //let mut counter = 0;
+        //for line in reader.lines() {
+        //    let parts = line.unwrap().trim().split(':').map(String::from).collect::<Vec<String>>();
+        //    if parts.len() >= 2 {
+        //        let key = parts[0].trim();
+        //        let value = parts[1].trim();
+        //        if key == "processor" {
+        //            if counter > 0 {
+        //                cores.push(CPUCore::new(value.parse::<u16>().unwrap(), map));
+        //                map = HashMap::new();
+        //            }
+        //            counter += 1;
+        //        }
+        //        map.insert(String::from(key), String::from(value));
+        //    }
+        //}
+        //cores.push(CPUCore::new(map.get("processor").unwrap().parse::<u16>().unwrap(), map));
+        //Ok(cores)
     }
 
     pub fn safe_add_socket(
@@ -252,44 +265,50 @@ impl Topology {
         self.stat_buffer.insert(0, self.read_stats().unwrap());
     }
 
-    pub fn get_stats_diff(&mut self) -> Option<CPUStat> {
+    pub fn get_stats_diff(&mut self) -> Option<CpuTime> {
         if self.stat_buffer.len() > 1 {
             let last = &self.stat_buffer[0];
             let previous = &self.stat_buffer[1];
+            let mut iowait = None;
+            let mut irq = None;
+            let mut softirq = None;
+            let mut steal = None;
+            let mut guest = None;
+            let mut guest_nice = None;
+            if last.iowait.is_some() && previous.iowait.is_some() {
+               iowait = Some(last.iowait.unwrap() - previous.iowait.unwrap());
+            }
+            if last.irq.is_some() && previous.irq.is_some() {
+               irq = Some(last.irq.unwrap() - previous.irq.unwrap());
+            }
+            if last.softirq.is_some() && previous.softirq.is_some() {
+               softirq = Some(last.softirq.unwrap() - previous.softirq.unwrap());
+            }
+            if last.steal.is_some() && previous.steal.is_some() {
+               steal = Some(last.steal.unwrap() - previous.steal.unwrap());
+            }
+            if last.guest.is_some() && previous.guest.is_some() {
+               guest = Some(last.guest.unwrap() - previous.guest.unwrap());
+            }
+            if last.guest_nice.is_some() && previous.guest_nice.is_some() {
+               guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
+            }
             return Some(
-                CPUStat {
+                CpuTime {
                     user: last.user - previous.user,
                     nice: last.nice - previous.nice,
                     system: last.system - previous.system,
                     idle: last.idle - previous.idle,
-                    iowait: last.iowait - previous.iowait,
-                    irq: last.irq - previous.irq,
-                    softirq: last.softirq - previous.softirq,
-
+                    iowait, irq, softirq, steal, guest, guest_nice
                 }
             )
         }
         None
     }
 
-    fn get_proc_cons(&self, pid: i32, socket_time_spent: u64, socket_cons: u64) -> Result<Record, String>{
-        let result = self.proc_tracker.find_records(pid);
+    fn get_proc_conso(&self, pid: i32) -> Result<Record, String>{
 
-        if result.is_some() {
-            let records = result.unwrap();
-            if records.len() > 1 {
-                let total_cpu_time = records[0].process.stat.utime + records[0].process.stat.stime;
-                let percentage = total_cpu_time / socket_time_spent * 100;
-                let proc_cons = percentage * socket_cons;
-                return Ok(
-                    Record::new(
-                        current_system_time_since_epoch(),
-                        String::from(proc_cons.to_string()),
-                        crate::sensors::units::Unit::Watt
-                    )
-                )
-            }
-        }
+        //    self.proc_tracker.get
         Err(
             String::from(
                 format!("Couldn't get consumption for process {}. Maybe the history is too short.", pid)
@@ -297,28 +316,32 @@ impl Topology {
         )
     }
     /// Reads content from /proc/stat and extracts the stats of the whole CPU topology.
-    pub fn read_stats(&self) -> Option<CPUStat> {
-        let f = File::open("/proc/stat").unwrap();
-        let reader = BufReader::new(f);
-        let re_str = "cpu .*";
-        let re = Regex::new(&re_str).unwrap();
-        for line in reader.lines() {
-            let raw = line.unwrap();
-            if re.is_match(&raw) {
-                let res = &raw.split(' ').map(String::from).collect::<Vec<String>>();
-                return Some(
-                    CPUStat {
-                        user: res[2].parse::<u64>().unwrap(),
-                        nice: res[3].parse::<u64>().unwrap(),
-                        system: res[4].parse::<u64>().unwrap(),
-                        idle: res[5].parse::<u64>().unwrap(),
-                        iowait: res[6].parse::<u64>().unwrap(),
-                        irq: res[7].parse::<u64>().unwrap(),
-                        softirq: res[8].parse::<u64>().unwrap()
-                    }
-                )
-            }
+    pub fn read_stats(&self) -> Option<CpuTime> {
+        let kernelstats_or_not = KernelStats::new();
+        if kernelstats_or_not.is_ok() {
+            return Some(kernelstats_or_not.unwrap().total);
         }
+        //let f = File::open("/proc/stat").unwrap();
+        //let reader = BufReader::new(f);
+        //let re_str = "cpu .*";
+        //let re = Regex::new(&re_str).unwrap();
+        //for line in reader.lines() {
+        //    let raw = line.unwrap();
+        //    if re.is_match(&raw) {
+        //        let res = &raw.split(' ').map(String::from).collect::<Vec<String>>();
+        //        return Some(
+        //            CpuTime {
+        //                user: res[2].parse::<f32>().unwrap(),
+        //                nice: res[3].parse::<f32>().unwrap(),
+        //                system: res[4].parse::<f32>().unwrap(),
+        //                idle: res[5].parse::<f32>().unwrap(),
+        //                iowait: res[6].parse::<f32>().unwrap(),
+        //                irq: res[7].parse::<f32>().unwrap(),
+        //                softirq: res[8].parse::<f32>().unwrap()
+        //            }
+        //        )
+        //    }
+        //}
         None
     }
 
@@ -335,7 +358,7 @@ pub struct CPUSocket {
     pub record_buffer: Vec<Record>,
     pub buffer_max_kbytes: u16,
     pub cpu_cores: Vec<CPUCore>,
-    pub stat_buffer: Vec<CPUStat>
+    pub stat_buffer: Vec<CpuTime>
 }
 impl RecordGenerator for CPUSocket {
     fn refresh_record(&mut self) -> Record {
@@ -429,16 +452,12 @@ impl CPUSocket {
     }
 
     /// Combines stats from all CPU cores owned byu the socket and returns
-    /// a CPUStat struct containing stats for the whole socket.
-    pub fn read_stats(&self) -> Option<CPUStat> {
-        let mut stats = CPUStat {
-            user: 0,
-            nice: 0,
-            system: 0,
-            idle: 0,
-            iowait: 0,
-            irq: 0,
-            softirq: 0
+    /// a CpuTime struct containing stats for the whole socket.
+    pub fn read_stats(&self) -> Option<CpuTime> {
+        let mut stats = CpuTime {
+            user: 0.0, nice: 0.0, system: 0.0, idle: 0.0, iowait: Some(0.0),
+            irq: Some(0.0), softirq: Some(0.0), guest: Some(0.0),
+            guest_nice: Some(0.0), steal: Some(0.0)
         };
         for c in &self.cpu_cores {
             let c_stats = c.read_stats().unwrap();
@@ -446,32 +465,77 @@ impl CPUSocket {
             stats.nice += c_stats.nice;
             stats.system += c_stats.system;
             stats.idle += c_stats.idle;
-            stats.iowait += c_stats.iowait;
-            stats.irq += c_stats.irq;
-            stats.softirq += c_stats.softirq;
+            stats.iowait = Some(
+                stats.iowait.unwrap_or_default() + c_stats.iowait.unwrap_or_default()
+            );
+            stats.irq = Some(
+                stats.irq.unwrap_or_default() + c_stats.irq.unwrap_or_default()
+            );
+            stats.softirq = Some(
+                stats.softirq.unwrap_or_default() + c_stats.softirq.unwrap_or_default()
+            );
         }
         Some(stats)
     }
-
-    pub fn get_stats_diff(&self) -> Option<CPUStat> {
+    pub fn get_stats_diff(&mut self) -> Option<CpuTime> {
         if self.stat_buffer.len() > 1 {
             let last = &self.stat_buffer[0];
             let previous = &self.stat_buffer[1];
+            let mut iowait = None;
+            let mut irq = None;
+            let mut softirq = None;
+            let mut steal = None;
+            let mut guest = None;
+            let mut guest_nice = None;
+            if last.iowait.is_some() && previous.iowait.is_some() {
+               iowait = Some(last.iowait.unwrap() - previous.iowait.unwrap());
+            }
+            if last.irq.is_some() && previous.irq.is_some() {
+               irq = Some(last.irq.unwrap() - previous.irq.unwrap());
+            }
+            if last.softirq.is_some() && previous.softirq.is_some() {
+               softirq = Some(last.softirq.unwrap() - previous.softirq.unwrap());
+            }
+            if last.steal.is_some() && previous.steal.is_some() {
+               steal = Some(last.steal.unwrap() - previous.steal.unwrap());
+            }
+            if last.guest.is_some() && previous.guest.is_some() {
+               guest = Some(last.guest.unwrap() - previous.guest.unwrap());
+            }
+            if last.guest_nice.is_some() && previous.guest_nice.is_some() {
+               guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
+            }
             return Some(
-                CPUStat {
+                CpuTime {
                     user: last.user - previous.user,
                     nice: last.nice - previous.nice,
                     system: last.system - previous.system,
                     idle: last.idle - previous.idle,
-                    iowait: last.iowait - previous.iowait,
-                    irq: last.irq - previous.irq,
-                    softirq: last.softirq - previous.softirq,
-
+                    iowait, irq, softirq, steal, guest, guest_nice
                 }
             )
         }
-        None
+        None        
     }
+    //pub fn get_stats_diff(&self) -> Option<CpuTime> {
+    //    if self.stat_buffer.len() > 1 {
+    //        let last = &self.stat_buffer[0];
+    //        let previous = &self.stat_buffer[1];
+    //        return Some(
+    //            CpuTime {
+    //                user: last.user - previous.user,
+    //                nice: last.nice - previous.nice,
+    //                system: last.system - previous.system,
+    //                idle: last.idle - previous.idle,
+    //                iowait: last.iowait - previous.iowait,
+    //                irq: last.irq - previous.irq,
+    //                softirq: last.softirq - previous.softirq,
+
+    //            }
+    //        )
+    //    }
+    //    None
+    //}
 }
 
 // !!!!!!!!!!!!!!!!! CPUCore !!!!!!!!!!!!!!!!!!!!!!!
@@ -490,28 +554,36 @@ impl CPUCore {
     }
     
     /// Reads content from /proc/stat and extracts the stats of the socket
-    fn read_stats(&self) -> Option<CPUStat> {
-        let f = File::open("/proc/stat").unwrap();
-        let reader = BufReader::new(f);
-        let re_str = format!("cpu{} .*", self.id);
-        let re = Regex::new(&re_str).unwrap();
-        for line in reader.lines() {
-            let raw = line.unwrap();
-            if re.is_match(&raw) {
-                let res = &raw.split(' ').map(String::from).collect::<Vec<String>>();
-                return Some(
-                    CPUStat {
-                        user: res[1].parse::<u64>().unwrap(),
-                        nice: res[2].parse::<u64>().unwrap(),
-                        system: res[3].parse::<u64>().unwrap(),
-                        idle: res[4].parse::<u64>().unwrap(),
-                        iowait: res[5].parse::<u64>().unwrap(),
-                        irq: res[6].parse::<u64>().unwrap(),
-                        softirq: res[7].parse::<u64>().unwrap()
-                    }
+    fn read_stats(&self) -> Option<CpuTime> {
+        let kernelstats_or_not = KernelStats::new();
+        if kernelstats_or_not.is_ok() {
+            return Some(
+                kernelstats_or_not.unwrap().cpu_time.remove(
+                    self.id as usize
                 )
-            }
+            );
         }
+        //let f = File::open("/proc/stat").unwrap();
+        //let reader = BufReader::new(f);
+        //let re_str = format!("cpu{} .*", self.id);
+        //let re = Regex::new(&re_str).unwrap();
+        //for line in reader.lines() {
+        //    let raw = line.unwrap();
+        //    if re.is_match(&raw) {
+        //        let res = &raw.split(' ').map(String::from).collect::<Vec<String>>();
+        //        return Some(
+        //            CpuTime {
+        //                user: res[1].parse::<u64>().unwrap(),
+        //                nice: res[2].parse::<u64>().unwrap(),
+        //                system: res[3].parse::<u64>().unwrap(),
+        //                idle: res[4].parse::<u64>().unwrap(),
+        //                iowait: res[5].parse::<u64>().unwrap(),
+        //                irq: res[6].parse::<u64>().unwrap(),
+        //                softirq: res[7].parse::<u64>().unwrap()
+        //            }
+        //        )
+        //    }
+        //}
         None
     }
 
@@ -611,19 +683,6 @@ impl fmt::Display for Record {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "recorded {} {} at {:?}", self.value.trim(), self.unit, self.timestamp)
     }
-}
-
-// !!!!!!!!!!!!!!!!! CPUStat !!!!!!!!!!!!!!!!!!!!!!!
-/// Data representing an extract of /proc/stat for a given CPUCore or CPUSocket
-#[derive(Debug)]
-pub struct CPUStat {
-    pub user: u64,    // time (jiffies) spent executing normal processes in user mode
-    pub nice: u64,    // time (jiffies) spent executing niced processes in user mode
-    pub system: u64,  // time (jiffies) spent executing processes in kernel mode
-    pub idle: u64,    // time (jiffies) spent twiddling thumbs
-    pub iowait: u64,  // time (jiffies) spent waiting for I/O to complete
-    pub irq: u64,     // time (jiffies) spent servicing interrupts
-    pub softirq: u64, // time (jiffies) spent servicing softirqs
 }
 
 #[cfg(test)]

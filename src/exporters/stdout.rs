@@ -2,7 +2,7 @@ use std::time::{Instant, Duration};
 use std::thread;
 use std::collections::HashMap;
 use crate::exporters::{Exporter, ExporterOption};
-use crate::sensors::{Sensor, Record, Topology, RecordGenerator, energy_records_to_power_record};
+use crate::sensors::{Sensor, Topology, RecordGenerator, energy_records_to_power_record};
 
 
 pub struct StdoutExporter {
@@ -70,17 +70,6 @@ impl StdoutExporter {
                     topo_records.get(topo_records.len() - 2).unwrap()
                 )
             ).unwrap().value.parse::<f64>().unwrap();
-            topo_power = topo_raw_power.to_string();
-        let topo_records = self.topology.get_records_passive();
-        let mut topo_power = String::from("n/a");
-        if topo_records.len() > 1 {
-            topo_power = energy_records_to_power_record(
-                (
-                    topo_records.get(topo_records.len() - 1).unwrap(),
-                    topo_records.get(topo_records.len() - 2).unwrap()
-                )
-            ).unwrap().value.to_string();
-        }
             topo_power = topo_raw_power.to_string();
         }
         let (topo_stats_user, topo_stats_nice, topo_stats_system) = match self.topology.get_stats_diff(){

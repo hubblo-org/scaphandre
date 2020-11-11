@@ -1,4 +1,4 @@
-use procfs::process::Process;
+use procfs::{CpuTime, process::Process};
 use std::time::{Duration, SystemTime};
 
 #[derive(Debug)]
@@ -90,6 +90,21 @@ impl ProcessTracker {
         }
         None
     }
+
+    //pub fn get_diff_stat(&self, pid: i32) -> Option<CpuTime> {
+    //    let records_or_not = self.find_records(pid);
+    //    if records_or_not.is_some() {
+    //       let records = records_or_not.unwrap();
+    //       if records.len() > 1 {
+    //           return Some(
+    //               CpuTime {
+    //                    user: records
+    //               }
+    //            )
+    //       }
+    //    }
+    //    None
+    //}
 
     /// Returns all vectors of process records linked to a running, sleeping or waiting process.
     /// (Not terminated or zombie)
