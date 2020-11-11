@@ -6,8 +6,6 @@ use std::error::Error;
 use std::collections::HashMap;
 use std::{fmt, fs};
 use std::time::{SystemTime, Duration};
-use std::io::{self, BufReader, BufRead};
-use std::fs::File;
 use utils::{ProcessTracker, current_system_time_since_epoch};
 use std::mem::size_of_val;
 

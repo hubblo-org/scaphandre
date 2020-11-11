@@ -1,7 +1,7 @@
 pub mod sensors;
 pub mod exporters;
 use sensors::{powercap_rapl::PowercapRAPLSensor};
-use exporters::{Exporter, ExporterOption, stdout::StdoutExporter};
+use exporters::{Exporter, ExporterOption, stdout::StdoutExporter, prometheus::PrometheusExporter};
 use clap::ArgMatches;
 use std::collections::HashMap;
 
@@ -22,15 +22,24 @@ pub fn run(matches: ArgMatches) {
     };
     let sensor_boxed = Box::new(sensor);
 
-    let exporter_required = matches.subcommand_matches("stdout");
-    if exporter_required.is_some() {
-        let exporter_required = exporter_required.unwrap();
+    let stdout_exporter_required = matches.subcommand_matches("stdout");
+    if stdout_exporter_required.is_some() {
+        let exporter_required = stdout_exporter_required.unwrap();
         let mut exporter = StdoutExporter::new(
                 sensor_boxed, String::from(exporter_required.value_of("timeout").unwrap())
             );
         exporter.run();
     } else {
-        eprintln!("exporter is None");
+        let prometheus_exporter_required = matches.subcommand_matches("prometheus");
+        if prometheus_exporter_required.is_some() {
+            let exporter_required = prometheus_exporter_required.unwrap();
+            let mut exporter = PrometheusExporter::new(
+                sensor_boxed, 5
+            );
+            exporter.run();
+        } else {
+            eprintln!("exporter is None");
+        }
     }
 }
 
@@ -41,6 +50,10 @@ pub fn get_exporters_options() -> HashMap<String, HashMap<String, ExporterOption
     options.insert(
         String::from("stdout"),
         exporters::stdout::StdoutExporter::get_options()
+    );
+    options.insert(
+        String::from("prometheus"),
+        exporters::prometheus::PrometheusExporter::get_options()
     );
     options
 }

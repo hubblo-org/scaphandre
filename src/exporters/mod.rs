@@ -1,4 +1,5 @@
 pub mod stdout;
+pub mod prometheus;
 use std::collections::HashMap;
 
 pub trait Exporter {

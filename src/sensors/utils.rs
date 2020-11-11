@@ -1,4 +1,4 @@
-use procfs::{CpuTime, process::Process};
+use procfs::process::Process;
 use std::time::{Duration, SystemTime};
 
 #[derive(Debug)]
