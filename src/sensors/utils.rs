@@ -1,7 +1,7 @@
 use procfs::process::Process;
 use std::time::{Duration, SystemTime};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ProcessTracker {
     pub procs: Vec<Vec<ProcessRecord>>,
     pub max_records_per_process: u16
@@ -143,7 +143,7 @@ impl ProcessTracker {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ProcessRecord {
     pub process: Process,
     pub timestamp: Duration

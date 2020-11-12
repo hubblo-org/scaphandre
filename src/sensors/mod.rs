@@ -47,12 +47,12 @@ pub fn energy_records_to_power_record(
 /// from the electricity consumption point of view,
 /// including the potentially multiple CPUSocket sockets.
 /// Owns a vector of CPUSocket structs representing each socket.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Topology {
     pub sockets: Vec<CPUSocket>,
     pub remote: bool,
     pub proc_tracker: ProcessTracker,
-    pub stat_buffer: Vec<CpuTime>,
+    pub stat_buffer: Vec<CPUStat>,
     pub record_buffer: Vec<Record>,
     pub buffer_max_kbytes: u16,
 }
@@ -263,10 +263,10 @@ impl Topology {
         self.stat_buffer.insert(0, self.read_stats().unwrap());
     }
 
-    pub fn get_stats_diff(&mut self) -> Option<CpuTime> {
+    pub fn get_stats_diff(&mut self) -> Option<CPUStat> {
         if self.stat_buffer.len() > 1 {
-            let last = &self.stat_buffer[0];
-            let previous = &self.stat_buffer[1];
+            let last = &self.stat_buffer[0].cputime;
+            let previous = &self.stat_buffer[1].cputime;
             let mut iowait = None;
             let mut irq = None;
             let mut softirq = None;
@@ -292,12 +292,14 @@ impl Topology {
                guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
             }
             return Some(
-                CpuTime {
-                    user: last.user - previous.user,
-                    nice: last.nice - previous.nice,
-                    system: last.system - previous.system,
-                    idle: last.idle - previous.idle,
-                    iowait, irq, softirq, steal, guest, guest_nice
+                CPUStat {
+                    cputime: CpuTime {
+                        user: last.user - previous.user,
+                        nice: last.nice - previous.nice,
+                        system: last.system - previous.system,
+                        idle: last.idle - previous.idle,
+                        iowait, irq, softirq, steal, guest, guest_nice
+                    }
                 }
             )
         }
@@ -314,32 +316,11 @@ impl Topology {
         )
     }
     /// Reads content from /proc/stat and extracts the stats of the whole CPU topology.
-    pub fn read_stats(&self) -> Option<CpuTime> {
+    pub fn read_stats(&self) -> Option<CPUStat> {
         let kernelstats_or_not = KernelStats::new();
         if kernelstats_or_not.is_ok() {
-            return Some(kernelstats_or_not.unwrap().total);
+            return Some(CPUStat { cputime: kernelstats_or_not.unwrap().total });
         }
-        //let f = File::open("/proc/stat").unwrap();
-        //let reader = BufReader::new(f);
-        //let re_str = "cpu .*";
-        //let re = Regex::new(&re_str).unwrap();
-        //for line in reader.lines() {
-        //    let raw = line.unwrap();
-        //    if re.is_match(&raw) {
-        //        let res = &raw.split(' ').map(String::from).collect::<Vec<String>>();
-        //        return Some(
-        //            CpuTime {
-        //                user: res[2].parse::<f32>().unwrap(),
-        //                nice: res[3].parse::<f32>().unwrap(),
-        //                system: res[4].parse::<f32>().unwrap(),
-        //                idle: res[5].parse::<f32>().unwrap(),
-        //                iowait: res[6].parse::<f32>().unwrap(),
-        //                irq: res[7].parse::<f32>().unwrap(),
-        //                softirq: res[8].parse::<f32>().unwrap()
-        //            }
-        //        )
-        //    }
-        //}
         None
     }
 
@@ -347,7 +328,7 @@ impl Topology {
 
 // !!!!!!!!!!!!!!!!! CPUSocket !!!!!!!!!!!!!!!!!!!!!!!
 /// CPUSocket struct represents a CPU socket, owning CPU cores.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CPUSocket {
     pub id: u16,
     pub domains: Vec<Domain>,
@@ -356,7 +337,7 @@ pub struct CPUSocket {
     pub record_buffer: Vec<Record>,
     pub buffer_max_kbytes: u16,
     pub cpu_cores: Vec<CPUCore>,
-    pub stat_buffer: Vec<CpuTime>
+    pub stat_buffer: Vec<CPUStat>
 }
 impl RecordGenerator for CPUSocket {
     fn refresh_record(&mut self) -> Record {
@@ -451,34 +432,36 @@ impl CPUSocket {
 
     /// Combines stats from all CPU cores owned byu the socket and returns
     /// a CpuTime struct containing stats for the whole socket.
-    pub fn read_stats(&self) -> Option<CpuTime> {
-        let mut stats = CpuTime {
-            user: 0.0, nice: 0.0, system: 0.0, idle: 0.0, iowait: Some(0.0),
-            irq: Some(0.0), softirq: Some(0.0), guest: Some(0.0),
-            guest_nice: Some(0.0), steal: Some(0.0)
+    pub fn read_stats(&self) -> Option<CPUStat> {
+        let mut stats = CPUStat {
+            cputime: CpuTime {
+                user: 0.0, nice: 0.0, system: 0.0, idle: 0.0, iowait: Some(0.0),
+                irq: Some(0.0), softirq: Some(0.0), guest: Some(0.0),
+                guest_nice: Some(0.0), steal: Some(0.0)
+            }
         };
         for c in &self.cpu_cores {
             let c_stats = c.read_stats().unwrap();
-            stats.user += c_stats.user;
-            stats.nice += c_stats.nice;
-            stats.system += c_stats.system;
-            stats.idle += c_stats.idle;
-            stats.iowait = Some(
-                stats.iowait.unwrap_or_default() + c_stats.iowait.unwrap_or_default()
+            stats.cputime.user += c_stats.user;
+            stats.cputime.nice += c_stats.nice;
+            stats.cputime.system += c_stats.system;
+            stats.cputime.idle += c_stats.idle;
+            stats.cputime.iowait = Some(
+                stats.cputime.iowait.unwrap_or_default() + c_stats.iowait.unwrap_or_default()
             );
-            stats.irq = Some(
-                stats.irq.unwrap_or_default() + c_stats.irq.unwrap_or_default()
+            stats.cputime.irq = Some(
+                stats.cputime.irq.unwrap_or_default() + c_stats.irq.unwrap_or_default()
             );
-            stats.softirq = Some(
-                stats.softirq.unwrap_or_default() + c_stats.softirq.unwrap_or_default()
+            stats.cputime.softirq = Some(
+                stats.cputime.softirq.unwrap_or_default() + c_stats.softirq.unwrap_or_default()
             );
         }
         Some(stats)
     }
-    pub fn get_stats_diff(&mut self) -> Option<CpuTime> {
+    pub fn get_stats_diff(&mut self) -> Option<CPUStat> {
         if self.stat_buffer.len() > 1 {
-            let last = &self.stat_buffer[0];
-            let previous = &self.stat_buffer[1];
+            let last = &self.stat_buffer[0].cputime;
+            let previous = &self.stat_buffer[1].cputime;
             let mut iowait = None;
             let mut irq = None;
             let mut softirq = None;
@@ -504,12 +487,14 @@ impl CPUSocket {
                guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
             }
             return Some(
-                CpuTime {
-                    user: last.user - previous.user,
-                    nice: last.nice - previous.nice,
-                    system: last.system - previous.system,
-                    idle: last.idle - previous.idle,
-                    iowait, irq, softirq, steal, guest, guest_nice
+                CPUStat {
+                    cputime: CpuTime {
+                        user: last.user - previous.user,
+                        nice: last.nice - previous.nice,
+                        system: last.system - previous.system,
+                        idle: last.idle - previous.idle,
+                        iowait, irq, softirq, steal, guest, guest_nice
+                    }
                 }
             )
         }
@@ -540,7 +525,7 @@ impl CPUSocket {
 /// CPUCore reprensents each CPU core on the host,
 /// owned by a CPUSocket. CPUCores are instanciated regardless if
 /// HyperThreading is activated on the host.Topology
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CPUCore {
     pub id: u16,
     pub attributes: HashMap<String, String>,
@@ -590,7 +575,7 @@ impl CPUCore {
 // !!!!!!!!!!!!!!!!! Domain !!!!!!!!!!!!!!!!!!!!!!!
 /// Domain struct represents a part of a CPUSocket from the
 /// electricity consumption point of view.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Domain {
     pub id: u16,
     pub name: String,
@@ -664,7 +649,7 @@ impl fmt::Display for Domain {
 // !!!!!!!!!!!!!!!!! Record !!!!!!!!!!!!!!!!!!!!!!!
 /// Record struct represents an electricity consumption measurement
 /// tied to a domain.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Record{
     pub timestamp: Duration,
     pub value: String,
@@ -680,6 +665,30 @@ impl Record {
 impl fmt::Display for Record {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "recorded {} {} at {:?}", self.value.trim(), self.unit, self.timestamp)
+    }
+}
+
+#[derive(Debug)]
+pub struct CPUStat {
+    pub cputime: CpuTime,
+}
+
+impl Clone for CPUStat {
+    fn clone (&self) -> CPUStat {
+        CPUStat {
+            cputime: CpuTime {
+                user: self.cputime.user,
+                nice: self.cputime.nice,
+                system: self.cputime.system,
+                softirq: self.cputime.softirq,
+                irq: self.cputime.irq,
+                idle: self.cputime.idle,
+                iowait: self.cputime.iowait,
+                steal: self.cputime.steal,
+                guest: self.cputime.guest,
+                guest_nice: self.cputime.guest_nice,
+            }
+        }
     }
 }
 

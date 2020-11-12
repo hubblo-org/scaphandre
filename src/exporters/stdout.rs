@@ -73,7 +73,7 @@ impl StdoutExporter {
             topo_power = topo_raw_power.to_string();
         }
         let (topo_stats_user, topo_stats_nice, topo_stats_system) = match self.topology.get_stats_diff(){
-            Some(stat) => (stat.user.to_string(), stat.nice.to_string(), stat.system.to_string()),
+            Some(stat) => (stat.cputime.user.to_string(), stat.cputime.nice.to_string(), stat.cputime.system.to_string()),
             None => (String::from("n/a"), String::from("n/a"), String::from("n/a"))
         };
         let mut counter = 0;
@@ -122,7 +122,7 @@ impl StdoutExporter {
             if socket_records.len() > 1 { rec_j_2 = socket_records.get(nb_records - 2).unwrap().value.to_string().trim().to_string(); }
             if socket_records.len() > 0 { rec_j_3 = socket_records.get(nb_records - 1).unwrap().value.to_string().trim().to_string(); }
             let (socket_stats_user, socket_stats_nice, socket_stats_system) = match socket.get_stats_diff(){
-                Some(stat) => (stat.user.to_string(), stat.nice.to_string(), stat.system.to_string()),
+                Some(stat) => (stat.cputime.user.to_string(), stat.cputime.nice.to_string(), stat.cputime.system.to_string()),
                 None => (String::from("n/a"), String::from("n/a"), String::from("n/a"))
             };
             println!(
