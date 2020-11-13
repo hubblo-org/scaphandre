@@ -332,14 +332,17 @@ impl RecordGenerator for CPUSocket {
             )
         );
 
-        let record_buffer_ptr = &self.record_buffer;
-        if size_of_val(record_buffer_ptr) > (self.buffer_max_kbytes*1000) as usize {
-            let size_diff = size_of_val(record_buffer_ptr) - (self.buffer_max_kbytes*1000) as usize;
-            println!("Cleaning socket records buffer !!!!!!!!!!!!!!!!!!!!");
-            let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
-            for _ in 1..nb_records_to_delete {
-                if !self.record_buffer.is_empty() {
-                    self.record_buffer.remove(0);
+        if !self.record_buffer.is_empty() {
+            let record_ptr = &self.record_buffer[0];
+            let curr_size = size_of_val(record_ptr) * self.record_buffer.len(); 
+            if curr_size > (self.buffer_max_kbytes*1000) as usize {
+                let size_diff = curr_size - (self.buffer_max_kbytes*1000) as usize;
+                println!("Cleaning socket records buffer !!!!!!!!!!!!!!!!!!!!");
+                let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
+                for _ in 1..nb_records_to_delete {
+                    if !self.record_buffer.is_empty() {
+                        self.record_buffer.remove(0);
+                    }
                 }
             }
         }
@@ -473,25 +476,6 @@ impl CPUSocket {
         }
         None        
     }
-    //pub fn get_stats_diff(&self) -> Option<CpuTime> {
-    //    if self.stat_buffer.len() > 1 {
-    //        let last = &self.stat_buffer[0];
-    //        let previous = &self.stat_buffer[1];
-    //        return Some(
-    //            CpuTime {
-    //                user: last.user - previous.user,
-    //                nice: last.nice - previous.nice,
-    //                system: last.system - previous.system,
-    //                idle: last.idle - previous.idle,
-    //                iowait: last.iowait - previous.iowait,
-    //                irq: last.irq - previous.irq,
-    //                softirq: last.softirq - previous.softirq,
-
-    //            }
-    //        )
-    //    }
-    //    None
-    //}
 }
 
 // !!!!!!!!!!!!!!!!! CPUCore !!!!!!!!!!!!!!!!!!!!!!!
@@ -519,27 +503,6 @@ impl CPUCore {
                 )
             );
         }
-        //let f = File::open("/proc/stat").unwrap();
-        //let reader = BufReader::new(f);
-        //let re_str = format!("cpu{} .*", self.id);
-        //let re = Regex::new(&re_str).unwrap();
-        //for line in reader.lines() {
-        //    let raw = line.unwrap();
-        //    if re.is_match(&raw) {
-        //        let res = &raw.split(' ').map(String::from).collect::<Vec<String>>();
-        //        return Some(
-        //            CpuTime {
-        //                user: res[1].parse::<u64>().unwrap(),
-        //                nice: res[2].parse::<u64>().unwrap(),
-        //                system: res[3].parse::<u64>().unwrap(),
-        //                idle: res[4].parse::<u64>().unwrap(),
-        //                iowait: res[5].parse::<u64>().unwrap(),
-        //                irq: res[6].parse::<u64>().unwrap(),
-        //                softirq: res[7].parse::<u64>().unwrap()
-        //            }
-        //        )
-        //    }
-        //}
         None
     }
 
