@@ -22,6 +22,7 @@ pub trait Sensor {
 pub trait RecordGenerator{
     fn refresh_record(&mut self) -> Record;
     fn get_records_passive(&self) -> Vec<Record>;
+    fn clean_old_records(&mut self);
 }
 
 pub fn energy_records_to_power_record(
@@ -84,20 +85,24 @@ impl RecordGenerator for Topology {
         println!("{:?}", self.record_buffer);
 
         if !self.record_buffer.is_empty() {
-            let record_ptr = &self.record_buffer[0];
-            let curr_size = size_of_val(record_ptr)*self.record_buffer.len();
-            if curr_size > (self.buffer_max_kbytes*1000) as usize {
-                let size_diff = curr_size - (self.buffer_max_kbytes*1000) as usize;
-                println!("Cleaning socket records buffer !!!!!!!!!!!!!!!!!!!!");
-                let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
-                for _ in 1..nb_records_to_delete {
-                    if !self.record_buffer.is_empty() {
-                        self.record_buffer.remove(0);
-                    }
+            self.clean_old_records();
+        }
+        record
+    }
+
+    fn clean_old_records(&mut self) {
+        let record_ptr = &self.record_buffer[0];
+        let curr_size = size_of_val(record_ptr)*self.record_buffer.len();
+        if curr_size > (self.buffer_max_kbytes*1000) as usize {
+            let size_diff = curr_size - (self.buffer_max_kbytes*1000) as usize;
+            println!("Cleaning socket records buffer !!!!!!!!!!!!!!!!!!!!");
+            let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
+            for _ in 1..nb_records_to_delete {
+                if !self.record_buffer.is_empty() {
+                    self.record_buffer.remove(0);
                 }
             }
         }
-        record
     }
 
     fn get_records_passive(&self) -> Vec<Record> {
@@ -333,20 +338,24 @@ impl RecordGenerator for CPUSocket {
         );
 
         if !self.record_buffer.is_empty() {
-            let record_ptr = &self.record_buffer[0];
-            let curr_size = size_of_val(record_ptr) * self.record_buffer.len(); 
-            if curr_size > (self.buffer_max_kbytes*1000) as usize {
-                let size_diff = curr_size - (self.buffer_max_kbytes*1000) as usize;
-                println!("Cleaning socket records buffer !!!!!!!!!!!!!!!!!!!!");
-                let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
-                for _ in 1..nb_records_to_delete {
-                    if !self.record_buffer.is_empty() {
-                        self.record_buffer.remove(0);
-                    }
+            self.clean_old_records();
+        }
+        record
+    }
+
+    fn clean_old_records(&mut self) {
+        let record_ptr = &self.record_buffer[0];
+        let curr_size = size_of_val(record_ptr) * self.record_buffer.len(); 
+        if curr_size > (self.buffer_max_kbytes*1000) as usize {
+            let size_diff = curr_size - (self.buffer_max_kbytes*1000) as usize;
+            println!("Cleaning socket records buffer !!!!!!!!!!!!!!!!!!!!");
+            let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
+            for _ in 1..nb_records_to_delete {
+                if !self.record_buffer.is_empty() {
+                    self.record_buffer.remove(0);
                 }
             }
         }
-        record
     }
 
     fn get_records_passive(&self) -> Vec<Record> {
@@ -539,9 +548,17 @@ impl RecordGenerator for Domain {
             )
         );
 
-        let record_buffer_ptr = &self.record_buffer;
-        if size_of_val(record_buffer_ptr) > (self.buffer_max_kbytes*1000) as usize {
-            let size_diff = size_of_val(record_buffer_ptr) - (self.buffer_max_kbytes*1000) as usize;
+        if !self.record_buffer.is_empty(){
+            self.clean_old_records();
+        }
+        record
+    }
+
+    fn clean_old_records(&mut self) {
+        let record_ptr = &self.record_buffer[0];
+        let curr_size = size_of_val(record_ptr) * self.record_buffer.len();
+        if curr_size > (self.buffer_max_kbytes*1000) as usize {
+            let size_diff = curr_size - (self.buffer_max_kbytes*1000) as usize;
             let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
             for _ in 1..nb_records_to_delete {
                 if !self.record_buffer.is_empty() {
@@ -549,7 +566,6 @@ impl RecordGenerator for Domain {
                 }
             }
         }
-        record
     }
 
     fn get_records_passive(&self) -> Vec<Record> {
