@@ -83,14 +83,17 @@ impl RecordGenerator for Topology {
 
         println!("{:?}", self.record_buffer);
 
-        let record_buffer_ptr = &self.record_buffer;
-        if size_of_val(record_buffer_ptr) > (self.buffer_max_kbytes*1000) as usize {
-            let size_diff = size_of_val(record_buffer_ptr) - (self.buffer_max_kbytes*1000) as usize;
-            println!("Cleaning socket records buffer !!!!!!!!!!!!!!!!!!!!");
-            let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
-            for _ in 1..nb_records_to_delete {
-                if !self.record_buffer.is_empty() {
-                    self.record_buffer.remove(0);
+        if !self.record_buffer.is_empty() {
+            let record_ptr = &self.record_buffer[0];
+            let curr_size = size_of_val(record_ptr)*self.record_buffer.len();
+            if curr_size > (self.buffer_max_kbytes*1000) as usize {
+                let size_diff = curr_size - (self.buffer_max_kbytes*1000) as usize;
+                println!("Cleaning socket records buffer !!!!!!!!!!!!!!!!!!!!");
+                let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
+                for _ in 1..nb_records_to_delete {
+                    if !self.record_buffer.is_empty() {
+                        self.record_buffer.remove(0);
+                    }
                 }
             }
         }
@@ -118,7 +121,7 @@ impl Topology {
             proc_tracker: ProcessTracker::new(3),
             stat_buffer: vec![],
             record_buffer: vec![],
-            buffer_max_kbytes: 8
+            buffer_max_kbytes: 1
         }
     }
 
@@ -151,27 +154,6 @@ impl Topology {
             );
         }
         Ok(cores) 
-        //let f = File::open("/proc/cpuinfo")?;
-        //let reader = BufReader::new(f);
-        //let mut map = HashMap::new();
-        //let mut counter = 0;
-        //for line in reader.lines() {
-        //    let parts = line.unwrap().trim().split(':').map(String::from).collect::<Vec<String>>();
-        //    if parts.len() >= 2 {
-        //        let key = parts[0].trim();
-        //        let value = parts[1].trim();
-        //        if key == "processor" {
-        //            if counter > 0 {
-        //                cores.push(CPUCore::new(value.parse::<u16>().unwrap(), map));
-        //                map = HashMap::new();
-        //            }
-        //            counter += 1;
-        //        }
-        //        map.insert(String::from(key), String::from(value));
-        //    }
-        //}
-        //cores.push(CPUCore::new(map.get("processor").unwrap().parse::<u16>().unwrap(), map));
-        //Ok(cores)
     }
 
     pub fn safe_add_socket(
@@ -306,15 +288,6 @@ impl Topology {
         None
     }
 
-    fn get_proc_conso(&self, pid: i32) -> Result<Record, String>{
-
-        //    self.proc_tracker.get
-        Err(
-            String::from(
-                format!("Couldn't get consumption for process {}. Maybe the history is too short.", pid)
-            )
-        )
-    }
     /// Reads content from /proc/stat and extracts the stats of the whole CPU topology.
     pub fn read_stats(&self) -> Option<CPUStat> {
         let kernelstats_or_not = KernelStats::new();
