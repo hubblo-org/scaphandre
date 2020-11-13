@@ -2,7 +2,7 @@
 
 Generic sensor and transmission agent for energy consumption related metrics.
 
-## Usage
+## Getting started
 
 Here are some examples.
 
@@ -10,7 +10,11 @@ Collect energy consumption data, using the [powercap_rapl]() [sensor]() and show
 
     scaphandre stdout
 
-A more complete command is:
+Collect energy consumption data, using the [powercap_rapl]() [sensor]() and expose data through a prometheus exporter:
+
+    scaphandre prometheus
+
+The complete command is:
 
     scaphandre -s powercap_rapl stdout # powercap_rapl sensor is the default one
 
@@ -24,7 +28,8 @@ General usage is:
 
 Available exporters, as of today, are:
 
-- [stdout]()
+- [stdout](): displays metrics on the standard output/on your terminal
+- [prometheus](): exposes metrics as an http endpoint, respecting the [prometheus](https://prometheus.io/) metrics standard
 
 Available sensors, as of today, are:
 
