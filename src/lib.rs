@@ -32,7 +32,7 @@ pub fn run(matches: ArgMatches) {
     } else {
         let prometheus_exporter_required = matches.subcommand_matches("prometheus");
         if prometheus_exporter_required.is_some() {
-            let exporter_required = prometheus_exporter_required.unwrap();
+            //let exporter_required = prometheus_exporter_required.unwrap();
             let mut exporter = PrometheusExporter::new(
                 sensor_boxed, 5
             );

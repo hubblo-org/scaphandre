@@ -116,6 +116,7 @@ impl RecordGenerator for Topology {
         }
         result
     }
+
 }
 
 impl Topology {
@@ -175,8 +176,16 @@ impl Topology {
         }
     }
 
+    pub fn get_proc_tracker(&self) -> &ProcessTracker {
+        &self.proc_tracker
+    }
+
     pub fn get_sockets(&mut self) -> &mut Vec<CPUSocket> {
         &mut self.sockets
+    }
+
+    pub fn get_sockets_passive(&self) -> &Vec<CPUSocket> {
+        &self.sockets
     }
 
     pub fn safe_add_domain_to_socket(
@@ -227,8 +236,8 @@ impl Topology {
             //    
             //}
         }
-        self.refresh_record();
         self.refresh_procs();
+        self.refresh_record();
         self.refresh_stats();
     }
 
@@ -250,7 +259,32 @@ impl Topology {
         self.stat_buffer.insert(0, self.read_stats().unwrap());
     }
 
-    pub fn get_stats_diff(&mut self) -> Option<CPUStat> {
+    pub fn get_records_diff_power_microwatts(&self) -> Option<Record> {
+        if self.record_buffer.len() > 1 {
+            let last_record = self.record_buffer.last().unwrap();
+            let previous_record = self.record_buffer.get(
+                self.record_buffer.len() - 2
+            ).unwrap();
+            let last_microjoules = last_record.value.parse::<u64>().unwrap();
+            let previous_microjoules = previous_record.value.parse::<u64>().unwrap();
+            if previous_microjoules > last_microjoules {
+                return None
+            }
+            let microjoules = last_microjoules - previous_microjoules;
+            let time_diff = last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
+            let microwatts = microjoules as f64 / time_diff;
+            return Some(
+                Record::new(
+                    last_record.timestamp,
+                    (microwatts as u64).to_string(),
+                    units::Unit::MicroWatt
+                )
+            )
+        }
+        None
+    }
+
+    pub fn get_stats_diff(&self) -> Option<CPUStat> {
         if self.stat_buffer.len() > 1 {
             let last = &self.stat_buffer[0].cputime;
             let previous = &self.stat_buffer[1].cputime;
@@ -302,22 +336,63 @@ impl Topology {
         None
     }
 
+    pub fn get_process_power_consumption_microwatts(&self, pid: i32) -> Option<u64>{
+        let tracker = self.get_proc_tracker();
+        if let Some(recs) = tracker.find_records(pid) {            
+            if !recs.is_empty() && recs.len() > 1 {
+                let last = recs.get(0).unwrap();
+                let previous = recs.get(1).unwrap();
+                if let Some(topo_stats_diff) = self.get_stats_diff() {
+                    println!("{:?}", topo_stats_diff);
+                    let process_total_time = last.total_time_jiffies() - previous.total_time_jiffies();
+                    println!("process_total_time: {}", process_total_time);
+                    let topo_total_time = topo_stats_diff.total_time_jiffies() * procfs::ticks_per_second().unwrap() as f32;
+                    let usage_percent = process_total_time as f64 / topo_total_time as f64;
+                    println!("usage_percent: {}", usage_percent.to_string());
+                    let topo_conso = self.get_records_diff_power_microwatts();
+                    let val = &topo_conso.unwrap().value;
+                    println!("topo conso: {}", val);
+                    let val_f64 = val.parse::<f64>().unwrap();
+                    println!("val f64: {}", val_f64);
+                    let result = (val_f64 * usage_percent) as u64;
+                    println!("result: {}", result);
+                    return Some(
+                       result 
+                    );
+                }
+            }
+        }
+        None
+    }
+
 }
 
 // !!!!!!!!!!!!!!!!! CPUSocket !!!!!!!!!!!!!!!!!!!!!!!
-/// CPUSocket struct represents a CPU socket, owning CPU cores.
+/// CPUSocket struct represents a CPU socket (matches physical_id attribute in /proc/cpuinfo),
+/// owning CPU cores (processor in /proc/cpuinfo).
 #[derive(Debug, Clone)]
 pub struct CPUSocket {
+    /// Numerical ID of the CPU socket (physical_id in /proc/cpuinfo)
     pub id: u16,
+    /// RAPL domains attached to the socket
     pub domains: Vec<Domain>,
+    /// Text attributes linked to that socket, found in /proc/cpuinfo
     pub attributes: Vec<Vec<HashMap<String, String>>>,
+    /// Path to the file that provides the counter for energy consumed by the socket, in microjoules.
     pub counter_uj_path: String,
+    /// Comsumption records measured and stored by scaphandre for this socket.
     pub record_buffer: Vec<Record>,
+    /// Maximum size of the record_buffer in kilobytes.
     pub buffer_max_kbytes: u16,
+    /// CPU cores (core_id in /proc/cpuinfo) attached to the socket.
     pub cpu_cores: Vec<CPUCore>,
+    /// Usage statistics records stored for this socket.
     pub stat_buffer: Vec<CPUStat>
 }
+
 impl RecordGenerator for CPUSocket {
+    /// Generates a new record of the socket energy consumption and stores it in the record_buffer. 
+    /// Returns a clone of this Record instance.
     fn refresh_record(&mut self) -> Record {
         let timestamp = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH){
             Ok(n) => n,
@@ -325,7 +400,7 @@ impl RecordGenerator for CPUSocket {
         };
         let record = Record::new(
             timestamp,
-            self.read_counter_uj().unwrap(),//.parse().unwrap(),
+            self.read_counter_uj().unwrap(),
             units::Unit::MicroJoule
         );
 
@@ -343,6 +418,8 @@ impl RecordGenerator for CPUSocket {
         record
     }
 
+    /// Checks the size in memory of record_buffer and deletes as many Record
+    /// instances from the buffer to make it smaller in memory than buffer_max_kbytes.
     fn clean_old_records(&mut self) {
         let record_ptr = &self.record_buffer[0];
         let curr_size = size_of_val(record_ptr) * self.record_buffer.len(); 
@@ -358,6 +435,8 @@ impl RecordGenerator for CPUSocket {
         }
     }
 
+    /// Returns a new owned Vector being a blone of the current record_buffer. 
+    /// This does not affect the current buffer but is costly.
     fn get_records_passive(&self) -> Vec<Record> {
         let mut result = vec![];
         for r in &self.record_buffer {
@@ -370,8 +449,10 @@ impl RecordGenerator for CPUSocket {
         result
     }
 }
+
 impl CPUSocket {
-    /// Simple creation of a CPUSocket instance with an empty buffer and no CPUCore owned yet.
+
+    /// Creates and returns a CPUSocket instance with an empty buffer and no CPUCore owned yet.
     fn new(
         id: u16, domains: Vec<Domain>, attributes: Vec<Vec<HashMap<String, String>>>,
         counter_uj_path: String, buffer_max_kbytes: u16
@@ -385,6 +466,7 @@ impl CPUSocket {
         }
     }
 
+    /// Adds a new Domain instance to the domains vector if and only if it doesn't exist in the vector already.
     fn safe_add_domain(&mut self, domain: Domain) {
         let result: Vec<&Domain> = self.domains.iter().filter(|d| d.id == domain.id).collect();
         if result.len() == 0 {
@@ -392,6 +474,8 @@ impl CPUSocket {
         }
     }
 
+    /// Returns the content of the energy consumption counter file, as a String
+    /// value of microjoules.
     pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
         match fs::read_to_string(&self.counter_uj_path) {
             Ok(result) => Ok(result),
@@ -399,18 +483,28 @@ impl CPUSocket {
         }
     }
 
+    /// Returns a mutable reference to the domains vector.
     pub fn get_domains(&mut self) -> &mut Vec<Domain> {
         &mut self.domains
     }
 
+    /// Returns a mutable reference to the CPU cores vector.
     pub fn get_cores(&mut self) -> &mut Vec<CPUCore> {
         &mut self.cpu_cores
     }
 
+    /// Returns a immutable reference to the CPU cores vector.
+    pub fn get_cores_passive(&self) -> &Vec<CPUCore> {
+        &self.cpu_cores
+    }
+
+    /// Adds a CPU core instance to the cores vector.
     pub fn add_cpu_core(&mut self, core: CPUCore) {
         self.cpu_cores.push(core);
     }
 
+    /// Generates a new CPUStat object storing current usage statistics of the socket
+    /// and stores it in the stat_buffer.
     pub fn refresh_stats(&mut self) {
         self.stat_buffer.insert(0, self.read_stats().unwrap());
     }
@@ -443,6 +537,10 @@ impl CPUSocket {
         }
         Some(stats)
     }
+
+    /// Computes the difference between previous usage statistics record for the socket
+    /// and the current one. Returns a CPUStat object containing this difference, field
+    /// by field.
     pub fn get_stats_diff(&mut self) -> Option<CPUStat> {
         if self.stat_buffer.len() > 1 {
             let last = &self.stat_buffer[0].cputime;
@@ -485,12 +583,35 @@ impl CPUSocket {
         }
         None        
     }
+
+    pub fn get_records_diff_power_microwatts(&self) -> Option<Record> {
+        if self.record_buffer.len() > 1 {
+            let last_record = self.record_buffer.last().unwrap();
+            let previous_record = self.record_buffer.get(
+                self.record_buffer.len() - 2
+            ).unwrap();
+            let last_microjoules = last_record.value.parse::<u64>().unwrap();
+            let previous_microjoules = previous_record.value.parse::<u64>().unwrap();
+            let microjoules = last_microjoules - previous_microjoules;
+            let time_diff = last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
+            let microwatts = microjoules as f64 / time_diff;
+            return Some(
+                Record::new(
+                    last_record.timestamp,
+                    (microwatts as u64).to_string(),
+                    units::Unit::MicroWatt
+                )
+            )
+        }
+        None
+    }
 }
 
 // !!!!!!!!!!!!!!!!! CPUCore !!!!!!!!!!!!!!!!!!!!!!!
 /// CPUCore reprensents each CPU core on the host,
 /// owned by a CPUSocket. CPUCores are instanciated regardless if
-/// HyperThreading is activated on the host.Topology
+/// HyperThreading is activated on the host.
+/// Reprensents the processor field in /proc/cpuinfo.
 #[derive(Debug, Clone)]
 pub struct CPUCore {
     pub id: u16,
@@ -498,11 +619,13 @@ pub struct CPUCore {
 }
 
 impl CPUCore {
+
+    /// Instantiates CPUCore and returns the instance.
     pub fn new(id: u16, attributes: HashMap<String, String>) -> CPUCore{
         CPUCore { id, attributes }
     }
     
-    /// Reads content from /proc/stat and extracts the stats of the socket
+    /// Reads content from /proc/stat and extracts the stats of the CPU core
     fn read_stats(&self) -> Option<CpuTime> {
         let kernelstats_or_not = KernelStats::new();
         if kernelstats_or_not.is_ok() {
@@ -623,6 +746,19 @@ impl fmt::Display for Record {
 #[derive(Debug)]
 pub struct CPUStat {
     pub cputime: CpuTime,
+}
+
+impl CPUStat {
+    pub fn total_time_jiffies(&self) -> f32 {
+        self.cputime.user + self.cputime.nice
+        + self.cputime.system + self.cputime.idle
+        + self.cputime.irq.unwrap_or_default()
+        + self.cputime.iowait.unwrap_or_default()
+        + self.cputime.softirq.unwrap_or_default()
+        + self.cputime.steal.unwrap_or_default()
+        + self.cputime.guest_nice.unwrap_or_default()
+        + self.cputime.guest.unwrap_or_default()
+    }
 }
 
 impl Clone for CPUStat {

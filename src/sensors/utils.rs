@@ -2,12 +2,24 @@ use procfs::process::Process;
 use std::time::{Duration, SystemTime};
 
 #[derive(Debug, Clone)]
+/// Manages ProcessRecord instances.
 pub struct ProcessTracker {
+    /// Each subvector keeps track of records for a given PID.
     pub procs: Vec<Vec<ProcessRecord>>,
+    /// Maximum number of ProcessRecord instances that scaphandre is allowed to
+    /// store, per PID (thus, for each subvector).
     pub max_records_per_process: u16
 }
 
 impl ProcessTracker {
+    /// Instantiates ProcessTracker.
+    /// 
+    /// # Example:
+    /// ```
+    /// // 5 will be the maximum number of ProcessRecord instances
+    /// // stored for each PID.
+    /// let tracker = ProcessTracker::new(5);
+    /// ``` 
     pub fn new(max_records_per_process: u16) -> ProcessTracker {
         ProcessTracker {
             procs: vec![],
@@ -18,6 +30,16 @@ impl ProcessTracker {
     /// Properly creates and adds a ProcessRecord to 'procs', the vector of vectors or ProcessRecords
     /// owned by the ProcessTracker instance. This method should be used to keep track of processes
     /// states during all the lifecycle of the exporter.
+    /// # Example:
+    /// ```
+    /// use procfs::process::Process;
+    /// let tracker = ProcessTracker::new(5);
+    /// if let Ok(result) = tracker.add_process_record(
+    ///     Process::new()
+    /// ){
+    ///     println!("ProcessRecord stored successfully: {}", result);
+    /// }
+    /// ```
     pub fn add_process_record(&mut self, process: Process) -> Result<String, String> {
         let iterator = self.procs.iter_mut();
         let pid = process.pid;
@@ -91,21 +113,6 @@ impl ProcessTracker {
         None
     }
 
-    //pub fn get_diff_stat(&self, pid: i32) -> Option<CpuTime> {
-    //    let records_or_not = self.find_records(pid);
-    //    if records_or_not.is_some() {
-    //       let records = records_or_not.unwrap();
-    //       if records.len() > 1 {
-    //           return Some(
-    //               CpuTime {
-    //                    user: records
-    //               }
-    //            )
-    //       }
-    //    }
-    //    None
-    //}
-
     /// Returns all vectors of process records linked to a running, sleeping or waiting process.
     /// (Not terminated or zombie)
     pub fn get_alive_processes(&self) -> Vec<&Vec<ProcessRecord>>{
@@ -141,6 +148,17 @@ impl ProcessTracker {
             |x| x[0].process.pid
         ).collect()
     }
+
+    pub fn get_process_name(&self, pid: i32) -> String {
+        let mut result = self.procs.iter().filter(|x| {
+            !x.is_empty() && x.get(0).unwrap().process.pid == pid
+        });
+        let process = result.next().unwrap();
+        if let Some(_) = result.next() {
+            panic!("Found two vectors of processes with the same id, maintainers should fix this.");
+        }
+        process.get(0).unwrap().process.stat.comm.clone() 
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -155,6 +173,11 @@ impl ProcessRecord {
             process,
             timestamp: current_system_time_since_epoch()
         }
+    }
+
+    pub fn total_time_jiffies(&self) -> u64 {
+        self.process.stat.stime + self.process.stat.utime
+        + self.process.stat.cutime as u64 + self.process.stat.cstime as u64
     }
 }
 
