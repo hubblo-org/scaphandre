@@ -372,19 +372,23 @@ impl Topology {
                 let last = recs.get(0).unwrap();
                 let previous = recs.get(1).unwrap();
                 if let Some(topo_stats_diff) = self.get_stats_diff() {
-                    trace!("Topology stats measured diff: {:?}", topo_stats_diff);
+                    //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
                     let process_total_time = last.total_time_jiffies() - previous.total_time_jiffies();
-                    trace!("process_total_time: {}", process_total_time);
+                    if process_total_time > 5000 {
+                        panic!("Process {} recorded a usage time above 5000: {}", last.process.pid, process_total_time);
+                    }
+
+                    //trace!("process_total_time: {}", process_total_time);
                     let topo_total_time = topo_stats_diff.total_time_jiffies() * procfs::ticks_per_second().unwrap() as f32;
                     let usage_percent = process_total_time as f64 / topo_total_time as f64;
-                    trace!("usage_percent: {}", usage_percent.to_string());
+                    //trace!("usage_percent: {}", usage_percent.to_string());
                     let topo_conso = self.get_records_diff_power_microwatts();
                     if let Some(val) = &topo_conso {
-                        trace!("topo conso: {}", val);
+                        //trace!("topo conso: {}", val);
                         let val_f64 = val.value.parse::<f64>().unwrap();
-                        trace!("val f64: {}", val_f64);
+                        //trace!("val f64: {}", val_f64);
                         let result = (val_f64 * usage_percent) as u64;
-                        trace!("result: {}", result);
+                        //trace!("result: {}", result);
                         return Some(
                            result 
                         );
@@ -677,10 +681,15 @@ impl CPUCore {
 /// electricity consumption point of view.
 #[derive(Debug, Clone)]
 pub struct Domain {
+    /// Numerical ID of the RAPL domain as indicated in /sys/class/powercap/intel-rapl* folders names
     pub id: u16,
+    /// Name of the domain as found in /sys/class/powercap/intel-rapl:X:X/name
     pub name: String,
+    /// Path to the domain's energy counter file, microjoules extracted
     pub counter_uj_path: String,
+    /// History of energy consumption measurements, stored as Record instances
     pub record_buffer: Vec<Record>,
+    /// Maximum size of record_buffer, in kilobytes
     pub buffer_max_kbytes: u16
 }
 impl RecordGenerator for Domain {
@@ -782,14 +791,22 @@ pub struct CPUStat {
 
 impl CPUStat {
     pub fn total_time_jiffies(&self) -> f32 {
-        self.cputime.user + self.cputime.nice
-        + self.cputime.system + self.cputime.idle
-        + self.cputime.irq.unwrap_or_default()
-        + self.cputime.iowait.unwrap_or_default()
-        + self.cputime.softirq.unwrap_or_default()
-        + self.cputime.steal.unwrap_or_default()
-        + self.cputime.guest_nice.unwrap_or_default()
-        + self.cputime.guest.unwrap_or_default()
+        let user = self.cputime.user;
+        let nice = self.cputime.nice;
+        let system = self.cputime.system;
+        let idle = self.cputime.idle;
+        let irq = self.cputime.irq.unwrap_or_default();
+        let iowait = self.cputime.iowait.unwrap_or_default();
+        let softirq = self.cputime.softirq.unwrap_or_default();
+        let steal = self.cputime.steal.unwrap_or_default();
+        let guest_nice = self.cputime.guest_nice.unwrap_or_default();
+        let guest = self.cputime.guest.unwrap_or_default();
+
+        trace!(
+            "CPUStat contains user {} nice {} system {} idle: {} irq {} softirq {} iowait {} steal {} guest_nice {} guest {}",
+            user, nice, system, idle, irq, softirq, iowait, steal, guest_nice, guest
+        );
+        user + nice + system + idle + irq + softirq + steal + guest_nice + guest
     }
 }
 
