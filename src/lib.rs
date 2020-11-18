@@ -1,3 +1,5 @@
+#[macro_use] extern crate log;
+use loggerv;
 pub mod sensors;
 pub mod exporters;
 use sensors::{powercap_rapl::PowercapRAPLSensor};
@@ -10,6 +12,9 @@ use std::collections::HashMap;
 /// the choosen exporter: run()
 /// This function should be updated to take new exporters and sensors into account.
 pub fn run(matches: ArgMatches) {
+
+    loggerv::init_with_verbosity(matches.occurrences_of("v")).unwrap();
+
     let sensor = match matches.value_of("sensor").unwrap() {
         "powercap_rapl" => PowercapRAPLSensor::new(
             matches.value_of("sensor-buffer-per-socket-max-kB").unwrap().parse().unwrap(),
@@ -38,7 +43,7 @@ pub fn run(matches: ArgMatches) {
             );
             exporter.run();
         } else {
-            eprintln!("exporter is None");
+            error!("Couldn't determine which exporter has been choosed.");
         }
     }
 }

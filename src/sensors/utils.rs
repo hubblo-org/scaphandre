@@ -51,6 +51,7 @@ impl ProcessTracker {
         let process_record = ProcessRecord::new(process);
         if result.is_some() { // if a vector of process records has been found
             let vector = result.unwrap();
+            ProcessTracker::check_pid_changes(&process_record, vector);
             vector.insert(0, process_record); // we add the process record to the vector
             if filtered.next().is_some() {
                 panic!("Found more than one set of ProcessRecord (more than one pid) that matches the current process.");
@@ -70,16 +71,18 @@ impl ProcessTracker {
             let diff = records.len() - max_records_per_process as usize;
             for _ in 0..diff {
                 records.sort_by(|a, b| {
-                    //println!("{:?} {:?} {:?}", a.timestamp, b.timestamp, a.timestamp.cmp(&b.timestamp));
                     b.timestamp.cmp(&a.timestamp)
                 });
-                //println!("{:?}", records);
-                //println!("i = {}", i as u16);
-                //for r in records.iter() {
-                //    println!("{:?}", r.timestamp);
-                //}
-                records.pop();
+                debug!("Cleaning old ProcessRecords in vector for PID {}", records[0].process.pid);
+                debug!("Deleting record with timestamp: {:?}", records.pop().unwrap().timestamp);
             }
+        }
+    }
+
+    /// Ensure we don't store records for different processes in the same vector.
+    fn check_pid_changes(record: &ProcessRecord, records: &mut Vec<ProcessRecord>) {
+        if !records.is_empty() && record.process.stat.comm != records.get(0).unwrap().process.stat.comm {
+            records.clear();
         }
     }
 
@@ -178,6 +181,10 @@ impl ProcessRecord {
     pub fn total_time_jiffies(&self) -> u64 {
         self.process.stat.stime + self.process.stat.utime
         + self.process.stat.cutime as u64 + self.process.stat.cstime as u64
+        + self.process.stat.guest_time.unwrap_or_default()
+        + self.process.stat.cguest_time.unwrap_or_default() as u64
+        + self.process.stat.delayacct_blkio_ticks.unwrap_or_default()
+        + self.process.stat.itrealvalue as u64
     }
 }
 

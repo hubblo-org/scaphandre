@@ -24,12 +24,14 @@ impl PrometheusExporter {
 }
 
 impl Exporter for PrometheusExporter {
+    /// Runs HTTP server and metrics exposure through the runner function.
     fn run(&mut self) {
         match runner((*self.sensor.get_topology()).unwrap()) {
-            Ok(()) => println!("Prometheus exporter shut down gracefully."),
+            Ok(()) => warn!("Prometheus exporter shut down gracefully."),
             Err(error) => panic!("Something failed in the prometheus exporter: {}", error)
         }
     }
+    /// Returns options understood by the exporter.
     fn get_options() -> HashMap<String, ExporterOption> {
         let options = HashMap::new();
 
@@ -37,11 +39,14 @@ impl Exporter for PrometheusExporter {
     }
 }
 
+/// Contains a mutex holding a Topology object. 
+/// Used to pass the topology data from one http worker to another. 
 pub struct PowerMetrics {
     topology: Mutex<Topology>
 }
 
 #[actix_web::main]
+/// Main function running the HTTP server.
 async fn runner(topology: Topology) -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new().data(
@@ -184,9 +189,73 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         );
     }
 
+    let metric_name = "forks_since_boot_total";
+    let mut metric_value_string = String::from("NaN");
+    if let Some(metric_value) = &(*topo).read_nb_process_total_count() {
+        metric_value_string = metric_value.to_string();
+    }
+    body = push_metric(
+        body, String::from(
+            "Number of forks that have occured since boot (number of processes to have existed so far)."
+        ),
+        String::from("counter"),
+        String::from(metric_name),
+        format_metric(
+            metric_name, &metric_value_string, None
+        )
+    );
+
+    let metric_name = "processes_running_current";
+    let mut metric_value_string = String::from("NaN");
+    if let Some(metric_value) = &(*topo).read_nb_process_running_current() {
+        metric_value_string = metric_value.to_string();
+    }
+    body = push_metric(
+        body, String::from(
+            "Number of processes currently running."
+        ),
+        String::from("gauge"),
+        String::from(metric_name),
+        format_metric(
+            metric_name, &metric_value_string, None
+        )
+    );
+
+    let metric_name = "processes_blocked_current";
+    let mut metric_value_string = String::from("NaN");
+    if let Some(metric_value) = &(*topo).read_nb_process_blocked_current() {
+        metric_value_string = metric_value.to_string();
+    }
+    body = push_metric(
+        body, String::from(
+            "Number of processes currently blocked waiting for I/O."
+        ),
+        String::from("gauge"),
+        String::from(metric_name),
+        format_metric(
+            metric_name, &metric_value_string, None
+        )
+    );
+    let metric_name = "context_switches_total";
+    let mut metric_value_string = String::from("NaN");
+    if let Some(metric_value) = &(*topo).read_nb_context_switches_total_count() {
+        metric_value_string = metric_value.to_string();
+    }
+    body = push_metric(
+        body, String::from(
+            "Number of context switches since boot."
+        ),
+        String::from("counter"),
+        String::from(metric_name),
+        format_metric(
+            metric_name, &metric_value_string, None
+        )
+    );
+
+
     let processes_tracker = &(*topo).proc_tracker;
 
-    for pid in processes_tracker.get_alive_pids() {
+    for pid in processes_tracker.get_all_pids() {
         let exe = processes_tracker.get_process_name(pid);
 
         let mut plabels = HashMap::new();
@@ -228,7 +297,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         );
 
         let metric_name = "process_power_consumption_microwatts";
-        let mut process_power_value = String::from("NaN");
+        let mut process_power_value = String::from("0");
         if let Some(power) = topo.get_process_power_consumption_microwatts(pid) {
            process_power_value = power.to_string(); 
         }

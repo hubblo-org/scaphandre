@@ -17,6 +17,12 @@ fn main() {
         .about("Agnostic software sensor and data collection agent for energy/electricity consumption related metrics")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .arg(
+            Arg::with_name("v")
+                .short("v")
+                .multiple(true)
+                .help("Sets the level of verbosity.")
+        )
+        .arg(
             Arg::with_name("sensor")
                 .value_name("sensor")
                 .help("Sensor module to apply on the host to get energy consumption metrics.")
@@ -41,6 +47,7 @@ fn main() {
                 .takes_value(true)
                 .default_value("2")
         );
+
     for exp in res {
         let mut subcmd = SubCommand::with_name(exp).about(
             match exp {

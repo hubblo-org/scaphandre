@@ -82,8 +82,6 @@ impl RecordGenerator for Topology {
             )
         );
 
-        println!("{:?}", self.record_buffer);
-
         if !self.record_buffer.is_empty() {
             self.clean_old_records();
         }
@@ -95,11 +93,10 @@ impl RecordGenerator for Topology {
         let curr_size = size_of_val(record_ptr)*self.record_buffer.len();
         if curr_size > (self.buffer_max_kbytes*1000) as usize {
             let size_diff = curr_size - (self.buffer_max_kbytes*1000) as usize;
-            println!("Cleaning socket records buffer !!!!!!!!!!!!!!!!!!!!");
             let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
             for _ in 1..nb_records_to_delete {
                 if !self.record_buffer.is_empty() {
-                    self.record_buffer.remove(0);
+                    debug!("Cleaning record buffer on Topology, removing: {:?}", self.record_buffer.remove(0));
                 }
             }
         }
@@ -336,6 +333,38 @@ impl Topology {
         None
     }
 
+    pub fn read_nb_process_total_count(&self) -> Option<u64> {
+        if let Ok(result) = KernelStats::new() {
+            return Some(result.processes)
+        }
+        None
+    }
+
+    pub fn read_nb_process_running_current(&self) -> Option<u32> {
+        if let Ok(result) = KernelStats::new() {
+            if let Some(procs_running) = result.procs_running {
+                return Some(procs_running);
+            }
+        }
+        None
+    }
+    pub fn read_nb_process_blocked_current(&self) -> Option<u32> {
+        if let Ok(result) = KernelStats::new() {
+            if let Some(procs_running) = result.procs_running {
+                return Some(procs_running);
+            }
+        }
+        None
+    }
+    pub fn read_nb_context_switches_total_count(&self) -> Option<u64> {
+        if let Ok(result) = KernelStats::new() {
+            return Some(result.ctxt);
+        }
+        None
+    }
+
+
+
     pub fn get_process_power_consumption_microwatts(&self, pid: i32) -> Option<u64>{
         let tracker = self.get_proc_tracker();
         if let Some(recs) = tracker.find_records(pid) {            
@@ -343,22 +372,23 @@ impl Topology {
                 let last = recs.get(0).unwrap();
                 let previous = recs.get(1).unwrap();
                 if let Some(topo_stats_diff) = self.get_stats_diff() {
-                    println!("{:?}", topo_stats_diff);
+                    trace!("Topology stats measured diff: {:?}", topo_stats_diff);
                     let process_total_time = last.total_time_jiffies() - previous.total_time_jiffies();
-                    println!("process_total_time: {}", process_total_time);
+                    trace!("process_total_time: {}", process_total_time);
                     let topo_total_time = topo_stats_diff.total_time_jiffies() * procfs::ticks_per_second().unwrap() as f32;
                     let usage_percent = process_total_time as f64 / topo_total_time as f64;
-                    println!("usage_percent: {}", usage_percent.to_string());
+                    trace!("usage_percent: {}", usage_percent.to_string());
                     let topo_conso = self.get_records_diff_power_microwatts();
-                    let val = &topo_conso.unwrap().value;
-                    println!("topo conso: {}", val);
-                    let val_f64 = val.parse::<f64>().unwrap();
-                    println!("val f64: {}", val_f64);
-                    let result = (val_f64 * usage_percent) as u64;
-                    println!("result: {}", result);
-                    return Some(
-                       result 
-                    );
+                    if let Some(val) = &topo_conso {
+                        trace!("topo conso: {}", val);
+                        let val_f64 = val.value.parse::<f64>().unwrap();
+                        trace!("val f64: {}", val_f64);
+                        let result = (val_f64 * usage_percent) as u64;
+                        trace!("result: {}", result);
+                        return Some(
+                           result 
+                        );
+                    }
                 }
             }
         }
@@ -425,11 +455,13 @@ impl RecordGenerator for CPUSocket {
         let curr_size = size_of_val(record_ptr) * self.record_buffer.len(); 
         if curr_size > (self.buffer_max_kbytes*1000) as usize {
             let size_diff = curr_size - (self.buffer_max_kbytes*1000) as usize;
-            println!("Cleaning socket records buffer !!!!!!!!!!!!!!!!!!!!");
             let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
             for _ in 1..nb_records_to_delete {
                 if !self.record_buffer.is_empty() {
-                    self.record_buffer.remove(0);
+                    debug!(
+                        "Cleaning socket id {} records buffer, removing: {}",
+                        self.id, self.record_buffer.remove(0)
+                    );
                 }
             }
         }
