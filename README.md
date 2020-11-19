@@ -12,6 +12,8 @@ In opposition to its name, scaphandre aims to be as light and clean as possible.
 
 See the [why](docs/why.md) section for more about the goals of the project.
 
+Current status: ![Rust](https://github.com/hubblo-org/scaphandre/workflows/Rust/badge.svg?branch=main)
+
 ---
 
 ## Getting started
