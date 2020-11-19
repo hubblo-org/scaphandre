@@ -211,7 +211,10 @@ impl ProcessRecord {
             stime, utime, cutime, cstime, guest_time, cguest_time, delayacct_blkio_ticks, itrealvalue
         );
 
-        let total = stime + utime + cutime + cstime + guest_time + cguest_time + delayacct_blkio_ticks + itrealvalue;
+        // not including cstime and cutime in total as they are reported only when child dies
+        // child metrics as already reported as the child processes are in the global process
+        // list, found as /proc/PID/stat
+        let total = stime + utime + guest_time + cguest_time + delayacct_blkio_ticks + itrealvalue;
 
         total
     }
