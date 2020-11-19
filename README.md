@@ -14,9 +14,13 @@ Collect energy consumption data, using the [powercap_rapl]() [sensor]() and expo
 
     scaphandre prometheus
 
-The complete command is:
+Metrics are now available on http://localhost:8080/metrics.
+
+A more complete command would be:
 
     scaphandre -s powercap_rapl stdout # powercap_rapl sensor is the default one
+
+As you can see `-s` option allows you to select the **sensor**, which is the scaphandre component in charge of collecting power consumption metrics.
 
 You can also add a different timeout that the default 5 seconds:
 
@@ -26,14 +30,14 @@ General usage is:
 
     scaphandre [-s SENSOR] EXPORTER [-t timeout]
 
-Available exporters, as of today, are:
+Available exporters are:
 
-- [stdout](): displays metrics on the standard output/on your terminal
-- [prometheus](): exposes metrics as an http endpoint, respecting the [prometheus](https://prometheus.io/) metrics standard
+- [stdout](docs/exporters/stdout.md): displays metrics on the standard output/on your terminal
+- [prometheus](docs/exporters/prometheus.md): exposes metrics as an http endpoint, respecting the [prometheus](https://prometheus.io/) metrics standard
 
 Available sensors, as of today, are:
 
-- [powercap_rapl]()
+- [powercap_rapl](docs/sensors/powercap_rapl.md)
 
 ## Structure
 
