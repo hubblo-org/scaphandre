@@ -1,4 +1,4 @@
-# scaphandre
+# Scaphandre ([:fr:](https://fr.wikipedia.org/wiki/Scaphandre_%C3%A0_casque) for *diving suit*)
 
 <img src="https://github.com/hubblo-org/scaphandre/raw/main/scaphandre.cleaned.png" width="200">
 
