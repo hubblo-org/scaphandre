@@ -1,16 +1,20 @@
 # scaphandre
 
+<img src="https://github.com/hubblog-org/scaphandre/raw/master/scaphandre.cleaned.png" width="200">
+
+---
+
 Generic sensor and transmission agent for energy consumption related metrics.
 
 ## Getting started
 
 Here are some examples.
 
-Collect energy consumption data, using the [powercap_rapl]() [sensor]() and show the data on the terminal using the [stdout]() [exporter]():
+To show power consumption metrics in your terminal, run:
 
     scaphandre stdout
 
-Collect energy consumption data, using the [powercap_rapl]() [sensor]() and expose data through a prometheus exporter:
+To expose power consumption metrics as a [prometheus](https://prometheus.io) exporter (as an http endpoint):
 
     scaphandre prometheus
 
@@ -18,7 +22,7 @@ Metrics are now available on http://localhost:8080/metrics.
 
 A more complete command would be:
 
-    scaphandre -s powercap_rapl stdout # powercap_rapl sensor is the default one
+    scaphandre -s powercap_rapl stdout
 
 As you can see `-s` option allows you to select the **sensor**, which is the scaphandre component in charge of collecting power consumption metrics.
 
