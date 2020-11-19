@@ -12,6 +12,8 @@ In opposition to its name, scaphandre aims to be as light and clean as possible.
 
 See the [why](docs/why.md) section for more about the goals of the project.
 
+---
+
 ## Getting started
 
 Here are some examples.
@@ -38,7 +40,9 @@ You can also add a different timeout that the default 5 seconds:
 
 General usage is:
 
-    scaphandre [-s SENSOR] EXPORTER [-t timeout]
+    scaphandre [-s SENSOR] EXPORTER [OPTIONS]
+
+You can get available options for both
 
 Available exporters are:
 

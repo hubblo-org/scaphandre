@@ -1,5 +1,7 @@
 # Prometheus exporter
 
+<img src="https://github.com/hubblo-org/scaphandre/raw/main/scaphandre.cleaned.png">
+
 You can launch the prometheus exporter this way (running the default powercap_rapl sensor):
 
 	scaphandre prometheus
