@@ -255,7 +255,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
 
     let processes_tracker = &(*topo).proc_tracker;
 
-    for pid in processes_tracker.get_all_pids() {
+    for pid in processes_tracker.get_alive_pids() {
         let exe = processes_tracker.get_process_name(pid);
         let cmdline = processes_tracker.get_process_cmdline(pid);
 

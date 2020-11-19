@@ -116,8 +116,8 @@ impl ProcessTracker {
         None
     }
 
-    /// Returns all vectors of process records linked to a running, sleeping or waiting process.
-    /// (Not terminated or zombie)
+    /// Returns all vectors of process records linked to a running, sleeping, waiting or zombie process.
+    /// (Not terminated)
     pub fn get_alive_processes(&self) -> Vec<&Vec<ProcessRecord>>{
         let mut res = vec![];
         for p in self.procs.iter() {
@@ -125,7 +125,7 @@ impl ProcessTracker {
                 let status = p[0].process.status();
                 if status.is_ok() {
                     let status_val = status.unwrap();
-                    if !&status_val.state.contains("Z") && !&status_val.state.contains("T") {
+                    if !&status_val.state.contains("T") { // !&status_val.state.contains("Z") && 
                         res.push(p);
                     }
                 }
