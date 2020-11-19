@@ -1,6 +1,6 @@
 # scaphandre
 
-<img src="https://github.com/hubblog-org/scaphandre/raw/main/scaphandre.cleaned.png" width="200">
+<img src="https://github.com/hubblo-org/scaphandre/raw/main/scaphandre.cleaned.png" width="200">
 
 ---
 
