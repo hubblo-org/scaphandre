@@ -374,9 +374,6 @@ impl Topology {
                 if let Some(topo_stats_diff) = self.get_stats_diff() {
                     //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
                     let process_total_time = last.total_time_jiffies() - previous.total_time_jiffies();
-                    if process_total_time > 5000 {
-                        panic!("Process {} recorded a usage time above 5000: {}", last.process.pid, process_total_time);
-                    }
 
                     //trace!("process_total_time: {}", process_total_time);
                     let topo_total_time = topo_stats_diff.total_time_jiffies() * procfs::ticks_per_second().unwrap() as f32;
@@ -806,7 +803,7 @@ impl CPUStat {
             "CPUStat contains user {} nice {} system {} idle: {} irq {} softirq {} iowait {} steal {} guest_nice {} guest {}",
             user, nice, system, idle, irq, softirq, iowait, steal, guest_nice, guest
         );
-        user + nice + system + idle + irq + softirq + steal + guest_nice + guest
+        user + nice + system + steal + guest_nice + guest
     }
 }
 
