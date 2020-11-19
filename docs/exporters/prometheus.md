@@ -1,6 +1,6 @@
 # Prometheus exporter
 
-<img src="https://github.com/hubblo-org/scaphandre/raw/main/scaphandre.cleaned.png">
+<img src="https://github.com/hubblo-org/scaphandre/raw/main/screen-prometheus.cleaned.png">
 
 You can launch the prometheus exporter this way (running the default powercap_rapl sensor):
 
