@@ -6,6 +6,7 @@ use sensors::{powercap_rapl::PowercapRAPLSensor};
 use exporters::{Exporter, ExporterOption, stdout::StdoutExporter, prometheus::PrometheusExporter};
 pub use clap::ArgMatches;
 use std::collections::HashMap;
+use std::time::{Duration, SystemTime};
 
 /// Matches the sensor and exporter name and options requested from the command line and
 /// creates the appropriate instances. Launchs the standardized entrypoint of
@@ -57,4 +58,8 @@ pub fn get_exporters_options() -> HashMap<String, HashMap<String, ExporterOption
         exporters::prometheus::PrometheusExporter::get_options()
     );
     options
+}
+
+pub fn current_system_time_since_epoch() -> Duration {
+    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap()
 }

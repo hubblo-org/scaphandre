@@ -4,6 +4,8 @@ use std::collections::HashMap;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use std::sync::Mutex;
 use std::net::IpAddr;
+use std::time::{Duration, SystemTime};
+use crate::current_system_time_since_epoch;
 
 const DEFAULT_IP_ADDRESS: &str = "::";
 
@@ -82,6 +84,7 @@ impl Exporter for PrometheusExporter {
 /// Used to pass the topology data from one http worker to another. 
 pub struct PowerMetrics {
     topology: Mutex<Topology>,
+    last_request: Mutex<Duration>
 }
 
 #[actix_web::main]
@@ -97,6 +100,7 @@ async fn runner(topology: Topology, address: String, port: String, suffix: Strin
         App::new().data(
             PowerMetrics{
                 topology: Mutex::new(topology.clone()),
+                last_request: Mutex::new(Duration::new(0, 0))
             }).service(
                 web::resource(&suffix).route(
                     web::get().to(show_metrics)
@@ -134,10 +138,17 @@ fn push_metric(mut body: String, help: String, metric_type: String, metric_name:
 }
 
 async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
-    {
-        let mut topology = data.topology.lock().unwrap();
-        (*topology).refresh();
+    let now = current_system_time_since_epoch();
+    let mut last_request = data.last_request.lock().unwrap();
+
+    if now - (*last_request) > Duration::from_secs(8){
+        {
+            let mut topology = data.topology.lock().unwrap();
+            (*topology).refresh();
+        }
     }
+
+    *last_request = now;
     let topo = data.topology.lock().unwrap();
     let records = (*topo).get_records_passive();
     let mut body = String::from(""); // initialize empty body
