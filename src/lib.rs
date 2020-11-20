@@ -4,7 +4,7 @@ pub mod sensors;
 pub mod exporters;
 use sensors::{powercap_rapl::PowercapRAPLSensor};
 use exporters::{Exporter, ExporterOption, stdout::StdoutExporter, prometheus::PrometheusExporter};
-use clap::ArgMatches;
+pub use clap::ArgMatches;
 use std::collections::HashMap;
 
 /// Matches the sensor and exporter name and options requested from the command line and
@@ -29,19 +29,15 @@ pub fn run(matches: ArgMatches) {
 
     let stdout_exporter_required = matches.subcommand_matches("stdout");
     if stdout_exporter_required.is_some() {
-        let exporter_required = stdout_exporter_required.unwrap();
-        let mut exporter = StdoutExporter::new(
-                sensor_boxed, String::from(exporter_required.value_of("timeout").unwrap())
-            );
-        exporter.run();
+        let exporter_parameters = stdout_exporter_required.unwrap().clone();
+        let mut exporter = StdoutExporter::new(sensor_boxed);
+        exporter.run(exporter_parameters);
     } else {
         let prometheus_exporter_required = matches.subcommand_matches("prometheus");
         if prometheus_exporter_required.is_some() {
-            //let exporter_required = prometheus_exporter_required.unwrap();
-            let mut exporter = PrometheusExporter::new(
-                sensor_boxed, 5
-            );
-            exporter.run();
+            let exporter_parameters = prometheus_exporter_required.unwrap().clone();
+            let mut exporter = PrometheusExporter::new(sensor_boxed);
+            exporter.run(exporter_parameters);
         } else {
             error!("Couldn't determine which exporter has been choosed.");
         }

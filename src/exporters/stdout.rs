@@ -1,18 +1,17 @@
 use std::time::{Instant, Duration};
 use std::thread;
 use std::collections::HashMap;
-use crate::exporters::{Exporter, ExporterOption};
+use crate::exporters::*;
 use crate::sensors::{Sensor, Topology, RecordGenerator, energy_records_to_power_record};
 
 
 pub struct StdoutExporter {
-    timeout: String,
     topology: Topology
 }
 
 impl Exporter for StdoutExporter {
-    fn run(&mut self) {
-        self.runner();
+    fn run(&mut self, parameters: ArgMatches) {
+        self.runner(parameters);
     }
 
     fn get_options() -> HashMap<String, ExporterOption> {
@@ -25,8 +24,6 @@ impl Exporter for StdoutExporter {
                 short: String::from("t"),
                 required: false,
                 takes_value: true,
-                possible_values: vec![],
-                value: String::from(""),
                 help: String::from("Maximum time spent measuring, in seconds.")
             }
         );
@@ -35,18 +32,19 @@ impl Exporter for StdoutExporter {
 }
 
 impl StdoutExporter {
-    pub fn new(mut sensor: Box<dyn Sensor>, timeout: String) -> StdoutExporter {
+    pub fn new(mut sensor: Box<dyn Sensor>) -> StdoutExporter {
         let some_topology = *sensor.get_topology();
-        StdoutExporter { timeout, topology: some_topology.unwrap() }    
+        StdoutExporter { topology: some_topology.unwrap() }    
     }
 
-    pub fn runner (&mut self) {
-        if self.timeout.len() == 0 {
+    pub fn runner (&mut self, parameters: ArgMatches) {
+        let timeout = parameters.value_of("timeout").unwrap();
+        if timeout.len() == 0 {
             self.iteration(0);
         } else {
             let now = Instant::now();
 
-            let timeout_secs: u64 = self.timeout.parse().unwrap();
+            let timeout_secs: u64 = timeout.parse().unwrap();
             let step = 1;
 
             println!("Measurement step is: {}s", step);

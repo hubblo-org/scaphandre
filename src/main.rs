@@ -58,15 +58,14 @@ fn main() {
         );
             
         for (key, opt) in exporters_options.get(exp).unwrap().iter() {
-            subcmd = subcmd.arg(                
-               Arg::with_name(key) 
-                .required(opt.required)
-                .takes_value(opt.takes_value)
-                .default_value(&opt.default_value)
-                .short(&opt.short)
-                .long(&opt.long)
-                .help(&opt.help)
-            );
+            let arg = Arg::with_name(key) 
+             .required(opt.required)
+             .takes_value(opt.takes_value)
+             .default_value(&opt.default_value)
+             .short(&opt.short)
+             .long(&opt.long)
+             .help(&opt.help);
+            subcmd = subcmd.arg(arg);
         }
         matches = matches.subcommand(subcmd);
     }

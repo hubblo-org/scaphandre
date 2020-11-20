@@ -1,8 +1,11 @@
-use crate::exporters::{Exporter, ExporterOption};
+use crate::exporters::*;
 use crate::sensors::{Sensor, Record, Topology, RecordGenerator};
 use std::collections::HashMap;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use std::sync::Mutex;
+use std::net::IpAddr;
+
+const DEFAULT_IP_ADDRESS: &str = "::";
 
 /// Exporter that exposes metrics to an HTTP endpoint
 /// matching the Prometheus.io metrics format.
@@ -15,25 +18,61 @@ pub struct PrometheusExporter {
 
 impl PrometheusExporter {
     /// Instantiates PrometheusExporter and returns the instance.
-    pub fn new(sensor: Box<dyn Sensor>, step: u16) -> PrometheusExporter {
+    pub fn new(sensor: Box<dyn Sensor>) -> PrometheusExporter {
         PrometheusExporter{
             sensor: sensor,
-            _step: step
+            _step: 5,
         }
     }
 }
 
 impl Exporter for PrometheusExporter {
     /// Runs HTTP server and metrics exposure through the runner function.
-    fn run(&mut self) {
-        match runner((*self.sensor.get_topology()).unwrap()) {
+    fn run(&mut self, parameters: ArgMatches) {
+        match runner(
+            (*self.sensor.get_topology()).unwrap(),
+            parameters.value_of("address").unwrap().to_string(),
+            parameters.value_of("port").unwrap().to_string(),
+            parameters.value_of("suffix").unwrap().to_string()
+        ) {
             Ok(()) => warn!("Prometheus exporter shut down gracefully."),
             Err(error) => panic!("Something failed in the prometheus exporter: {}", error)
         }
     }
     /// Returns options understood by the exporter.
     fn get_options() -> HashMap<String, ExporterOption> {
-        let options = HashMap::new();
+        let mut options = HashMap::new();
+
+        options.insert(
+            String::from("address"), ExporterOption {
+                default_value: String::from(DEFAULT_IP_ADDRESS),
+                help: String::from("ipv6 or ipv4 address to expose the service to"),
+                long: String::from("address"),
+                short: String::from("a"),
+                required: false,
+                takes_value: true,
+            }
+        );
+        options.insert(
+            String::from("port"), ExporterOption {
+                default_value: String::from("8080"),
+                help: String::from("TCP port number to expose the service"),
+                long: String::from("port"),
+                short: String::from("p"),
+                required: false,
+                takes_value: true,
+            }
+        );
+        options.insert(
+            String::from("suffix"), ExporterOption {
+                default_value: String::from("metrics"),
+                help: String::from("url suffix to access metrics"),
+                long: String::from("suffix"),
+                short: String::from("s"),
+                required: false,
+                takes_value: true,
+            }
+        );
 
         options
     }
@@ -42,24 +81,34 @@ impl Exporter for PrometheusExporter {
 /// Contains a mutex holding a Topology object. 
 /// Used to pass the topology data from one http worker to another. 
 pub struct PowerMetrics {
-    topology: Mutex<Topology>
+    topology: Mutex<Topology>,
 }
 
 #[actix_web::main]
 /// Main function running the HTTP server.
-async fn runner(topology: Topology) -> std::io::Result<()> {
+async fn runner(topology: Topology, address: String, port: String, suffix: String) -> std::io::Result<()> {
+    let mut final_address = String::from(DEFAULT_IP_ADDRESS);
+    if let Ok(addr) = address.parse::<IpAddr>() {
+        final_address = addr.to_string();
+        debug!("Validated ip address: {}", addr);
+    } else {
+        panic!("Not a valid ip address: {}", address);
+    }
+    if let Err(error) = port.parse::<u64>() {
+        panic!("Not a valid TCP port numer: {}", error);
+    }
     HttpServer::new(move || {
         App::new().data(
             PowerMetrics{
-                topology: Mutex::new(topology.clone())
+                topology: Mutex::new(topology.clone()),
             }).service(
-                web::resource("/metrics").route(
+                web::resource(&suffix).route(
                     web::get().to(show_metrics)
                 )
             ).default_service(
                 web::route().to(landing_page)
             )
-    }).workers(1).bind("0.0.0.0:8080")?
+    }).workers(1).bind(format!("{}:{}", final_address, port))?
     .run().await
 }
 
