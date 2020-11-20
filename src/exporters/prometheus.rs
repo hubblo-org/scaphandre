@@ -152,46 +152,46 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     let topo = data.topology.lock().unwrap();
     let records = (*topo).get_records_passive();
     let mut body = String::from(""); // initialize empty body
-    let mut rapl_host_energy_microjoules = String::from("NaN");
-    let mut rapl_host_energy_timestamp_seconds = String::from("NaN");
+    let mut host_energy_microjoules = String::from("NaN");
+    let mut host_energy_timestamp_seconds = String::from("NaN");
     if !records.is_empty() {
         let record = records.last().unwrap();
-        rapl_host_energy_microjoules = record.value.clone();
-        rapl_host_energy_timestamp_seconds = record.timestamp.as_secs().to_string();
+        host_energy_microjoules = record.value.clone();
+        host_energy_timestamp_seconds = record.timestamp.as_secs().to_string();
     }
 
-    let metric_name = "rapl_host_energy_microjoules";
+    let metric_name = "host_energy_microjoules";
     body = push_metric(
         body, String::from("Energy measurement for the whole host, as extracted from the sensor, in microjoules."),
         String::from("counter"),
         String::from(metric_name),
         format_metric(
             metric_name,
-            &rapl_host_energy_microjoules, 
+            &host_energy_microjoules, 
             None
         )
     );
 
-    let metric_name = "rapl_host_energy_timestamp_seconds";
+    let metric_name = "host_energy_timestamp_seconds";
     body = push_metric(
-        body,String::from("Timestamp in seconds when rapl_hose_energy_microjoules has been computed."),
+        body,String::from("Timestamp in seconds when hose_energy_microjoules has been computed."),
         String::from("counter"),
         String::from(metric_name),
         format_metric(
             metric_name,
-            &rapl_host_energy_timestamp_seconds, 
+            &host_energy_timestamp_seconds, 
             None
         )
     );
 
-    let mut rapl_host_power_microwatts = "Nan";
+    let mut host_power_microwatts = "Nan";
     let host_power_record: Record;
     if let Some(power) = (*topo).get_records_diff_power_microwatts() {
         host_power_record = power;
-        rapl_host_power_microwatts = &host_power_record.value;
+        host_power_microwatts = &host_power_record.value;
     }
 
-    let metric_name = "rapl_host_power_microwatts";
+    let metric_name = "host_power_microwatts";
     body = push_metric(
         body, 
         String::from("Power measurement on the whole host, in microwatts"),
@@ -199,7 +199,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         String::from(metric_name), 
         format_metric(
             metric_name, 
-            rapl_host_power_microwatts, 
+            host_power_microwatts, 
             None
         )
     );
@@ -207,29 +207,29 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     let sockets = (*topo).get_sockets_passive();
     for s in sockets {
         let records = s.get_records_passive();
-        let mut rapl_socket_energy_microjoules = "NaN";
+        let mut socket_energy_microjoules = "NaN";
         if !records.is_empty() {
-            rapl_socket_energy_microjoules = &records.last().unwrap().value;
+            socket_energy_microjoules = &records.last().unwrap().value;
         }
         let mut labels = HashMap::new();
         labels.insert(String::from("socket_id"), s.id.to_string());
         
-        let metric_name = "rapl_socket_energy_microjoules";
+        let metric_name = "socket_energy_microjoules";
         body = push_metric(
             body, String::from("Socket related energy measurement in mirojoules."),
             String::from("counter"), 
             String::from(metric_name),
             format_metric(
                 metric_name,
-                rapl_socket_energy_microjoules,
+                socket_energy_microjoules,
                 Some(&labels)
             )
         );
-        let mut rapl_socket_power_microwatts = "NaN";
+        let mut socket_power_microwatts = "NaN";
         let socket_power_record: Record;
         if let Some(power) = (*topo).get_records_diff_power_microwatts() {
             socket_power_record = power;
-            rapl_socket_power_microwatts = &socket_power_record.value;
+            socket_power_microwatts = &socket_power_record.value;
         }
         
         let metric_name = "socket_power_microwatts";
@@ -239,7 +239,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
             String::from(metric_name),
             format_metric(
                 metric_name,
-                rapl_socket_power_microwatts, 
+                socket_power_microwatts, 
                 Some(&labels)
             )
         );
