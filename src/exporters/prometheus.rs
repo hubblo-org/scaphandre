@@ -87,12 +87,8 @@ pub struct PowerMetrics {
 #[actix_web::main]
 /// Main function running the HTTP server.
 async fn runner(topology: Topology, address: String, port: String, suffix: String) -> std::io::Result<()> {
-    let mut final_address = String::from(DEFAULT_IP_ADDRESS);
-    if let Ok(addr) = address.parse::<IpAddr>() {
-        final_address = addr.to_string();
-        debug!("Validated ip address: {}", addr);
-    } else {
-        panic!("Not a valid ip address: {}", address);
+    if let Err(error) = address.parse::<IpAddr>() {
+        panic!("{} is not a valid ip address: {}", address, error);
     }
     if let Err(error) = port.parse::<u64>() {
         panic!("Not a valid TCP port numer: {}", error);
@@ -108,7 +104,7 @@ async fn runner(topology: Topology, address: String, port: String, suffix: Strin
             ).default_service(
                 web::route().to(landing_page)
             )
-    }).workers(1).bind(format!("{}:{}", final_address, port))?
+    }).workers(1).bind(format!("{}:{}", address, port))?
     .run().await
 }
 
