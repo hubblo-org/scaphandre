@@ -19,11 +19,13 @@ pub fn run(matches: ArgMatches) {
     let sensor = match matches.value_of("sensor").unwrap() {
         "powercap_rapl" => PowercapRAPLSensor::new(
             matches.value_of("sensor-buffer-per-socket-max-kB").unwrap().parse().unwrap(),
-            matches.value_of("sensor-buffer-per-domain-max-kB").unwrap().parse().unwrap()
+            matches.value_of("sensor-buffer-per-domain-max-kB").unwrap().parse().unwrap(),
+            matches.is_present("vm")
         ),
         _ => PowercapRAPLSensor::new(
-            matches.value_of("sensor-buffer-per-socket-max-kB").unwrap().parse().unwrap(),
-            matches.value_of("sensor-buffer-per-domain-max-kB").unwrap().parse().unwrap()
+            matches.value_of("").unwrap().parse().unwrap(),
+            matches.value_of("sensor-buffer-per-domain-max-kB").unwrap().parse().unwrap(),
+            matches.is_present("vm")
         )
     };
     let sensor_boxed = Box::new(sensor);

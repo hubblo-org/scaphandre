@@ -26,7 +26,7 @@ fn main() {
             Arg::with_name("sensor")
                 .value_name("sensor")
                 .help("Sensor module to apply on the host to get energy consumption metrics.")
-                .required(true)
+                .required(false)
                 .takes_value(true)
                 .default_value("powercap_rapl")
                 .possible_values(&sensors)
@@ -46,6 +46,13 @@ fn main() {
                 .required(false)
                 .takes_value(true)
                 .default_value("2")
+        ).arg(
+            Arg::with_name("vm")
+                .value_name("vm")
+                .help("Tell scaphandre if he is running in a virtual machine.")
+                .long("vm")
+                .required(false)
+                .takes_value(false)
         );
 
     for exp in res {

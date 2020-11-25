@@ -10,16 +10,18 @@ pub struct PowercapRAPLSensor {
     base_path: String,
     buffer_per_socket_max_kbytes: u16,
     buffer_per_domain_max_kbytes: u16,
+    virtual_machine: bool
 }
 
 impl PowercapRAPLSensor {
     pub fn new(
-        buffer_per_socket_max_kbytes: u16, buffer_per_domain_max_kbytes: u16
+        buffer_per_socket_max_kbytes: u16, buffer_per_domain_max_kbytes: u16, virtual_machine: bool
     ) -> PowercapRAPLSensor {
         PowercapRAPLSensor{
             base_path: String::from("/sys/class/powercap"),
             buffer_per_socket_max_kbytes,
-            buffer_per_domain_max_kbytes
+            buffer_per_domain_max_kbytes,
+            virtual_machine
         }
     }
 
@@ -42,7 +44,7 @@ impl Sensor for PowercapRAPLSensor {
     /// Creates a Topology instance.
     fn generate_topology(&self) -> Result<Topology, Box<dyn Error>> {
         let modules_state = PowercapRAPLSensor::check_module();
-        if modules_state.is_err() {
+        if modules_state.is_err() && !self.virtual_machine {
             panic!("Couldn't find intel_rapl modules.");
         }
         let mut topo = Topology::new();
@@ -93,7 +95,7 @@ mod tests {
     }
     #[test]
     fn get_topology_returns_topology_type() {
-        let mut sensor = PowercapRAPLSensor::new(1, 1);
+        let mut sensor = PowercapRAPLSensor::new(1, 1, false);
         let topology = sensor.get_topology();
         assert_eq!("alloc::boxed::Box<core::option::Option<&scaphandre::sensors::Topology>>", type_of(topology))
     }
