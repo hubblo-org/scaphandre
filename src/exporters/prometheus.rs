@@ -319,7 +319,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         plabels.insert(String::from("pid"), pid.to_string());
         plabels.insert(String::from("exe"), exe);
         if cmdline.is_some() {
-            plabels.insert(String::from("cmdline"), cmdline.unwrap());
+            plabels.insert(String::from("cmdline"), cmdline.unwrap().replace("\"", "\\\""));
         }
 
         //let mut stime = String::from("NaN");
