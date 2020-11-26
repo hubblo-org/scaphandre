@@ -2,33 +2,47 @@
 use loggerv;
 pub mod sensors;
 pub mod exporters;
-use sensors::{powercap_rapl::PowercapRAPLSensor};
+use sensors::{Sensor, powercap_rapl::PowercapRAPLSensor};
 use exporters::{Exporter, ExporterOption, stdout::StdoutExporter, prometheus::PrometheusExporter};
 pub use clap::ArgMatches;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 
+
+/// Helper function to get an argument from ArgMatches
+fn get_argument(matches: &ArgMatches, arg: &'static str) -> String {
+    if let Some(value) = matches.value_of(arg) {
+        return String::from(value)
+    }
+    panic!("Couldn't get argument {}", arg);
+}
+
+/// Helper function to get a Sensor instance from ArgMatches
+fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor>{
+    let sensor = match &get_argument(matches, "sensor")[..] {
+        "powercap_rapl" => PowercapRAPLSensor::new(
+            get_argument(matches,"sensor-buffer-per-socket-max-kB").parse().unwrap(),
+            get_argument(matches, "sensor-buffer-per-domain-max-kB").parse().unwrap(),
+            matches.is_present("vm")
+        ),
+        _ => PowercapRAPLSensor::new(
+            get_argument(matches, "sensor-buffer-per-socket-max-kB").parse().unwrap(),
+            get_argument(matches, "sensor-buffer-per-domain-max-kB").parse().unwrap(),
+            matches.is_present("vm")
+        )
+    };
+    Box::new(sensor)
+}
+
 /// Matches the sensor and exporter name and options requested from the command line and
 /// creates the appropriate instances. Launchs the standardized entrypoint of
 /// the choosen exporter: run()
-/// This function should be updated to take new exporters and sensors into account.
+/// This function should be updated to take new exporters into account.
 pub fn run(matches: ArgMatches) {
 
     loggerv::init_with_verbosity(matches.occurrences_of("v")).unwrap();
 
-    let sensor = match matches.value_of("sensor").unwrap() {
-        "powercap_rapl" => PowercapRAPLSensor::new(
-            matches.value_of("sensor-buffer-per-socket-max-kB").unwrap().parse().unwrap(),
-            matches.value_of("sensor-buffer-per-domain-max-kB").unwrap().parse().unwrap(),
-            matches.is_present("vm")
-        ),
-        _ => PowercapRAPLSensor::new(
-            matches.value_of("").unwrap().parse().unwrap(),
-            matches.value_of("sensor-buffer-per-domain-max-kB").unwrap().parse().unwrap(),
-            matches.is_present("vm")
-        )
-    };
-    let sensor_boxed = Box::new(sensor);
+    let sensor_boxed = get_sensor(&matches);
 
     let stdout_exporter_required = matches.subcommand_matches("stdout");
     if stdout_exporter_required.is_some() {
