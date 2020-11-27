@@ -13,3 +13,13 @@ Cargo.lock
 #Added by cargo
 
 /target
+
+
+# Avoid terraform generated configuration for tests
+**/*.tf
+**/*.tar.gz
+**/*.qcow2
+**/*.pyc
+**/*.tfstate*
+**/mitogen*/*
+**/.terraform/*
