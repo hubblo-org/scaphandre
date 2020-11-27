@@ -33,9 +33,8 @@ Steps to reproduce the behavior. Something like:
 
 <!-- Please fill the following information. -->
 
-- OS: [e.g. iOS]
-- Browser [e.g. chrome, safari]
-- Version [e.g. 22]
+- Linux distribution version [e.g. Ubuntu 20.04.1]
+- Kernel version (output of `uname -r`) [e.g. 5.4.0-54-generic]
 
 ## Additional context
 
