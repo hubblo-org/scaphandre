@@ -18,8 +18,9 @@ impl Exporter for QemuExporter {
     fn run(&mut self, parameters: clap::ArgMatches) {
         info!("Starting qemu exporter");    
         let stop = false;
+        let path = "/var/lib/libvirt/scaphandre";
         while !stop {
-            self.iteration(String::from("/var/lib/libvirt/scaphandre"));
+            self.iteration(String::from(path));
             thread::sleep(time::Duration::from_secs(5));
         }
     }
@@ -55,6 +56,13 @@ impl QemuExporter {
                     let vm_name = QemuExporter::get_vm_name_from_cmdline(&last.process.cmdline().unwrap());
                     let time_pdiff = last.total_time_jiffies() - previous.total_time_jiffies();
                     if let Some(time_tdiff) = &topo_stat_diff {
+                        let first_domain_path = format!("{}/{}/intel-rapl:0:0", path, vm_name);
+                        if fs::read_dir(&first_domain_path).is_err() {
+                            match fs::create_dir_all(&first_domain_path){
+                                Ok(res) => info!("Created {} folder.", &path),
+                                Err(error) => panic!("Couldn't create {}. Got: {}", &path, error)
+                            }
+                        }
                         let ratio = time_pdiff as f32 / &time_tdiff.total_time_jiffies();
                         let uj_to_add = ratio * topo_rec_uj.value.parse::<f32>().unwrap();
                         let complete_path = format!("{}/{}/intel-rapl:0", path, vm_name);

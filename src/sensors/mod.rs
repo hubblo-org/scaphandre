@@ -444,9 +444,11 @@ impl RecordGenerator for CPUSocket {
             Ok(n) => n,
             Err(_) => panic!("Couldn't generate timestamp")
         };
+        let raw_uj = self.read_counter_uj();
+        warn!("raw uj: {:?}", raw_uj);
         let record = Record::new(
             timestamp,
-            self.read_counter_uj().unwrap(),
+            raw_uj.unwrap(),
             units::Unit::MicroJoule
         );
 
@@ -494,6 +496,7 @@ impl RecordGenerator for CPUSocket {
                 )
             );
         }
+        warn!("sending {:?}", result);
         result
     }
 }

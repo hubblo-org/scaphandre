@@ -17,8 +17,14 @@ impl PowercapRAPLSensor {
     pub fn new(
         buffer_per_socket_max_kbytes: u16, buffer_per_domain_max_kbytes: u16, virtual_machine: bool
     ) -> PowercapRAPLSensor {
+        let mut powercap_path = "/sys/class/powercap";
+        if virtual_machine {
+            powercap_path = "/root/scaphandre";
+            warn!("Powercap_rapl path is: {}", powercap_path);
+        }
+
         PowercapRAPLSensor{
-            base_path: String::from("/sys/class/powercap"),
+            base_path: String::from(powercap_path),
             buffer_per_socket_max_kbytes,
             buffer_per_domain_max_kbytes,
             virtual_machine
@@ -63,12 +69,14 @@ impl Sensor for PowercapRAPLSensor {
                     format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
                     self.buffer_per_socket_max_kbytes
                 );
-                topo.safe_add_domain_to_socket(
-                    socket_id, domain_id,
-                    &fs::read_to_string(format!("{}/name", folder_name)).unwrap(),
-                    &format!("{}/intel-rapl:{}:{}/energy_uj", self.base_path, socket_id, domain_id),
-                    self.buffer_per_domain_max_kbytes
-                );
+                if let Ok(domain_name) = &fs::read_to_string(format!("{}/name", folder_name)) {
+                    topo.safe_add_domain_to_socket(
+                        socket_id, domain_id,
+                        domain_name,
+                        &format!("{}/intel-rapl:{}:{}/energy_uj", self.base_path, socket_id, domain_id),
+                        self.buffer_per_domain_max_kbytes
+                    );
+                }
             }
         }
         topo.add_cpu_cores();
