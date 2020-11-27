@@ -3,7 +3,10 @@ use loggerv;
 pub mod sensors;
 pub mod exporters;
 use sensors::{Sensor, powercap_rapl::PowercapRAPLSensor};
-use exporters::{Exporter, ExporterOption, stdout::StdoutExporter, prometheus::PrometheusExporter};
+use exporters::{
+    Exporter, ExporterOption, stdout::StdoutExporter, prometheus::PrometheusExporter,
+    qemu::QemuExporter
+};
 pub use clap::ArgMatches;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
@@ -56,6 +59,11 @@ pub fn run(matches: ArgMatches) {
             let mut exporter = PrometheusExporter::new(sensor_boxed);
             exporter.run(exporter_parameters);
         } else {
+            let qemu_exporter_required = matches.subcommand_matches("qemu");
+            if let Some(exporter_parameters) = qemu_exporter_required {
+                let mut exporter = QemuExporter::new(sensor_boxed);
+                exporter.run(exporter_parameters.clone());
+            }
             error!("Couldn't determine which exporter has been choosed.");
         }
     }
@@ -73,9 +81,27 @@ pub fn get_exporters_options() -> HashMap<String, HashMap<String, ExporterOption
         String::from("prometheus"),
         exporters::prometheus::PrometheusExporter::get_options()
     );
+    options.insert(
+        String::from("qemu"),
+        exporters::qemu::QemuExporter::get_options()
+    );
     options
 }
 
 pub fn current_system_time_since_epoch() -> Duration {
     SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap()
 }
+
+//  Copyright 2020 The scaphandre authors.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.

@@ -1,6 +1,6 @@
 pub mod powercap_rapl;
 pub mod units;
-mod utils;
+pub mod utils;
 use procfs::{process, CpuTime, KernelStats, CpuInfo};
 use std::error::Error;
 use std::collections::HashMap;
@@ -96,7 +96,7 @@ impl RecordGenerator for Topology {
             let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
             for _ in 1..nb_records_to_delete {
                 if !self.record_buffer.is_empty() {
-                    debug!("Cleaning record buffer on Topology, removing: {:?}", self.record_buffer.remove(0));
+                    trace!("Cleaning record buffer on Topology, removing: {:?}", self.record_buffer.remove(0));
                 }
             }
         }
@@ -121,7 +121,7 @@ impl Topology {
         Topology {
             sockets: vec![],
             remote: false,
-            proc_tracker: ProcessTracker::new(3),
+            proc_tracker: ProcessTracker::new(5),
             stat_buffer: vec![],
             record_buffer: vec![],
             buffer_max_kbytes: 1
@@ -254,6 +254,17 @@ impl Topology {
 
     pub fn refresh_stats(&mut self) {
         self.stat_buffer.insert(0, self.read_stats().unwrap());
+    }
+
+    pub fn get_records_diff(&self) -> Option<Record> {
+        let len = self.record_buffer.len();
+        if len > 2 {
+            let last = self.record_buffer.last().unwrap();
+            let previous = self.record_buffer.get(len - 2).unwrap();
+            let diff = last.value.parse::<u64>().unwrap() - previous.value.parse::<u64>().unwrap();
+            return Some(Record::new(last.timestamp, diff.to_string(), last.unit)) 
+        }
+        None
     }
 
     pub fn get_records_diff_power_microwatts(&self) -> Option<Record> {
@@ -459,7 +470,7 @@ impl RecordGenerator for CPUSocket {
             let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
             for _ in 1..nb_records_to_delete {
                 if !self.record_buffer.is_empty() {
-                    debug!(
+                    trace!(
                         "Cleaning socket id {} records buffer, removing: {}",
                         self.id, self.record_buffer.remove(0)
                     );
@@ -869,3 +880,17 @@ mod tests {
         }
     }
 }
+
+//  Copyright 2020 The scaphandre authors.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.

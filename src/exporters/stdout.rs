@@ -4,7 +4,8 @@ use std::collections::HashMap;
 use crate::exporters::*;
 use crate::sensors::{Sensor, Topology, RecordGenerator, energy_records_to_power_record};
 
-
+/// An Exporter that displays power consumption data of the host
+/// and its processes on the standard output of the terminal.
 pub struct StdoutExporter {
     topology: Topology
 }
@@ -32,6 +33,7 @@ impl Exporter for StdoutExporter {
 }
 
 impl StdoutExporter {
+    /// Instantiates and returns a new StdoutExporter
     pub fn new(mut sensor: Box<dyn Sensor>) -> StdoutExporter {
         let some_topology = *sensor.get_topology();
         StdoutExporter { topology: some_topology.unwrap() }    
@@ -167,3 +169,17 @@ mod tests {
 
     }
 }
+
+//  Copyright 2020 The scaphandre authors.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
