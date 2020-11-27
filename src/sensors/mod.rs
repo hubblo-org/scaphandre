@@ -261,8 +261,12 @@ impl Topology {
         if len > 2 {
             let last = self.record_buffer.last().unwrap();
             let previous = self.record_buffer.get(len - 2).unwrap();
-            let diff = last.value.parse::<u64>().unwrap() - previous.value.parse::<u64>().unwrap();
-            return Some(Record::new(last.timestamp, diff.to_string(), last.unit)) 
+            let last_value = last.value.parse::<u64>().unwrap();
+            let previous_value = previous.value.parse::<u64>().unwrap();
+            if previous_value <= last_value {
+                let diff = last_value - previous_value;
+                return Some(Record::new(last.timestamp, diff.to_string(), last.unit)) 
+            }
         }
         None
     }
