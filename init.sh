@@ -1,6 +1,9 @@
 #!/bin/bash
 
-whoami=$(whoami)
+WHOAMI=$(whoami)
 
-sudo chown root:${whoami} -R /sys/devices/virtual/powercap/*
-sudo chmod g+r -R /sys/devices/virtual/powercap/*
+for i in $(find /sys/devices/virtual/powercap -name energy_uj)
+do
+  sudo chown root:${WHOAMI} ${i}
+  sudo chmod g+r -R ${i}
+done
