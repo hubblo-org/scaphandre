@@ -63,8 +63,12 @@ impl QemuExporter {
                                 Err(error) => panic!("Couldn't create {}. Got: {}", &path, error)
                             }
                         }
-                        let ratio = time_pdiff as f32 / &time_tdiff.total_time_jiffies();
+                        let tdiff = &time_tdiff.total_time_jiffies() * procfs::ticks_per_second().unwrap() as f32;
+                        trace!("Time_pdiff={} time_tdiff={}", time_pdiff.to_string(), tdiff);
+                        let ratio = time_pdiff as f32 / tdiff;
+                        trace!("Ratio is {}", ratio.to_string());
                         let uj_to_add = ratio * topo_rec_uj.value.parse::<f32>().unwrap();
+                        trace!("Adding {} uJ", uj_to_add);
                         let complete_path = format!("{}/{}/intel-rapl:0", path, vm_name);
                         if let Ok(result) = QemuExporter::add_or_create(
                             &complete_path, uj_to_add as u64
