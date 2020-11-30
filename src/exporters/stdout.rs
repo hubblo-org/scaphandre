@@ -20,7 +20,7 @@ impl Exporter for StdoutExporter {
         options.insert(
             String::from("timeout"),
             ExporterOption{
-                default_value: String::from("5"),
+                default_value: String::from("10"),
                 long: String::from("timeout"),
                 short: String::from("t"),
                 required: false,
