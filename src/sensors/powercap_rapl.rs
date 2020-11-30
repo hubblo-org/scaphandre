@@ -1,10 +1,11 @@
 use std::error::Error;
-use std::fs;
+use std::{fs,env};
 use std::collections::HashMap;
 use regex::Regex;
 use crate::sensors::Sensor as Sensor;
 use crate::sensors::Topology as Topology;
 use procfs::{modules, KernelModule};
+
 
 pub struct PowercapRAPLSensor {
     base_path: String,
@@ -14,17 +15,22 @@ pub struct PowercapRAPLSensor {
 }
 
 impl PowercapRAPLSensor {
+    /// Instantiates and returns an instance of PowercapRAPLSensor.
     pub fn new(
         buffer_per_socket_max_kbytes: u16, buffer_per_domain_max_kbytes: u16, virtual_machine: bool
     ) -> PowercapRAPLSensor {
-        let mut powercap_path = "/sys/class/powercap";
+        let mut powercap_path = String::from("/sys/class/powercap");
         if virtual_machine {
-            powercap_path = "/root/scaphandre";
+            powercap_path = String::from("/var/scaphandre");
+            if let Ok(val) = env::var("SCAPHANDRE_POWERCAP_PATH") {
+                powercap_path = val;
+            }
+            
             warn!("Powercap_rapl path is: {}", powercap_path);
         }
 
         PowercapRAPLSensor{
-            base_path: String::from(powercap_path),
+            base_path: powercap_path,
             buffer_per_socket_max_kbytes,
             buffer_per_domain_max_kbytes,
             virtual_machine
