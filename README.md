@@ -13,7 +13,7 @@ In opposition to its name, scaphandre aims to be as light and clean as possible.
 See the [why](docs/why.md) section for more about the goals of the project.
 
 ![Rust](https://github.com/hubblo-org/scaphandre/workflows/Rust/badge.svg?branch=main)
-![https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge](https://badges.gitter.im/Join%20Chat.svg)
+![[Come chat with us on gitter !](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ---
 
