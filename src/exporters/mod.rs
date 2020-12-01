@@ -1,8 +1,8 @@
-pub mod stdout;
 pub mod prometheus;
 pub mod qemu;
-use std::collections::HashMap;
+pub mod stdout;
 use clap::ArgMatches;
+use std::collections::HashMap;
 
 pub trait Exporter {
     fn run(&mut self, parameters: ArgMatches);
@@ -15,7 +15,7 @@ pub struct ExporterOption {
     pub default_value: String,
     pub short: String,
     pub long: String,
-    pub help: String
+    pub help: String,
 }
 
 //  Copyright 2020 The scaphandre authors.

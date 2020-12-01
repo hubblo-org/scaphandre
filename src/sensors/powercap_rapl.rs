@@ -1,23 +1,24 @@
-use std::error::Error;
-use std::{fs,env};
-use std::collections::HashMap;
-use regex::Regex;
-use crate::sensors::Sensor as Sensor;
-use crate::sensors::Topology as Topology;
+use crate::sensors::Sensor;
+use crate::sensors::Topology;
 use procfs::{modules, KernelModule};
-
+use regex::Regex;
+use std::collections::HashMap;
+use std::error::Error;
+use std::{env, fs};
 
 pub struct PowercapRAPLSensor {
     base_path: String,
     buffer_per_socket_max_kbytes: u16,
     buffer_per_domain_max_kbytes: u16,
-    virtual_machine: bool
+    virtual_machine: bool,
 }
 
 impl PowercapRAPLSensor {
     /// Instantiates and returns an instance of PowercapRAPLSensor.
     pub fn new(
-        buffer_per_socket_max_kbytes: u16, buffer_per_domain_max_kbytes: u16, virtual_machine: bool
+        buffer_per_socket_max_kbytes: u16,
+        buffer_per_domain_max_kbytes: u16,
+        virtual_machine: bool,
     ) -> PowercapRAPLSensor {
         let mut powercap_path = String::from("/sys/class/powercap");
         if virtual_machine {
@@ -25,29 +26,34 @@ impl PowercapRAPLSensor {
             if let Ok(val) = env::var("SCAPHANDRE_POWERCAP_PATH") {
                 powercap_path = val;
             }
-            
+
             warn!("Powercap_rapl path is: {}", powercap_path);
         }
 
-        PowercapRAPLSensor{
+        PowercapRAPLSensor {
             base_path: powercap_path,
             buffer_per_socket_max_kbytes,
             buffer_per_domain_max_kbytes,
-            virtual_machine
+            virtual_machine,
         }
     }
 
     /// Checks if intel_rapl modules are present and activated.
     pub fn check_module() -> Result<String, String> {
         let modules = modules().unwrap();
-        let rapl_modules = modules.iter().filter(
-            |(_, v)| v.name == "intel_rapl_msr" || v.name == "intel_rapl_common"
-        ).collect::<HashMap<&String, &KernelModule>>();
+        let rapl_modules = modules
+            .iter()
+            .filter(|(_, v)| v.name == "intel_rapl_msr" || v.name == "intel_rapl_common")
+            .collect::<HashMap<&String, &KernelModule>>();
 
         if rapl_modules.len() > 1 {
-            Ok(String::from("intel_rapl_msr and intel_rapl_common modules found."))
+            Ok(String::from(
+                "intel_rapl_msr and intel_rapl_common modules found.",
+            ))
         } else {
-            Err(String::from("intel_rapl_common and intel_rapl_msr kernel modules not found."))
+            Err(String::from(
+                "intel_rapl_common and intel_rapl_msr kernel modules not found.",
+            ))
         }
     }
 }
@@ -61,26 +67,32 @@ impl Sensor for PowercapRAPLSensor {
         }
         let mut topo = Topology::new();
         let re_domain = Regex::new(r"^.*/intel-rapl:\d+:\d+$").unwrap();
-        for folder in fs::read_dir(&self.base_path).unwrap(){
-            let folder_name =  String::from(folder.unwrap().path().to_str().unwrap());
+        for folder in fs::read_dir(&self.base_path).unwrap() {
+            let folder_name = String::from(folder.unwrap().path().to_str().unwrap());
             // let's catch domain folders
-            if re_domain.is_match(&folder_name) {                    
+            if re_domain.is_match(&folder_name) {
                 // let's get the second number of the intel-rapl:X:X string
                 let mut splitted = folder_name.split(':');
                 let _ = splitted.next();
                 let socket_id = String::from(splitted.next().unwrap()).parse().unwrap();
                 let domain_id = String::from(splitted.next().unwrap()).parse().unwrap();
                 topo.safe_add_socket(
-                    socket_id, vec![], vec![],
+                    socket_id,
+                    vec![],
+                    vec![],
                     format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
-                    self.buffer_per_socket_max_kbytes
+                    self.buffer_per_socket_max_kbytes,
                 );
                 if let Ok(domain_name) = &fs::read_to_string(format!("{}/name", folder_name)) {
                     topo.safe_add_domain_to_socket(
-                        socket_id, domain_id,
+                        socket_id,
+                        domain_id,
                         domain_name,
-                        &format!("{}/intel-rapl:{}:{}/energy_uj", self.base_path, socket_id, domain_id),
-                        self.buffer_per_domain_max_kbytes
+                        &format!(
+                            "{}/intel-rapl:{}:{}/energy_uj",
+                            self.base_path, socket_id, domain_id
+                        ),
+                        self.buffer_per_domain_max_kbytes,
                     );
                 }
             }
@@ -90,13 +102,12 @@ impl Sensor for PowercapRAPLSensor {
     }
 
     fn get_topology(&mut self) -> Box<Option<Topology>> {
-        let topology = self.generate_topology().ok();                
+        let topology = self.generate_topology().ok();
         if topology.is_none() {
             panic!("Couldn't generate the topology !");
         }
         Box::new(topology)
     }
-
 }
 
 #[cfg(test)]
@@ -111,9 +122,11 @@ mod tests {
     fn get_topology_returns_topology_type() {
         let mut sensor = PowercapRAPLSensor::new(1, 1, false);
         let topology = sensor.get_topology();
-        assert_eq!("alloc::boxed::Box<core::option::Option<&scaphandre::sensors::Topology>>", type_of(topology))
+        assert_eq!(
+            "alloc::boxed::Box<core::option::Option<&scaphandre::sensors::Topology>>",
+            type_of(topology)
+        )
     }
-
 }
 
 //  Copyright 2020 The scaphandre authors.

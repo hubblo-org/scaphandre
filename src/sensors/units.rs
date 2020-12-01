@@ -7,51 +7,52 @@ pub enum Unit {
     MilliJoule,
     MicroJoule,
     MegaWatt,
-    KiloWatt ,
+    KiloWatt,
     Watt,
     MilliWatt,
     MicroWatt,
-    Jiffries // time unit of usage, relative to the CPU
+    Jiffries, // time unit of usage, relative to the CPU
 }
 
 impl Unit {
-    pub fn to(measure: f64, source_unit: &Unit, dest_unit: &Unit) -> Result<f64, String>{
-        let energy_order = [
-            Unit::Joule, Unit::MilliJoule, Unit::MicroJoule
-        ];
+    pub fn to(measure: f64, source_unit: &Unit, dest_unit: &Unit) -> Result<f64, String> {
+        let energy_order = [Unit::Joule, Unit::MilliJoule, Unit::MicroJoule];
         let power_order = [
-            Unit::MegaWatt, Unit::KiloWatt, Unit::Watt,
-            Unit::MicroWatt, Unit::MilliWatt
+            Unit::MegaWatt,
+            Unit::KiloWatt,
+            Unit::Watt,
+            Unit::MicroWatt,
+            Unit::MilliWatt,
         ];
         let pos_source_energy = energy_order.iter().position(|x| x == source_unit);
         let pos_dest_energy = energy_order.iter().position(|x| x == dest_unit);
         let pos_source_power = power_order.iter().position(|x| x == source_unit);
         let pos_dest_power = power_order.iter().position(|x| x == dest_unit);
         if pos_source_energy.is_some() && pos_dest_energy.is_some() {
-           let pos_source = pos_source_energy.unwrap();
-           let pos_dest = pos_dest_energy.unwrap(); 
+            let pos_source = pos_source_energy.unwrap();
+            let pos_dest = pos_dest_energy.unwrap();
             Ok(measure * Unit::get_mult(pos_source, pos_dest))
         } else if pos_source_power.is_some() && pos_dest_power.is_some() {
-           let pos_source = pos_source_power.unwrap();
-           let pos_dest = pos_dest_power.unwrap(); 
+            let pos_source = pos_source_power.unwrap();
+            let pos_dest = pos_dest_power.unwrap();
             Ok(measure * Unit::get_mult(pos_source, pos_dest))
         } else {
             panic!("Impossible conversion asked from energy value to power value (without time dimension).");
         }
     }
 
-    fn get_mult(pos_source: usize, pos_dest: usize) -> f64{
+    fn get_mult(pos_source: usize, pos_dest: usize) -> f64 {
         let mut mult: f64 = 1.0;
         if pos_dest > pos_source {
             // source < dest
             for _ in 0..(pos_dest - pos_source) {
-               mult *= 1000.0; 
+                mult *= 1000.0;
             }
         } else if pos_dest < pos_source {
             // source > dest
             for _ in 0..(pos_source - pos_dest) {
-               mult /= 1000.0; 
-            }   
+                mult /= 1000.0;
+            }
         }
         mult
     }
@@ -68,18 +69,17 @@ impl fmt::Display for Unit {
             Unit::Watt => write!(f, "Watts"),
             Unit::KiloWatt => write!(f, "KiloWatts"),
             Unit::MegaWatt => write!(f, "MegaWatts"),
-            Unit::Jiffries => write!(f, "Jiffries")
+            Unit::Jiffries => write!(f, "Jiffries"),
         }
     }
 }
 
 impl Eq for Unit {}
-impl PartialEq for Unit{
+impl PartialEq for Unit {
     fn eq(&self, other: &Self) -> bool {
         format!("{:?}", self) == format!("{:?}", other)
     }
 }
-
 
 impl Copy for Unit {}
 
@@ -89,19 +89,18 @@ impl Clone for Unit {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn kw_equals_1000w(){
+    fn kw_equals_1000w() {
         let value = 1.0;
         let source = Unit::KiloWatt;
         let dest = Unit::Watt;
         assert_eq!(Unit::to(value, &source, &dest).unwrap(), 1000.0);
     }
     #[test]
-    fn kw_equals_0001megawatt(){
+    fn kw_equals_0001megawatt() {
         let value = 1.0;
         let source = Unit::KiloWatt;
         let dest = Unit::MegaWatt;

@@ -1,11 +1,11 @@
-use crate::exporters::*;
-use crate::sensors::{Sensor, Record, Topology, RecordGenerator};
-use std::collections::HashMap;
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
-use std::sync::Mutex;
-use std::net::IpAddr;
-use std::time::Duration;
 use crate::current_system_time_since_epoch;
+use crate::exporters::*;
+use crate::sensors::{Record, RecordGenerator, Sensor, Topology};
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use std::collections::HashMap;
+use std::net::IpAddr;
+use std::sync::Mutex;
+use std::time::Duration;
 
 const DEFAULT_IP_ADDRESS: &str = "::";
 
@@ -15,13 +15,13 @@ pub struct PrometheusExporter {
     /// Sensor instance that is used to generate the Topology and
     /// thus get power consumption metrics.
     sensor: Box<dyn Sensor>,
-    _step: u16
+    _step: u16,
 }
 
 impl PrometheusExporter {
     /// Instantiates PrometheusExporter and returns the instance.
     pub fn new(sensor: Box<dyn Sensor>) -> PrometheusExporter {
-        PrometheusExporter{
+        PrometheusExporter {
             sensor: sensor,
             _step: 5,
         }
@@ -35,10 +35,10 @@ impl Exporter for PrometheusExporter {
             (*self.sensor.get_topology()).unwrap(),
             parameters.value_of("address").unwrap().to_string(),
             parameters.value_of("port").unwrap().to_string(),
-            parameters.value_of("suffix").unwrap().to_string()
+            parameters.value_of("suffix").unwrap().to_string(),
         ) {
             Ok(()) => warn!("Prometheus exporter shut down gracefully."),
-            Err(error) => panic!("Something failed in the prometheus exporter: {}", error)
+            Err(error) => panic!("Something failed in the prometheus exporter: {}", error),
         }
     }
     /// Returns options understood by the exporter.
@@ -46,50 +46,58 @@ impl Exporter for PrometheusExporter {
         let mut options = HashMap::new();
 
         options.insert(
-            String::from("address"), ExporterOption {
+            String::from("address"),
+            ExporterOption {
                 default_value: String::from(DEFAULT_IP_ADDRESS),
                 help: String::from("ipv6 or ipv4 address to expose the service to"),
                 long: String::from("address"),
                 short: String::from("a"),
                 required: false,
                 takes_value: true,
-            }
+            },
         );
         options.insert(
-            String::from("port"), ExporterOption {
+            String::from("port"),
+            ExporterOption {
                 default_value: String::from("8080"),
                 help: String::from("TCP port number to expose the service"),
                 long: String::from("port"),
                 short: String::from("p"),
                 required: false,
                 takes_value: true,
-            }
+            },
         );
         options.insert(
-            String::from("suffix"), ExporterOption {
+            String::from("suffix"),
+            ExporterOption {
                 default_value: String::from("metrics"),
                 help: String::from("url suffix to access metrics"),
                 long: String::from("suffix"),
                 short: String::from("s"),
                 required: false,
                 takes_value: true,
-            }
+            },
         );
 
         options
     }
 }
 
-/// Contains a mutex holding a Topology object. 
-/// Used to pass the topology data from one http worker to another. 
+/// Contains a mutex holding a Topology object.
+/// Used to pass the topology data from one http worker to another.
 pub struct PowerMetrics {
     topology: Mutex<Topology>,
-    last_request: Mutex<Duration>
+    last_request: Mutex<Duration>,
 }
 
 #[actix_web::main]
 /// Main function running the HTTP server.
-async fn runner(topology: Topology, address: String, port: String, suffix: String) -> std::io::Result<()> {
+async fn runner(
+    topology: Topology,
+    address: String,
+    port: String,
+    suffix: String,
+) -> std::io::Result<()> {
     if let Err(error) = address.parse::<IpAddr>() {
         panic!("{} is not a valid ip address: {}", address, error);
     }
@@ -97,19 +105,18 @@ async fn runner(topology: Topology, address: String, port: String, suffix: Strin
         panic!("Not a valid TCP port numer: {}", error);
     }
     HttpServer::new(move || {
-        App::new().data(
-            PowerMetrics{
+        App::new()
+            .data(PowerMetrics {
                 topology: Mutex::new(topology.clone()),
-                last_request: Mutex::new(Duration::new(0, 0))
-            }).service(
-                web::resource(&suffix).route(
-                    web::get().to(show_metrics)
-                )
-            ).default_service(
-                web::route().to(landing_page)
-            )
-    }).workers(1).bind(format!("{}:{}", address, port))?
-    .run().await
+                last_request: Mutex::new(Duration::new(0, 0)),
+            })
+            .service(web::resource(&suffix).route(web::get().to(show_metrics)))
+            .default_service(web::route().to(landing_page))
+    })
+    .workers(1)
+    .bind(format!("{}:{}", address, port))?
+    .run()
+    .await
 }
 
 fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>>) -> String {
@@ -117,10 +124,10 @@ fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>
     let mut result = format!("{}_{}", prefix, key);
     if let Some(labels) = labels {
         result.push('{');
-        for (k,v) in labels.iter() {
+        for (k, v) in labels.iter() {
             result.push_str(&format!("{}=\"{}\",", k, v));
         }
-        result.remove(result.len()-1);
+        result.remove(result.len() - 1);
         result.push('}');
     }
     result.push(' ');
@@ -128,7 +135,13 @@ fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>
     result.push_str("\n");
     result
 }
-fn push_metric(mut body: String, help: String, metric_type: String, metric_name: String, metric_line: String) -> String {
+fn push_metric(
+    mut body: String,
+    help: String,
+    metric_type: String,
+    metric_name: String,
+    metric_line: String,
+) -> String {
     body.push_str(&format!("# HELP {} {}", metric_name, help));
     body.push_str("\n");
     body.push_str(&format!("# TYPE {} {}", metric_name, metric_type));
@@ -141,7 +154,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     let now = current_system_time_since_epoch();
     let mut last_request = data.last_request.lock().unwrap();
 
-    if now - (*last_request) > Duration::from_secs(8){
+    if now - (*last_request) > Duration::from_secs(8) {
         {
             let mut topology = data.topology.lock().unwrap();
             (*topology).refresh();
@@ -162,26 +175,22 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
 
     let metric_name = "host_energy_microjoules";
     body = push_metric(
-        body, String::from("Energy measurement for the whole host, as extracted from the sensor, in microjoules."),
+        body,
+        String::from(
+            "Energy measurement for the whole host, as extracted from the sensor, in microjoules.",
+        ),
         String::from("counter"),
         String::from(metric_name),
-        format_metric(
-            metric_name,
-            &host_energy_microjoules, 
-            None
-        )
+        format_metric(metric_name, &host_energy_microjoules, None),
     );
 
     let metric_name = "host_energy_timestamp_seconds";
     body = push_metric(
-        body,String::from("Timestamp in seconds when hose_energy_microjoules has been computed."),
+        body,
+        String::from("Timestamp in seconds when hose_energy_microjoules has been computed."),
         String::from("counter"),
         String::from(metric_name),
-        format_metric(
-            metric_name,
-            &host_energy_timestamp_seconds, 
-            None
-        )
+        format_metric(metric_name, &host_energy_timestamp_seconds, None),
     );
 
     let mut host_power_microwatts = "Nan";
@@ -193,15 +202,11 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
 
     let metric_name = "host_power_microwatts";
     body = push_metric(
-        body, 
+        body,
         String::from("Power measurement on the whole host, in microwatts"),
         String::from("gauge"),
-        String::from(metric_name), 
-        format_metric(
-            metric_name, 
-            host_power_microwatts, 
-            None
-        )
+        String::from(metric_name),
+        format_metric(metric_name, host_power_microwatts, None),
     );
 
     let sockets = (*topo).get_sockets_passive();
@@ -213,17 +218,14 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         }
         let mut labels = HashMap::new();
         labels.insert(String::from("socket_id"), s.id.to_string());
-        
+
         let metric_name = "socket_energy_microjoules";
         body = push_metric(
-            body, String::from("Socket related energy measurement in mirojoules."),
-            String::from("counter"), 
+            body,
+            String::from("Socket related energy measurement in mirojoules."),
+            String::from("counter"),
             String::from(metric_name),
-            format_metric(
-                metric_name,
-                socket_energy_microjoules,
-                Some(&labels)
-            )
+            format_metric(metric_name, socket_energy_microjoules, Some(&labels)),
         );
         let mut socket_power_microwatts = "NaN";
         let socket_power_record: Record;
@@ -231,17 +233,14 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
             socket_power_record = power;
             socket_power_microwatts = &socket_power_record.value;
         }
-        
+
         let metric_name = "socket_power_microwatts";
         body = push_metric(
-            body, String::from("Power measurement relative to a CPU socket, in microwatts"),
+            body,
+            String::from("Power measurement relative to a CPU socket, in microwatts"),
             String::from("gauge"),
             String::from(metric_name),
-            format_metric(
-                metric_name,
-                socket_power_microwatts, 
-                Some(&labels)
-            )
+            format_metric(metric_name, socket_power_microwatts, Some(&labels)),
         );
     }
 
@@ -267,14 +266,11 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         metric_value_string = metric_value.to_string();
     }
     body = push_metric(
-        body, String::from(
-            "Number of processes currently running."
-        ),
+        body,
+        String::from("Number of processes currently running."),
         String::from("gauge"),
         String::from(metric_name),
-        format_metric(
-            metric_name, &metric_value_string, None
-        )
+        format_metric(metric_name, &metric_value_string, None),
     );
 
     let metric_name = "processes_blocked_current";
@@ -283,14 +279,11 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         metric_value_string = metric_value.to_string();
     }
     body = push_metric(
-        body, String::from(
-            "Number of processes currently blocked waiting for I/O."
-        ),
+        body,
+        String::from("Number of processes currently blocked waiting for I/O."),
         String::from("gauge"),
         String::from(metric_name),
-        format_metric(
-            metric_name, &metric_value_string, None
-        )
+        format_metric(metric_name, &metric_value_string, None),
     );
     let metric_name = "context_switches_total";
     let mut metric_value_string = String::from("NaN");
@@ -298,16 +291,12 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         metric_value_string = metric_value.to_string();
     }
     body = push_metric(
-        body, String::from(
-            "Number of context switches since boot."
-        ),
+        body,
+        String::from("Number of context switches since boot."),
         String::from("counter"),
         String::from(metric_name),
-        format_metric(
-            metric_name, &metric_value_string, None
-        )
+        format_metric(metric_name, &metric_value_string, None),
     );
-
 
     let processes_tracker = &(*topo).proc_tracker;
 
@@ -319,7 +308,10 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         plabels.insert(String::from("pid"), pid.to_string());
         plabels.insert(String::from("exe"), exe);
         if cmdline.is_some() {
-            plabels.insert(String::from("cmdline"), cmdline.unwrap().replace("\"", "\\\""));
+            plabels.insert(
+                String::from("cmdline"),
+                cmdline.unwrap().replace("\"", "\\\""),
+            );
         }
 
         //let mut stime = String::from("NaN");
@@ -353,13 +345,13 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         //    String::from(metric_name),
         //    format_metric(
         //        metric_name, &utime, Some(&plabels)
-        //    )            
+        //    )
         //);
 
         let metric_name = "process_power_consumption_microwatts";
         let mut process_power_value = String::from("0");
         if let Some(power) = topo.get_process_power_consumption_microwatts(pid) {
-           process_power_value = power.to_string(); 
+            process_power_value = power.to_string();
         }
         body = push_metric(
             body, String::from(format!("Power consumption due to the process, measured on at the topology level, in microwatts")),
@@ -373,9 +365,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
 
     HttpResponse::Ok()
         //.set_header("X-TEST", "value")
-        .body(
-           body 
-        )
+        .body(body)
 }
 
 async fn landing_page() -> impl Responder {
@@ -384,9 +374,7 @@ async fn landing_page() -> impl Responder {
     );
     HttpResponse::Ok()
         //.set_header("X-TEST", "value")
-        .body(
-           body 
-        )
+        .body(body)
 }
 
 //  Copyright 2020 The scaphandre authors.

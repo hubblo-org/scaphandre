@@ -1,38 +1,46 @@
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
 use loggerv;
-pub mod sensors;
 pub mod exporters;
-use sensors::{Sensor, powercap_rapl::PowercapRAPLSensor};
-use exporters::{
-    Exporter, ExporterOption, stdout::StdoutExporter, prometheus::PrometheusExporter,
-    qemu::QemuExporter
-};
+pub mod sensors;
 pub use clap::ArgMatches;
+use exporters::{
+    prometheus::PrometheusExporter, qemu::QemuExporter, stdout::StdoutExporter, Exporter,
+    ExporterOption,
+};
+use sensors::{powercap_rapl::PowercapRAPLSensor, Sensor};
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
-
 
 /// Helper function to get an argument from ArgMatches
 fn get_argument(matches: &ArgMatches, arg: &'static str) -> String {
     if let Some(value) = matches.value_of(arg) {
-        return String::from(value)
+        return String::from(value);
     }
     panic!("Couldn't get argument {}", arg);
 }
 
 /// Helper function to get a Sensor instance from ArgMatches
-fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor>{
+fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
     let sensor = match &get_argument(matches, "sensor")[..] {
         "powercap_rapl" => PowercapRAPLSensor::new(
-            get_argument(matches,"sensor-buffer-per-socket-max-kB").parse().unwrap(),
-            get_argument(matches, "sensor-buffer-per-domain-max-kB").parse().unwrap(),
-            matches.is_present("vm")
+            get_argument(matches, "sensor-buffer-per-socket-max-kB")
+                .parse()
+                .unwrap(),
+            get_argument(matches, "sensor-buffer-per-domain-max-kB")
+                .parse()
+                .unwrap(),
+            matches.is_present("vm"),
         ),
         _ => PowercapRAPLSensor::new(
-            get_argument(matches, "sensor-buffer-per-socket-max-kB").parse().unwrap(),
-            get_argument(matches, "sensor-buffer-per-domain-max-kB").parse().unwrap(),
-            matches.is_present("vm")
-        )
+            get_argument(matches, "sensor-buffer-per-socket-max-kB")
+                .parse()
+                .unwrap(),
+            get_argument(matches, "sensor-buffer-per-domain-max-kB")
+                .parse()
+                .unwrap(),
+            matches.is_present("vm"),
+        ),
     };
     Box::new(sensor)
 }
@@ -42,7 +50,6 @@ fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor>{
 /// the choosen exporter: run()
 /// This function should be updated to take new exporters into account.
 pub fn run(matches: ArgMatches) {
-
     loggerv::init_with_verbosity(matches.occurrences_of("v")).unwrap();
 
     let sensor_boxed = get_sensor(&matches);
@@ -75,21 +82,23 @@ pub fn get_exporters_options() -> HashMap<String, HashMap<String, ExporterOption
     let mut options = HashMap::new();
     options.insert(
         String::from("stdout"),
-        exporters::stdout::StdoutExporter::get_options()
+        exporters::stdout::StdoutExporter::get_options(),
     );
     options.insert(
         String::from("prometheus"),
-        exporters::prometheus::PrometheusExporter::get_options()
+        exporters::prometheus::PrometheusExporter::get_options(),
     );
     options.insert(
         String::from("qemu"),
-        exporters::qemu::QemuExporter::get_options()
+        exporters::qemu::QemuExporter::get_options(),
     );
     options
 }
 
 pub fn current_system_time_since_epoch() -> Duration {
-    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap()
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
 }
 
 //  Copyright 2020 The scaphandre authors.

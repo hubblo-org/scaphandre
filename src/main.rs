@@ -1,7 +1,7 @@
-//! Generic sensor and transmission agent for energy consumption related metrics. 
-//! 
-use clap::{Arg, App, SubCommand, AppSettings};
-use scaphandre::{run, get_exporters_options};
+//! Generic sensor and transmission agent for energy consumption related metrics.
+//!
+use clap::{App, AppSettings, Arg, SubCommand};
+use scaphandre::{get_exporters_options, run};
 
 fn main() {
     let sensors = ["powercap_rapl"];
@@ -63,15 +63,15 @@ fn main() {
                 _ => "Unknown exporter.",
             }
         );
-            
+
         for (key, opt) in exporters_options.get(exp).unwrap().iter() {
-            let arg = Arg::with_name(key) 
-             .required(opt.required)
-             .takes_value(opt.takes_value)
-             .default_value(&opt.default_value)
-             .short(&opt.short)
-             .long(&opt.long)
-             .help(&opt.help);
+            let arg = Arg::with_name(key)
+                .required(opt.required)
+                .takes_value(opt.takes_value)
+                .default_value(&opt.default_value)
+                .short(&opt.short)
+                .long(&opt.long)
+                .help(&opt.help);
             subcmd = subcmd.arg(arg);
         }
         matches = matches.subcommand(subcmd);

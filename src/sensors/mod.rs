@@ -1,46 +1,51 @@
 pub mod powercap_rapl;
 pub mod units;
 pub mod utils;
-use procfs::{process, CpuTime, KernelStats, CpuInfo};
-use std::error::Error;
+use procfs::{process, CpuInfo, CpuTime, KernelStats};
 use std::collections::HashMap;
-use std::{fmt, fs};
-use std::time::{SystemTime, Duration};
-use utils::{ProcessTracker, current_system_time_since_epoch};
+use std::error::Error;
 use std::mem::size_of_val;
+use std::time::{Duration, SystemTime};
+use std::{fmt, fs};
+use utils::{current_system_time_since_epoch, ProcessTracker};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
 /// Sensor trait, the Sensor API.
 pub trait Sensor {
     fn get_topology(&mut self) -> Box<Option<Topology>>;
-    fn generate_topology (&self) -> Result<Topology, Box<dyn Error>>;
+    fn generate_topology(&self) -> Result<Topology, Box<dyn Error>>;
 }
-
 
 /// Defines methods for Record instances creation
 /// and storage.
-pub trait RecordGenerator{
+pub trait RecordGenerator {
     fn refresh_record(&mut self) -> Record;
     fn get_records_passive(&self) -> Vec<Record>;
     fn clean_old_records(&mut self);
 }
 
-pub fn energy_records_to_power_record(
-    measures: (&Record, &Record)) -> Result<Record, String>
-{
+pub fn energy_records_to_power_record(measures: (&Record, &Record)) -> Result<Record, String> {
     let joules_1 = units::Unit::to(
-        measures.0.value.trim().parse().unwrap(), &measures.0.unit, &units::Unit::Joule
+        measures.0.value.trim().parse().unwrap(),
+        &measures.0.unit,
+        &units::Unit::Joule,
     );
     let joules_2 = units::Unit::to(
-        measures.1.value.trim().parse().unwrap(), &measures.1.unit, &units::Unit::Joule
+        measures.1.value.trim().parse().unwrap(),
+        &measures.1.unit,
+        &units::Unit::Joule,
     );
     let joules = joules_1.unwrap() - joules_2.unwrap();
 
     let t1 = measures.0.timestamp.as_secs();
     let t2 = measures.1.timestamp.as_secs();
-    let time_diff =  t1 - t2;
-    let result = joules / time_diff as f64; 
-    Ok(Record::new(measures.1.timestamp, result.to_string(), units::Unit::Watt))
+    let time_diff = t1 - t2;
+    let result = joules / time_diff as f64;
+    Ok(Record::new(
+        measures.1.timestamp,
+        result.to_string(),
+        units::Unit::Watt,
+    ))
 }
 
 // !!!!!!!!!!!!!!!!! Topology !!!!!!!!!!!!!!!!!!!!!!!
@@ -64,23 +69,23 @@ impl RecordGenerator for Topology {
         for s in self.get_sockets() {
             let records = s.get_records_passive();
             if !records.is_empty() {
-                value += records.get(records.len() - 1).unwrap().value.trim().parse::<u64>().unwrap();
+                value += records
+                    .get(records.len() - 1)
+                    .unwrap()
+                    .value
+                    .trim()
+                    .parse::<u64>()
+                    .unwrap();
             }
         }
         let timestamp = current_system_time_since_epoch();
-        let record = Record::new(
-            timestamp,
-            value.to_string(),
-            units::Unit::MicroJoule
-        );
+        let record = Record::new(timestamp, value.to_string(), units::Unit::MicroJoule);
 
-        self.record_buffer.push(
-            Record::new(
-                record.timestamp,
-                record.value.clone(),
-                units::Unit::MicroJoule
-            )
-        );
+        self.record_buffer.push(Record::new(
+            record.timestamp,
+            record.value.clone(),
+            units::Unit::MicroJoule,
+        ));
 
         if !self.record_buffer.is_empty() {
             self.clean_old_records();
@@ -90,13 +95,16 @@ impl RecordGenerator for Topology {
 
     fn clean_old_records(&mut self) {
         let record_ptr = &self.record_buffer[0];
-        let curr_size = size_of_val(record_ptr)*self.record_buffer.len();
-        if curr_size > (self.buffer_max_kbytes*1000) as usize {
-            let size_diff = curr_size - (self.buffer_max_kbytes*1000) as usize;
+        let curr_size = size_of_val(record_ptr) * self.record_buffer.len();
+        if curr_size > (self.buffer_max_kbytes * 1000) as usize {
+            let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
             let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
             for _ in 1..nb_records_to_delete {
                 if !self.record_buffer.is_empty() {
-                    trace!("Cleaning record buffer on Topology, removing: {:?}", self.record_buffer.remove(0));
+                    trace!(
+                        "Cleaning record buffer on Topology, removing: {:?}",
+                        self.record_buffer.remove(0)
+                    );
                 }
             }
         }
@@ -105,15 +113,14 @@ impl RecordGenerator for Topology {
     fn get_records_passive(&self) -> Vec<Record> {
         let mut result = vec![];
         for r in &self.record_buffer {
-            result.push(
-                Record::new(
-                    r.timestamp, r.value.clone(), units::Unit::MicroJoule
-                )
-            );
+            result.push(Record::new(
+                r.timestamp,
+                r.value.clone(),
+                units::Unit::MicroJoule,
+            ));
         }
         result
     }
-
 }
 
 impl Topology {
@@ -124,50 +131,52 @@ impl Topology {
             proc_tracker: ProcessTracker::new(5),
             stat_buffer: vec![],
             record_buffer: vec![],
-            buffer_max_kbytes: 1
+            buffer_max_kbytes: 1,
         }
     }
 
     /// Parses /proc/cpuinfo and creates instances of CPUCore.
-    /// 
+    ///
     ///# Examples
     ///
     /// ```
     /// use scaphandre::sensors::Topology;
-    /// 
+    ///
     /// let cores = Topology::generate_cpu_cores().unwrap();
     /// println!("There are {} cores on this host.", cores.len());
     /// for c in &cores {
     ///     println!("Here is CPU Core number {}", c.attributes.get("processor").unwrap());
     /// }
     /// ```
-    pub fn generate_cpu_cores() -> Result<Vec<CPUCore>, String>{
+    pub fn generate_cpu_cores() -> Result<Vec<CPUCore>, String> {
         let cpuinfo = CpuInfo::new().unwrap();
         let mut cores = vec![];
-        for id in 0..(cpuinfo.num_cores()-1) {
+        for id in 0..(cpuinfo.num_cores() - 1) {
             let mut info = HashMap::new();
             for (k, v) in cpuinfo.get_info(id).unwrap().iter() {
                 info.insert(String::from(*k), String::from(*v));
             }
-            cores.push(
-                CPUCore::new(
-                    id as u16,
-                    info
-                )
-            );
+            cores.push(CPUCore::new(id as u16, info));
         }
-        Ok(cores) 
+        Ok(cores)
     }
 
     pub fn safe_add_socket(
-        &mut self, socket_id: u16, domains: Vec<Domain>,
+        &mut self,
+        socket_id: u16,
+        domains: Vec<Domain>,
         attributes: Vec<Vec<HashMap<String, String>>>,
-        counter_uj_path: String, buffer_max_kbytes: u16
+        counter_uj_path: String,
+        buffer_max_kbytes: u16,
     ) {
         let result: Vec<&CPUSocket> = self.sockets.iter().filter(|s| s.id == socket_id).collect();
         if result.is_empty() {
             let socket = CPUSocket::new(
-                socket_id, domains, attributes, counter_uj_path, buffer_max_kbytes
+                socket_id,
+                domains,
+                attributes,
+                counter_uj_path,
+                buffer_max_kbytes,
             );
             self.sockets.push(socket);
         }
@@ -186,17 +195,22 @@ impl Topology {
     }
 
     pub fn safe_add_domain_to_socket(
-        &mut self, socket_id: u16, domain_id: u16,
-        name: &str, uj_counter: &str, buffer_max_kbytes: u16
+        &mut self,
+        socket_id: u16,
+        domain_id: u16,
+        name: &str,
+        uj_counter: &str,
+        buffer_max_kbytes: u16,
     ) {
         let iterator = self.sockets.iter_mut();
         for socket in iterator {
             if socket.id == socket_id {
-                socket.safe_add_domain(
-                    Domain::new(
-                        domain_id, String::from(name), String::from(uj_counter), buffer_max_kbytes
-                    )
-                );
+                socket.safe_add_domain(Domain::new(
+                    domain_id,
+                    String::from(name),
+                    String::from(uj_counter),
+                    buffer_max_kbytes,
+                ));
             }
         }
     }
@@ -205,14 +219,21 @@ impl Topology {
         let mut cores = Topology::generate_cpu_cores().unwrap();
         while !cores.is_empty() {
             let c = cores.pop().unwrap();
-            let socket_id = &c.attributes.get("physical id").unwrap().parse::<u16>().unwrap();
-            let socket = self.sockets.iter_mut().find(
-                |x| &x.id == socket_id
-            ).unwrap();
+            let socket_id = &c
+                .attributes
+                .get("physical id")
+                .unwrap()
+                .parse::<u16>()
+                .unwrap();
+            let socket = self
+                .sockets
+                .iter_mut()
+                .find(|x| &x.id == socket_id)
+                .unwrap();
             if socket_id == &socket.id {
                 socket.add_cpu_core(c);
             }
-        } 
+        }
     }
 
     /// Triggers ProcessTracker refresh on process stats
@@ -230,7 +251,7 @@ impl Topology {
             }
             //let cores = s.get_cores();
             //for c in cores {
-            //    
+            //
             //}
         }
         self.refresh_procs();
@@ -246,8 +267,8 @@ impl Topology {
             let pid = p.pid;
             let res = self.proc_tracker.add_process_record(p);
             match res {
-                Ok(_) => {},
-                Err(msg) => panic!("Failed to track process with pid {} !\nGot: {}", pid, msg)
+                Ok(_) => {}
+                Err(msg) => panic!("Failed to track process with pid {} !\nGot: {}", pid, msg),
             }
         }
     }
@@ -265,7 +286,7 @@ impl Topology {
             let previous_value = previous.value.parse::<u64>().unwrap();
             if previous_value <= last_value {
                 let diff = last_value - previous_value;
-                return Some(Record::new(last.timestamp, diff.to_string(), last.unit)) 
+                return Some(Record::new(last.timestamp, diff.to_string(), last.unit));
             }
         }
         None
@@ -274,24 +295,24 @@ impl Topology {
     pub fn get_records_diff_power_microwatts(&self) -> Option<Record> {
         if self.record_buffer.len() > 1 {
             let last_record = self.record_buffer.last().unwrap();
-            let previous_record = self.record_buffer.get(
-                self.record_buffer.len() - 2
-            ).unwrap();
+            let previous_record = self
+                .record_buffer
+                .get(self.record_buffer.len() - 2)
+                .unwrap();
             let last_microjoules = last_record.value.parse::<u64>().unwrap();
             let previous_microjoules = previous_record.value.parse::<u64>().unwrap();
             if previous_microjoules > last_microjoules {
-                return None
+                return None;
             }
             let microjoules = last_microjoules - previous_microjoules;
-            let time_diff = last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
+            let time_diff =
+                last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
             let microwatts = microjoules as f64 / time_diff;
-            return Some(
-                Record::new(
-                    last_record.timestamp,
-                    (microwatts as u64).to_string(),
-                    units::Unit::MicroWatt
-                )
-            )
+            return Some(Record::new(
+                last_record.timestamp,
+                (microwatts as u64).to_string(),
+                units::Unit::MicroWatt,
+            ));
         }
         None
     }
@@ -307,34 +328,37 @@ impl Topology {
             let mut guest = None;
             let mut guest_nice = None;
             if last.iowait.is_some() && previous.iowait.is_some() {
-               iowait = Some(last.iowait.unwrap() - previous.iowait.unwrap());
+                iowait = Some(last.iowait.unwrap() - previous.iowait.unwrap());
             }
             if last.irq.is_some() && previous.irq.is_some() {
-               irq = Some(last.irq.unwrap() - previous.irq.unwrap());
+                irq = Some(last.irq.unwrap() - previous.irq.unwrap());
             }
             if last.softirq.is_some() && previous.softirq.is_some() {
-               softirq = Some(last.softirq.unwrap() - previous.softirq.unwrap());
+                softirq = Some(last.softirq.unwrap() - previous.softirq.unwrap());
             }
             if last.steal.is_some() && previous.steal.is_some() {
-               steal = Some(last.steal.unwrap() - previous.steal.unwrap());
+                steal = Some(last.steal.unwrap() - previous.steal.unwrap());
             }
             if last.guest.is_some() && previous.guest.is_some() {
-               guest = Some(last.guest.unwrap() - previous.guest.unwrap());
+                guest = Some(last.guest.unwrap() - previous.guest.unwrap());
             }
             if last.guest_nice.is_some() && previous.guest_nice.is_some() {
-               guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
+                guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
             }
-            return Some(
-                CPUStat {
-                    cputime: CpuTime {
-                        user: last.user - previous.user,
-                        nice: last.nice - previous.nice,
-                        system: last.system - previous.system,
-                        idle: last.idle - previous.idle,
-                        iowait, irq, softirq, steal, guest, guest_nice
-                    }
-                }
-            )
+            return Some(CPUStat {
+                cputime: CpuTime {
+                    user: last.user - previous.user,
+                    nice: last.nice - previous.nice,
+                    system: last.system - previous.system,
+                    idle: last.idle - previous.idle,
+                    iowait,
+                    irq,
+                    softirq,
+                    steal,
+                    guest,
+                    guest_nice,
+                },
+            });
         }
         None
     }
@@ -343,14 +367,16 @@ impl Topology {
     pub fn read_stats(&self) -> Option<CPUStat> {
         let kernelstats_or_not = KernelStats::new();
         if kernelstats_or_not.is_ok() {
-            return Some(CPUStat { cputime: kernelstats_or_not.unwrap().total });
+            return Some(CPUStat {
+                cputime: kernelstats_or_not.unwrap().total,
+            });
         }
         None
     }
 
     pub fn read_nb_process_total_count(&self) -> Option<u64> {
         if let Ok(result) = KernelStats::new() {
-            return Some(result.processes)
+            return Some(result.processes);
         }
         None
     }
@@ -378,20 +404,20 @@ impl Topology {
         None
     }
 
-
-
-    pub fn get_process_power_consumption_microwatts(&self, pid: i32) -> Option<u64>{
+    pub fn get_process_power_consumption_microwatts(&self, pid: i32) -> Option<u64> {
         let tracker = self.get_proc_tracker();
-        if let Some(recs) = tracker.find_records(pid) {            
+        if let Some(recs) = tracker.find_records(pid) {
             if !recs.is_empty() && recs.len() > 1 {
                 let last = recs.get(0).unwrap();
                 let previous = recs.get(1).unwrap();
                 if let Some(topo_stats_diff) = self.get_stats_diff() {
                     //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
-                    let process_total_time = last.total_time_jiffies() - previous.total_time_jiffies();
+                    let process_total_time =
+                        last.total_time_jiffies() - previous.total_time_jiffies();
 
                     //trace!("process_total_time: {}", process_total_time);
-                    let topo_total_time = topo_stats_diff.total_time_jiffies() * procfs::ticks_per_second().unwrap() as f32;
+                    let topo_total_time = topo_stats_diff.total_time_jiffies()
+                        * procfs::ticks_per_second().unwrap() as f32;
                     let usage_percent = process_total_time as f64 / topo_total_time as f64;
                     //trace!("usage_percent: {}", usage_percent.to_string());
                     let topo_conso = self.get_records_diff_power_microwatts();
@@ -401,16 +427,13 @@ impl Topology {
                         //trace!("val f64: {}", val_f64);
                         let result = (val_f64 * usage_percent) as u64;
                         //trace!("result: {}", result);
-                        return Some(
-                           result 
-                        );
+                        return Some(result);
                     }
                 }
             }
         }
         None
     }
-
 }
 
 // !!!!!!!!!!!!!!!!! CPUSocket !!!!!!!!!!!!!!!!!!!!!!!
@@ -433,31 +456,25 @@ pub struct CPUSocket {
     /// CPU cores (core_id in /proc/cpuinfo) attached to the socket.
     pub cpu_cores: Vec<CPUCore>,
     /// Usage statistics records stored for this socket.
-    pub stat_buffer: Vec<CPUStat>
+    pub stat_buffer: Vec<CPUStat>,
 }
 
 impl RecordGenerator for CPUSocket {
-    /// Generates a new record of the socket energy consumption and stores it in the record_buffer. 
+    /// Generates a new record of the socket energy consumption and stores it in the record_buffer.
     /// Returns a clone of this Record instance.
     fn refresh_record(&mut self) -> Record {
-        let timestamp = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH){
+        let timestamp = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
             Ok(n) => n,
-            Err(_) => panic!("Couldn't generate timestamp")
+            Err(_) => panic!("Couldn't generate timestamp"),
         };
         let raw_uj = self.read_counter_uj();
-        let record = Record::new(
-            timestamp,
-            raw_uj.unwrap(),
-            units::Unit::MicroJoule
-        );
+        let record = Record::new(timestamp, raw_uj.unwrap(), units::Unit::MicroJoule);
 
-        self.record_buffer.push(
-            Record::new(
-                record.timestamp,
-                record.value.clone(),
-                units::Unit::MicroJoule
-            )
-        );
+        self.record_buffer.push(Record::new(
+            record.timestamp,
+            record.value.clone(),
+            units::Unit::MicroJoule,
+        ));
 
         if !self.record_buffer.is_empty() {
             self.clean_old_records();
@@ -469,49 +486,55 @@ impl RecordGenerator for CPUSocket {
     /// instances from the buffer to make it smaller in memory than buffer_max_kbytes.
     fn clean_old_records(&mut self) {
         let record_ptr = &self.record_buffer[0];
-        let curr_size = size_of_val(record_ptr) * self.record_buffer.len(); 
-        if curr_size > (self.buffer_max_kbytes*1000) as usize {
-            let size_diff = curr_size - (self.buffer_max_kbytes*1000) as usize;
+        let curr_size = size_of_val(record_ptr) * self.record_buffer.len();
+        if curr_size > (self.buffer_max_kbytes * 1000) as usize {
+            let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
             let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
             for _ in 1..nb_records_to_delete {
                 if !self.record_buffer.is_empty() {
                     trace!(
                         "Cleaning socket id {} records buffer, removing: {}",
-                        self.id, self.record_buffer.remove(0)
+                        self.id,
+                        self.record_buffer.remove(0)
                     );
                 }
             }
         }
     }
 
-    /// Returns a new owned Vector being a blone of the current record_buffer. 
+    /// Returns a new owned Vector being a blone of the current record_buffer.
     /// This does not affect the current buffer but is costly.
     fn get_records_passive(&self) -> Vec<Record> {
         let mut result = vec![];
         for r in &self.record_buffer {
-            result.push(
-                Record::new(
-                    r.timestamp, r.value.clone(), units::Unit::MicroJoule
-                )
-            );
+            result.push(Record::new(
+                r.timestamp,
+                r.value.clone(),
+                units::Unit::MicroJoule,
+            ));
         }
         result
     }
 }
 
 impl CPUSocket {
-
     /// Creates and returns a CPUSocket instance with an empty buffer and no CPUCore owned yet.
     fn new(
-        id: u16, domains: Vec<Domain>, attributes: Vec<Vec<HashMap<String, String>>>,
-        counter_uj_path: String, buffer_max_kbytes: u16
+        id: u16,
+        domains: Vec<Domain>,
+        attributes: Vec<Vec<HashMap<String, String>>>,
+        counter_uj_path: String,
+        buffer_max_kbytes: u16,
     ) -> CPUSocket {
         CPUSocket {
-            id, domains, attributes, counter_uj_path,
+            id,
+            domains,
+            attributes,
+            counter_uj_path,
             record_buffer: vec![], // buffer has to be empty first
             buffer_max_kbytes,
             cpu_cores: vec![], // cores are instantiated on a later step
-            stat_buffer: vec![]
+            stat_buffer: vec![],
         }
     }
 
@@ -528,7 +551,7 @@ impl CPUSocket {
     pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
         match fs::read_to_string(&self.counter_uj_path) {
             Ok(result) => Ok(result),
-            Err(error) => Err(Box::new(error))
+            Err(error) => Err(Box::new(error)),
         }
     }
 
@@ -563,10 +586,17 @@ impl CPUSocket {
     pub fn read_stats(&self) -> Option<CPUStat> {
         let mut stats = CPUStat {
             cputime: CpuTime {
-                user: 0.0, nice: 0.0, system: 0.0, idle: 0.0, iowait: Some(0.0),
-                irq: Some(0.0), softirq: Some(0.0), guest: Some(0.0),
-                guest_nice: Some(0.0), steal: Some(0.0)
-            }
+                user: 0.0,
+                nice: 0.0,
+                system: 0.0,
+                idle: 0.0,
+                iowait: Some(0.0),
+                irq: Some(0.0),
+                softirq: Some(0.0),
+                guest: Some(0.0),
+                guest_nice: Some(0.0),
+                steal: Some(0.0),
+            },
         };
         for c in &self.cpu_cores {
             let c_stats = c.read_stats().unwrap();
@@ -574,14 +604,12 @@ impl CPUSocket {
             stats.cputime.nice += c_stats.nice;
             stats.cputime.system += c_stats.system;
             stats.cputime.idle += c_stats.idle;
-            stats.cputime.iowait = Some(
-                stats.cputime.iowait.unwrap_or_default() + c_stats.iowait.unwrap_or_default()
-            );
-            stats.cputime.irq = Some(
-                stats.cputime.irq.unwrap_or_default() + c_stats.irq.unwrap_or_default()
-            );
+            stats.cputime.iowait =
+                Some(stats.cputime.iowait.unwrap_or_default() + c_stats.iowait.unwrap_or_default());
+            stats.cputime.irq =
+                Some(stats.cputime.irq.unwrap_or_default() + c_stats.irq.unwrap_or_default());
             stats.cputime.softirq = Some(
-                stats.cputime.softirq.unwrap_or_default() + c_stats.softirq.unwrap_or_default()
+                stats.cputime.softirq.unwrap_or_default() + c_stats.softirq.unwrap_or_default(),
             );
         }
         Some(stats)
@@ -601,56 +629,59 @@ impl CPUSocket {
             let mut guest = None;
             let mut guest_nice = None;
             if last.iowait.is_some() && previous.iowait.is_some() {
-               iowait = Some(last.iowait.unwrap() - previous.iowait.unwrap());
+                iowait = Some(last.iowait.unwrap() - previous.iowait.unwrap());
             }
             if last.irq.is_some() && previous.irq.is_some() {
-               irq = Some(last.irq.unwrap() - previous.irq.unwrap());
+                irq = Some(last.irq.unwrap() - previous.irq.unwrap());
             }
             if last.softirq.is_some() && previous.softirq.is_some() {
-               softirq = Some(last.softirq.unwrap() - previous.softirq.unwrap());
+                softirq = Some(last.softirq.unwrap() - previous.softirq.unwrap());
             }
             if last.steal.is_some() && previous.steal.is_some() {
-               steal = Some(last.steal.unwrap() - previous.steal.unwrap());
+                steal = Some(last.steal.unwrap() - previous.steal.unwrap());
             }
             if last.guest.is_some() && previous.guest.is_some() {
-               guest = Some(last.guest.unwrap() - previous.guest.unwrap());
+                guest = Some(last.guest.unwrap() - previous.guest.unwrap());
             }
             if last.guest_nice.is_some() && previous.guest_nice.is_some() {
-               guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
+                guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
             }
-            return Some(
-                CPUStat {
-                    cputime: CpuTime {
-                        user: last.user - previous.user,
-                        nice: last.nice - previous.nice,
-                        system: last.system - previous.system,
-                        idle: last.idle - previous.idle,
-                        iowait, irq, softirq, steal, guest, guest_nice
-                    }
-                }
-            )
+            return Some(CPUStat {
+                cputime: CpuTime {
+                    user: last.user - previous.user,
+                    nice: last.nice - previous.nice,
+                    system: last.system - previous.system,
+                    idle: last.idle - previous.idle,
+                    iowait,
+                    irq,
+                    softirq,
+                    steal,
+                    guest,
+                    guest_nice,
+                },
+            });
         }
-        None        
+        None
     }
 
     pub fn get_records_diff_power_microwatts(&self) -> Option<Record> {
         if self.record_buffer.len() > 1 {
             let last_record = self.record_buffer.last().unwrap();
-            let previous_record = self.record_buffer.get(
-                self.record_buffer.len() - 2
-            ).unwrap();
+            let previous_record = self
+                .record_buffer
+                .get(self.record_buffer.len() - 2)
+                .unwrap();
             let last_microjoules = last_record.value.parse::<u64>().unwrap();
             let previous_microjoules = previous_record.value.parse::<u64>().unwrap();
             let microjoules = last_microjoules - previous_microjoules;
-            let time_diff = last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
+            let time_diff =
+                last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
             let microwatts = microjoules as f64 / time_diff;
-            return Some(
-                Record::new(
-                    last_record.timestamp,
-                    (microwatts as u64).to_string(),
-                    units::Unit::MicroWatt
-                )
-            )
+            return Some(Record::new(
+                last_record.timestamp,
+                (microwatts as u64).to_string(),
+                units::Unit::MicroWatt,
+            ));
         }
         None
     }
@@ -668,25 +699,24 @@ pub struct CPUCore {
 }
 
 impl CPUCore {
-
     /// Instantiates CPUCore and returns the instance.
-    pub fn new(id: u16, attributes: HashMap<String, String>) -> CPUCore{
+    pub fn new(id: u16, attributes: HashMap<String, String>) -> CPUCore {
         CPUCore { id, attributes }
     }
-    
+
     /// Reads content from /proc/stat and extracts the stats of the CPU core
     fn read_stats(&self) -> Option<CpuTime> {
         let kernelstats_or_not = KernelStats::new();
         if kernelstats_or_not.is_ok() {
             return Some(
-                kernelstats_or_not.unwrap().cpu_time.remove(
-                    self.id as usize
-                )
+                kernelstats_or_not
+                    .unwrap()
+                    .cpu_time
+                    .remove(self.id as usize),
             );
         }
         None
     }
-
 }
 
 // !!!!!!!!!!!!!!!!! Domain !!!!!!!!!!!!!!!!!!!!!!!
@@ -703,29 +733,27 @@ pub struct Domain {
     /// History of energy consumption measurements, stored as Record instances
     pub record_buffer: Vec<Record>,
     /// Maximum size of record_buffer, in kilobytes
-    pub buffer_max_kbytes: u16
+    pub buffer_max_kbytes: u16,
 }
 impl RecordGenerator for Domain {
     fn refresh_record(&mut self) -> Record {
-        let timestamp = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH){
+        let timestamp = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
             Ok(n) => n,
-            Err(_) => panic!("Couldn't generate timestamp")
+            Err(_) => panic!("Couldn't generate timestamp"),
         };
         let record = Record::new(
             timestamp,
-            self.read_counter_uj().unwrap(),//.parse().unwrap(),
-            units::Unit::MicroJoule
+            self.read_counter_uj().unwrap(), //.parse().unwrap(),
+            units::Unit::MicroJoule,
         );
 
-        self.record_buffer.push(
-            Record::new(
-                record.timestamp,
-                record.value.clone(),
-                units::Unit::MicroJoule
-            )
-        );
+        self.record_buffer.push(Record::new(
+            record.timestamp,
+            record.value.clone(),
+            units::Unit::MicroJoule,
+        ));
 
-        if !self.record_buffer.is_empty(){
+        if !self.record_buffer.is_empty() {
             self.clean_old_records();
         }
         record
@@ -734,8 +762,8 @@ impl RecordGenerator for Domain {
     fn clean_old_records(&mut self) {
         let record_ptr = &self.record_buffer[0];
         let curr_size = size_of_val(record_ptr) * self.record_buffer.len();
-        if curr_size > (self.buffer_max_kbytes*1000) as usize {
-            let size_diff = curr_size - (self.buffer_max_kbytes*1000) as usize;
+        if curr_size > (self.buffer_max_kbytes * 1000) as usize {
+            let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
             let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
             for _ in 1..nb_records_to_delete {
                 if !self.record_buffer.is_empty() {
@@ -748,23 +776,29 @@ impl RecordGenerator for Domain {
     fn get_records_passive(&self) -> Vec<Record> {
         let mut result = vec![];
         for r in &self.record_buffer {
-            result.push(
-                Record::new(
-                    r.timestamp, r.value.clone(), units::Unit::MicroJoule
-                )
-            );
+            result.push(Record::new(
+                r.timestamp,
+                r.value.clone(),
+                units::Unit::MicroJoule,
+            ));
         }
         result
     }
 }
 impl Domain {
-    fn new(id: u16, name: String, counter_uj_path: String, buffer_max_kbytes: u16) -> Domain{
-        Domain{ id, name, counter_uj_path, record_buffer: vec![], buffer_max_kbytes }
+    fn new(id: u16, name: String, counter_uj_path: String, buffer_max_kbytes: u16) -> Domain {
+        Domain {
+            id,
+            name,
+            counter_uj_path,
+            record_buffer: vec![],
+            buffer_max_kbytes,
+        }
     }
     pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
         match fs::read_to_string(&self.counter_uj_path) {
             Ok(result) => Ok(result),
-            Err(error) => Err(Box::new(error))
+            Err(error) => Err(Box::new(error)),
         }
     }
 }
@@ -774,26 +808,35 @@ impl fmt::Display for Domain {
     }
 }
 
-
 // !!!!!!!!!!!!!!!!! Record !!!!!!!!!!!!!!!!!!!!!!!
 /// Record struct represents an electricity consumption measurement
 /// tied to a domain.
 #[derive(Debug, Clone)]
-pub struct Record{
+pub struct Record {
     pub timestamp: Duration,
     pub value: String,
-    pub unit: units::Unit
+    pub unit: units::Unit,
 }
 
 impl Record {
-    pub fn new(timestamp: Duration, value: String, unit: units::Unit) -> Record{
-        Record{ timestamp, value, unit }
+    pub fn new(timestamp: Duration, value: String, unit: units::Unit) -> Record {
+        Record {
+            timestamp,
+            value,
+            unit,
+        }
     }
 }
 
 impl fmt::Display for Record {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "recorded {} {} at {:?}", self.value.trim(), self.unit, self.timestamp)
+        write!(
+            f,
+            "recorded {} {} at {:?}",
+            self.value.trim(),
+            self.unit,
+            self.timestamp
+        )
     }
 }
 
@@ -824,7 +867,7 @@ impl CPUStat {
 }
 
 impl Clone for CPUStat {
-    fn clone (&self) -> CPUStat {
+    fn clone(&self) -> CPUStat {
         CPUStat {
             cputime: CpuTime {
                 user: self.cputime.user,
@@ -837,7 +880,7 @@ impl Clone for CPUStat {
                 steal: self.cputime.steal,
                 guest: self.cputime.guest,
                 guest_nice: self.cputime.guest_nice,
-            }
+            },
         }
     }
 }
@@ -848,7 +891,11 @@ mod tests {
     #[test]
     fn get_proc_cpuinfo() {
         let cores = Topology::generate_cpu_cores().unwrap();
-        println!("cores: {} attributes in core 0: {}", cores.len(), cores[0].attributes.len());
+        println!(
+            "cores: {} attributes in core 0: {}",
+            cores.len(),
+            cores[0].attributes.len()
+        );
         for c in &cores {
             println!("{:?}", c.attributes.get("processor"));
         }
@@ -862,7 +909,7 @@ mod tests {
     fn read_topology_stats() {
         let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
         let topo = (*sensor.get_topology()).unwrap();
-        println!("{:?}", topo.read_stats()) ;
+        println!("{:?}", topo.read_stats());
     }
 
     #[test]
