@@ -58,9 +58,10 @@ fn main() {
     for exp in res {
         let mut subcmd = SubCommand::with_name(exp).about(
             match exp {
-                "stdout" => "stdout exporter allows you to output the power consumption data in the terminal, either in human readable format, JSON, or prometheus exporters like syntax.",
-                "prometheus" => "prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted format.",
-                _ => "Unknown exporter.",
+                "stdout" => "Stdout exporter allows you to output the power consumption data in the terminal, either in human readable format, JSON, or prometheus exporters like syntax",
+                "prometheus" => "Prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted format",
+                "qemu" => "Qemu exporter watches all Qemu/KVM virtual machines running on the host and exposes metrics of each of them in a dedicated folder",
+                _ => "Unknown exporter",
             }
         );
 

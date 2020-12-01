@@ -2,12 +2,14 @@
 
 ## Pre-requesites
 
-This sensors needs the following modules to be installed and running:
+If on a bare metal machine, this sensors needs the following modules to be present and running:
 - intel_rapl_common
 - rapl
 
 Energy consumption data can be directly collected on a physical machine only.
 To collect energy consumption on a virtual machine, please see the [virtio_bus sensor]() (and its buddy the [virtio_bus exporter]()).
+
+If running in a Qemu/KVM virtual machine, and hypervisor host runs scaphandre with the [qemu exporter](../exporters/qemu.md), this sensor can be run with `--vm` flag to work without needed modules and rely on files that are exposed to it by the host's instance of the qemu exporter.
 
 ## Usage
 
@@ -19,13 +21,9 @@ You can see arguments available from the cli for this sensors with:
 
     scaphandre -s powercap_rapl -h
 
-From the code, basic usage looks like:
+If running in a virtual machine:
 
-    use scaphandre::sensors::PowercapRAPLSensor;
-
-    let sensor = PowercapRAPLSensor::new(1, 1);
-    # let's say you want to instantiate ChoosenExporter, which doesn't really exist
-    ChoosenExporter::new(Box::new(sensor)).run();
+    scaphandre --vm -s powercap_rapl EXPORTER
 
 Please refer to doc.rs code documentation for more details.
 
@@ -33,3 +31,7 @@ Please refer to doc.rs code documentation for more details.
 
 - `sensor-buffer-per-socket-max-kB`: Maximum memory size allowed, in KiloBytes, for storing energy consumption for each socket
 - `sensor-buffer-per-domain-max-kB`: Maximum memory size allowed, in KiloBytes, for storing energy consumption for each domain
+
+## Environment variables
+
+If in `--vm` mode, you want to read metrics from another path than the default `/var/scaphandre`, set env var `SCAPHANDRE_POWERCAP_PATH` with the desired path.
