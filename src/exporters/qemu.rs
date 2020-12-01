@@ -98,7 +98,7 @@ impl QemuExporter {
         }
     }
 
-    fn get_vm_name_from_cmdline(cmdline: &Vec<String>) -> String {
+    fn get_vm_name_from_cmdline(cmdline: &[String]) -> String {
         for elmt in cmdline {
             if elmt.starts_with("guest=") {
                 let mut splitted = elmt.split('=');
