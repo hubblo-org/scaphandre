@@ -2,7 +2,6 @@ use crate::exporters::{Exporter};
 use crate::sensors::{Sensor, Topology, utils::ProcessRecord};
 use std::collections::HashMap;
 use std::{fs, io, thread, time};
-use regex::Regex;
 
 /// An Exporter that extracts power consumption data of running
 /// Qemu/KVM virtual machines on the host and store those data
@@ -15,11 +14,10 @@ pub struct QemuExporter {
 }
 
 impl Exporter for QemuExporter {
-    fn run(&mut self, parameters: clap::ArgMatches) {
+    fn run(&mut self, _parameters: clap::ArgMatches) {
         info!("Starting qemu exporter");    
-        let stop = false;
         let path = "/var/lib/libvirt/scaphandre";
-        while !stop {
+        loop {
             self.iteration(String::from(path));
             thread::sleep(time::Duration::from_secs(5));
         }
@@ -59,7 +57,7 @@ impl QemuExporter {
                         let first_domain_path = format!("{}/{}/intel-rapl:0:0", path, vm_name);
                         if fs::read_dir(&first_domain_path).is_err() {
                             match fs::create_dir_all(&first_domain_path){
-                                Ok(res) => info!("Created {} folder.", &path),
+                                Ok(_) => info!("Created {} folder.", &path),
                                 Err(error) => panic!("Couldn't create {}. Got: {}", &path, error)
                             }
                         }
@@ -97,7 +95,7 @@ impl QemuExporter {
         let mut content = 0;
         if fs::read_dir(path).is_err() {
             match fs::create_dir_all(path){
-                Ok(res) => info!("Created {} folder.", path),
+                Ok(_) => info!("Created {} folder.", path),
                 Err(error) => panic!("Couldn't create {}. Got: {}", path, error)
             }
         }
