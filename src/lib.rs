@@ -54,14 +54,14 @@ pub fn run(matches: ArgMatches) {
     let sensor_boxed = get_sensor(&matches);
 
     let stdout_exporter_required = matches.subcommand_matches("stdout");
-    if stdout_exporter_required.is_some() {
-        let exporter_parameters = stdout_exporter_required.unwrap().clone();
+    if let Some(stdout_exporter_parameters) = stdout_exporter_required {
+        let exporter_parameters = stdout_exporter_parameters.clone();
         let mut exporter = StdoutExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else {
         let prometheus_exporter_required = matches.subcommand_matches("prometheus");
-        if prometheus_exporter_required.is_some() {
-            let exporter_parameters = prometheus_exporter_required.unwrap().clone();
+        if let Some(prometheus_exporter_parameters) = prometheus_exporter_required {
+            let exporter_parameters = prometheus_exporter_parameters.clone();
             let mut exporter = PrometheusExporter::new(sensor_boxed);
             exporter.run(exporter_parameters);
         } else {

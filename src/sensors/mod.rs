@@ -70,7 +70,7 @@ impl RecordGenerator for Topology {
             let records = s.get_records_passive();
             if !records.is_empty() {
                 value += records
-                    .get(records.len() - 1)
+                    .last()
                     .unwrap()
                     .value
                     .trim()
@@ -120,6 +120,12 @@ impl RecordGenerator for Topology {
             ));
         }
         result
+    }
+}
+
+impl Default for Topology {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -366,9 +372,9 @@ impl Topology {
     /// Reads content from /proc/stat and extracts the stats of the whole CPU topology.
     pub fn read_stats(&self) -> Option<CPUStat> {
         let kernelstats_or_not = KernelStats::new();
-        if kernelstats_or_not.is_ok() {
+        if let Ok(res_cputime) = kernelstats_or_not {
             return Some(CPUStat {
-                cputime: kernelstats_or_not.unwrap().total,
+                cputime: res_cputime.total,
             });
         }
         None
@@ -541,7 +547,7 @@ impl CPUSocket {
     /// Adds a new Domain instance to the domains vector if and only if it doesn't exist in the vector already.
     fn safe_add_domain(&mut self, domain: Domain) {
         let result: Vec<&Domain> = self.domains.iter().filter(|d| d.id == domain.id).collect();
-        if result.len() == 0 {
+        if result.is_empty() {
             self.domains.push(domain);
         }
     }
