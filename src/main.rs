@@ -14,7 +14,7 @@ fn main() {
     let mut matches = App::new("scaphandre")
         .author("Benoit Petit <bpetit@hubblo.org>")
         .version("0.1.0")
-        .about("Agnostic software sensor and data collection agent for energy/electricity consumption related metrics")
+        .about("Extensible metrology agent for energy/electricity consumption related metrics")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .arg(
             Arg::with_name("v")
