@@ -22,7 +22,7 @@ impl PrometheusExporter {
     /// Instantiates PrometheusExporter and returns the instance.
     pub fn new(sensor: Box<dyn Sensor>) -> PrometheusExporter {
         PrometheusExporter {
-            sensor: sensor,
+            sensor,
             _step: 5,
         }
     }
@@ -354,7 +354,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
             process_power_value = power.to_string();
         }
         body = push_metric(
-            body, String::from(format!("Power consumption due to the process, measured on at the topology level, in microwatts")),
+            body, format!("Power consumption due to the process, measured on at the topology level, in microwatts"),
             String::from("gauge"), String::from(metric_name),
             format_metric (
                 metric_name, &process_power_value,

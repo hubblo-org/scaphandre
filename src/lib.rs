@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate log;
-use loggerv;
 pub mod exporters;
 pub mod sensors;
 pub use clap::ArgMatches;

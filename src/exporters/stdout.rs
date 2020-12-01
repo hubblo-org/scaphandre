@@ -43,7 +43,7 @@ impl StdoutExporter {
 
     pub fn runner(&mut self, parameters: ArgMatches) {
         let timeout = parameters.value_of("timeout").unwrap();
-        if timeout.len() == 0 {
+        if timeout.is_empty() {
             self.iteration(0);
         } else {
             let now = Instant::now();
@@ -89,8 +89,7 @@ impl StdoutExporter {
                     String::from("n/a"),
                 ),
             };
-        let mut counter = 0;
-        for p in self.topology.proc_tracker.get_alive_pids() {
+        for (counter, p) in self.topology.proc_tracker.get_alive_pids().into_iter().enumerate() {
             let utime_value = match self.topology.proc_tracker.get_diff_utime(p) {
                 Some(time) => time.to_string(),
                 None => String::from("n/a"),
@@ -125,7 +124,6 @@ impl StdoutExporter {
             if counter % 4 == 0 {
                 println!();
             }
-            counter += 1;
         }
         for socket in self.topology.get_sockets() {
             let socket_id = socket.id;
@@ -163,7 +161,7 @@ impl StdoutExporter {
                     .trim()
                     .to_string();
             }
-            if socket_records.len() > 0 {
+            if !socket_records.is_empty() {
                 rec_j_3 = socket_records
                     .get(nb_records - 1)
                     .unwrap()
@@ -233,7 +231,7 @@ impl StdoutExporter {
                         .trim()
                         .to_string();
                 }
-                if domain_records.len() > 0 {
+                if !domain_records.is_empty() {
                     rec_dom_j_3 = domain_records
                         .get(nb_records - 1)
                         .unwrap()
