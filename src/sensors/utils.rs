@@ -8,22 +8,22 @@ pub struct ProcessTracker {
     pub procs: Vec<Vec<ProcessRecord>>,
     /// Maximum number of ProcessRecord instances that scaphandre is allowed to
     /// store, per PID (thus, for each subvector).
-    pub max_records_per_process: u16
+    pub max_records_per_process: u16,
 }
 
 impl ProcessTracker {
     /// Instantiates ProcessTracker.
-    /// 
+    ///
     /// # Example:
     /// ```
     /// // 5 will be the maximum number of ProcessRecord instances
     /// // stored for each PID.
     /// let tracker = ProcessTracker::new(5);
-    /// ``` 
+    /// ```
     pub fn new(max_records_per_process: u16) -> ProcessTracker {
         ProcessTracker {
             procs: vec![],
-            max_records_per_process
+            max_records_per_process,
         }
     }
 
@@ -44,20 +44,27 @@ impl ProcessTracker {
         let iterator = self.procs.iter_mut();
         let pid = process.pid;
         // find the vector containing Process instances with the same pid
-        let mut filtered = iterator.filter(
-            |x| x.len() > 0 && x[0].process.pid == pid
-        );
+        let mut filtered = iterator.filter(|x| !x.is_empty() && x[0].process.pid == pid);
         let result = filtered.next();
         let process_record = ProcessRecord::new(process);
-        if result.is_some() { // if a vector of process records has been found
-            let vector = result.unwrap();
-            ProcessTracker::check_pid_changes(&process_record, vector);
-            vector.insert(0, process_record); // we add the process record to the vector
-            if filtered.next().is_some() {
-                panic!("Found more than one set of ProcessRecord (more than one pid) that matches the current process.");
+        if let Some(vector) = result {
+            // if a vector of process records has been found
+            // check if the previous records in the vector are from the same process
+            // (if the process with that pid is not a new one) and if so, drop it for a new one
+            if !vector.is_empty()
+                && process_record.process.stat.comm != vector.get(0).unwrap().process.stat.comm
+            {
+                *vector = vec![];
             }
+
+            //ProcessTracker::check_pid_changes(&process_record, vector);
+            vector.insert(0, process_record); // we add the process record to the vector
+                                              //if filtered.next().is_some() {
+                                              //    panic!("Found more than one set of ProcessRecord (more than one pid) that matches the current process.");
+                                              //}
             ProcessTracker::clean_old_process_records(vector, self.max_records_per_process);
-        } else { // if no vector of process records with the same pid has been found in self.procs
+        } else {
+            // if no vector of process records with the same pid has been found in self.procs
             self.procs.push(vec![process_record]); // we create a new vector in self.procs
         }
 
@@ -70,19 +77,16 @@ impl ProcessTracker {
         if records.len() > max_records_per_process as usize {
             let diff = records.len() - max_records_per_process as usize;
             for _ in 0..diff {
-                records.sort_by(|a, b| {
-                    b.timestamp.cmp(&a.timestamp)
-                });
-                trace!("Cleaning old ProcessRecords in vector for PID {}", records[0].process.pid);
-                trace!("Deleting record with timestamp: {:?}", records.pop().unwrap().timestamp);
+                records.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+                trace!(
+                    "Cleaning old ProcessRecords in vector for PID {}",
+                    records[0].process.pid
+                );
+                trace!(
+                    "Deleting record with timestamp: {:?}",
+                    records.pop().unwrap().timestamp
+                );
             }
-        }
-    }
-
-    /// Ensure we don't store records for different processes in the same vector.
-    fn check_pid_changes(record: &ProcessRecord, records: &mut Vec<ProcessRecord>) {
-        if !records.is_empty() && record.process.stat.comm != records.get(0).unwrap().process.stat.comm {
-            records.clear();
         }
     }
 
@@ -90,8 +94,8 @@ impl ProcessTracker {
     /// in self.procs. Returns None otherwise.
     pub fn find_records(&self, pid: i32) -> Option<&Vec<ProcessRecord>> {
         for v in &self.procs {
-            if v.len() > 0 && v[0].process.pid == pid {
-                return Some(&v)
+            if !v.is_empty() && v[0].process.pid == pid {
+                return Some(&v);
             }
         }
         None
@@ -102,7 +106,7 @@ impl ProcessTracker {
     pub fn get_diff_utime(&self, pid: i32) -> Option<u64> {
         let records = self.find_records(pid).unwrap();
         if records.len() > 1 {
-            return Some(records[0].process.stat.utime - records[1].process.stat.utime)
+            return Some(records[0].process.stat.utime - records[1].process.stat.utime);
         }
         None
     }
@@ -111,21 +115,21 @@ impl ProcessTracker {
     pub fn get_diff_stime(&self, pid: i32) -> Option<u64> {
         let records = self.find_records(pid).unwrap();
         if records.len() > 1 {
-            return Some(records[0].process.stat.stime - records[1].process.stat.stime)
+            return Some(records[0].process.stat.stime - records[1].process.stat.stime);
         }
         None
     }
 
     /// Returns all vectors of process records linked to a running, sleeping, waiting or zombie process.
     /// (Not terminated)
-    pub fn get_alive_processes(&self) -> Vec<&Vec<ProcessRecord>>{
+    pub fn get_alive_processes(&self) -> Vec<&Vec<ProcessRecord>> {
         let mut res = vec![];
         for p in self.procs.iter() {
             if !p.is_empty() {
                 let status = p[0].process.status();
-                if status.is_ok() {
-                    let status_val = status.unwrap();
-                    if !&status_val.state.contains("T") { // !&status_val.state.contains("Z") && 
+                if let Ok(status_val) = status {
+                    if !&status_val.state.contains('T') {
+                        // !&status_val.state.contains("Z") &&
                         res.push(p);
                     }
                 }
@@ -136,38 +140,39 @@ impl ProcessTracker {
 
     /// Returns a vector containing pids of all running, sleeping or waiting current processes.
     pub fn get_alive_pids(&self) -> Vec<i32> {
-        self.get_alive_processes().iter().filter(
-            |x| !x.is_empty()
-        ).map(
-            |x| x[0].process.pid
-        ).collect()
+        self.get_alive_processes()
+            .iter()
+            .filter(|x| !x.is_empty())
+            .map(|x| x[0].process.pid)
+            .collect()
     }
 
     /// Returns a vector containing pids of all processes being tracked.
     pub fn get_all_pids(&self) -> Vec<i32> {
-        self.procs.iter().filter(
-            |x| !x.is_empty()
-        ).map(
-            |x| x[0].process.pid
-        ).collect()
+        self.procs
+            .iter()
+            .filter(|x| !x.is_empty())
+            .map(|x| x[0].process.pid)
+            .collect()
     }
 
     pub fn get_process_name(&self, pid: i32) -> String {
-        let mut result = self.procs.iter().filter(|x| {
-            !x.is_empty() && x.get(0).unwrap().process.pid == pid
-        });
+        let mut result = self
+            .procs
+            .iter()
+            .filter(|x| !x.is_empty() && x.get(0).unwrap().process.pid == pid);
         let process = result.next().unwrap();
-        if let Some(_) = result.next() {
+        if result.next().is_some() {
             panic!("Found two vectors of processes with the same id, maintainers should fix this.");
         }
-        process.get(0).unwrap().process.stat.comm.clone() 
+        process.get(0).unwrap().process.stat.comm.clone()
     }
 
     pub fn get_process_cmdline(&self, pid: i32) -> Option<String> {
-        let mut result = self.procs.iter().filter( |x| {
-                !x.is_empty() && x.get(0).unwrap().process.pid == pid
-            }
-        );
+        let mut result = self
+            .procs
+            .iter()
+            .filter(|x| !x.is_empty() && x.get(0).unwrap().process.pid == pid);
         let process = result.next().unwrap();
         if let Some(vec) = process.get(0) {
             if let Ok(mut cmdline_vec) = vec.process.cmdline() {
@@ -180,19 +185,48 @@ impl ProcessTracker {
         }
         None
     }
+
+    pub fn clean_terminated_process_records_vectors(&mut self) {
+        for v in &mut self.procs {
+            if !v.is_empty()
+                && v.get(0).unwrap().process.status().is_ok()
+                && v.get(0)
+                    .unwrap()
+                    .process
+                    .status()
+                    .unwrap()
+                    .state
+                    .contains('T')
+            {
+                v.clear();
+            }
+        }
+        self.drop_empty_process_records_vectors();
+    }
+
+    fn drop_empty_process_records_vectors(&mut self) {
+        let procs = &mut self.procs;
+        let mut todroplist: Vec::<usize> = vec![];
+        for (counter, _todrop) in procs.into_iter().filter(|x| x.is_empty()).enumerate() {
+            todroplist.push(counter);
+        }
+        for i in todroplist {
+            procs.remove(i);
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct ProcessRecord {
     pub process: Process,
-    pub timestamp: Duration
+    pub timestamp: Duration,
 }
 
 impl ProcessRecord {
     pub fn new(process: Process) -> ProcessRecord {
         ProcessRecord {
             process,
-            timestamp: current_system_time_since_epoch()
+            timestamp: current_system_time_since_epoch(),
         }
     }
 
@@ -214,16 +248,14 @@ impl ProcessRecord {
         // not including cstime and cutime in total as they are reported only when child dies
         // child metrics as already reported as the child processes are in the global process
         // list, found as /proc/PID/stat
-        let total = stime + utime + guest_time + cguest_time + delayacct_blkio_ticks + itrealvalue;
-
-        total
+        stime + utime + guest_time + cguest_time + delayacct_blkio_ticks + itrealvalue
     }
-
-
 }
 
 pub fn current_system_time_since_epoch() -> Duration {
-    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap()
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
 }
 
 #[cfg(test)]
@@ -255,7 +287,6 @@ mod tests {
         assert_eq!(tracker.procs.len(), 1);
         assert_eq!(tracker.procs[0].len(), 3);
     }
-
 }
 
 //  Copyright 2020 The scaphandre authors.
