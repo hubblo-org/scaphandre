@@ -143,9 +143,7 @@ fn push_metric(
     metric_line: String,
 ) -> String {
     body.push_str(&format!("# HELP {} {}", metric_name, help));
-    body.push_str("\n");
-    body.push_str(&format!("# TYPE {} {}", metric_name, metric_type));
-    body.push_str("\n");
+    body.push_str(&format!("\n# TYPE {} {}\n", metric_name, metric_type));
     body.push_str(&metric_line);
     body
 }

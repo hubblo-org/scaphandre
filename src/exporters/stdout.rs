@@ -67,7 +67,7 @@ impl StdoutExporter {
         let mut topo_raw_power: f64 = 0.0;
         if topo_records.len() > 1 {
             topo_raw_power = energy_records_to_power_record((
-                topo_records.get(topo_records.len() - 1).unwrap(),
+                topo_records.last().unwrap(),
                 topo_records.get(topo_records.len() - 2).unwrap(),
             ))
             .unwrap()
