@@ -155,6 +155,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     if now - (*last_request) > Duration::from_secs(8) {
         {
             let mut topology = data.topology.lock().unwrap();
+            (*topology).proc_tracker.clean_terminated_process_records_vectors();
             (*topology).refresh();
         }
     }

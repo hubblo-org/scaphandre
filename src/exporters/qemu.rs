@@ -17,7 +17,7 @@ impl Exporter for QemuExporter {
     fn run(&mut self, _parameters: clap::ArgMatches) {
         info!("Starting qemu exporter");
         let path = "/var/lib/libvirt/scaphandre";
-        let cleaner_step = 30;
+        let cleaner_step = 120;
         let mut timer = time::Duration::from_secs(cleaner_step);
         loop {
             self.iteration(String::from(path));
