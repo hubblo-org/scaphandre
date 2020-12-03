@@ -132,9 +132,7 @@ impl QemuExporter {
             if !vecp.is_empty() {
                 if let Some(pr) = vecp.get(0) {
                     if let Ok(cmdline) = pr.process.cmdline() {
-                        if let Some(res) =
-                            cmdline.iter().find(|x| x.contains("qemu-system"))
-                        {
+                        if let Some(res) = cmdline.iter().find(|x| x.contains("qemu-system")) {
                             debug!("Found a process with {}", res);
                             let mut tmp: Vec<ProcessRecord> = vec![];
                             for p in vecp.iter() {

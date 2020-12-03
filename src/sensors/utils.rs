@@ -206,7 +206,7 @@ impl ProcessTracker {
 
     fn drop_empty_process_records_vectors(&mut self) {
         let procs = &mut self.procs;
-        let mut todroplist: Vec::<usize> = vec![];
+        let mut todroplist: Vec<usize> = vec![];
         for (counter, _todrop) in procs.iter_mut().filter(|x| x.is_empty()).enumerate() {
             todroplist.push(counter);
         }

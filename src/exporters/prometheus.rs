@@ -21,10 +21,7 @@ pub struct PrometheusExporter {
 impl PrometheusExporter {
     /// Instantiates PrometheusExporter and returns the instance.
     pub fn new(sensor: Box<dyn Sensor>) -> PrometheusExporter {
-        PrometheusExporter {
-            sensor,
-            _step: 5,
-        }
+        PrometheusExporter { sensor, _step: 5 }
     }
 }
 
@@ -130,9 +127,7 @@ fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>
         result.remove(result.len() - 1);
         result.push('}');
     }
-    result.push(' ');
-    result.push_str(value);
-    result.push_str("\n");
+    result.push_str(&format!(" {}\n", value));
     result
 }
 fn push_metric(
@@ -155,7 +150,9 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     if now - (*last_request) > Duration::from_secs(8) {
         {
             let mut topology = data.topology.lock().unwrap();
-            (*topology).proc_tracker.clean_terminated_process_records_vectors();
+            (*topology)
+                .proc_tracker
+                .clean_terminated_process_records_vectors();
             (*topology).refresh();
         }
     }

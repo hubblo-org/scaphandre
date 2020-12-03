@@ -28,9 +28,9 @@ impl Unit {
         let pos_source_power = power_order.iter().position(|x| x == source_unit);
         let pos_dest_power = power_order.iter().position(|x| x == dest_unit);
         if let (Some(pos_source), Some(pos_dest)) = (pos_source_energy, pos_dest_energy) {
-            return Ok(measure * Unit::get_mult(pos_source, pos_dest));
+            Ok(measure * Unit::get_mult(pos_source, pos_dest))
         } else if let (Some(pos_source), Some(pos_dest)) = (pos_source_power, pos_dest_power) {
-            return Ok(measure * Unit::get_mult(pos_source, pos_dest));
+            Ok(measure * Unit::get_mult(pos_source, pos_dest))
         } else {
             panic!("Impossible conversion asked from energy value to power value (without time dimension).");
         }

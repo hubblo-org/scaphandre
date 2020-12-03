@@ -69,13 +69,7 @@ impl RecordGenerator for Topology {
         for s in self.get_sockets() {
             let records = s.get_records_passive();
             if !records.is_empty() {
-                value += records
-                    .last()
-                    .unwrap()
-                    .value
-                    .trim()
-                    .parse::<u64>()
-                    .unwrap();
+                value += records.last().unwrap().value.trim().parse::<u64>().unwrap();
             }
         }
         let timestamp = current_system_time_since_epoch();
@@ -713,9 +707,7 @@ impl CPUCore {
     /// Reads content from /proc/stat and extracts the stats of the CPU core
     fn read_stats(&self) -> Option<CpuTime> {
         if let Ok(mut kernelstats) = KernelStats::new() {
-            return Some(
-                kernelstats.cpu_time.remove(self.id as usize),
-            );
+            return Some(kernelstats.cpu_time.remove(self.id as usize));
         }
         None
     }

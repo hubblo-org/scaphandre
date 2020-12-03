@@ -89,7 +89,13 @@ impl StdoutExporter {
                     String::from("n/a"),
                 ),
             };
-        for (counter, p) in self.topology.proc_tracker.get_alive_pids().into_iter().enumerate() {
+        for (counter, p) in self
+            .topology
+            .proc_tracker
+            .get_alive_pids()
+            .into_iter()
+            .enumerate()
+        {
             let utime_value = match self.topology.proc_tracker.get_diff_utime(p) {
                 Some(time) => time.to_string(),
                 None => String::from("n/a"),
