@@ -14,7 +14,7 @@ pub enum Unit {
 }
 
 impl Unit {
-    /// Converts either an energy measurement (Joule, MilliJoule or MicroJoule) to another energy Unit (Joule, MilliJoule or MicroJoule) 
+    /// Converts either an energy measurement (Joule, MilliJoule or MicroJoule) to another energy Unit (Joule, MilliJoule or MicroJoule)
     /// or a power measurement (MilliWatt, MicroWatt, Watt, KiloWatt) to another power Unit
     pub fn to(measure: f64, source_unit: &Unit, dest_unit: &Unit) -> Result<f64, String> {
         let energy_order = [Unit::Joule, Unit::MilliJoule, Unit::MicroJoule];
