@@ -14,6 +14,8 @@ pub enum Unit {
 }
 
 impl Unit {
+    /// Converts either an energy measurement (Joule, MilliJoule or MicroJoule) to another energy Unit (Joule, MilliJoule or MicroJoule) 
+    /// or a power measurement (MilliWatt, MicroWatt, Watt, KiloWatt) to another power Unit
     pub fn to(measure: f64, source_unit: &Unit, dest_unit: &Unit) -> Result<f64, String> {
         let energy_order = [Unit::Joule, Unit::MilliJoule, Unit::MicroJoule];
         let power_order = [
@@ -36,6 +38,7 @@ impl Unit {
         }
     }
 
+    /// Helper func to compute the multiplicative factor needed for a conversion
     fn get_mult(pos_source: usize, pos_dest: usize) -> f64 {
         let mut mult: f64 = 1.0;
         match pos_dest.cmp(&pos_source) {

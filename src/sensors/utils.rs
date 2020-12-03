@@ -156,6 +156,7 @@ impl ProcessTracker {
             .collect()
     }
 
+    /// Returns the process name associated to a PID
     pub fn get_process_name(&self, pid: i32) -> String {
         let mut result = self
             .procs
@@ -168,6 +169,7 @@ impl ProcessTracker {
         process.get(0).unwrap().process.stat.comm.clone()
     }
 
+    /// Returns the cmdline string associated to a PID
     pub fn get_process_cmdline(&self, pid: i32) -> Option<String> {
         let mut result = self
             .procs
@@ -186,6 +188,9 @@ impl ProcessTracker {
         None
     }
 
+    /// Drops a vector of ProcessRecord instances from self.procs
+    /// if the last ProcessRecord from the vector is of state Terminated
+    /// (if the process is not running anymore)
     pub fn clean_terminated_process_records_vectors(&mut self) {
         for v in &mut self.procs {
             if !v.is_empty()
@@ -204,6 +209,7 @@ impl ProcessTracker {
         self.drop_empty_process_records_vectors();
     }
 
+    /// Removes empty Vectors from self.procs
     fn drop_empty_process_records_vectors(&mut self) {
         let procs = &mut self.procs;
         let mut todroplist: Vec<usize> = vec![];
@@ -216,6 +222,7 @@ impl ProcessTracker {
     }
 }
 
+/// Stores the information of a give process at a given timestamp
 #[derive(Debug, Clone)]
 pub struct ProcessRecord {
     pub process: Process,
@@ -223,6 +230,8 @@ pub struct ProcessRecord {
 }
 
 impl ProcessRecord {
+    /// Instanciates ProcessRecord and returns the instance, with timestamp set to the current
+    /// system time since epoch
     pub fn new(process: Process) -> ProcessRecord {
         ProcessRecord {
             process,
@@ -230,6 +239,7 @@ impl ProcessRecord {
         }
     }
 
+    // Returns the total CPU time consumed by this process since its creation
     pub fn total_time_jiffies(&self) -> u64 {
         let stime = self.process.stat.stime;
         let utime = self.process.stat.utime;
@@ -252,6 +262,7 @@ impl ProcessRecord {
     }
 }
 
+/// Returns a Duration instance with the current timestamp
 pub fn current_system_time_since_epoch() -> Duration {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)

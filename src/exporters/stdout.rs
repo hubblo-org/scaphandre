@@ -11,10 +11,12 @@ pub struct StdoutExporter {
 }
 
 impl Exporter for StdoutExporter {
+    /// Lanches runner()
     fn run(&mut self, parameters: ArgMatches) {
         self.runner(parameters);
     }
 
+    /// Returns options needed for that exporter, as a HashMap
     fn get_options() -> HashMap<String, ExporterOption> {
         let mut options = HashMap::new();
         options.insert(
@@ -41,6 +43,7 @@ impl StdoutExporter {
         }
     }
 
+    /// Runs iteration() every 'step', during until 'timeout'
     pub fn runner(&mut self, parameters: ArgMatches) {
         let timeout = parameters.value_of("timeout").unwrap();
         if timeout.is_empty() {
@@ -60,6 +63,7 @@ impl StdoutExporter {
         }
     }
 
+    /// Processes and displays metrics
     fn iteration(&mut self, _step: u64) {
         self.topology.refresh();
         let topo_records = self.topology.get_records_passive();

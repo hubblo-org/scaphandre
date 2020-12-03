@@ -7,6 +7,7 @@ use std::net::IpAddr;
 use std::sync::Mutex;
 use std::time::Duration;
 
+/// Default ipv4/ipv6 address to expose the service is any
 const DEFAULT_IP_ADDRESS: &str = "::";
 
 /// Exporter that exposes metrics to an HTTP endpoint
@@ -15,13 +16,12 @@ pub struct PrometheusExporter {
     /// Sensor instance that is used to generate the Topology and
     /// thus get power consumption metrics.
     sensor: Box<dyn Sensor>,
-    _step: u16,
 }
 
 impl PrometheusExporter {
     /// Instantiates PrometheusExporter and returns the instance.
     pub fn new(sensor: Box<dyn Sensor>) -> PrometheusExporter {
-        PrometheusExporter { sensor, _step: 5 }
+        PrometheusExporter { sensor }
     }
 }
 
@@ -116,6 +116,7 @@ async fn runner(
     .await
 }
 
+/// Returns a well formatted Prometheus metric string.
 fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>>) -> String {
     let prefix = "scaph";
     let mut result = format!("{}_{}", prefix, key);
@@ -130,6 +131,7 @@ fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>
     result.push_str(&format!(" {}\n", value));
     result
 }
+/// Adds lines related to a metric in the body (String) of response.
 fn push_metric(
     mut body: String,
     help: String,
@@ -143,6 +145,7 @@ fn push_metric(
     body
 }
 
+/// Handles requests and returns data.
 async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     let now = current_system_time_since_epoch();
     let mut last_request = data.last_request.lock().unwrap();
@@ -364,6 +367,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         .body(body)
 }
 
+/// Handles requests that are not asking for /metrics and returns the appropriate path in the body of the response.
 async fn landing_page() -> impl Responder {
     let body = String::from(
         "<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/metrics\">/metrics</a>"

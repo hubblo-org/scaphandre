@@ -14,6 +14,7 @@ pub struct QemuExporter {
 }
 
 impl Exporter for QemuExporter {
+    /// Runs iteration() in a loop.
     fn run(&mut self, _parameters: clap::ArgMatches) {
         info!("Starting qemu exporter");
         let path = "/var/lib/libvirt/scaphandre";
@@ -48,6 +49,7 @@ impl QemuExporter {
         }
     }
 
+    /// Performs processing of metrics, using self.topology
     pub fn iteration(&mut self, path: String) {
         trace!("path: {}", path);
         self.topology.refresh();
@@ -98,6 +100,8 @@ impl QemuExporter {
         }
     }
 
+    /// Parses a cmdline String (as contained in procs::Process instances) and returns
+    /// the name of the qemu virtual machine if this process is a qemu/kvm guest process
     fn get_vm_name_from_cmdline(cmdline: &[String]) -> String {
         for elmt in cmdline {
             if elmt.starts_with("guest=") {
@@ -109,6 +113,9 @@ impl QemuExporter {
         String::from("")
     }
 
+    /// Either creates an energy_uj file (as the ones managed by powercap kernel module)
+    /// in 'path' and adds 'uj_value' to its numerical content, or simply performs the
+    /// addition if the file exists.
     fn add_or_create(path: &str, uj_value: u64) -> io::Result<()> {
         let mut content = 0;
         if fs::read_dir(path).is_err() {
@@ -125,6 +132,8 @@ impl QemuExporter {
         fs::write(file_path, content.to_string())
     }
 
+    /// Filters 'processes' to match processes that look like qemu/kvm guest processes.
+    /// Returns what was found.
     fn filter_qemu_vm_processes(processes: &[&Vec<ProcessRecord>]) -> Vec<Vec<ProcessRecord>> {
         let mut qemu_processes: Vec<Vec<ProcessRecord>> = vec![];
         trace!("Got {} processes to filter.", processes.len());

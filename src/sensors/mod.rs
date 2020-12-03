@@ -24,6 +24,8 @@ pub trait RecordGenerator {
     fn clean_old_records(&mut self);
 }
 
+/// Computes power (Watts) records from energy (uJ, mJ or J) records
+/// DEPRECATED: get_records_diff_power_microwatts() function from Topology is preferred
 pub fn energy_records_to_power_record(measures: (&Record, &Record)) -> Result<Record, String> {
     let joules_1 = units::Unit::to(
         measures.0.value.trim().parse().unwrap(),
@@ -64,6 +66,8 @@ pub struct Topology {
 }
 
 impl RecordGenerator for Topology {
+    /// Computes a new Record, stores it in the record_buffer
+    /// and returns a clone of this record
     fn refresh_record(&mut self) -> Record {
         let mut value: u64 = 0;
         for s in self.get_sockets() {
@@ -87,6 +91,8 @@ impl RecordGenerator for Topology {
         record
     }
 
+    /// Removes (and thus drops) as many Record instances from the record_buffer
+    /// as needed for record_buffer to not exceed 'buffer_max_kbytes'
     fn clean_old_records(&mut self) {
         let record_ptr = &self.record_buffer[0];
         let curr_size = size_of_val(record_ptr) * self.record_buffer.len();
@@ -104,6 +110,7 @@ impl RecordGenerator for Topology {
         }
     }
 
+    /// Returns a copy of the record_buffer
     fn get_records_passive(&self) -> Vec<Record> {
         let mut result = vec![];
         for r in &self.record_buffer {
@@ -124,6 +131,7 @@ impl Default for Topology {
 }
 
 impl Topology {
+    /// Instanciates Topology and returns the instance
     pub fn new() -> Topology {
         Topology {
             sockets: vec![],
@@ -142,10 +150,11 @@ impl Topology {
     /// ```
     /// use scaphandre::sensors::Topology;
     ///
-    /// let cores = Topology::generate_cpu_cores().unwrap();
-    /// println!("There are {} cores on this host.", cores.len());
-    /// for c in &cores {
-    ///     println!("Here is CPU Core number {}", c.attributes.get("processor").unwrap());
+    /// if let Ok(cores) = Topology::generate_cpu_cores() {
+    ///     println!("There are {} cores on this host.", cores.len());
+    ///     for c in &cores {
+    ///         println!("Here is CPU Core number {}", c.attributes.get("processor").unwrap());
+    ///     }
     /// }
     /// ```
     pub fn generate_cpu_cores() -> Result<Vec<CPUCore>, String> {
@@ -161,6 +170,8 @@ impl Topology {
         Ok(cores)
     }
 
+    /// Adds a Socket instance to self.sockets if and only if the
+    /// socket id doesn't exist already.
     pub fn safe_add_socket(
         &mut self,
         socket_id: u16,
@@ -182,18 +193,23 @@ impl Topology {
         }
     }
 
+    /// Returns a immutable reference to self.proc_tracker
     pub fn get_proc_tracker(&self) -> &ProcessTracker {
         &self.proc_tracker
     }
 
+    /// Returns a mutable reference to self.sockets
     pub fn get_sockets(&mut self) -> &mut Vec<CPUSocket> {
         &mut self.sockets
     }
 
+    /// Returns an immutable reference to self.sockets
     pub fn get_sockets_passive(&self) -> &Vec<CPUSocket> {
         &self.sockets
     }
 
+    /// Adds a Domain instance to a given socket, if and only if the domain
+    /// id doesn't exist already for the socket.
     pub fn safe_add_domain_to_socket(
         &mut self,
         socket_id: u16,
@@ -215,6 +231,8 @@ impl Topology {
         }
     }
 
+    /// Generates CPUCore instances for the host and adds them
+    /// to appropriate CPUSocket instance from self.sockets
     pub fn add_cpu_cores(&mut self) {
         let mut cores = Topology::generate_cpu_cores().unwrap();
         while !cores.is_empty() {
@@ -259,6 +277,8 @@ impl Topology {
         self.refresh_stats();
     }
 
+    /// Gets currently running processes (as procfs::Process instances) and stores
+    /// them in self.proc_tracker
     fn refresh_procs(&mut self) {
         //! current_procs is the up to date list of processus running on the host
         let current_procs = process::all_processes().unwrap();
@@ -273,10 +293,13 @@ impl Topology {
         }
     }
 
+    /// Gets rcurrents stats and stores them as a CPUStat instance in self.stat_buffer
     pub fn refresh_stats(&mut self) {
         self.stat_buffer.insert(0, self.read_stats().unwrap());
     }
 
+    /// Returns a Record instance containing the difference (attribute by attribute, except timestamp which will be the timestamp from the last record)
+    /// between the last (in time) record from self.record_buffer and the previous one
     pub fn get_records_diff(&self) -> Option<Record> {
         let len = self.record_buffer.len();
         if len > 2 {
@@ -292,6 +315,8 @@ impl Topology {
         None
     }
 
+    /// Returns a Record instance containing the power consumed between
+    /// last and previous measurement, in microwatts.
     pub fn get_records_diff_power_microwatts(&self) -> Option<Record> {
         if self.record_buffer.len() > 1 {
             let last_record = self.record_buffer.last().unwrap();
@@ -317,6 +342,8 @@ impl Topology {
         None
     }
 
+    /// Returns a CPUStat instance containing the difference between last
+    /// and previous stats measurement (from stat_buffer), attribute by attribute.
     pub fn get_stats_diff(&self) -> Option<CPUStat> {
         if self.stat_buffer.len() > 1 {
             let last = &self.stat_buffer[0].cputime;
@@ -374,6 +401,7 @@ impl Topology {
         None
     }
 
+    /// Returns the number of processes currently available
     pub fn read_nb_process_total_count(&self) -> Option<u64> {
         if let Ok(result) = KernelStats::new() {
             return Some(result.processes);
@@ -381,6 +409,7 @@ impl Topology {
         None
     }
 
+    /// Returns the number of processes currently in a running state
     pub fn read_nb_process_running_current(&self) -> Option<u32> {
         if let Ok(result) = KernelStats::new() {
             if let Some(procs_running) = result.procs_running {
@@ -389,6 +418,7 @@ impl Topology {
         }
         None
     }
+    /// Returns the number of processes currently blocked waiting
     pub fn read_nb_process_blocked_current(&self) -> Option<u32> {
         if let Ok(result) = KernelStats::new() {
             if let Some(procs_running) = result.procs_running {
@@ -397,6 +427,7 @@ impl Topology {
         }
         None
     }
+    /// Returns the current number of context switches
     pub fn read_nb_context_switches_total_count(&self) -> Option<u64> {
         if let Ok(result) = KernelStats::new() {
             return Some(result.ctxt);
@@ -404,6 +435,7 @@ impl Topology {
         None
     }
 
+    /// Returns the power consumed between last and previous measurement for a given process ID, in microwatts
     pub fn get_process_power_consumption_microwatts(&self, pid: i32) -> Option<u64> {
         let tracker = self.get_proc_tracker();
         if let Some(recs) = tracker.find_records(pid) {
@@ -664,6 +696,8 @@ impl CPUSocket {
         None
     }
 
+    /// Returns a Record instance containing the power consumed between last
+    /// and previous measurement, for this CPU socket
     pub fn get_records_diff_power_microwatts(&self) -> Option<Record> {
         if self.record_buffer.len() > 1 {
             let last_record = self.record_buffer.last().unwrap();
@@ -730,6 +764,8 @@ pub struct Domain {
     pub buffer_max_kbytes: u16,
 }
 impl RecordGenerator for Domain {
+    /// Computes a measurement of energy comsumption for this CPU domain,
+    /// stores a copy in self.record_buffer and returns it.
     fn refresh_record(&mut self) -> Record {
         let timestamp = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
             Ok(n) => n,
@@ -753,6 +789,8 @@ impl RecordGenerator for Domain {
         record
     }
 
+    /// Removes as many Record instances from self.record_buffer as needed
+    /// for record_buffer to take less than 'buffer_max_kbytes' in memory
     fn clean_old_records(&mut self) {
         let record_ptr = &self.record_buffer[0];
         let curr_size = size_of_val(record_ptr) * self.record_buffer.len();
@@ -767,6 +805,7 @@ impl RecordGenerator for Domain {
         }
     }
 
+    /// Returns a copy of self.record_buffer
     fn get_records_passive(&self) -> Vec<Record> {
         let mut result = vec![];
         for r in &self.record_buffer {
@@ -780,6 +819,7 @@ impl RecordGenerator for Domain {
     }
 }
 impl Domain {
+    /// Instanciates Domain and returns the instance
     fn new(id: u16, name: String, counter_uj_path: String, buffer_max_kbytes: u16) -> Domain {
         Domain {
             id,
@@ -789,6 +829,7 @@ impl Domain {
             buffer_max_kbytes,
         }
     }
+    /// Reads content of this domain's energy_uj file
     pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
         match fs::read_to_string(&self.counter_uj_path) {
             Ok(result) => Ok(result),
@@ -813,6 +854,7 @@ pub struct Record {
 }
 
 impl Record {
+    /// Instances Record and returns the instance
     pub fn new(timestamp: Duration, value: String, unit: units::Unit) -> Record {
         Record {
             timestamp,
@@ -840,6 +882,8 @@ pub struct CPUStat {
 }
 
 impl CPUStat {
+    /// Returns the total of active CPU time spent, for this stat measurement
+    /// (not iowait, idle, irq or softirq)
     pub fn total_time_jiffies(&self) -> f32 {
         let user = self.cputime.user;
         let nice = self.cputime.nice;
@@ -861,6 +905,7 @@ impl CPUStat {
 }
 
 impl Clone for CPUStat {
+    /// Returns a copy of CPUStat instance
     fn clone(&self) -> CPUStat {
         CPUStat {
             cputime: CpuTime {

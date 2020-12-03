@@ -6,6 +6,8 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::{env, fs};
 
+/// This is a Sensor type that relies on powercap and rapl linux modules
+/// to collect energy consumption from CPU sockets and RAPL domains
 pub struct PowercapRAPLSensor {
     base_path: String,
     buffer_per_socket_max_kbytes: u16,
@@ -101,6 +103,7 @@ impl Sensor for PowercapRAPLSensor {
         Ok(topo)
     }
 
+    /// Instanciates Topology object if not existing and returns it
     fn get_topology(&mut self) -> Box<Option<Topology>> {
         let topology = self.generate_topology().ok();
         if topology.is_none() {

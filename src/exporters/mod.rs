@@ -4,17 +4,31 @@ pub mod stdout;
 use clap::ArgMatches;
 use std::collections::HashMap;
 
+/// An Exporter is what tells scaphandre when to collect metrics and how to export
+/// or expose them.
+/// Its basic role is to instanciate a Sensor, get the data the sensor has to offer
+/// and expose the data in the desired way. An exporter could either push the metrics
+/// over the network to a remote destination, store those metrics on the filesystem
+/// or expose them to be collected by another software. It decides at what pace
+/// the metrics are generated/refreshed by calling the refresh* methods available
+/// with the structs provided by the sensor.
 pub trait Exporter {
     fn run(&mut self, parameters: ArgMatches);
     fn get_options() -> HashMap<String, ExporterOption>;
 }
 
 pub struct ExporterOption {
+    /// States whether the option is mandatory or not
     pub required: bool,
+    /// Does the option need a value to be specified ?
     pub takes_value: bool,
+    /// The default value, if needed
     pub default_value: String,
+    /// One letter to identify the option (useful for the CLI)
     pub short: String,
+    /// A word to identify the option
     pub long: String,
+    /// A brief description to explain what the option does
     pub help: String,
 }
 
