@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{cmp::Ordering, fmt};
 
 // !!!!!!!!!!!!!!!!! Unit !!!!!!!!!!!!!!!!!!!!!!!
 #[derive(Debug)]
@@ -11,7 +11,6 @@ pub enum Unit {
     Watt,
     MilliWatt,
     MicroWatt,
-    Jiffries, // time unit of usage, relative to the CPU
 }
 
 impl Unit {
@@ -28,14 +27,10 @@ impl Unit {
         let pos_dest_energy = energy_order.iter().position(|x| x == dest_unit);
         let pos_source_power = power_order.iter().position(|x| x == source_unit);
         let pos_dest_power = power_order.iter().position(|x| x == dest_unit);
-        if pos_source_energy.is_some() && pos_dest_energy.is_some() {
-            let pos_source = pos_source_energy.unwrap();
-            let pos_dest = pos_dest_energy.unwrap();
-            Ok(measure * Unit::get_mult(pos_source, pos_dest))
-        } else if pos_source_power.is_some() && pos_dest_power.is_some() {
-            let pos_source = pos_source_power.unwrap();
-            let pos_dest = pos_dest_power.unwrap();
-            Ok(measure * Unit::get_mult(pos_source, pos_dest))
+        if let (Some(pos_source), Some(pos_dest)) = (pos_source_energy, pos_dest_energy) {
+            return Ok(measure * Unit::get_mult(pos_source, pos_dest));
+        } else if let (Some(pos_source), Some(pos_dest)) = (pos_source_power, pos_dest_power) {
+            return Ok(measure * Unit::get_mult(pos_source, pos_dest));
         } else {
             panic!("Impossible conversion asked from energy value to power value (without time dimension).");
         }
@@ -43,16 +38,10 @@ impl Unit {
 
     fn get_mult(pos_source: usize, pos_dest: usize) -> f64 {
         let mut mult: f64 = 1.0;
-        if pos_dest > pos_source {
-            // source < dest
-            for _ in 0..(pos_dest - pos_source) {
-                mult *= 1000.0;
-            }
-        } else if pos_dest < pos_source {
-            // source > dest
-            for _ in 0..(pos_source - pos_dest) {
-                mult /= 1000.0;
-            }
+        match pos_dest.cmp(&pos_source) {
+            Ordering::Greater => mult *= 1000.0 * (pos_dest - pos_source) as f64,
+            Ordering::Less => mult /= 1000.0 * (pos_source - pos_dest) as f64,
+            Ordering::Equal => (),
         }
         mult
     }
@@ -69,7 +58,6 @@ impl fmt::Display for Unit {
             Unit::Watt => write!(f, "Watts"),
             Unit::KiloWatt => write!(f, "KiloWatts"),
             Unit::MegaWatt => write!(f, "MegaWatts"),
-            Unit::Jiffries => write!(f, "Jiffries"),
         }
     }
 }

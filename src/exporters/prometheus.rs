@@ -353,7 +353,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
             process_power_value = power.to_string();
         }
         body = push_metric(
-            body, format!("Power consumption due to the process, measured on at the topology level, in microwatts"),
+            body, "Power consumption due to the process, measured on at the topology level, in microwatts".to_string(),
             String::from("gauge"), String::from(metric_name),
             format_metric (
                 metric_name, &process_power_value,

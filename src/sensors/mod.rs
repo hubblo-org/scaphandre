@@ -712,13 +712,9 @@ impl CPUCore {
 
     /// Reads content from /proc/stat and extracts the stats of the CPU core
     fn read_stats(&self) -> Option<CpuTime> {
-        let kernelstats_or_not = KernelStats::new();
-        if kernelstats_or_not.is_ok() {
+        if let Ok(mut kernelstats) = KernelStats::new() {
             return Some(
-                kernelstats_or_not
-                    .unwrap()
-                    .cpu_time
-                    .remove(self.id as usize),
+                kernelstats.cpu_time.remove(self.id as usize),
             );
         }
         None
