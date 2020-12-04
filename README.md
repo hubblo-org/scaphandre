@@ -79,7 +79,7 @@ Scaphandre on the host will compute the metrics meaningfull for that virtual mac
 
 This allows to break opacity in a virtualization, if you have access to the virtualization hosts and can install this tool, or cloud context if the provider uses scaphandre on his hypervisors.
 
-![Scaphandre in a virtualization context](<img src="https://github.com/hubblo-org/scaphandre/raw/main/virtu.cleaned.png" width="800">)
+<img src="https://github.com/hubblo-org/scaphandre/raw/main/virtu.cleaned.png" width="800">
 
 ## Structure
 
