@@ -71,7 +71,7 @@ To use the latest code for a true use case, build for release instead of debug:
     cargo build --release
     target/release/scaphandre prometheus
 
-## Virtualization
+## Virtual Machines & Cloud
 
 A major pain point in measuring power consumption is doing so inside a virtual machine. A virtual machine usually doesn't have access to power metrics.
 Scaphandre aims at solving that by enabling a communication between a scaphandre instance on the hypervisor host and another one in the virtual machine.
@@ -81,13 +81,21 @@ This allows to break opacity in a virtualization, if you have access to the virt
 
 <img src="https://github.com/hubblo-org/scaphandre/raw/main/virtu.cleaned.png" width="700">
 
-## Structure
-
-Scaphandre is a not only a tool, but a framework. Modules dedicated to collect energy comsumption data from one or multiple hosts are called *Sensors*.
-Modules that are dedicated to send those data to a given channel or remote system are called *Exporters*. New Sensors and Exporters are going to be created and all contributions are welcome.
-
 ## Contributing
 
 Feel free to propose pull requests, or open new issues at will. Scaphandre is a collaborative project and all opinions and propositions shall be heard and studied. The contributions will be received with kindness, gratitude and with an open mind. Remember that we are all dwarfs standing on the shoulders of giants. We all have to learn from others and to give back, with due mutual respect.
 
-This project intends to use [conventionnal commit messages](conventionalcommits.org/).
+Discussions and questions about the project are welcome on gitter: ![[Come chat with us on gitter !](https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)](https://badges.gitter.im/Join%20Chat.svg) or by [email](mailto://bpetit@hubblo.org?Subject=About%20Scaphandre).
+
+Here is the [code of conduct](CODE_OF_CONDUCT.md) of the project.
+
+This project intends to use [conventionnal commit messages](conventionalcommits.org/) and the [gitflow](https://nvie.com/posts/a-successful-git-branching-model/) workflow.
+
+### Structure
+
+Scaphandre is a not only a tool, but a framework. Modules dedicated to collect energy comsumption data from the host are called [**Sensors**](docs/sensors).
+Modules that are dedicated to send those data to a given channel or remote system are called (**Exporters**)[docs/exporters]. New Sensors and Exporters are going to be created and all contributions are welcome.
+
+### Roadmap
+
+The ongoing roadmap can be seen [here](https://github.com/hubblo-org/scaphandre/projects/1). Any feature request are welcome, please join us.
