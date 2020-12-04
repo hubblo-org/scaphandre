@@ -4,7 +4,7 @@
 
 ---
 
-Scaphandre is a metrology agent dedicated for electrical [power](https://en.wikipedia.org/wiki/Electric_power) consumption related metrics. The goal of the project is to permit to any company or individual to measure the power consumption of its tech services and get those data in a convenient form, sending it though any monitoring or data analysis toolchain.
+Scaphandre is a metrology agent dedicated to electrical [power](https://en.wikipedia.org/wiki/Electric_power) consumption metrics. The goal of the project is to permit to any company or individual to measure the power consumption of its tech services and get those data in a convenient form, sending it though any monitoring or data analysis toolchain.
 
 **Scaphandre** means *heavy* **diving suit** in [:fr:](https://fr.wikipedia.org/wiki/Scaphandre_%C3%A0_casque). It comes from the idea that tech related services often don't track their power consumption and thus don't expose it to their clients. Most of the time the reason is a presumed bad [ROI](https://en.wikipedia.org/wiki/Return_on_investment). Scaphandre makes, for tech providers and tech users, easier and cheaper to go under the surface to bring back the desired power consumption metrics, take better sustainability focussed decisions, and then show the metrics to their clients to allow them to do the same.
 
