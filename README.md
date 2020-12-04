@@ -71,6 +71,16 @@ To use the latest code for a true use case, build for release instead of debug:
     cargo build --release
     target/release/scaphandre prometheus
 
+## Virtualization
+
+A major pain point in measuring power consumption is doing it inside a virtual machine. A virtual machine usually doesn't have access to power metrics.
+Scaphandre aims at solving that by enabling a communication between a scaphandre instance on the hypervisor host and another one in the virtual machine.
+Scaphandre on the host will compute the metrics meaningfull for that virtual machine and exploit those metrics in the VM to allow its user to explpoit the data as if he had access to power metrics in the first place (as if he was on a bare metal machine).
+
+This allows to break opacity in a virtualization, if you have access to the virtualization hosts and can install this tool, or cloud context if the provider uses scaphandre on his hypervisors.
+
+![Scaphandre in a virtualization context](<img src="https://github.com/hubblo-org/scaphandre/raw/main/virtu.cleaned.png" width="800">)
+
 ## Structure
 
 Scaphandre is a not only a tool, but a framework. Modules dedicated to collect energy comsumption data from one or multiple hosts are called *Sensors*.
