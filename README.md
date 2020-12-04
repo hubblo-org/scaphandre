@@ -11,7 +11,7 @@ Scaphandre is a metrology agent dedicated for electrical [power](https://en.wiki
 See the [why](docs/why.md) section for more about the goals of the project.
 
 ![Fmt+Clippy](https://github.com/hubblo-org/scaphandre/workflows/Rust/badge.svg?branch=main)
-![[Come chat with us on gitter !](https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)](https://badges.gitter.im/Join%20Chat.svg)
+<a href="https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg"></a>
 
 ---
 
@@ -20,7 +20,7 @@ See the [why](docs/why.md) section for more about the goals of the project.
 - measuring power consumption on bare metal hosts
 - measuring power consumption on qemu/kvm virtual machines
 - measuring power consumption of qemu/kvm virtual machines from the host
-- exposing power consumption metrics as a [prometheus]() HTTP exporter
+- exposing power consumption metrics as a [prometheus](https://prometheus.io) HTTP exporter
 
 ## Getting started
 
@@ -38,28 +38,21 @@ To expose power consumption metrics as a [prometheus](https://prometheus.io) exp
 
 Metrics are now available on http://localhost:8080/metrics.
 
-A more complete command would be:
+To compute metrics of running Qemu/KVM virtual machines on the host, and [be able to expose those metrics](docs/exporters/qemu.md) to the guests, run:
 
-    scaphandre -s powercap_rapl stdout
-
-As you can see `-s` option allows you to select the **sensor**, which is the scaphandre component in charge of collecting power consumption metrics.
-
-You can also add a different timeout that the default 5 seconds:
-
-    scaphandre stdout -t 10 # measure and print data for 10 seconds
+    scaphandre qemu
 
 General usage is:
 
     scaphandre [-s SENSOR] EXPORTER [OPTIONS]
 
-You can get available options for both
-
 Available exporters are:
 
 - [stdout](docs/exporters/stdout.md): displays metrics on the standard output/on your terminal
 - [prometheus](docs/exporters/prometheus.md): exposes metrics as an http endpoint, respecting the [prometheus](https://prometheus.io/) metrics standard
+- [qemu](docs/exporters/qemu.md): computes power consumption of each Qemu/KVM virtual machine running on the host and stores the data in `/var/lib/libvirt/scaphandre/VM_NAME`
 
-Available sensors, as of today, are:
+Available sensors are:
 
 - [powercap_rapl](docs/sensors/powercap_rapl.md)
 
@@ -112,3 +105,9 @@ The ongoing roadmap can be seen [here](https://github.com/hubblo-org/scaphandre/
 ### Footprint
 
 In opposition to its name, scaphandre aims to be as light and clean as possible. One of the main focus of the project is to come as close as possible to a 0 overhead, both about resources consumption and power consumption.
+
+### Documentation
+
+Code documentation is [here](https://docs.rs/scaphandre).
+
+Users documentation is [here](docs).

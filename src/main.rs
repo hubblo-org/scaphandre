@@ -1,5 +1,4 @@
 //! Generic sensor and transmission agent for energy consumption related metrics.
-//!
 use clap::{App, AppSettings, Arg, SubCommand};
 use scaphandre::{get_exporters_options, run};
 
@@ -58,7 +57,7 @@ fn main() {
     for exp in res {
         let mut subcmd = SubCommand::with_name(exp).about(
             match exp {
-                "stdout" => "Stdout exporter allows you to output the power consumption data in the terminal, either in human readable format, JSON, or prometheus exporters like syntax",
+                "stdout" => "Stdout exporter allows you to output the power consumption data in the terminal.",
                 "prometheus" => "Prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted format",
                 "qemu" => "Qemu exporter watches all Qemu/KVM virtual machines running on the host and exposes metrics of each of them in a dedicated folder",
                 _ => "Unknown exporter",

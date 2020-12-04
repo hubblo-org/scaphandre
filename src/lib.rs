@@ -1,8 +1,9 @@
+//! Extensible sensor and transmission agent of electrical power consumption metrics.
 #[macro_use]
 extern crate log;
 pub mod exporters;
 pub mod sensors;
-pub use clap::ArgMatches;
+use clap::ArgMatches;
 use exporters::{
     prometheus::PrometheusExporter, qemu::QemuExporter, stdout::StdoutExporter, Exporter,
     ExporterOption,
@@ -94,7 +95,7 @@ pub fn get_exporters_options() -> HashMap<String, HashMap<String, ExporterOption
     options
 }
 
-pub fn current_system_time_since_epoch() -> Duration {
+fn current_system_time_since_epoch() -> Duration {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()
