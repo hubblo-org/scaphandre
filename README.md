@@ -8,8 +8,6 @@ Scaphandre (or "scaf" for busy people) is a metrology agent dedicated for electr
 
 **Scaphandre** means *heavy* **diving suit** in [:fr:](https://fr.wikipedia.org/wiki/Scaphandre_%C3%A0_casque). It comes from the idea that tech related services often don't track their power consumption and thus don't expose it to their clients. Most of the time the reason is a presumed bad [ROI](https://en.wikipedia.org/wiki/Return_on_investment). Scaphandre makes, for tech providers and tech users, easier and cheaper to go under the surface to bring back the desired power consumption metrics, take better sustainability focussed decisions, and then show the metrics to their clients to allow them to do the same.
 
-In opposition to its name, scaphandre aims to be as light and clean as possible. One of the main focus of the project is to come as close as possible to a 0 overhead, both about resources consumption and power consumption.
-
 See the [why](docs/why.md) section for more about the goals of the project.
 
 ![Fmt+Clippy](https://github.com/hubblo-org/scaphandre/workflows/Rust/badge.svg?branch=main)
@@ -89,13 +87,14 @@ The scaphandre agent on the host will compute the metrics meaningfull for that v
 
 This allows to break opacity in a virtualization, if you have access to the virtualization hosts and can install this tool, or cloud context if the provider uses scaphandre on his hypervisors. Please refer to the [qemu exporter](docs/exporters/qemu.md) documentation.
 
-<img src="https://github.com/hubblo-org/scaphandre/raw/main/virtu.cleaned.png" width="700">
+<img src="https://github.com/hubblo-org/scaphandre/raw/main/virtu.cleaned.png" width="600">
 
 ## Contributing
 
 Feel free to propose pull requests, or open new issues at will. Scaphandre is a collaborative project and all opinions and propositions shall be heard and studied. The contributions will be received with kindness, gratitude and with an open mind. Remember that we are all dwarfs standing on the shoulders of giants. We all have to learn from others and to give back, with due mutual respect.
 
-Discussions and questions about the project are welcome on gitter: ![[Come chat with us on gitter !](https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)](https://badges.gitter.im/Join%20Chat.svg) or by [email](mailto://bpetit@hubblo.org?Subject=About%20Scaphandre).
+Discussions and questions about the project are welcome on gitter: ![[Come chat with us on gitter !](https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)](https://badges.gitter.im/Join%20Chat.svg)
+or by [email](mailto://bpetit@hubblo.org?Subject=About%20Scaphandre).
 
 Here is the [code of conduct](CODE_OF_CONDUCT.md) of the project.
 
@@ -104,8 +103,12 @@ This project intends to use [conventionnal commit messages](conventionalcommits.
 ### Structure
 
 Scaphandre is a not only a tool, but a framework. Modules dedicated to collect energy comsumption data from the host are called [**Sensors**](docs/sensors).
-Modules that are dedicated to send those data to a given channel or remote system are called (**Exporters**)[docs/exporters]. New Sensors and Exporters are going to be created and all contributions are welcome.
+Modules that are dedicated to send those data to a given channel or remote system are called [**Exporters**](docs/exporters). New Sensors and Exporters are going to be created and all contributions are welcome.
 
 ### Roadmap
 
 The ongoing roadmap can be seen [here](https://github.com/hubblo-org/scaphandre/projects/1). Any feature request are welcome, please join us.
+
+### Footprint
+
+In opposition to its name, scaphandre aims to be as light and clean as possible. One of the main focus of the project is to come as close as possible to a 0 overhead, both about resources consumption and power consumption.
