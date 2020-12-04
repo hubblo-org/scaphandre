@@ -17,6 +17,13 @@ See the [why](docs/why.md) section for more about the goals of the project.
 
 ---
 
+## Features
+
+- measuring power consumption on bare metal hosts
+- measuring power consumption on qemu/kvm virtual machines
+- measuring power consumption of qemu/kvm virtual machines from the host
+- exposing power consumption metrics as a [prometheus]() HTTP exporter
+
 ## Getting started
 
 Installation steps are described [here](#Installation).
@@ -60,16 +67,19 @@ Available sensors, as of today, are:
 
 ## Installation
 
-To hack scaf, or simply be up to date with latest developments, you can download scaphandre from the main branch:
+You'll find existing releases and packages [here](https://github.com/hubblo-org/scaphandre/releases).
 
-    git clone https://github.com/hubblo-org/scaphandre.git && cd scaphandre
-    cargo build
-    target/debug/scaphandre prometheus
+To hack *scaph*, or simply be up to date with latest developments, you can download scaphandre from the main branch:
+
+    git clone https://github.com/hubblo-org/scaphandre.git
+    cd scaphandre
+    cargo build # binary path is target/debug/scaphandre
 
 To use the latest code for a true use case, build for release instead of debug:
 
     cargo build --release
-    target/release/scaphandre prometheus
+    
+Binary path is `target/release/scaphandre`.
 
 ## Virtual Machines & Cloud
 
