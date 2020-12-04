@@ -57,11 +57,15 @@ pub fn energy_records_to_power_record(measures: (&Record, &Record)) -> Result<Re
 /// Owns a vector of CPUSocket structs representing each socket.
 #[derive(Debug, Clone)]
 pub struct Topology {
+    /// The CPU sockets found on the host, represented as CPUSocket instances attached to this topology
     pub sockets: Vec<CPUSocket>,
-    pub remote: bool,
+    /// ProcessTrack instance that keeps track of processes running on the host and CPU stats associated
     pub proc_tracker: ProcessTracker,
+    /// CPU usage stats buffer
     pub stat_buffer: Vec<CPUStat>,
+    /// Measurements of energy usage, stored as Record instances
     pub record_buffer: Vec<Record>,
+    /// Maximum size in memory for the recor_buffer
     pub buffer_max_kbytes: u16,
 }
 
@@ -135,7 +139,6 @@ impl Topology {
     pub fn new() -> Topology {
         Topology {
             sockets: vec![],
-            remote: false,
             proc_tracker: ProcessTracker::new(5),
             stat_buffer: vec![],
             record_buffer: vec![],

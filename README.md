@@ -86,8 +86,7 @@ This allows to break opacity in a virtualization, if you have access to the virt
 
 Feel free to propose pull requests, or open new issues at will. Scaphandre is a collaborative project and all opinions and propositions shall be heard and studied. The contributions will be received with kindness, gratitude and with an open mind. Remember that we are all dwarfs standing on the shoulders of giants. We all have to learn from others and to give back, with due mutual respect.
 
-Discussions and questions about the project are welcome on gitter: ![[Come chat with us on gitter !](https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)](https://badges.gitter.im/Join%20Chat.svg)
-or by [email](mailto://bpetit@hubblo.org?Subject=About%20Scaphandre).
+Discussions and questions about the project are welcome on gitter: [gitter](https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) or by [email](mailto://bpetit@hubblo.org?Subject=About%20Scaphandre).
 
 Here is the [code of conduct](CODE_OF_CONDUCT.md) of the project.
 
