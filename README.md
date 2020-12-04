@@ -73,13 +73,13 @@ To use the latest code for a true use case, build for release instead of debug:
 
 ## Virtualization
 
-A major pain point in measuring power consumption is doing it inside a virtual machine. A virtual machine usually doesn't have access to power metrics.
+A major pain point in measuring power consumption is doing so inside a virtual machine. A virtual machine usually doesn't have access to power metrics.
 Scaphandre aims at solving that by enabling a communication between a scaphandre instance on the hypervisor host and another one in the virtual machine.
-Scaphandre on the host will compute the metrics meaningfull for that virtual machine and exploit those metrics in the VM to allow its user to explpoit the data as if he had access to power metrics in the first place (as if he was on a bare metal machine).
+The scaphandre agent on the host will compute the metrics meaningfull for that virtual machine and the one on the VM exploit those metrics to allow its user to exploit the data as if he had access to power metrics in the first place (as if he was on a bare metal machine).
 
-This allows to break opacity in a virtualization, if you have access to the virtualization hosts and can install this tool, or cloud context if the provider uses scaphandre on his hypervisors.
+This allows to break opacity in a virtualization, if you have access to the virtualization hosts and can install this tool, or cloud context if the provider uses scaphandre on his hypervisors. Please refer to the [qemu exporter](docs/exporters/qemu.md) documentation.
 
-<img src="https://github.com/hubblo-org/scaphandre/raw/main/virtu.cleaned.png" width="800">
+<img src="https://github.com/hubblo-org/scaphandre/raw/main/virtu.cleaned.png" width="700">
 
 ## Structure
 
