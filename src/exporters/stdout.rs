@@ -1,5 +1,5 @@
 use crate::exporters::*;
-use crate::sensors::{Sensor, Record, Topology};
+use crate::sensors::{Record, Sensor, Topology};
 use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, Instant};
