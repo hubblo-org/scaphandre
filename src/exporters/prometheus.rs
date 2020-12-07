@@ -310,10 +310,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
             //if cmdline_str.len() > 350 {
             //    cmdline_str = String::from(&cmdline_str[..350]);
             //}
-            plabels.insert(
-                String::from("cmdline"),
-                cmdline_str.replace("\"", "\\\""),
-            );
+            plabels.insert(String::from("cmdline"), cmdline_str.replace("\"", "\\\""));
         }
 
         let metric_name = "process_power_consumption_microwatts";

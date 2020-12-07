@@ -713,8 +713,14 @@ impl CPUSocket {
                 .record_buffer
                 .get(self.record_buffer.len() - 2)
                 .unwrap();
-            debug!("last_record value: {} previous_record value: {}", &last_record.value, &previous_record.value);
-            if let (Ok(last_microjoules), Ok(previous_microjoules)) = (last_record.value.trim().parse::<u64>(), previous_record.value.trim().parse::<u64>()) {
+            debug!(
+                "last_record value: {} previous_record value: {}",
+                &last_record.value, &previous_record.value
+            );
+            if let (Ok(last_microjoules), Ok(previous_microjoules)) = (
+                last_record.value.trim().parse::<u64>(),
+                previous_record.value.trim().parse::<u64>(),
+            ) {
                 let microjoules = last_microjoules - previous_microjoules;
                 let time_diff =
                     last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
@@ -726,7 +732,9 @@ impl CPUSocket {
                     units::Unit::MicroWatt,
                 ));
             }
-        } else { debug!("Not enough records for socket"); }
+        } else {
+            debug!("Not enough records for socket");
+        }
         None
     }
 }
@@ -856,7 +864,10 @@ impl Domain {
                 .record_buffer
                 .get(self.record_buffer.len() - 2)
                 .unwrap();
-            if let (Ok(last_microjoules), Ok(previous_microjoules)) = (last_record.value.trim().parse::<u64>(), previous_record.value.trim().parse::<u64>()) {
+            if let (Ok(last_microjoules), Ok(previous_microjoules)) = (
+                last_record.value.trim().parse::<u64>(),
+                previous_record.value.trim().parse::<u64>(),
+            ) {
                 if previous_microjoules > last_microjoules {
                     return None;
                 }
@@ -873,7 +884,6 @@ impl Domain {
         }
         None
     }
-
 }
 impl fmt::Display for Domain {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

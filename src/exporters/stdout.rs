@@ -1,5 +1,5 @@
 use crate::exporters::*;
-use crate::sensors::{energy_records_to_power_record, RecordGenerator, Sensor, Topology, Record};
+use crate::sensors::{Sensor, Record, Topology};
 use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -63,11 +63,13 @@ impl StdoutExporter {
             }
         }
     }
-    
-    fn get_domains_power(&self, socket_id: u16) -> Vec<Option<Record>>{
-        let socket_present = self.topology.get_sockets_passive().iter().find(
-            move |x| x.id == socket_id
-        );
+
+    fn get_domains_power(&self, socket_id: u16) -> Vec<Option<Record>> {
+        let socket_present = self
+            .topology
+            .get_sockets_passive()
+            .iter()
+            .find(move |x| x.id == socket_id);
 
         if let Some(socket) = socket_present {
             let mut domains_power: Vec<Option<Record>> = vec![];
@@ -85,23 +87,26 @@ impl StdoutExporter {
         self.show_metrics();
     }
 
-    fn show_metrics(&self)  {
+    fn show_metrics(&self) {
         let host_power = match self.topology.get_records_diff_power_microwatts() {
             Some(record) => record.value.parse::<u64>().unwrap(),
-            None => 0
+            None => 0,
         };
         let mut sockets_power: HashMap<u16, (u64, Vec<Option<Record>>)> = HashMap::new();
         let sockets = self.topology.get_sockets_passive();
         for s in sockets {
             let socket_power = match s.get_records_diff_power_microwatts() {
                 Some(record) => record.value.parse::<u64>().unwrap(),
-                None => 0
+                None => 0,
             };
             sockets_power.insert(s.id, (socket_power, self.get_domains_power(s.id)));
         }
-        println!("Host:\t{} W\tCore\t\tUncore\t\tDRAM", (host_power as f32 / 1000000.0));
+        println!(
+            "Host:\t{} W\tCore\t\tUncore\t\tDRAM",
+            (host_power as f32 / 1000000.0)
+        );
         for (s_id, v) in sockets_power.iter() {
-            let power = (v.0 as f32)/1000000.0;
+            let power = (v.0 as f32) / 1000000.0;
             let mut power_str = String::from('?');
             if power > 0.0 {
                 power_str = power.to_string();
@@ -110,7 +115,7 @@ impl StdoutExporter {
             for d in v.1.iter() {
                 let domain_power = match d {
                     Some(record) => record.value.parse::<u64>().unwrap(),
-                    None => 0
+                    None => 0,
                 };
                 to_print.push_str(&format!("{} W\t", domain_power as f32 / 1000000.0));
             }
@@ -123,7 +128,14 @@ impl StdoutExporter {
         for c in consumers.iter() {
             if let Some(host_stat) = self.topology.get_stats_diff() {
                 let host_time = host_stat.total_time_jiffies();
-                println!("{} W\t{}\t{:?}", ((c.1 as f32 / (host_time * procfs::ticks_per_second().unwrap() as f32)) * host_power as f32)/1000000.0, c.0.pid, c.0.exe().unwrap_or_default());
+                println!(
+                    "{} W\t{}\t{:?}",
+                    ((c.1 as f32 / (host_time * procfs::ticks_per_second().unwrap() as f32))
+                        * host_power as f32)
+                        / 1000000.0,
+                    c.0.pid,
+                    c.0.exe().unwrap_or_default()
+                );
             }
         }
 
