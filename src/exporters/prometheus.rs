@@ -306,46 +306,15 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         let mut plabels = HashMap::new();
         plabels.insert(String::from("pid"), pid.to_string());
         plabels.insert(String::from("exe"), exe);
-        if cmdline.is_some() {
+        if let Some(cmdline_str) = cmdline {
+            //if cmdline_str.len() > 350 {
+            //    cmdline_str = String::from(&cmdline_str[..350]);
+            //}
             plabels.insert(
                 String::from("cmdline"),
-                cmdline.unwrap().replace("\"", "\\\""),
+                cmdline_str.replace("\"", "\\\""),
             );
         }
-
-        //let mut stime = String::from("NaN");
-        //if let Some(res) = processes_tracker.get_diff_stime(pid) {
-        //    stime = res.to_string();
-        //}
-
-        //let metric_name = "process_stime_jiffies";
-        //body = push_metric(
-        //    body, String::from(
-        //        format!("System time consumed on the CPU by pid {}, in jiffies (relative to CPU model).", pid)
-        //    ),
-        //    String::from("counter"),
-        //    String::from(metric_name),
-        //    format_metric(
-        //        metric_name, &stime, Some(&plabels)
-        //    )
-        //);
-
-        //let mut utime = String::from("NaN");
-        //if let Some(res) = processes_tracker.get_diff_utime(pid) {
-        //    utime = res.to_string();
-        //}
-
-        //let metric_name = "process_utime_jiffies";
-        //body = push_metric(
-        //    body, String::from(
-        //        format!("User time consumed on the CPU by pid {}, in jiffies (relative to CPU model).", pid)
-        //    ),
-        //    String::from("counter"),
-        //    String::from(metric_name),
-        //    format_metric(
-        //        metric_name, &utime, Some(&plabels)
-        //    )
-        //);
 
         let metric_name = "process_power_consumption_microwatts";
         let mut process_power_value = String::from("0");
