@@ -595,6 +595,11 @@ impl CPUSocket {
         &mut self.domains
     }
 
+    /// Returns a mutable reference to the domains vector.
+    pub fn get_domains_passive(&self) -> &Vec<Domain> {
+        &self.domains
+    }
+
     /// Returns a mutable reference to the CPU cores vector.
     pub fn get_cores(&mut self) -> &mut Vec<CPUCore> {
         &mut self.cpu_cores
@@ -708,18 +713,20 @@ impl CPUSocket {
                 .record_buffer
                 .get(self.record_buffer.len() - 2)
                 .unwrap();
-            let last_microjoules = last_record.value.parse::<u64>().unwrap();
-            let previous_microjoules = previous_record.value.parse::<u64>().unwrap();
-            let microjoules = last_microjoules - previous_microjoules;
-            let time_diff =
-                last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
-            let microwatts = microjoules as f64 / time_diff;
-            return Some(Record::new(
-                last_record.timestamp,
-                (microwatts as u64).to_string(),
-                units::Unit::MicroWatt,
-            ));
-        }
+            debug!("last_record value: {} previous_record value: {}", &last_record.value, &previous_record.value);
+            if let (Ok(last_microjoules), Ok(previous_microjoules)) = (last_record.value.trim().parse::<u64>(), previous_record.value.trim().parse::<u64>()) {
+                let microjoules = last_microjoules - previous_microjoules;
+                let time_diff =
+                    last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
+                let microwatts = microjoules as f64 / time_diff;
+                debug!("microwatts: {}", microwatts);
+                return Some(Record::new(
+                    last_record.timestamp,
+                    (microwatts as u64).to_string(),
+                    units::Unit::MicroWatt,
+                ));
+            }
+        } else { debug!("Not enough records for socket"); }
         None
     }
 }
@@ -839,6 +846,34 @@ impl Domain {
             Err(error) => Err(Box::new(error)),
         }
     }
+
+    /// Returns a Record instance containing the power consumed between
+    /// last and previous measurement, in microwatts.
+    pub fn get_records_diff_power_microwatts(&self) -> Option<Record> {
+        if self.record_buffer.len() > 1 {
+            let last_record = self.record_buffer.last().unwrap();
+            let previous_record = self
+                .record_buffer
+                .get(self.record_buffer.len() - 2)
+                .unwrap();
+            if let (Ok(last_microjoules), Ok(previous_microjoules)) = (last_record.value.trim().parse::<u64>(), previous_record.value.trim().parse::<u64>()) {
+                if previous_microjoules > last_microjoules {
+                    return None;
+                }
+                let microjoules = last_microjoules - previous_microjoules;
+                let time_diff =
+                    last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
+                let microwatts = microjoules as f64 / time_diff;
+                return Some(Record::new(
+                    last_record.timestamp,
+                    (microwatts as u64).to_string(),
+                    units::Unit::MicroWatt,
+                ));
+            }
+        }
+        None
+    }
+
 }
 impl fmt::Display for Domain {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

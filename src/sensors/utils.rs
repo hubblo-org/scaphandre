@@ -188,6 +188,31 @@ impl ProcessTracker {
         None
     }
 
+    pub fn get_top_consumers(&self, top: u16) -> Vec<(Process, u64)>{
+        let mut consumers: Vec<(Process, u64)> = vec![];
+        for p in &self.procs {
+            if p.len() > 1 {
+                let last_time = p.first().unwrap().total_time_jiffies();
+                let previous_time = p.get(1).unwrap().total_time_jiffies();
+                let mut diff = 0;
+                if previous_time <= last_time {
+                    diff = last_time - previous_time;
+                }
+                let higher: Vec<&(Process, u64)> = consumers.iter().filter(
+                    |x| ProcessRecord::new(x.0.to_owned()).total_time_jiffies() > diff
+                ).collect();    
+                if higher.len() < top as usize {
+                    consumers.push((p.last().unwrap().process.clone(), diff));
+                    consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                    if consumers.len() > top as usize {
+                        consumers.pop();
+                    }
+                }
+            }
+        } 
+        consumers
+    }
+
     /// Drops a vector of ProcessRecord instances from self.procs
     /// if the last ProcessRecord from the vector is of state Terminated
     /// (if the process is not running anymore)

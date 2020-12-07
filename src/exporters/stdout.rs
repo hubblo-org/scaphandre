@@ -1,5 +1,5 @@
 use crate::exporters::*;
-use crate::sensors::{energy_records_to_power_record, RecordGenerator, Sensor, Topology};
+use crate::sensors::{energy_records_to_power_record, RecordGenerator, Sensor, Topology, Record};
 use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -47,233 +47,94 @@ impl StdoutExporter {
     pub fn runner(&mut self, parameters: ArgMatches) {
         let timeout = parameters.value_of("timeout").unwrap();
         if timeout.is_empty() {
-            self.iteration(0);
+            self.iterate();
         } else {
             let now = Instant::now();
 
             let timeout_secs: u64 = timeout.parse().unwrap();
-            let step = 1;
+            let step = 2;
 
             println!("Measurement step is: {}s", step);
 
             while now.elapsed().as_secs() <= timeout_secs {
-                self.iteration(step);
+                //self.iteration(step);
+                self.iterate();
                 thread::sleep(Duration::new(step, 0));
             }
         }
     }
-
-    /// Processes and displays metrics
-    fn iteration(&mut self, _step: u64) {
-        self.topology.refresh();
-        let topo_records = self.topology.get_records_passive();
-        let mut topo_power = String::from("n/a");
-        let mut topo_raw_power: f64 = 0.0;
-        if topo_records.len() > 1 {
-            topo_raw_power = energy_records_to_power_record((
-                topo_records.last().unwrap(),
-                topo_records.get(topo_records.len() - 2).unwrap(),
-            ))
-            .unwrap()
-            .value
-            .parse::<f64>()
-            .unwrap();
-            topo_power = topo_raw_power.to_string();
-        }
-        let (topo_stats_user, topo_stats_nice, topo_stats_system) =
-            match self.topology.get_stats_diff() {
-                Some(stat) => (
-                    stat.cputime.user.to_string(),
-                    stat.cputime.nice.to_string(),
-                    stat.cputime.system.to_string(),
-                ),
-                None => (
-                    String::from("n/a"),
-                    String::from("n/a"),
-                    String::from("n/a"),
-                ),
-            };
-        for (counter, p) in self
-            .topology
-            .proc_tracker
-            .get_alive_pids()
-            .into_iter()
-            .enumerate()
-        {
-            let utime_value = match self.topology.proc_tracker.get_diff_utime(p) {
-                Some(time) => time.to_string(),
-                None => String::from("n/a"),
-            };
-            let stime_value = match self.topology.proc_tracker.get_diff_stime(p) {
-                Some(time) => time.to_string(),
-                None => String::from("n/a"),
-            };
-            let mut utime_percent = 0.0;
-            let mut stime_percent = 0.0;
-            if topo_stats_system != "n/a"
-                && topo_stats_user != "n/a"
-                && utime_value != "n/a"
-                && stime_value != "n/a"
-            {
-                utime_percent = utime_value.parse::<f64>().unwrap()
-                    / topo_stats_user.parse::<f64>().unwrap()
-                    * 100.0;
-                stime_percent = stime_value.parse::<f64>().unwrap()
-                    / topo_stats_system.parse::<f64>().unwrap()
-                    * 100.0;
-            }
-            print!(
-                "| {} utime:{} stime:{} utime_t_%:{} s_time_t_%: {} power: {}",
-                p,
-                utime_value,
-                stime_value,
-                utime_percent.to_string(),
-                stime_percent.to_string(),
-                ((utime_percent + stime_percent) * topo_raw_power / 100.0)
-            );
-            if counter % 4 == 0 {
-                println!();
-            }
-        }
-        for socket in self.topology.get_sockets() {
-            let socket_id = socket.id;
-            let socket_records = socket.get_records_passive();
-            let mut power = String::from("unknown");
-            let mut unit = String::from("W");
-            let nb_records = socket_records.len();
-            if nb_records > 1 {
-                let power_record = &energy_records_to_power_record((
-                    socket_records.get(nb_records - 1).unwrap(),
-                    socket_records.get(nb_records - 2).unwrap(),
-                ))
-                .unwrap();
-                power = power_record.value.clone();
-                unit = power_record.unit.to_string();
-            }
-            let mut rec_j_1 = String::from("unknown");
-            let mut rec_j_2 = String::from("unknown");
-            let mut rec_j_3 = String::from("unknown");
-            if socket_records.len() > 2 {
-                rec_j_1 = socket_records
-                    .get(nb_records - 3)
-                    .unwrap()
-                    .value
-                    .to_string()
-                    .trim()
-                    .to_string();
-            }
-            if socket_records.len() > 1 {
-                rec_j_2 = socket_records
-                    .get(nb_records - 2)
-                    .unwrap()
-                    .value
-                    .to_string()
-                    .trim()
-                    .to_string();
-            }
-            if !socket_records.is_empty() {
-                rec_j_3 = socket_records
-                    .get(nb_records - 1)
-                    .unwrap()
-                    .value
-                    .to_string()
-                    .trim()
-                    .to_string();
-            }
-            let (socket_stats_user, socket_stats_nice, socket_stats_system) =
-                match socket.get_stats_diff() {
-                    Some(stat) => (
-                        stat.cputime.user.to_string(),
-                        stat.cputime.nice.to_string(),
-                        stat.cputime.system.to_string(),
-                    ),
-                    None => (
-                        String::from("n/a"),
-                        String::from("n/a"),
-                        String::from("n/a"),
-                    ),
-                };
-            println!(
-                "socket:{} {} {} last3(uJ): {} {} {} user {} nice {} system {}",
-                socket_id,
-                power,
-                unit,
-                rec_j_1,
-                rec_j_2,
-                rec_j_3,
-                socket_stats_user,
-                socket_stats_nice,
-                socket_stats_system
-            );
-
-            for domain in socket.get_domains() {
-                let domain_records = domain.get_records_passive();
-                let mut power = String::from("unknown");
-                let mut unit = String::from("W");
-                let nb_records = domain_records.len();
-                if nb_records > 1 {
-                    let power_record = &energy_records_to_power_record((
-                        domain_records.get(nb_records - 1).unwrap(),
-                        domain_records.get(nb_records - 2).unwrap(),
-                    ))
-                    .unwrap();
-                    power = power_record.value.clone();
-                    unit = power_record.unit.to_string();
-                }
-                let mut rec_dom_j_1 = String::from("unknown");
-                let mut rec_dom_j_2 = String::from("unknown");
-                let mut rec_dom_j_3 = String::from("unknown");
-                if domain_records.len() > 2 {
-                    rec_dom_j_1 = domain_records
-                        .get(nb_records - 3)
-                        .unwrap()
-                        .value
-                        .to_string()
-                        .trim()
-                        .to_string();
-                }
-                if domain_records.len() > 1 {
-                    rec_dom_j_2 = domain_records
-                        .get(nb_records - 2)
-                        .unwrap()
-                        .value
-                        .to_string()
-                        .trim()
-                        .to_string();
-                }
-                if !domain_records.is_empty() {
-                    rec_dom_j_3 = domain_records
-                        .get(nb_records - 1)
-                        .unwrap()
-                        .value
-                        .to_string()
-                        .trim()
-                        .to_string();
-                }
-                println!(
-                    "socket:{} domain:{}:{} {} {} last3(uJ): {} {} {}",
-                    socket_id,
-                    domain.id,
-                    domain.name.trim(),
-                    power,
-                    unit,
-                    rec_dom_j_1,
-                    rec_dom_j_2,
-                    rec_dom_j_3
-                );
-            }
-        }
-        println!(
-            "topo stats: power: {}W user {} nice {} system {}",
-            topo_power, topo_stats_user, topo_stats_nice, topo_stats_system
+    
+    fn get_domains_power(&self, socket_id: u16) -> Vec<Option<Record>>{
+        let socket_present = self.topology.get_sockets_passive().iter().find(
+            move |x| x.id == socket_id
         );
+
+        if let Some(socket) = socket_present {
+            let mut domains_power: Vec<Option<Record>> = vec![];
+            for d in socket.get_domains_passive() {
+                domains_power.push(d.get_records_diff_power_microwatts());
+            }
+            domains_power
+        } else {
+            vec![None, None, None]
+        }
+    }
+
+    fn iterate(&mut self) {
+        self.topology.refresh();
+        self.show_metrics();
+    }
+
+    fn show_metrics(&self)  {
+        let host_power = match self.topology.get_records_diff_power_microwatts() {
+            Some(record) => record.value.parse::<u64>().unwrap(),
+            None => 0
+        };
+        let mut sockets_power: HashMap<u16, (u64, Vec<Option<Record>>)> = HashMap::new();
+        let sockets = self.topology.get_sockets_passive();
+        for s in sockets {
+            let socket_power = match s.get_records_diff_power_microwatts() {
+                Some(record) => record.value.parse::<u64>().unwrap(),
+                None => 0
+            };
+            sockets_power.insert(s.id, (socket_power, self.get_domains_power(s.id)));
+        }
+        println!("Host:\t{} W\tCore\t\tUncore\t\tDRAM", (host_power as f32 / 1000000.0));
+        for (s_id, v) in sockets_power.iter() {
+            let power = (v.0 as f32)/1000000.0;
+            let mut power_str = String::from('?');
+            if power > 0.0 {
+                power_str = power.to_string();
+            }
+            let mut to_print = format!("Socket{}\t{} W\t", s_id, power_str);
+            for d in v.1.iter() {
+                let domain_power = match d {
+                    Some(record) => record.value.parse::<u64>().unwrap(),
+                    None => 0
+                };
+                to_print.push_str(&format!("{} W\t", domain_power as f32 / 1000000.0));
+            }
+            println!("{}", to_print);
+        }
+        println!("Top 5 consumers:");
+        println!("Power\tPID\tExe");
+
+        let consumers = self.topology.proc_tracker.get_top_consumers(5);
+        for c in consumers.iter() {
+            if let Some(host_stat) = self.topology.get_stats_diff() {
+                let host_time = host_stat.total_time_jiffies();
+                println!("{} W\t{}\t{:?}", ((c.1 as f32 / (host_time * procfs::ticks_per_second().unwrap() as f32)) * host_power as f32)/1000000.0, c.0.pid, c.0.exe().unwrap_or_default());
+            }
+        }
+
+        println!("------------------------------------------------------------\n");
     }
 }
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn get_cons_socket0() {}
+    //#[test]
+    //fn get_cons_socket0() {}
 }
 
 //  Copyright 2020 The scaphandre authors.
