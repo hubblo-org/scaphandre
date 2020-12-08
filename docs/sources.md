@@ -16,4 +16,6 @@
 # Topics to investigate
 
 - [PSI](https://facebookmicrosites.github.io/psi/docs/overview)
+- [Linux PSI by example](https://unixism.net/2019/08/linux-pressure-stall-information-psi-by-example/)
+- [PSI - Pressure Stall Information](https://www.kernel.org/doc/html/latest/accounting/psi.html)
 - [How to measure linux performance avoiding most typical mistakes: memory](https://ma.ttias.be/how-to-measure-linux-performance-avoiding-most-typical-mistakes-memory/)
