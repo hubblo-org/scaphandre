@@ -8,7 +8,7 @@ Scaphandre is a metrology agent dedicated to electrical [power](https://en.wikip
 
 **Scaphandre** means *heavy* **diving suit** in [:fr:](https://fr.wikipedia.org/wiki/Scaphandre_%C3%A0_casque). It comes from the idea that tech related services often don't track their power consumption and thus don't expose it to their clients. Most of the time the reason is a presumed bad [ROI](https://en.wikipedia.org/wiki/Return_on_investment). Scaphandre makes, for tech providers and tech users, easier and cheaper to go under the surface to bring back the desired power consumption metrics, take better sustainability focussed decisions, and then show the metrics to their clients to allow them to do the same.
 
-See the [why](docs/why.md) section for more about the goals of the project.
+This project is born from a deep sense of duty from tech workers. Please refer to the [why](docs/why.md) section for know more about its goals.
 
 **Warning**: this is still a very early stage project. Any feedback or contribution will be highly appreciated. Please refer to the [contribution](https://github.com/hubblo-org/scaphandre/#contributing) section.
 
