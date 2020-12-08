@@ -10,6 +10,8 @@ Scaphandre is a metrology agent dedicated to electrical [power](https://en.wikip
 
 See the [why](docs/why.md) section for more about the goals of the project.
 
+**Warning**: this is still a very early stage project. Any feedback or contribution will be highly appreciated. Please refer to the [contribution](https://github.com/hubblo-org/scaphandre/#contributing) section.
+
 ![Fmt+Clippy](https://github.com/hubblo-org/scaphandre/workflows/Rust/badge.svg?branch=main)
 <a href="https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg"></a>
 
