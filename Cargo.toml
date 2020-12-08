@@ -4,10 +4,10 @@ version = "0.1.0"
 authors = ["Benoit Petit <bpetit@hubblo.org>"]
 edition = "2018"
 license = "Apache-2.0"
-description = "Electrical power consumption metrics collection and shipping agent"
+description = "Electrical power consumption measurement agent."
 repository = "https://github.com/hubblo-org/scaphandre"
 readme = "README.md"
-homepage = "https://scaphandre.hubblo.org"
+#homepage = "https://scaphandre.hubblo.org"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
