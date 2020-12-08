@@ -18,9 +18,10 @@ See the [why](docs/why.md) section for more about the goals of the project.
 ## Features
 
 - measuring power consumption on bare metal hosts
-- measuring power consumption on qemu/kvm virtual machines
 - measuring power consumption of qemu/kvm virtual machines from the host
+- exposing power consumption metrics of a virtual machine in a way that allows to exploit those metrics in the VM as if it was a bare metal machine (relies on hypervisor features)
 - exposing power consumption metrics as a [prometheus](https://prometheus.io) HTTP exporter
+- showing basic power consumption metrics in the terminal
 
 ## Getting started
 
@@ -49,7 +50,7 @@ General usage is:
 Available exporters are:
 
 - [stdout](docs/exporters/stdout.md): displays metrics on the standard output/on your terminal
-- [prometheus](docs/exporters/prometheus.md): exposes metrics as an http endpoint, respecting the [prometheus](https://prometheus.io/) metrics standard
+- [prometheus](docs/exporters/prometheus.md): exposes metrics as an http endpoint, the way [prometheus](https://prometheus.io/) understands
 - [qemu](docs/exporters/qemu.md): computes power consumption of each Qemu/KVM virtual machine running on the host and stores the data in `/var/lib/libvirt/scaphandre/VM_NAME`
 
 Available sensors are:
