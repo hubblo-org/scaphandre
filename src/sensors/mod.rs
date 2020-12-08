@@ -24,32 +24,6 @@ pub trait RecordGenerator {
     fn clean_old_records(&mut self);
 }
 
-/// Computes power (Watts) records from energy (uJ, mJ or J) records
-/// DEPRECATED: get_records_diff_power_microwatts() function from Topology is preferred
-pub fn energy_records_to_power_record(measures: (&Record, &Record)) -> Result<Record, String> {
-    let joules_1 = units::Unit::to(
-        measures.0.value.trim().parse().unwrap(),
-        &measures.0.unit,
-        &units::Unit::Joule,
-    );
-    let joules_2 = units::Unit::to(
-        measures.1.value.trim().parse().unwrap(),
-        &measures.1.unit,
-        &units::Unit::Joule,
-    );
-    let joules = joules_1.unwrap() - joules_2.unwrap();
-
-    let t1 = measures.0.timestamp.as_secs();
-    let t2 = measures.1.timestamp.as_secs();
-    let time_diff = t1 - t2;
-    let result = joules / time_diff as f64;
-    Ok(Record::new(
-        measures.1.timestamp,
-        result.to_string(),
-        units::Unit::Watt,
-    ))
-}
-
 // !!!!!!!!!!!!!!!!! Topology !!!!!!!!!!!!!!!!!!!!!!!
 /// Topology struct represents the whole CPUSocket architecture,
 /// from the electricity consumption point of view,
