@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0]
+
 ### Added
 
 - Exporters and sensors design.
@@ -13,10 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prometheus exporter.
 - Powercap_rapl sensor.
 - Qemu exporter.
-
-## [0.1.0] -
-
-TODO
 
 ## HELP
 
