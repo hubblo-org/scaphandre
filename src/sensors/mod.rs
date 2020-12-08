@@ -442,8 +442,8 @@ impl Topology {
     pub fn get_process_power_consumption_microwatts(&self, pid: i32) -> Option<u64> {
         let tracker = self.get_proc_tracker();
         if let Some(recs) = tracker.find_records(pid) {
-            if !recs.is_empty() && recs.len() > 1 {
-                let last = recs.get(0).unwrap();
+            if recs.len() > 1 {
+                let last = recs.first().unwrap();
                 let previous = recs.get(1).unwrap();
                 if let Some(topo_stats_diff) = self.get_stats_diff() {
                     //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
@@ -464,6 +464,28 @@ impl Topology {
                         //trace!("result: {}", result);
                         return Some(result);
                     }
+                }
+            }
+        }
+        None
+    }
+
+    pub fn get_process_cpu_consumption_percentage(&self, pid: i32) -> Option<f64> {
+        let tracker = self.get_proc_tracker();
+        if let Some(recs) = tracker.find_records(pid) {
+            if recs.len() > 1 {
+                let last = recs.first().unwrap();
+                let previous = recs.get(1).unwrap();
+                if let Some(topo_stats_diff) = self.get_stats_diff() {
+                    let process_total_time =
+                        last.total_time_jiffies() - previous.total_time_jiffies();
+
+                    let topo_total_time = topo_stats_diff.total_time_jiffies()
+                        * procfs::ticks_per_second().unwrap() as f32;
+
+                    let usage = process_total_time as f64 / topo_total_time as f64;
+
+                    return Some(usage * 100.0);
                 }
             }
         }
@@ -948,7 +970,7 @@ impl CPUStat {
             "CPUStat contains user {} nice {} system {} idle: {} irq {} softirq {} iowait {} steal {} guest_nice {} guest {}",
             user, nice, system, idle, irq, softirq, iowait, steal, guest_nice, guest
         );
-        user + nice + system + steal + guest_nice + guest
+        user + nice + system + guest_nice + guest
     }
 }
 

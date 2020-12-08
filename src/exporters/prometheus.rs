@@ -172,6 +172,54 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         host_energy_timestamp_seconds = record.timestamp.as_secs().to_string();
     }
 
+    // self metrics
+
+    let metric_name = "self_cpu_usage_percent";
+    if let Some(metric_value) = (*topo)
+        .get_process_cpu_consumption_percentage(procfs::process::Process::myself().unwrap().pid)
+    {
+        body = push_metric(
+            body,
+            String::from("CPU % consumed by this scaphandre prometheus exporter."),
+            String::from("gauge"),
+            String::from(metric_name),
+            format_metric(metric_name, &metric_value.to_string(), None),
+        );
+    }
+
+    let metric_gathering = procfs::process::Process::myself().unwrap().statm();
+    if let Ok(metric_value) = metric_gathering {
+        let metric_name = "self_mem_total_program_size";
+        let value = metric_value.size * procfs::page_size().unwrap() as u64;
+        body = push_metric(
+            body,
+            String::from("Total program size, measured in pages"),
+            String::from("gauge"),
+            String::from(metric_name),
+            format_metric(metric_name, &value.to_string(), None),
+        );
+        let metric_name = "self_mem_resident_set_size";
+        let value = metric_value.resident * procfs::page_size().unwrap() as u64;
+        body = push_metric(
+            body,
+            String::from("Resident set size, measured in pages"),
+            String::from("gauge"),
+            String::from(metric_name),
+            format_metric(metric_name, &value.to_string(), None),
+        );
+        let metric_name = "self_mem_shared_resident_size";
+        let value = metric_value.size * procfs::page_size().unwrap() as u64;
+        body = push_metric(
+            body,
+            String::from("Number of resident shared pages (i.e., backed by a file)"),
+            String::from("gauge"),
+            String::from(metric_name),
+            format_metric(metric_name, &value.to_string(), None),
+        );
+    }
+
+    // metrics
+
     let metric_name = "host_energy_microjoules";
     body = push_metric(
         body,
