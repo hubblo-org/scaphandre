@@ -27,6 +27,9 @@ This project is born from a deep sense of duty from tech workers. Please refer t
 
 ## Getting started
 
+Note: On ubuntu 20.04, you may encounter permissions issues. If its your case you can run the `init.sh` script that will apply the right permissions first (details are in COMPATIBILITY.md).
+Handling of special permissions accross different distributions will be improved in a near future.
+
 Installation steps are described [here](#Installation).
 
 Here are some examples.
@@ -68,6 +71,8 @@ We recommand using this version of the rust toolchain or later:
     rustc --version
     rustc 1.48.0 (7eac88abb 2020-11-16)
 
+To be sure to be up to date, you may install rust from the [official website](https://www.rust-lang.org/) instead of your package manager.
+
 You'll find existing releases and packages [here](https://github.com/hubblo-org/scaphandre/releases).
 
 To hack *scaph*, or simply be up to date with latest developments, you can download scaphandre from the main branch:
@@ -79,7 +84,7 @@ To hack *scaph*, or simply be up to date with latest developments, you can downl
 To use the latest code for a true use case, build for release instead of debug:
 
     cargo build --release
-    
+
 Binary path is `target/release/scaphandre`.
 
 ## Virtual Machines & Cloud
