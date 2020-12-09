@@ -13,3 +13,5 @@ This is even harder in a virtualization environement or as public cloud customer
 Even [recent](https://www.iea.org/reports/data-centres-and-data-transmission-networks) [scientific](https://www.actu-environnement.com/media/pdf/news-36483-etude-UE-consommation-energie-centre-donnees-cloud.pdf) researches about tech energy consumption rely on statistical, both large and narrowed scale, assumptions based data (because it's all we got). Despite their weaknesses, they also all agree on the fact that the current consumption of datacenters and the Internet will increase drastically in the following years.
 
 Scaphandre aims to initiate a collaboration of tech companies and enthusiasts to provide an easy, lightweight, robust and well understood way to precisely measure the energy consumption and make it useful to take soberness decisions.
+
+Note that the greenhouse gazes emissions related to this energy consumption depends on the energetic mix of your country. You may find valuable data about that on [Electricity Map](https://www.electricitymap.org/map).

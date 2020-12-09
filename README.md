@@ -4,7 +4,7 @@
 
 ---
 
-Scaphandre is a metrology agent dedicated to electrical [power](https://en.wikipedia.org/wiki/Electric_power) consumption metrics. The goal of the project is to permit to any company or individual to measure the power consumption of its tech services and get those data in a convenient form, sending it though any monitoring or data analysis toolchain.
+Scaphandre *[skafɑ̃dʁ]* is a metrology agent dedicated to electrical [power](https://en.wikipedia.org/wiki/Electric_power) consumption metrics. The goal of the project is to permit to any company or individual to **measure** the power consumption of its tech services and get those data in a convenient form, sending it though any monitoring or data analysis toolchain.
 
 **Scaphandre** means *heavy* **diving suit** in [:fr:](https://fr.wikipedia.org/wiki/Scaphandre_%C3%A0_casque). It comes from the idea that tech related services often don't track their power consumption and thus don't expose it to their clients. Most of the time the reason is a presumed bad [ROI](https://en.wikipedia.org/wiki/Return_on_investment). Scaphandre makes, for tech providers and tech users, easier and cheaper to go under the surface to bring back the desired power consumption metrics, take better sustainability focussed decisions, and then show the metrics to their clients to allow them to do the same.
 
@@ -26,9 +26,6 @@ This project is born from a deep sense of duty from tech workers. Please refer t
 - showing basic power consumption metrics in the terminal
 
 ## Getting started
-
-Note: On ubuntu 20.04, you may encounter permissions issues. If its your case you can run the `init.sh` script that will apply the right permissions first (details are in COMPATIBILITY.md).
-Handling of special permissions accross different distributions will be improved in a near future.
 
 Installation steps are described [here](#Installation).
 
@@ -73,6 +70,9 @@ We recommand using this version of the rust toolchain or later:
 
 To be sure to be up to date, you may install rust from the [official website](https://www.rust-lang.org/) instead of your package manager.
 
+Note: On ubuntu 20.04, you may encounter permissions issues. If its your case you can run the `init.sh` script that will apply the right permissions first ([details](COMPATIBILITY.md)).
+Handling of special permissions accross different distributions will be improved in a near future.
+
 You'll find existing releases and packages [here](https://github.com/hubblo-org/scaphandre/releases).
 
 To hack *scaph*, or simply be up to date with latest developments, you can download scaphandre from the main branch:
@@ -99,7 +99,7 @@ This allows to break opacity in a virtualization context, if you have access to 
 
 ## Contributing
 
-Feel free to propose pull requests, or open new issues at will. Scaphandre is a collaborative project and all opinions and propositions shall be heard and studied. The contributions will be received with kindness, gratitude and with an open mind. Remember that we are all dwarfs standing on the shoulders of giants. We all have to learn from others and to give back, with due mutual respect.
+Feel free to propose pull requests, or open new issues at will. Scaphandre is a collaborative project and all opinions and propositions shall be heard and studied. The contributions will be received with kindness, gratitude and with an open mind. Remember that we are all [dwarfs standing on the shoulders of giants](https://en.wikipedia.org/wiki/Standing_on_the_shoulders_of_giants). We all have to learn from others and to give back, with due mutual respect.
 
 Discussions and questions about the project are welcome on gitter: [gitter](https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) or by [email](mailto://bpetit@hubblo.org?Subject=About%20Scaphandre).
 
