@@ -61,6 +61,13 @@ Available sensors are:
 
 ## Installation
 
+We recommand using this version of the rust toolchain or later:
+
+    cargo --version
+    cargo 1.48.0 (65cbdd2dc 2020-10-14)
+    rustc --version
+    rustc 1.48.0 (7eac88abb 2020-11-16)
+
 You'll find existing releases and packages [here](https://github.com/hubblo-org/scaphandre/releases).
 
 To hack *scaph*, or simply be up to date with latest developments, you can download scaphandre from the main branch:
@@ -81,7 +88,7 @@ A major pain point in measuring power consumption is doing so inside a virtual m
 Scaphandre aims at solving that by enabling a communication between a scaphandre instance on the hypervisor host and another one in the virtual machine.
 The scaphandre agent on the host will compute the metrics meaningfull for that virtual machine and the one on the VM exploit those metrics to allow its user to exploit the data as if he had access to power metrics in the first place (as if he was on a bare metal machine).
 
-This allows to break opacity in a virtualization, if you have access to the virtualization hosts and can install this tool, or cloud context if the provider uses scaphandre on his hypervisors. Please refer to the [qemu exporter](docs/exporters/qemu.md) documentation.
+This allows to break opacity in a virtualization context, if you have access to the virtualization hosts and can install this tool, or cloud context if the provider uses scaphandre on his hypervisors. Please refer to the [qemu exporter](docs/exporters/qemu.md) documentation.
 
 <img src="https://github.com/hubblo-org/scaphandre/raw/main/virtu.cleaned.png" width="600">
 
