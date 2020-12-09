@@ -7,6 +7,7 @@
 - [Using RAPL to read PP0 and DRAM energy on Haswell](https://community.intel.com/t5/Software-Tuning-Performance/Using-RAPL-to-read-PP0-and-DRAM-energy-on-haswell/td-p/1076202)
 - [RAPL reference](http://web.eece.maine.edu/~vweaver/projects/rapl/)
 - [How to measure linux performance avoiding most typical mistakes: CPU](https://ma.ttias.be/how-to-measure-linux-performance-avoiding-most-typical-mistakes-cpu/)
+- [How to calculate cpu utilization](https://www.embedded.com/how-to-calculate-cpu-utilization/)
 
 # Powercap/RAPL source code in the kernel
 
