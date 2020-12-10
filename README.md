@@ -35,15 +35,20 @@ To show power consumption metrics in your terminal, run:
 
     scaphandre stdout
 
+Details [here](docs/exporters/stdout.md).
+
 To expose power consumption metrics as a [prometheus](https://prometheus.io) exporter (as an http endpoint):
 
     scaphandre prometheus
 
 Metrics are now available on http://localhost:8080/metrics.
+Details [here](docs/exporters/prometheus.md).
 
 To compute metrics of running Qemu/KVM virtual machines on the host, and [be able to expose those metrics](docs/exporters/qemu.md) to the guests, run:
 
     scaphandre qemu
+
+Details [here](docs/exporters/qemu.md).
 
 General usage is:
 
