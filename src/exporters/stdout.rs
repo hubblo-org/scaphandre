@@ -30,6 +30,17 @@ impl Exporter for StdoutExporter {
                 help: String::from("Maximum time spent measuring, in seconds."),
             },
         );
+        options.insert(
+            String::from("step_duration"),
+            ExporterOption {
+                default_value: String::from("2"),
+                long: String::from("step"),
+                short: String::from("s"),
+                required: false,
+                takes_value: true,
+                help: String::from("Set measurement step duration in second."),
+            },
+        );
         options
     }
 }
@@ -52,14 +63,20 @@ impl StdoutExporter {
             let now = Instant::now();
 
             let timeout_secs: u64 = timeout.parse().unwrap();
-            let step = 2;
 
-            println!("Measurement step is: {}s", step);
+            // We have a default value of 2s so it is safe to unwrap the option
+            // Panic if a non numerical value is passed
+            let step_duration: u64 = parameters
+                .value_of("step_duration")
+                .unwrap()
+                .parse()
+                .expect("Wrong step_duration value, should be a number of seconds");
+
+            println!("Measurement step is: {}s", step_duration);
 
             while now.elapsed().as_secs() <= timeout_secs {
-                //self.iteration(step);
                 self.iterate();
-                thread::sleep(Duration::new(step, 0));
+                thread::sleep(Duration::new(step_duration, 0));
             }
         }
     }
