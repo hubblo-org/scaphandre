@@ -533,7 +533,7 @@ impl RecordGenerator for CPUSocket {
         }
     }
 
-    /// Returns a new owned Vector being a blone of the current record_buffer.
+    /// Returns a new owned Vector being a clone of the current record_buffer.
     /// This does not affect the current buffer but is costly.
     fn get_records_passive(&self) -> Vec<Record> {
         let mut result = vec![];
