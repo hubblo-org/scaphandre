@@ -28,5 +28,5 @@ As always exporter's options can be displayed with `-h`:
         -V, --version    Prints version information
 
     OPTIONS:
-	    -s, --step <step_duration>    Set measurement step duration in second. [default: 2]
-        -t, --timeout <timeout>       Maximum time spent measuring, in seconds. [default: 10]
+    -s, --step <step_duration>    Set measurement step duration in seconds. [default: 2]
+    -t, --timeout <timeout>       Maximum time spent measuring, in seconds. [default: 10]
