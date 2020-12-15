@@ -10,10 +10,14 @@ Default behavior is to measure and show metrics periodically during 10 seconds. 
 
     scaphandre stdout -t 60
 
+You can change as well the step measure duration with -s. Here is how to display metrics during one minutes with a 5s step:
+
+    scaphandre stdout -t 60 -s 5
+
 As always exporter's options can be displayed with `-h`:
 
 	$ scaphandre stdout -h
-    scaphandre-stdout 
+    scaphandre-stdout
     Stdout exporter allows you to output the power consumption data in the terminal.
 
     USAGE:
@@ -24,4 +28,5 @@ As always exporter's options can be displayed with `-h`:
         -V, --version    Prints version information
 
     OPTIONS:
-        -t, --timeout <timeout>    Maximum time spent measuring, in seconds. [default: 10]
+    -s, --step <step_duration>    Set measurement step duration in seconds. [default: 2]
+    -t, --timeout <timeout>       Maximum time spent measuring, in seconds. [default: 10]
