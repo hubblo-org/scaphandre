@@ -75,6 +75,7 @@ impl ProcessTracker {
     /// in order for the vector length to match self.max_records_per_process.
     fn clean_old_process_records(records: &mut Vec<ProcessRecord>, max_records_per_process: u16) {
         if records.len() > max_records_per_process as usize {
+            info!("Cleaning process record: {:?}", records);
             let diff = records.len() - max_records_per_process as usize;
             for _ in 0..diff {
                 records.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));

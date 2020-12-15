@@ -74,12 +74,13 @@ impl RecordGenerator for Topology {
     fn clean_old_records(&mut self) {
         let record_ptr = &self.record_buffer[0];
         let curr_size = size_of_val(record_ptr) * self.record_buffer.len();
+        debug!("current size of record buffer: {} max size: {}", curr_size, self.buffer_max_kbytes * 1000);
         if curr_size > (self.buffer_max_kbytes * 1000) as usize {
             let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
             let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
             for _ in 1..nb_records_to_delete {
                 if !self.record_buffer.is_empty() {
-                    trace!(
+                    info!(
                         "Cleaning record buffer on Topology, removing: {:?}",
                         self.record_buffer.remove(0)
                     );
@@ -270,9 +271,35 @@ impl Topology {
         }
     }
 
-    /// Gets rcurrents stats and stores them as a CPUStat instance in self.stat_buffer
+    /// Gets currents stats and stores them as a CPUStat instance in self.stat_buffer
     pub fn refresh_stats(&mut self) {
+        if !self.stat_buffer.is_empty() {
+            self.clean_old_stats();
+        }
         self.stat_buffer.insert(0, self.read_stats().unwrap());
+    }
+
+    /// Checks the size in memory of stats_buffer and deletes as many CPUStat
+    /// instances from the buffer to make it smaller in memory than buffer_max_kbytes.
+    fn clean_old_stats(&mut self) {
+        let stat_ptr = &self.stat_buffer[0];
+        let curr_size = size_of_val(stat_ptr) * self.stat_buffer.len();
+        info!("current_size of stats in topo: {}", curr_size);
+        if curr_size > (self.buffer_max_kbytes * 1000) as usize {
+            let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
+            if size_diff > size_of_val(&self.stat_buffer[0]) {
+                let nb_stats_to_delete = size_diff % size_of_val(&self.stat_buffer[0]);
+                info!("nb_stats_to_delete: {} size_diff: {} size of: {}", nb_stats_to_delete, size_diff, size_of_val(&self.stat_buffer[0]));
+                for _ in 1..nb_stats_to_delete {
+                    if !self.stat_buffer.is_empty() {
+                        info!(
+                            "Cleaning topology stat buffer, removing: {:?}",
+                            self.stat_buffer.pop()
+                        );
+                    }
+                }
+            }
+        }
     }
 
     /// Returns a Record instance containing the difference (attribute by attribute, except timestamp which will be the timestamp from the last record)
@@ -614,7 +641,33 @@ impl CPUSocket {
     /// Generates a new CPUStat object storing current usage statistics of the socket
     /// and stores it in the stat_buffer.
     pub fn refresh_stats(&mut self) {
+        if !self.stat_buffer.is_empty() {
+            self.clean_old_stats();
+        }
         self.stat_buffer.insert(0, self.read_stats().unwrap());
+    }
+
+    /// Checks the size in memory of stats_buffer and deletes as many CPUStat
+    /// instances from the buffer to make it smaller in memory than buffer_max_kbytes.
+    fn clean_old_stats(&mut self) {
+        let stat_ptr = &self.stat_buffer[0];
+        let curr_size = size_of_val(stat_ptr) * self.stat_buffer.len();
+        info!("current_size of stats in socket {}: {}", self.id, curr_size);
+        if curr_size > (self.buffer_max_kbytes * 1000) as usize {
+            let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
+            if size_diff > size_of_val(&self.stat_buffer[0]) {
+                let nb_stats_to_delete = size_diff % size_of_val(&self.stat_buffer[0]);
+                info!("socket {} nb_stats_to_delete: {} size_diff: {} size of: {}", self.id, nb_stats_to_delete, size_diff, size_of_val(&self.stat_buffer[0]));
+                for _ in 1..nb_stats_to_delete {
+                    if !self.stat_buffer.is_empty() {
+                        info!(
+                            "Cleaning stat buffer of socket {}, removing: {:?}",
+                            self.id, self.stat_buffer.pop()
+                        );
+                    }
+                }
+            }
+        }
     }
 
     /// Combines stats from all CPU cores owned byu the socket and returns

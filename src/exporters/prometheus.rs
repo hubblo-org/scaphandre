@@ -150,13 +150,25 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     let now = current_system_time_since_epoch();
     let mut last_request = data.last_request.lock().unwrap();
 
-    if now - (*last_request) > Duration::from_secs(8) {
+    if now - (*last_request) > Duration::from_secs(5) {
         {
+            warn!("Updating topo !");
             let mut topology = data.topology.lock().unwrap();
             (*topology)
                 .proc_tracker
                 .clean_terminated_process_records_vectors();
             (*topology).refresh();
+            let stat_buffer_len = (*topology).stat_buffer.len();
+            //let stat_buffer_size = size_of_val(&(*topology).stat_buffer.get(0).unwrap()) *  stat_buffer_len;
+            let record_buffer_len = (*topology).record_buffer.len();
+            //let record_buffer_size: size_of_val(&(*topology).record_buffer.get(0).unwrap()) * record_buffer_len;
+            let procs_len = (*topology).proc_tracker.procs.len();
+            info!(
+                "sizeof topo stats len: {} records len: {} procs len: {}",
+                stat_buffer_len, //stat_buffer_size,
+                record_buffer_len,// record_buffer_size,
+                procs_len
+            );
         }
     }
 
