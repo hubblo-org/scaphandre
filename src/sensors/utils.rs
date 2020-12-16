@@ -235,7 +235,9 @@ impl ProcessTracker {
                 if let Some(first) = v.first() {
                     if let Ok(status) = first.process.status() {
                         if status.state.contains('T') {
-                            v.clear();
+                            while !v.is_empty() {
+                                v.pop();
+                            }
                             t_stopped += 1;
                         } else if status.state.contains('D') {
                             d_unint_sleep += 1;
@@ -256,6 +258,10 @@ impl ProcessTracker {
                         } else {
                             unknown += 1;
                             debug!("unkown state: {} name: {}", status.state, status.name);
+                        }
+                    } else {
+                        while !v.is_empty() {
+                            v.pop();
                         }
                     }
                 }
