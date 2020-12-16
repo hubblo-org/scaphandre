@@ -228,7 +228,7 @@ impl ProcessTracker {
         let mut w_no_resident_high_prio = 0;
         let mut n_low_prio = 0;
         let mut l_pages_locked = 0;
-        let mut i_idle = 0; 
+        let mut i_idle = 0;
         let mut unknown = 0;
         for v in &mut self.procs {
             if !v.is_empty() {
@@ -251,7 +251,7 @@ impl ProcessTracker {
                             n_low_prio += 1;
                         } else if status.state.contains('L') {
                             l_pages_locked += 1;
-                        } else if status.state.contains('I'){
+                        } else if status.state.contains('I') {
                             i_idle += 1;
                         } else {
                             unknown += 1;
@@ -261,7 +261,19 @@ impl ProcessTracker {
                 }
             }
         }
-        debug!("d:{} r:{} s:{} t:{} z:{} w:{} n:{} l:{} i:{} u:{}", d_unint_sleep, r_running, s_int_sleep, t_stopped, z_defunct_zombie, w_no_resident_high_prio, n_low_prio, l_pages_locked, i_idle, unknown);
+        debug!(
+            "d:{} r:{} s:{} t:{} z:{} w:{} n:{} l:{} i:{} u:{}",
+            d_unint_sleep,
+            r_running,
+            s_int_sleep,
+            t_stopped,
+            z_defunct_zombie,
+            w_no_resident_high_prio,
+            n_low_prio,
+            l_pages_locked,
+            i_idle,
+            unknown
+        );
         self.drop_empty_process_records_vectors();
     }
 

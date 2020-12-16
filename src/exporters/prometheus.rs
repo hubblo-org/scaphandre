@@ -230,46 +230,52 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
 
     let metric_name = "self_topo_stats_nb";
     body = push_metric(
-        body, 
+        body,
         String::from("Number of CPUStat traces stored for the host"),
         String::from("gauge"),
         String::from(metric_name),
-        format_metric(metric_name, &topo_stat_buffer_len.to_string(), None)
+        format_metric(metric_name, &topo_stat_buffer_len.to_string(), None),
     );
     let metric_name = "self_topo_records_nb";
     body = push_metric(
-        body, 
+        body,
         String::from("Number of energy consumption Records stored for the host"),
         String::from("gauge"),
         String::from(metric_name),
-        format_metric(metric_name, &topo_record_buffer_len.to_string(), None)
+        format_metric(metric_name, &topo_record_buffer_len.to_string(), None),
     );
     let metric_name = "self_topo_procs_nb";
     body = push_metric(
-        body, 
+        body,
         String::from("Number of processes monitored for the host"),
         String::from("gauge"),
         String::from(metric_name),
-        format_metric(metric_name, &topo_procs_len.to_string(), None)
+        format_metric(metric_name, &topo_procs_len.to_string(), None),
     );
     for s in &(*topo).sockets {
         let mut labels = HashMap::new();
         labels.insert(String::from("socket_id"), s.id.to_string());
         let metric_name = "self_socket_stats_nb";
         body = push_metric(
-            body,String::from("Number of CPUStat traces stored for each socket"),
+            body,
+            String::from("Number of CPUStat traces stored for each socket"),
             String::from("gauge"),
             String::from(metric_name),
-            format_metric(metric_name, &s.stat_buffer.len().to_string(), Some(&labels))
+            format_metric(metric_name, &s.stat_buffer.len().to_string(), Some(&labels)),
         );
         let mut labels = HashMap::new();
         labels.insert(String::from("socket_id"), s.id.to_string());
         let metric_name = "self_socket_records_nb";
         body = push_metric(
-            body,String::from("Number of energy consumption Records stored for each socket"),
+            body,
+            String::from("Number of energy consumption Records stored for each socket"),
             String::from("gauge"),
             String::from(metric_name),
-            format_metric(metric_name, &s.record_buffer.len().to_string(), Some(&labels))
+            format_metric(
+                metric_name,
+                &s.record_buffer.len().to_string(),
+                Some(&labels),
+            ),
         );
         for d in &s.domains {
             labels.insert(String::from("rapl_domain_name"), d.name.clone());
@@ -279,7 +285,11 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
                 String::from("Number of energy consumption Records stored for a Domain"),
                 String::from("gauge"),
                 String::from(metric_name),
-                format_metric(metric_name, &d.record_buffer.len().to_string(), Some(&labels))
+                format_metric(
+                    metric_name,
+                    &d.record_buffer.len().to_string(),
+                    Some(&labels),
+                ),
             );
         }
     }
