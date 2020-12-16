@@ -44,7 +44,7 @@ fn main() {
                 .help("Maximum memory size allowed, in KiloBytes, for storing energy consumption of each socket.")
                 .required(false)
                 .takes_value(true)
-                .default_value("2")
+                .default_value("1")
         ).arg(
             Arg::with_name("vm")
                 .value_name("vm")

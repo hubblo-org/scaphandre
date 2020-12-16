@@ -75,7 +75,7 @@ impl ProcessTracker {
     /// in order for the vector length to match self.max_records_per_process.
     fn clean_old_process_records(records: &mut Vec<ProcessRecord>, max_records_per_process: u16) {
         if records.len() > max_records_per_process as usize {
-            info!("Cleaning process record: {:?}", records);
+            trace!("Cleaning process record: {:?}", records);
             let diff = records.len() - max_records_per_process as usize;
             for _ in 0..diff {
                 records.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
@@ -219,20 +219,49 @@ impl ProcessTracker {
     /// if the last ProcessRecord from the vector is of state Terminated
     /// (if the process is not running anymore)
     pub fn clean_terminated_process_records_vectors(&mut self) {
+        //TODO get stats from processes to know what is hapening !
+        let mut d_unint_sleep = 0;
+        let mut r_running = 0;
+        let mut s_int_sleep = 0;
+        let mut t_stopped = 0;
+        let mut z_defunct_zombie = 0;
+        let mut w_no_resident_high_prio = 0;
+        let mut n_low_prio = 0;
+        let mut l_pages_locked = 0;
+        let mut i_idle = 0; 
+        let mut unknown = 0;
         for v in &mut self.procs {
-            if !v.is_empty()
-                && v.get(0).unwrap().process.status().is_ok()
-                && v.get(0)
-                    .unwrap()
-                    .process
-                    .status()
-                    .unwrap()
-                    .state
-                    .contains('T')
-            {
-                v.clear();
+            if !v.is_empty() {
+                if let Some(first) = v.first() {
+                    if let Ok(status) = first.process.status() {
+                        if status.state.contains('T') {
+                            v.clear();
+                            t_stopped += 1;
+                        } else if status.state.contains('D') {
+                            d_unint_sleep += 1;
+                        } else if status.state.contains('R') {
+                            r_running += 1;
+                        } else if status.state.contains('S') {
+                            s_int_sleep += 1;
+                        } else if status.state.contains('Z') {
+                            z_defunct_zombie += 1;
+                        } else if status.state.contains('W') {
+                            w_no_resident_high_prio += 1;
+                        } else if status.state.contains('N') {
+                            n_low_prio += 1;
+                        } else if status.state.contains('L') {
+                            l_pages_locked += 1;
+                        } else if status.state.contains('I'){
+                            i_idle += 1;
+                        } else {
+                            unknown += 1;
+                            debug!("unkown state: {} name: {}", status.state, status.name);
+                        }
+                    }
+                }
             }
         }
+        debug!("d:{} r:{} s:{} t:{} z:{} w:{} n:{} l:{} i:{} u:{}", d_unint_sleep, r_running, s_int_sleep, t_stopped, z_defunct_zombie, w_no_resident_high_prio, n_low_prio, l_pages_locked, i_idle, unknown);
         self.drop_empty_process_records_vectors();
     }
 
@@ -277,7 +306,7 @@ impl ProcessRecord {
         let delayacct_blkio_ticks = self.process.stat.delayacct_blkio_ticks.unwrap_or_default();
         let itrealvalue = self.process.stat.itrealvalue as u64;
 
-        debug!(
+        trace!(
             "ProcessRecord: stime {} utime {} cutime {} cstime {} guest_time {} cguest_time {} delayacct_blkio_ticks {} itrealvalue {}",
             stime, utime, cutime, cstime, guest_time, cguest_time, delayacct_blkio_ticks, itrealvalue
         );

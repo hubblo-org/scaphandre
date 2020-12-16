@@ -150,25 +150,23 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     let now = current_system_time_since_epoch();
     let mut last_request = data.last_request.lock().unwrap();
 
+    let mut topo_stat_buffer_len = 0;
+    let mut topo_record_buffer_len = 0;
+    let mut topo_procs_len = 0;
+
     if now - (*last_request) > Duration::from_secs(5) {
         {
-            warn!("Updating topo !");
+            debug!("updating topology !");
             let mut topology = data.topology.lock().unwrap();
             (*topology)
                 .proc_tracker
                 .clean_terminated_process_records_vectors();
             (*topology).refresh();
-            let stat_buffer_len = (*topology).stat_buffer.len();
+            topo_stat_buffer_len = (*topology).stat_buffer.len();
             //let stat_buffer_size = size_of_val(&(*topology).stat_buffer.get(0).unwrap()) *  stat_buffer_len;
-            let record_buffer_len = (*topology).record_buffer.len();
+            topo_record_buffer_len = (*topology).record_buffer.len();
             //let record_buffer_size: size_of_val(&(*topology).record_buffer.get(0).unwrap()) * record_buffer_len;
-            let procs_len = (*topology).proc_tracker.procs.len();
-            info!(
-                "sizeof topo stats len: {} records len: {} procs len: {}",
-                stat_buffer_len, //stat_buffer_size,
-                record_buffer_len,// record_buffer_size,
-                procs_len
-            );
+            topo_procs_len = (*topology).proc_tracker.procs.len();
         }
     }
 
@@ -228,6 +226,62 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
             String::from(metric_name),
             format_metric(metric_name, &value.to_string(), None),
         );
+    }
+
+    let metric_name = "self_topo_stats_nb";
+    body = push_metric(
+        body, 
+        String::from("Number of CPUStat traces stored for the host"),
+        String::from("gauge"),
+        String::from(metric_name),
+        format_metric(metric_name, &topo_stat_buffer_len.to_string(), None)
+    );
+    let metric_name = "self_topo_records_nb";
+    body = push_metric(
+        body, 
+        String::from("Number of energy consumption Records stored for the host"),
+        String::from("gauge"),
+        String::from(metric_name),
+        format_metric(metric_name, &topo_record_buffer_len.to_string(), None)
+    );
+    let metric_name = "self_topo_procs_nb";
+    body = push_metric(
+        body, 
+        String::from("Number of processes monitored for the host"),
+        String::from("gauge"),
+        String::from(metric_name),
+        format_metric(metric_name, &topo_procs_len.to_string(), None)
+    );
+    for s in &(*topo).sockets {
+        let mut labels = HashMap::new();
+        labels.insert(String::from("socket_id"), s.id.to_string());
+        let metric_name = "self_socket_stats_nb";
+        body = push_metric(
+            body,String::from("Number of CPUStat traces stored for each socket"),
+            String::from("gauge"),
+            String::from(metric_name),
+            format_metric(metric_name, &s.stat_buffer.len().to_string(), Some(&labels))
+        );
+        let mut labels = HashMap::new();
+        labels.insert(String::from("socket_id"), s.id.to_string());
+        let metric_name = "self_socket_records_nb";
+        body = push_metric(
+            body,String::from("Number of energy consumption Records stored for each socket"),
+            String::from("gauge"),
+            String::from(metric_name),
+            format_metric(metric_name, &s.record_buffer.len().to_string(), Some(&labels))
+        );
+        for d in &s.domains {
+            labels.insert(String::from("rapl_domain_name"), d.name.clone());
+            let metric_name = "self_domain_records_nb";
+            body = push_metric(
+                body,
+                String::from("Number of energy consumption Records stored for a Domain"),
+                String::from("gauge"),
+                String::from(metric_name),
+                format_metric(metric_name, &d.record_buffer.len().to_string(), Some(&labels))
+            );
+        }
     }
 
     // metrics

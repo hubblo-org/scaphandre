@@ -73,17 +73,21 @@ impl RecordGenerator for Topology {
     /// as needed for record_buffer to not exceed 'buffer_max_kbytes'
     fn clean_old_records(&mut self) {
         let record_ptr = &self.record_buffer[0];
-        let curr_size = size_of_val(record_ptr) * self.record_buffer.len();
-        debug!("current size of record buffer: {} max size: {}", curr_size, self.buffer_max_kbytes * 1000);
-        if curr_size > (self.buffer_max_kbytes * 1000) as usize {
+        let record_size = size_of_val(record_ptr);
+        let curr_size = record_size * self.record_buffer.len();
+        trace!("topology: current size of record buffer: {} max size: {}", curr_size, self.buffer_max_kbytes * 1000);
+        if curr_size as u16 > self.buffer_max_kbytes * 1000 {
             let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
-            let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
-            for _ in 1..nb_records_to_delete {
-                if !self.record_buffer.is_empty() {
-                    info!(
-                        "Cleaning record buffer on Topology, removing: {:?}",
-                        self.record_buffer.remove(0)
-                    );
+            trace!("topology: size_diff: {} record size: {}", size_diff, record_size);
+            if size_diff > record_size{
+                let nb_records_to_delete = size_diff as f32 / record_size as f32;
+                for _ in 1..nb_records_to_delete as u32 {
+                    if !self.record_buffer.is_empty() {
+                        debug!(
+                            "Cleaning record buffer on Topology, removing: {:?}",
+                            self.record_buffer.remove(0)
+                        );
+                    }
                 }
             }
         }
@@ -273,26 +277,27 @@ impl Topology {
 
     /// Gets currents stats and stores them as a CPUStat instance in self.stat_buffer
     pub fn refresh_stats(&mut self) {
+        self.stat_buffer.insert(0, self.read_stats().unwrap());
         if !self.stat_buffer.is_empty() {
             self.clean_old_stats();
         }
-        self.stat_buffer.insert(0, self.read_stats().unwrap());
     }
 
     /// Checks the size in memory of stats_buffer and deletes as many CPUStat
     /// instances from the buffer to make it smaller in memory than buffer_max_kbytes.
     fn clean_old_stats(&mut self) {
         let stat_ptr = &self.stat_buffer[0];
-        let curr_size = size_of_val(stat_ptr) * self.stat_buffer.len();
-        info!("current_size of stats in topo: {}", curr_size);
+        let size_of_stat = size_of_val(stat_ptr);
+        let curr_size = size_of_stat * self.stat_buffer.len();
+        trace!("current_size of stats in topo: {}", curr_size);
         if curr_size > (self.buffer_max_kbytes * 1000) as usize {
             let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
-            if size_diff > size_of_val(&self.stat_buffer[0]) {
-                let nb_stats_to_delete = size_diff % size_of_val(&self.stat_buffer[0]);
-                info!("nb_stats_to_delete: {} size_diff: {} size of: {}", nb_stats_to_delete, size_diff, size_of_val(&self.stat_buffer[0]));
-                for _ in 1..nb_stats_to_delete {
+            if size_diff > size_of_stat {
+                let nb_stats_to_delete = size_diff as f32 / size_of_stat as f32;
+                trace!("nb_stats_to_delete: {} size_diff: {} size of: {}", nb_stats_to_delete, size_diff, size_of_stat);
+                for _ in 1..nb_stats_to_delete as u32 {
                     if !self.stat_buffer.is_empty() {
-                        info!(
+                        debug!(
                             "Cleaning topology stat buffer, removing: {:?}",
                             self.stat_buffer.pop()
                         );
@@ -545,16 +550,20 @@ impl RecordGenerator for CPUSocket {
     fn clean_old_records(&mut self) {
         let record_ptr = &self.record_buffer[0];
         let curr_size = size_of_val(record_ptr) * self.record_buffer.len();
+        trace!("socket rebord buffer current size: {} max_bytes: {}", curr_size, self.buffer_max_kbytes * 1000);
         if curr_size > (self.buffer_max_kbytes * 1000) as usize {
             let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
-            let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
-            for _ in 1..nb_records_to_delete {
-                if !self.record_buffer.is_empty() {
-                    trace!(
-                        "Cleaning socket id {} records buffer, removing: {}",
-                        self.id,
-                        self.record_buffer.remove(0)
-                    );
+            trace!("socket record size_diff: {} sizeof: {}", size_diff, size_of_val(record_ptr));
+            if size_diff > size_of_val(record_ptr) {
+                let nb_records_to_delete = size_diff as f32 / size_of_val(record_ptr) as f32;
+                for _ in 1..nb_records_to_delete as u32{
+                    if !self.record_buffer.is_empty() {
+                        debug!(
+                            "Cleaning socket id {} records buffer, removing: {}",
+                            self.id,
+                            self.record_buffer.remove(0)
+                        );
+                    }
                 }
             }
         }
@@ -651,16 +660,20 @@ impl CPUSocket {
     /// instances from the buffer to make it smaller in memory than buffer_max_kbytes.
     fn clean_old_stats(&mut self) {
         let stat_ptr = &self.stat_buffer[0];
-        let curr_size = size_of_val(stat_ptr) * self.stat_buffer.len();
-        info!("current_size of stats in socket {}: {}", self.id, curr_size);
+        let size_of_stat = size_of_val(stat_ptr);
+        let curr_size = size_of_stat * self.stat_buffer.len();
+        trace!("current_size of stats in socket {}: {}", self.id, curr_size);
+        trace!("estimated max nb of socket stats: {}", self.buffer_max_kbytes as f32 * 1000.0 / size_of_stat as f32);
         if curr_size > (self.buffer_max_kbytes * 1000) as usize {
             let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
-            if size_diff > size_of_val(&self.stat_buffer[0]) {
-                let nb_stats_to_delete = size_diff % size_of_val(&self.stat_buffer[0]);
-                info!("socket {} nb_stats_to_delete: {} size_diff: {} size of: {}", self.id, nb_stats_to_delete, size_diff, size_of_val(&self.stat_buffer[0]));
-                for _ in 1..nb_stats_to_delete {
+            trace!("socket {} size_diff: {} size of: {}", self.id, size_diff, size_of_stat);
+            if size_diff > size_of_stat {
+                let nb_stats_to_delete = size_diff as f32 / size_of_stat as f32;
+                trace!("socket {} nb_stats_to_delete: {} size_diff: {} size of: {}", self.id, nb_stats_to_delete, size_diff, size_of_stat);
+                trace!("nb stats to delete: {}", nb_stats_to_delete as u32);
+                for _ in 1..nb_stats_to_delete as u32 {
                     if !self.stat_buffer.is_empty() {
-                        info!(
+                        debug!(
                             "Cleaning stat buffer of socket {}, removing: {:?}",
                             self.id, self.stat_buffer.pop()
                         );
@@ -863,10 +876,12 @@ impl RecordGenerator for Domain {
         let curr_size = size_of_val(record_ptr) * self.record_buffer.len();
         if curr_size > (self.buffer_max_kbytes * 1000) as usize {
             let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
-            let nb_records_to_delete = size_diff % size_of_val(&self.record_buffer[0]);
-            for _ in 1..nb_records_to_delete {
-                if !self.record_buffer.is_empty() {
-                    self.record_buffer.remove(0);
+            if size_diff > size_of_val(&self.record_buffer[0]) {
+                let nb_records_to_delete = size_diff as f32 / size_of_val(&self.record_buffer[0]) as f32;
+                for _ in 1..nb_records_to_delete as u32 {
+                    if !self.record_buffer.is_empty() {
+                        self.record_buffer.remove(0);
+                    }
                 }
             }
         }
