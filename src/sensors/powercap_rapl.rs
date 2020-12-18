@@ -45,16 +45,16 @@ impl PowercapRAPLSensor {
         let modules = modules().unwrap();
         let rapl_modules = modules
             .iter()
-            .filter(|(_, v)| v.name == "intel_rapl_msr" || v.name == "intel_rapl_common")
+            .filter(|(_, v)| v.name == "intel_rapl" || v.name == "intel_rapl_msr" || v.name == "intel_rapl_common")
             .collect::<HashMap<&String, &KernelModule>>();
 
-        if rapl_modules.len() > 1 {
+        if rapl_modules.len() > 0 {
             Ok(String::from(
-                "intel_rapl_msr and intel_rapl_common modules found.",
+                "intel_rapl or intel_rapl_msr+intel_rapl_common modules found.",
             ))
         } else {
             Err(String::from(
-                "intel_rapl_common and intel_rapl_msr kernel modules not found.",
+                "None of intel_rapl, intel_rapl_common or intel_rapl_msr kernel modules found.",
             ))
         }
     }
