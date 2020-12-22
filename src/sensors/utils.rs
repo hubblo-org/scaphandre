@@ -290,9 +290,9 @@ impl ProcessTracker {
     fn drop_empty_process_records_vectors(&mut self) {
         let procs = &mut self.procs;
         if !procs.is_empty() {
-            for i in 0..(procs.len()-1) {
-                if let Some(v) = procs.get(i) {                    
-                    if v.is_empty() {                        
+            for i in 0..(procs.len() - 1) {
+                if let Some(v) = procs.get(i) {
+                    if v.is_empty() {
                         procs.remove(i);
                     }
                 }
