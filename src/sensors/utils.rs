@@ -78,13 +78,13 @@ impl ProcessTracker {
             let diff = records.len() - max_records_per_process as usize;
             for _ in 0..diff {
                 records.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+                let res = records.pop().unwrap().timestamp;
                 trace!(
                     "Cleaning old ProcessRecords in vector for PID {}",
                     records[0].process.pid
                 );
                 trace!(
-                    "Deleting record with timestamp: {:?}",
-                    records.pop().unwrap().timestamp
+                    "Deleting record with timestamp: {:?}", res
                 );
             }
         }
