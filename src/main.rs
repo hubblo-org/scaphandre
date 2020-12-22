@@ -1,5 +1,5 @@
 //! Generic sensor and transmission agent for energy consumption related metrics.
-use clap::{App, AppSettings, Arg, SubCommand};
+use clap::{crate_version, App, AppSettings, Arg, SubCommand};
 use scaphandre::{get_exporters_options, run};
 
 fn main() {
@@ -13,6 +13,7 @@ fn main() {
     let mut matches = App::new("scaphandre")
         .author("Benoit Petit <bpetit@hubblo.org>")
         .version("0.1.0")
+        .long_version(crate_version!())
         .about("Extensible metrology agent for energy/electricity consumption related metrics")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .arg(
