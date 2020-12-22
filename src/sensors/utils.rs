@@ -83,9 +83,7 @@ impl ProcessTracker {
                     "Cleaning old ProcessRecords in vector for PID {}",
                     records[0].process.pid
                 );
-                trace!(
-                    "Deleting record with timestamp: {:?}", res
-                );
+                trace!("Deleting record with timestamp: {:?}", res);
             }
         }
     }

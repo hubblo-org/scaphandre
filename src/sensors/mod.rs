@@ -91,11 +91,8 @@ impl RecordGenerator for Topology {
                 let nb_records_to_delete = size_diff as f32 / record_size as f32;
                 for _ in 1..nb_records_to_delete as u32 {
                     if !self.record_buffer.is_empty() {
-                        let res= self.record_buffer.remove(0);
-                        debug!(
-                            "Cleaning record buffer on Topology, removing: {:?}",
-                            res
-                        );
+                        let res = self.record_buffer.remove(0);
+                        debug!("Cleaning record buffer on Topology, removing: {:?}", res);
                     }
                 }
             }
@@ -312,10 +309,7 @@ impl Topology {
                 for _ in 1..nb_stats_to_delete as u32 {
                     if !self.stat_buffer.is_empty() {
                         let res = self.stat_buffer.pop();
-                        debug!(
-                            "Cleaning topology stat buffer, removing: {:?}",
-                            res
-                        );
+                        debug!("Cleaning topology stat buffer, removing: {:?}", res);
                     }
                 }
             }
