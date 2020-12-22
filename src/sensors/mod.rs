@@ -468,12 +468,9 @@ impl Topology {
                     //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
                     let process_total_time =
                         last.total_time_jiffies() - previous.total_time_jiffies();
-
-                    //trace!("process_total_time: {}", process_total_time);
                     let topo_total_time = topo_stats_diff.total_time_jiffies()
                         * procfs::ticks_per_second().unwrap() as f32;
                     let usage_percent = process_total_time as f64 / topo_total_time as f64;
-                    //trace!("usage_percent: {}", usage_percent.to_string());
                     let topo_conso = self.get_records_diff_power_microwatts();
                     if let Some(val) = &topo_conso {
                         //trace!("topo conso: {}", val);
@@ -485,6 +482,8 @@ impl Topology {
                     }
                 }
             }
+        } else {
+            trace!("Couldn't find records for PID: {}", pid);
         }
         None
     }

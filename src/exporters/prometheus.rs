@@ -195,7 +195,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
             String::from(metric_name),
             format_metric(metric_name, &metric_value.to_string(), None),
         );
-    }
+    } 
 
     let metric_gathering = procfs::process::Process::myself().unwrap().statm();
     if let Ok(metric_value) = metric_gathering {
@@ -270,8 +270,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
             body,
             String::from("Number of energy consumption Records stored for each socket"),
             String::from("gauge"),
-            String::from(metric_name),
-            format_metric(
+            String::from(metric_name), format_metric(
                 metric_name,
                 &s.record_buffer.len().to_string(),
                 Some(&labels),

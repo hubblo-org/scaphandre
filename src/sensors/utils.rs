@@ -75,7 +75,6 @@ impl ProcessTracker {
     /// in order for the vector length to match self.max_records_per_process.
     fn clean_old_process_records(records: &mut Vec<ProcessRecord>, max_records_per_process: u16) {
         if records.len() > max_records_per_process as usize {
-            trace!("Cleaning process record: {:?}", records);
             let diff = records.len() - max_records_per_process as usize;
             for _ in 0..diff {
                 records.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
@@ -94,12 +93,16 @@ impl ProcessTracker {
     /// Returns a Some(ref to vector of ProcessRecords) if the pid is found
     /// in self.procs. Returns None otherwise.
     pub fn find_records(&self, pid: i32) -> Option<&Vec<ProcessRecord>> {
+        let mut refer = None;
         for v in &self.procs {
             if !v.is_empty() && v[0].process.pid == pid {
-                return Some(&v);
+                if refer.is_some() {
+                    warn!("ISSUE: PID {} spread in proc tracker", pid);
+                }
+                refer = Some(v);
             }
         }
-        None
+        refer
     }
 
     /// Returns the result of the substraction of utime between last and
@@ -286,12 +289,14 @@ impl ProcessTracker {
     /// Removes empty Vectors from self.procs
     fn drop_empty_process_records_vectors(&mut self) {
         let procs = &mut self.procs;
-        let mut todroplist: Vec<usize> = vec![];
-        for (counter, _todrop) in procs.iter_mut().filter(|x| x.is_empty()).enumerate() {
-            todroplist.push(counter);
-        }
-        for i in todroplist {
-            procs.remove(i);
+        if !procs.is_empty() {
+            for i in 0..(procs.len()-1) {
+                if let Some(v) = procs.get(i) {                    
+                    if v.is_empty() {                        
+                        procs.remove(i);
+                    }
+                }
+            }
         }
     }
 }
