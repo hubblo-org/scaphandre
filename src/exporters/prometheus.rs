@@ -2,11 +2,11 @@ use crate::current_system_time_since_epoch;
 use crate::exporters::*;
 use crate::sensors::{Record, RecordGenerator, Sensor, Topology};
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use clap::crate_version;
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::Mutex;
 use std::time::Duration;
-use clap::crate_version;
 
 /// Default ipv4/ipv6 address to expose the service is any
 const DEFAULT_IP_ADDRESS: &str = "::";
@@ -186,7 +186,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     // self metrics
 
     let metric_name = "self_version";
-    let mut version_parts = crate_version!().split('.').into_iter();
+    let mut version_parts = crate_version!().split('.');
     let major_version = version_parts.next().unwrap();
     let patch_version = version_parts.next().unwrap();
     //let mut patch_str = String::from("");
@@ -208,7 +208,6 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         String::from(metric_name),
         format_metric(metric_name, &metric_value, None),
     );
-
 
     let metric_name = "self_cpu_usage_percent";
     if let Some(metric_value) = (*topo)
