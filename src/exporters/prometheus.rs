@@ -200,7 +200,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         minor_str.push('0');
     }
     minor_str.push_str(minor_version);
-    let metric_value = format!("{}.{}{}", major_version, patch_str, minor_str);
+    let metric_value = format!("{}{}{}", major_version, patch_str, minor_str);
     body = push_metric(
         body,
         String::from("Version number of scaphandre represented as a float."),
