@@ -189,18 +189,18 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     let mut version_parts = crate_version!().split('.').into_iter();
     let major_version = version_parts.next().unwrap();
     let patch_version = version_parts.next().unwrap();
-    let mut patch_str = String::from("");
-    if patch_version.len() == 1 {
-        patch_str.push('0');
-    }
-    patch_str.push_str(patch_version);
+    //let mut patch_str = String::from("");
+    //if patch_version.len() == 1 {
+    //    patch_str.push('0');
+    //}
+    //patch_str.push_str(patch_version);
     let minor_version = version_parts.next().unwrap();
-    let mut minor_str = String::from("");
-    if minor_version.len() == 1 {
-        minor_str.push('0');
-    }
-    minor_str.push_str(minor_version);
-    let metric_value = format!("{}{}{}", major_version, patch_str, minor_str);
+    //let mut minor_str = String::from("");
+    //if minor_version.len() == 1 {
+    //    minor_str.push('0');
+    //}
+    //minor_str.push_str(minor_version);
+    let metric_value = format!("{}.{}{}", major_version, patch_version, minor_version);
     body = push_metric(
         body,
         String::from("Version number of scaphandre represented as a float."),
