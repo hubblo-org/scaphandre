@@ -22,8 +22,8 @@ impl Unit {
             Unit::MegaWatt,
             Unit::KiloWatt,
             Unit::Watt,
-            Unit::MicroWatt,
             Unit::MilliWatt,
+            Unit::MicroWatt,
         ];
         let pos_source_energy = energy_order.iter().position(|x| x == source_unit);
         let pos_dest_energy = energy_order.iter().position(|x| x == dest_unit);
@@ -42,8 +42,8 @@ impl Unit {
     fn get_mult(pos_source: usize, pos_dest: usize) -> f64 {
         let mut mult: f64 = 1.0;
         match pos_dest.cmp(&pos_source) {
-            Ordering::Greater => mult *= 1000.0 * (pos_dest - pos_source) as f64,
-            Ordering::Less => mult /= 1000.0 * (pos_source - pos_dest) as f64,
+            Ordering::Greater => mult *= 1000.0_f64.powf((pos_dest - pos_source) as f64),
+            Ordering::Less => mult /= 1000.0_f64.powf((pos_source - pos_dest) as f64),
             Ordering::Equal => (),
         }
         mult
@@ -99,11 +99,41 @@ mod tests {
     }
 
     #[test]
+    fn kw_to_milliwatt() {
+        let value = 2.0;
+        let source = Unit::KiloWatt;
+        let dest = Unit::MilliWatt;
+        assert_eq!(Unit::to(value, &source, &dest).unwrap(), 2000000.0);
+    }
+
+    #[test]
+    fn milliwatt_to_watt() {
+        let value = 6.0;
+        let source = Unit::MilliWatt;
+        let dest = Unit::Watt;
+        assert_eq!(Unit::to(value, &source, &dest).unwrap(), 0.006);
+    }
+
+    #[test]
     fn joule_equals_1000000microjoules() {
         let value = 1.0;
         let source = Unit::Joule;
         let dest = Unit::MicroJoule;
         assert_eq!(Unit::to(value, &source, &dest).unwrap(), 1000000.0);
+    }
+    #[test]
+    fn joule_to_milijoules() {
+        let value = 2.0;
+        let source = Unit::Joule;
+        let dest = Unit::MilliJoule;
+        assert_eq!(Unit::to(value, &source, &dest).unwrap(), 2000.0);
+    }
+    #[test]
+    fn milijoule_to_joules() {
+        let value = 4000.0;
+        let source = Unit::MilliJoule;
+        let dest = Unit::Joule;
+        assert_eq!(Unit::to(value, &source, &dest).unwrap(), 4.0);
     }
 }
 
