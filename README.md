@@ -80,7 +80,7 @@ We recommand using this version of the rust toolchain or later:
 
 To be sure to be up to date, you may install rust from the [official website](https://www.rust-lang.org/) instead of your package manager.
 
-Note: On ubuntu 20.04, you may encounter permissions issues. If it is your case you can run the `init.sh` script that will apply the right permissions first ([details](COMPATIBILITY.md)).
+Note: On ubuntu 20.04, you may encounter permissions issues. If it is your case you can run the `init.sh` script that will apply the right permissions first ([details](docs/sensors/powercap_rapl.md)).
 Handling of special permissions accross different distributions will be improved in a near future.
 
 You'll find existing releases and packages [here](https://github.com/hubblo-org/scaphandre/releases).
