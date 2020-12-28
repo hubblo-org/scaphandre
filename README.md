@@ -28,6 +28,8 @@ This project was born from a deep sense of duty from tech workers. Please refer 
 
 📉 You can see some samples of metrics that scaphandre allows you to gather [here](https://metrics.hubblo.org).
 
+<a href="https://metrics.hubblo.org"><img src="https://github.com/hubblo-org/scaphandre/raw/main/grafana-dash-scaphandre.cleaned.png" width="700"></a>
+
 ## Getting started
 
 Installation steps are described [here](#Installation).
