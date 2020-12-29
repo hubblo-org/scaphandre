@@ -5,7 +5,7 @@
 At the time those lines are written, this sensor works only on:
 
 - OS: GNU/Linux
-- Intel and AMD x86 CPUs, produced after 2012
+- Intel and AMD x86 CPUs, produced after 2012 (or some laptop cpu prior to 2012)
 
 It needs the following kernel modules to be present and running:
 
