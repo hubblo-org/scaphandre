@@ -26,3 +26,8 @@ Cargo.lock
 
 # Avoid code coverage and perf data files
 *.data
+
+# Avoid the result of mdbook build
+book/
+/book/
+book/*
