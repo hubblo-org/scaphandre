@@ -353,7 +353,7 @@ mod tests {
     fn process_records_added() {
         let proc = Process::myself().unwrap();
         let mut tracker = ProcessTracker::new(3);
-        for _ in 0..2 {
+        for _ in 0..3 {
             assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
         }
         assert_eq!(tracker.procs.len(), 1);
