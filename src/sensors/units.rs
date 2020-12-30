@@ -115,12 +115,21 @@ mod tests {
     }
 
     #[test]
+    fn megawatt_to_microwatt() {
+        let value = 12.0;
+        let source = Unit::MegaWatt;
+        let dest = Unit::MicroWatt;
+        assert_eq!(Unit::to(value, &source, &dest).unwrap(), 12000000000000.0);
+    }
+
+    #[test]
     fn joule_equals_1000000microjoules() {
         let value = 1.0;
         let source = Unit::Joule;
         let dest = Unit::MicroJoule;
         assert_eq!(Unit::to(value, &source, &dest).unwrap(), 1000000.0);
     }
+
     #[test]
     fn joule_to_milijoules() {
         let value = 2.0;
@@ -128,6 +137,7 @@ mod tests {
         let dest = Unit::MilliJoule;
         assert_eq!(Unit::to(value, &source, &dest).unwrap(), 2000.0);
     }
+
     #[test]
     fn milijoule_to_joules() {
         let value = 4000.0;
