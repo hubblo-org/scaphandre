@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Prometheus exporter - Scaphandre documentation</title>
+        <title>PowercapRAPL sensor - Scaphandre documentation</title>
         
         
 
@@ -98,7 +98,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded affix "><a href="../why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="../tutorials/overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="../tutorials/quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../tutorials/installation.html"><strong aria-hidden="true">3.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="../how-to_guides/overview.html"><strong aria-hidden="true">4.</strong> Overview</a></li><li class="chapter-item expanded "><a href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">5.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="../explanations/overview.html"><strong aria-hidden="true">6.</strong> Overview</a></li><li class="chapter-item expanded "><a href="../explanations/overview.html"><strong aria-hidden="true">7.</strong> Overview</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="../references/overview.html"><strong aria-hidden="true">8.</strong> Overview</a></li><li class="chapter-item expanded "><a href="../references/exporter-prometheus.html" class="active"><strong aria-hidden="true">9.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-qemu.html"><strong aria-hidden="true">10.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-stdout.html"><strong aria-hidden="true">11.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="../references/sensor-powercap_rapl.html"><strong aria-hidden="true">12.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="../contributing.html">Contributing guide</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded affix "><a href="../why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="../tutorials/overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="../tutorials/quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../tutorials/installation.html"><strong aria-hidden="true">3.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="../how-to_guides/overview.html"><strong aria-hidden="true">4.</strong> Overview</a></li><li class="chapter-item expanded "><a href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">5.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="../explanations/overview.html"><strong aria-hidden="true">6.</strong> Overview</a></li><li class="chapter-item expanded "><a href="../explanations/overview.html"><strong aria-hidden="true">7.</strong> Overview</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="../references/overview.html"><strong aria-hidden="true">8.</strong> Overview</a></li><li class="chapter-item expanded "><a href="../references/exporter-prometheus.html"><strong aria-hidden="true">9.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-qemu.html"><strong aria-hidden="true">10.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-stdout.html"><strong aria-hidden="true">11.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="../references/sensor-powercap_rapl.html" class="active"><strong aria-hidden="true">12.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="../contributing.html">Contributing guide</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -166,87 +166,61 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#prometheus-exporter" id="prometheus-exporter">Prometheus exporter</a></h1>
-<img src="https://github.com/hubblo-org/scaphandre/raw/main/screen-prometheus.cleaned.png">
+                        <h1><a class="header" href="#powercap_rapl-sensor" id="powercap_rapl-sensor">Powercap_rapl sensor</a></h1>
+<h2><a class="header" href="#pre-requesites" id="pre-requesites">Pre-requesites</a></h2>
+<p>At the time those lines are written, this sensor works only on:</p>
+<ul>
+<li>OS: GNU/Linux</li>
+<li>Intel and AMD x86 CPUs, produced after 2012 (or some laptop cpu prior to 2012)</li>
+</ul>
+<p>It needs the following kernel modules to be present and running:</p>
+<p>On kernels 5.0 or later: <code>intel_rapl_common</code></p>
+<p>On kernel prior 5.0: <code>intel_rapl</code></p>
+<p>For AMD processors, it seems that powercap/rapl <a href="https://www.phoronix.com/scan.php?page=news_item&amp;px=Google-Zen-RAPL-PowerCap">will work only since kernel 5.8</a>
+and <a href="https://www.phoronix.com/scan.php?page=news_item&amp;px=AMD-RAPL-Linux-Now-19h">5.11 for family 19h</a>.</p>
+<p>Energy consumption data can be directly collected on a <strong>physical machine</strong> only.</p>
+<p>To collect energy consumption on a virtual machine, you may first collect power consumption data from the hypervisor thanks to the <a href="../exporters/qemu.html">qemu exporter</a> and then collect those metrics in the virtual machine thanks to this sensor, with <code>--vm</code> flag enabled.</p>
 <h2><a class="header" href="#usage" id="usage">Usage</a></h2>
-<p>You can launch the prometheus exporter this way (running the default powercap_rapl sensor):</p>
-<pre><code>scaphandre prometheus
+<p>To explicitely call the powercap_rapl sensor from the command line use:</p>
+<pre><code>scaphandre -s powercap_rapl EXPORTER # EXPORTER being the exporter name you want to use
 </code></pre>
-<p>As always exporter's options can be displayed with <code>-h</code>:</p>
-<pre><code>scaphandre prometheus -h
-scaphandre-prometheus 
-prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted
-format.
-
-USAGE:
-	scaphandre --sensor &lt;sensor&gt; prometheus [OPTIONS]
-
-FLAGS:
-	-h, --help       Prints help information
-	-V, --version    Prints version information
-
-OPTIONS:
-	-a, --address &lt;address&gt;    ipv6 or ipv4 address to expose the service to [default: ::]
-	-p, --port &lt;port&gt;          TCP port number to expose the service [default: 8080]
-	-s, --suffix &lt;suffix&gt;      url suffix to access metrics [default: metrics]
+<p>You can see arguments available from the cli for this sensors with:</p>
+<pre><code>scaphandre -s powercap_rapl -h
 </code></pre>
-<p>With default options values, the metrics are exposed on http://localhost:8080/metrics.</p>
-<h2><a class="header" href="#metrics-exposed" id="metrics-exposed">Metrics exposed</a></h2>
-<p>All metrics have a HELP section provided on /metrics (or whatever suffix you choosed to expose them).</p>
-<p>Here are some key metrics that you will most probably be interested in:</p>
+<p>If running in a virtual machine:</p>
+<pre><code>scaphandre --vm -s powercap_rapl EXPORTER
+</code></pre>
+<p>Please refer to doc.rs code documentation for more details.</p>
+<h2><a class="header" href="#options-available" id="options-available">Options available</a></h2>
 <ul>
-<li><code>scaph_host_power_microwatts</code>: Power measurement on the whole host, in microwatts (GAUGE)</li>
-<li><code>scaph_process_power_consumption_microwatts{exe=&quot;$PROCESS_EXE&quot;,pid=&quot;$PROCESS_PID&quot;,cmdline=&quot;path/to/exe --and-maybe-options&quot;}</code>: Power consumption due to the process, measured on at the topology level, in microwatts. PROCESS_EXE being the name of the executable and PROCESS_PID being the pid of the process. (GAUGE)</li>
+<li><code>sensor-buffer-per-socket-max-kB</code>: Maximum memory size allowed, in KiloBytes, for storing energy consumption for each socket</li>
+<li><code>sensor-buffer-per-domain-max-kB</code>: Maximum memory size allowed, in KiloBytes, for storing energy consumption for each domain</li>
 </ul>
-<p>And some more deep metrics that you may want if you need to make more complex calculations and data processing:</p>
-<ul>
-<li><code>scaph_host_energy_microjoules</code> : Energy measurement for the whole host, as extracted from the sensor, in microjoules. (COUNTER)</li>
-<li><code>scaph_host_energy_timestamp_seconds</code>: Timestamp in seconds when hose_energy_microjoules has been computed. (COUNTER)</li>
-<li><code>scaph_socket_power_microwatts{socket_id=&quot;$SOCKET_ID&quot;}</code>: Power measurement relative to a CPU socket, in microwatts. SOCKET_ID being the socket numerical id (GAUGE)</li>
-</ul>
-<p>If you hack scaph or just want to tinvestigate its behavior, you may be interested in some internal metrics:</p>
-<ul>
-<li>
-<p><code>scaph_self_mem_total_program_size</code>: Total program size, measured in pages</p>
-</li>
-<li>
-<p><code>scaph_self_mem_resident_set_size</code>: Resident set size, measured in pages</p>
-</li>
-<li>
-<p><code>scaph_self_mem_shared_resident_size</code>: Number of resident shared pages (i.e., backed by a file)</p>
-</li>
-<li>
-<p><code>scaph_self_topo_stats_nb</code>: Number of CPUStat traces stored for the host</p>
-</li>
-<li>
-<p><code>scaph_self_topo_records_nb</code>: Number of energy consumption Records stored for the host</p>
-</li>
-<li>
-<p><code>scaph_self_topo_procs_nb</code>: Number of processes monitored by scaph</p>
-</li>
-<li>
-<p><code>scaph_self_socket_stats_nb{socket_id=&quot;SOCKET_ID&quot;}</code>: Number of CPUStat traces stored for each socket</p>
-</li>
-<li>
-<p><code>scaph_self_socket_records_nb{socket_id=&quot;SOCKET_ID&quot;}</code>: Number of energy consumption Records stored for each socket, with SOCKET_ID being the id of the socket measured</p>
-</li>
-<li>
-<p><code>scaph_self_domain_records_nb{socket_id=&quot;SOCKET_ID&quot;,rapl_domain_name=&quot;RAPL_DOMAIN_NAME &quot;}</code>: Number of energy consumption Records stored for a Domain, where SOCKET_ID identifies the socket and RAPL_DOMAIN_NAME identifies the rapl domain measured on that socket</p>
-</li>
-</ul>
+<h2><a class="header" href="#environment-variables" id="environment-variables">Environment variables</a></h2>
+<p>If in <code>--vm</code> mode, you want to read metrics from another path than the default <code>/var/scaphandre</code>, set env var <code>SCAPHANDRE_POWERCAP_PATH</code> with the desired path.</p>
+<h2><a class="header" href="#troubleshooting" id="troubleshooting">Troubleshooting</a></h2>
+<h3><a class="header" href="#when-running-scaphandre-on-ubuntu-20xx-i-get-a-permission-denied-error" id="when-running-scaphandre-on-ubuntu-20xx-i-get-a-permission-denied-error">When running scaphandre on Ubuntu 20.xx I get a <code>permission denied</code> error</a></h3>
+<p>Since linux kernel package 5.4.0-53.59 in debian/ubuntu, powercap attributes are only accessible by root:</p>
+<pre><code>linux (5.4.0-53.59) focal; urgency=medium
+
+  * CVE-2020-8694
+    - powercap: make attributes only readable by root
+</code></pre>
+<p>Therefor, the user running scaphandre needs to have read access to <em>energy_uj</em> files in <code>/sys/class/powercap</code>.</p>
+<p>You can run the <a href="../../init.sh">init.sh</a> script to apply appropriate permissions to the required files.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="../references/overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../references/exporter-stdout.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="../references/exporter-qemu.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../contributing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -258,13 +232,13 @@ OPTIONS:
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="../references/overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../references/exporter-stdout.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="../references/exporter-qemu.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../contributing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
@@ -272,6 +246,21 @@ OPTIONS:
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3000/__livereload");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         

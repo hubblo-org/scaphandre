@@ -3,7 +3,10 @@ title = "Scaphandre documentation"
 description = "Extensible and lightweight monitoring agent for energy consumption metrics"
 authors = ["Benoit Petit"]
 language = "en"
-src = "docs"
+src = "docs_src"
+
+[build]
+build-dir = "docs"
 
 [rust]
 edition = "2018"
