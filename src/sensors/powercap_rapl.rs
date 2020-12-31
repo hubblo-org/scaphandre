@@ -130,7 +130,7 @@ mod tests {
         let mut sensor = PowercapRAPLSensor::new(1, 1, false);
         let topology = sensor.get_topology();
         assert_eq!(
-            "alloc::boxed::Box<core::option::Option<&scaphandre::sensors::Topology>>",
+            "alloc::boxed::Box<core::option::Option<scaphandre::sensors::Topology>>",
             type_of(topology)
         )
     }

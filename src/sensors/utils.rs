@@ -18,6 +18,7 @@ impl ProcessTracker {
     /// ```
     /// // 5 will be the maximum number of ProcessRecord instances
     /// // stored for each PID.
+    /// use scaphandre::sensors::utils::ProcessTracker;
     /// let tracker = ProcessTracker::new(5);
     /// ```
     pub fn new(max_records_per_process: u16) -> ProcessTracker {
@@ -33,9 +34,11 @@ impl ProcessTracker {
     /// # Example:
     /// ```
     /// use procfs::process::Process;
-    /// let tracker = ProcessTracker::new(5);
+    /// use scaphandre::sensors::utils::ProcessTracker;
+    /// let mut tracker = ProcessTracker::new(5);
+    /// let pid = 1;
     /// if let Ok(result) = tracker.add_process_record(
-    ///     Process::new()
+    ///     Process::new(pid).unwrap()
     /// ){
     ///     println!("ProcessRecord stored successfully: {}", result);
     /// }
