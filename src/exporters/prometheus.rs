@@ -516,7 +516,7 @@ fn filter_qemu_cmdline(cmdline: &str) -> Option<String> {
     if cmdline.contains("qemu-system") && cmdline.contains("guest=") {
         let vmname: Vec<Vec<&str>> = cmdline
             .split("guest=")
-            .map(|x| x.split(",").collect())
+            .map(|x| x.split(',').collect())
             .collect();
 
         match (vmname[1].len(), vmname[1][0].is_empty()) {
