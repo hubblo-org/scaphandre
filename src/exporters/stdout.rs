@@ -22,7 +22,7 @@ impl Exporter for StdoutExporter {
         options.insert(
             String::from("timeout"),
             ExporterOption {
-                default_value: String::from("10"),
+                default_value: Some(String::from("10")),
                 long: String::from("timeout"),
                 short: String::from("t"),
                 required: false,
@@ -33,7 +33,7 @@ impl Exporter for StdoutExporter {
         options.insert(
             String::from("step_duration"),
             ExporterOption {
-                default_value: String::from("2"),
+                default_value: Some(String::from("2")),
                 long: String::from("step"),
                 short: String::from("s"),
                 required: false,

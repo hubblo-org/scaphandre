@@ -34,6 +34,7 @@ impl Exporter for PrometheusExporter {
             parameters.value_of("address").unwrap().to_string(),
             parameters.value_of("port").unwrap().to_string(),
             parameters.value_of("suffix").unwrap().to_string(),
+            parameters.is_present("qemu"),
         ) {
             Ok(()) => warn!("Prometheus exporter shut down gracefully."),
             Err(error) => panic!("Something failed in the prometheus exporter: {}", error),
@@ -46,7 +47,7 @@ impl Exporter for PrometheusExporter {
         options.insert(
             String::from("address"),
             ExporterOption {
-                default_value: String::from(DEFAULT_IP_ADDRESS),
+                default_value: Some(String::from(DEFAULT_IP_ADDRESS)),
                 help: String::from("ipv6 or ipv4 address to expose the service to"),
                 long: String::from("address"),
                 short: String::from("a"),
@@ -57,7 +58,7 @@ impl Exporter for PrometheusExporter {
         options.insert(
             String::from("port"),
             ExporterOption {
-                default_value: String::from("8080"),
+                default_value: Some(String::from("8080")),
                 help: String::from("TCP port number to expose the service"),
                 long: String::from("port"),
                 short: String::from("p"),
@@ -68,12 +69,23 @@ impl Exporter for PrometheusExporter {
         options.insert(
             String::from("suffix"),
             ExporterOption {
-                default_value: String::from("metrics"),
+                default_value: Some(String::from("metrics")),
                 help: String::from("url suffix to access metrics"),
                 long: String::from("suffix"),
                 short: String::from("s"),
                 required: false,
                 takes_value: true,
+            },
+        );
+        options.insert(
+            String::from("qemu"),
+            ExporterOption {
+                default_value: None,
+                help: String::from("Instruct that scaphandre is running on an hypervisor"),
+                long: String::from("qemu"),
+                short: String::from("q"),
+                required: false,
+                takes_value: false,
             },
         );
 
@@ -86,6 +98,7 @@ impl Exporter for PrometheusExporter {
 pub struct PowerMetrics {
     topology: Mutex<Topology>,
     last_request: Mutex<Duration>,
+    qemu: bool,
 }
 
 #[actix_web::main]
@@ -95,6 +108,7 @@ async fn runner(
     address: String,
     port: String,
     suffix: String,
+    qemu: bool,
 ) -> std::io::Result<()> {
     if let Err(error) = address.parse::<IpAddr>() {
         panic!("{} is not a valid ip address: {}", address, error);
@@ -107,6 +121,7 @@ async fn runner(
             .data(PowerMetrics {
                 topology: Mutex::new(topology.clone()),
                 last_request: Mutex::new(Duration::new(0, 0)),
+                qemu,
             })
             .service(web::resource(&suffix).route(web::get().to(show_metrics)))
             .default_service(web::route().to(landing_page))
@@ -460,6 +475,11 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
             //    cmdline_str = String::from(&cmdline_str[..350]);
             //}
             plabels.insert(String::from("cmdline"), cmdline_str.replace("\"", "\\\""));
+            if data.qemu {
+                if let Some(vmname) = filter_qemu_cmdline(&cmdline_str) {
+                    plabels.insert(String::from("vmname"), vmname);
+                }
+            }
         }
 
         let metric_name = "process_power_consumption_microwatts";
@@ -490,6 +510,62 @@ async fn landing_page() -> impl Responder {
     HttpResponse::Ok()
         //.set_header("X-TEST", "value")
         .body(body)
+}
+
+fn filter_qemu_cmdline(cmdline: &str) -> Option<String> {
+    if cmdline.contains("qemu-system") && cmdline.contains("guest=") {
+        let vmname: Vec<Vec<&str>> = cmdline
+            .split("guest=")
+            .map(|x| x.split(",").collect())
+            .collect();
+
+        match (vmname[1].len(), vmname[1][0].is_empty()) {
+            (1, _) => return None,
+            (_, true) => return None,
+            (_, false) => return Some(String::from(vmname[1][0])),
+        }
+    }
+    None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_filter_qemu_cmdline_ok() {
+        let cmdline = "file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sguest=fedora33,debug-threads=on-name/usr/bin/qemu-system-x86_64";
+        assert_eq!(filter_qemu_cmdline(cmdline), Some("fedora33".to_string()));
+    }
+
+    #[test]
+    fn test_filter_qemu_cmdline_ko_not_qemu() {
+        let cmdline = "file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sguest=fedora33,debug-threads=on-name/usr/bin/bidule";
+        assert_eq!(filter_qemu_cmdline(cmdline), None);
+    }
+
+    #[test]
+    fn test_filter_qemu_cmdline_ko_no_guest_token() {
+        let cmdline = "file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sfuest=fedora33,debug-threads=on-name/usr/bin/qemu-system-x86_64";
+        assert_eq!(filter_qemu_cmdline(cmdline), None);
+    }
+
+    #[test]
+    fn test_filter_qemu_cmdline_ko_no_comma_separator() {
+        let cmdline = "file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sguest=fedora33#debug-threads=on-name/usr/bin/qemu-system-x86_64";
+        assert_eq!(filter_qemu_cmdline(cmdline), None);
+    }
+
+    #[test]
+    fn test_filter_qemu_cmdline_ko_empty_guest01() {
+        let cmdline = "file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sguest=,,debug-threads=on-name/usr/bin/qemu-system-x86_64";
+        assert_eq!(filter_qemu_cmdline(cmdline), None);
+    }
+
+    #[test]
+    fn test_filter_qemu_cmdline_ko_empty_guest02() {
+        let cmdline = "qemu-system-x86_64,file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sguest=";
+        assert_eq!(filter_qemu_cmdline(cmdline), None);
+    }
 }
 
 //  Copyright 2020 The scaphandre authors.

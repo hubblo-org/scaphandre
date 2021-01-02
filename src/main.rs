@@ -66,14 +66,24 @@ fn main() {
         );
 
         for (key, opt) in exporters_options.get(exp).unwrap().iter() {
-            let arg = Arg::with_name(key)
-                .required(opt.required)
-                .takes_value(opt.takes_value)
-                .default_value(&opt.default_value)
-                .short(&opt.short)
-                .long(&opt.long)
-                .help(&opt.help);
-            subcmd = subcmd.arg(arg);
+            if let Some(default_value) = &opt.default_value {
+                let arg = Arg::with_name(key)
+                    .required(opt.required)
+                    .takes_value(opt.takes_value)
+                    .default_value(default_value)
+                    .short(&opt.short)
+                    .long(&opt.long)
+                    .help(&opt.help);
+                subcmd = subcmd.arg(arg);
+            } else {
+                let arg = Arg::with_name(key)
+                    .required(opt.required)
+                    .takes_value(opt.takes_value)
+                    .short(&opt.short)
+                    .long(&opt.long)
+                    .help(&opt.help);
+                subcmd = subcmd.arg(arg);
+            }
         }
         matches = matches.subcommand(subcmd);
     }
