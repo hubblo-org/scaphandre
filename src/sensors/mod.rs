@@ -235,7 +235,7 @@ impl Topology {
                 .sockets
                 .iter_mut()
                 .find(|x| &x.id == socket_id)
-                .unwrap();
+                .expect("Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line");
             if socket_id == &socket.id {
                 socket.add_cpu_core(c);
             }
