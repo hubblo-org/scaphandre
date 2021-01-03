@@ -1,19 +1,21 @@
-use clap::App;
-use scaphandre::exporters::{qemu::QemuExporter, Exporter};
+use scaphandre::exporters::qemu::QemuExporter;
 use scaphandre::sensors::powercap_rapl::PowercapRAPLSensor;
-use std::fs;
+use std::env::current_dir;
+use std::fs::{create_dir, read_dir};
 
 #[test]
 fn exporter_qemu() {
     let sensor = PowercapRAPLSensor::new(1, 1, false);
     let mut exporter = QemuExporter::new(Box::new(sensor));
-    let parameters = App::new("scaphandre").get_matches();
-    //exporter.run(parameters);
-    let path = "/var/lib/libvirt/scaphandre/integration_tests";
-    exporter.iteration(String::from(path));
-    let content = fs::read_dir(path);
+    // Create integration_tests directory if it does not exist
+    let curdir = current_dir().unwrap();
+    let path = curdir.join("integration_tests");
+    if !path.is_dir() {
+        create_dir(&path).expect("Fail to create integration_tests directory");
+    }
+    // Convert to std::string::String
+    let path = path.into_os_string().to_str().unwrap().to_string();
+    exporter.iteration(path.clone());
+    let content = read_dir(path);
     assert_eq!(content.is_ok(), true);
-    //for subfolder in content.unwrap() {
-    //
-    //}
 }

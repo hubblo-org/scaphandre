@@ -26,3 +26,6 @@ Cargo.lock
 
 # Avoid code coverage and perf data files
 *.data
+
+# Used by integration tests
+/integration_tests
