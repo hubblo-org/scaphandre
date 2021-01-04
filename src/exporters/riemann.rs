@@ -36,6 +36,13 @@ impl Exporter for RiemannExporter {
             .parse()
             .expect("Wrong dispatch_duration value, should be a number of seconds");
 
+        let hostname = String::from(
+            hostname::get()
+                .expect("Fail to get system hostname")
+                .to_str()
+                .unwrap(),
+        );
+
         let mut rclient =
             Client::connect(&("localhost", 5555)).expect("Fail to connect to Riemann server");
         println!("Press CTRL-C to stop scaphandre");
@@ -90,7 +97,7 @@ impl Exporter for RiemannExporter {
                 .event({
                     let mut event = Event::new();
                     event.set_service("rust-riemann_client".to_string());
-                    event.set_host("nene".to_string());
+                    event.set_host(hostname.clone());
                     event.set_state("ok".to_string());
                     event.set_metric_f(scaphandre_version.parse::<f32>().unwrap());
                     event
