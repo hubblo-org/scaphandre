@@ -11,14 +11,11 @@
 
 # Explanations
 
-- [Overview](explanations/overview.md)
 - [How scaphandre computes per process power consumption](explanations/how-scaph-computes-per-process-power-consumption.md)
 - [Internal structure](explanations/internal-structure.md)
 - [About containers](explanations/about-containers.md)
 
 # References
-
-- [Overview](references/overview.md)
 
 ## Exporters
 
