@@ -13,6 +13,70 @@ const DEFAULT_IP_ADDRESS: &str = "localhost";
 /// Riemann server default port
 const DEFAULT_PORT: &str = "5555";
 
+trait Metric {
+    fn add_metric(self, event: &mut Event);
+}
+
+impl Metric for i64 {
+    fn add_metric(self, event: &mut Event) {
+        event.set_metric_sint64(self);
+    }
+}
+
+impl Metric for f32 {
+    fn add_metric(self, event: &mut Event) {
+        event.set_metric_f(self);
+    }
+}
+
+impl Metric for f64 {
+    fn add_metric(self, event: &mut Event) {
+        event.set_metric_d(self);
+    }
+}
+
+/// Riemann client
+struct Riemann {
+    client: Client,
+}
+
+impl Riemann {
+    fn new(address: &str, port: &str) -> Riemann {
+        let address = String::from(address);
+        let port = port.parse::<u16>().expect("Fail parsing port number");
+        let client = Client::connect(&(address, port)).expect("Fail to connect to Riemann server");
+        Riemann { client }
+    }
+
+    fn send_metric<T: Metric>(
+        &mut self,
+        hostname: String,
+        service: String,
+        state: String,
+        metric: T,
+    ) {
+        let mut event = Event::new();
+        event.set_host(hostname);
+        event.set_service(service);
+        event.set_state(state);
+        metric.add_metric(&mut event);
+        self.client.event(event);
+        //self.s
+        //self.event(event);
+        //metric.add_metric(event);
+        // rclient
+        //     .event({
+        //         let mut event = Event::new();
+        //         event.set_service("rust-riemann_client".to_string());
+        //         event.set_host(hostname.clone());
+        //         event.set_state("ok".to_string());
+        //         event.set_metric_f(scaphandre_version.parse::<f32>().unwrap());
+        //         event
+        //     })
+        //     .unwrap();
+    }
+}
+
 /// Exporter sends metrics to a Riemann server
 pub struct RiemannExporter {
     /// Sensor instance that is used to generate the Topology and
@@ -43,8 +107,11 @@ impl Exporter for RiemannExporter {
                 .unwrap(),
         );
 
-        let mut rclient =
-            Client::connect(&("localhost", 5555)).expect("Fail to connect to Riemann server");
+        let mut rclient = Riemann::new(
+            parameters.value_of("address").unwrap(),
+            parameters.value_of("port").unwrap(),
+        );
+
         println!("Press CTRL-C to stop scaphandre");
         println!("Measurement step is: {}s", dispatch_duration);
 
@@ -93,16 +160,18 @@ impl Exporter for RiemannExporter {
                 println!("{}={}", metric_name, value);
             }
 
-            rclient
-                .event({
-                    let mut event = Event::new();
-                    event.set_service("rust-riemann_client".to_string());
-                    event.set_host(hostname.clone());
-                    event.set_state("ok".to_string());
-                    event.set_metric_f(scaphandre_version.parse::<f32>().unwrap());
-                    event
-                })
-                .unwrap();
+            // rclient
+            //     .event({
+            //         let mut event = Event::new();
+            //         event.set_service("rust-riemann_client".to_string());
+            //         event.set_host(hostname.clone());
+            //         event.set_state("ok".to_string());
+            //         event.set_metric_f(scaphandre_version.parse::<f32>().unwrap());
+            //         event
+            //     })
+            //     .unwrap();
+            rclient.send_metric(hostname.clone(), "nene".to_string(), "ok".to_string(), 2.0);
+            rclient.send_metric(hostname.clone(), "nene2".to_string(), "ok".to_string(), 3);
 
             thread::sleep(Duration::new(dispatch_duration, 0));
         }
