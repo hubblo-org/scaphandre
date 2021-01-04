@@ -13,6 +13,7 @@ const DEFAULT_IP_ADDRESS: &str = "localhost";
 /// Riemann server default port
 const DEFAULT_PORT: &str = "5555";
 
+/// Metric trait to deal with metric types
 trait Metric {
     fn add_metric(self, event: &mut Event);
 }
@@ -35,6 +36,20 @@ impl Metric for f64 {
     }
 }
 
+impl Metric for &str {
+    fn add_metric(self, event: &mut Event) {
+        let metric = self.replace(",", ".").parse().expect("Cannot parse metric");
+        event.set_metric_d(metric);
+    }
+}
+
+impl Metric for String {
+    fn add_metric(self, event: &mut Event) {
+        let metric = self.replace(",", ".").parse().expect("Cannot parse metric");
+        event.set_metric_d(metric);
+    }
+}
+
 /// Riemann client
 struct Riemann {
     client: Client,
@@ -48,32 +63,15 @@ impl Riemann {
         Riemann { client }
     }
 
-    fn send_metric<T: Metric>(
-        &mut self,
-        hostname: String,
-        service: String,
-        state: String,
-        metric: T,
-    ) {
+    fn send_metric<T: Metric>(&mut self, hostname: &str, service: &str, state: &str, metric: T) {
         let mut event = Event::new();
-        event.set_host(hostname);
-        event.set_service(service);
-        event.set_state(state);
+        event.set_host(hostname.to_string());
+        event.set_service(service.to_string());
+        event.set_state(state.to_string());
         metric.add_metric(&mut event);
-        self.client.event(event);
-        //self.s
-        //self.event(event);
-        //metric.add_metric(event);
-        // rclient
-        //     .event({
-        //         let mut event = Event::new();
-        //         event.set_service("rust-riemann_client".to_string());
-        //         event.set_host(hostname.clone());
-        //         event.set_state("ok".to_string());
-        //         event.set_metric_f(scaphandre_version.parse::<f32>().unwrap());
-        //         event
-        //     })
-        //     .unwrap();
+        self.client
+            .event(event)
+            .expect("Fail to send metric to Riemann");
     }
 }
 
@@ -160,18 +158,11 @@ impl Exporter for RiemannExporter {
                 println!("{}={}", metric_name, value);
             }
 
-            // rclient
-            //     .event({
-            //         let mut event = Event::new();
-            //         event.set_service("rust-riemann_client".to_string());
-            //         event.set_host(hostname.clone());
-            //         event.set_state("ok".to_string());
-            //         event.set_metric_f(scaphandre_version.parse::<f32>().unwrap());
-            //         event
-            //     })
-            //     .unwrap();
-            rclient.send_metric(hostname.clone(), "nene".to_string(), "ok".to_string(), 2.0);
-            rclient.send_metric(hostname.clone(), "nene2".to_string(), "ok".to_string(), 3);
+            rclient.send_metric(&hostname, "nene", "ok", 2.5);
+            rclient.send_metric(&hostname, "nene2", "ok", 2);
+            rclient.send_metric(&hostname, "nene3", "ok", "2.34");
+            rclient.send_metric(&hostname, "nene3", "ok", "2,35");
+            rclient.send_metric(&hostname, "nene4", "ok", "3,45".to_string());
 
             thread::sleep(Duration::new(dispatch_duration, 0));
         }
