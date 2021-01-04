@@ -53,34 +53,26 @@ pub fn run(matches: ArgMatches) {
     loggerv::init_with_verbosity(matches.occurrences_of("v")).unwrap();
 
     let sensor_boxed = get_sensor(&matches);
+    let exporter_parameters;
 
-    let stdout_exporter_required = matches.subcommand_matches("stdout");
-    if let Some(stdout_exporter_parameters) = stdout_exporter_required {
-        let exporter_parameters = stdout_exporter_parameters.clone();
+    if let Some(stdout_exporter_parameters) = matches.subcommand_matches("stdout") {
+        exporter_parameters = stdout_exporter_parameters.clone();
         let mut exporter = StdoutExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
+    } else if let Some(riemann_exporter_parameters) = matches.subcommand_matches("riemann") {
+        exporter_parameters = riemann_exporter_parameters.clone();
+        let mut exporter = RiemannExporter::new(sensor_boxed);
+        exporter.run(exporter_parameters);
+    } else if let Some(prometheus_exporter_parameters) = matches.subcommand_matches("prometheus") {
+        exporter_parameters = prometheus_exporter_parameters.clone();
+        let mut exporter = PrometheusExporter::new(sensor_boxed);
+        exporter.run(exporter_parameters);
+    } else if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
+        exporter_parameters = qemu_exporter_parameters.clone();
+        let mut exporter = QemuExporter::new(sensor_boxed);
+        exporter.run(exporter_parameters);
     } else {
-        let riemann_exporter_required = matches.subcommand_matches("riemann");
-        if let Some(riemann_exporter_parameters) = riemann_exporter_required {
-            let exporter_parameters = riemann_exporter_parameters.clone();
-            let mut exporter = RiemannExporter::new(sensor_boxed);
-            exporter.run(exporter_parameters);
-        } else {
-            let prometheus_exporter_required = matches.subcommand_matches("prometheus");
-            if let Some(prometheus_exporter_parameters) = prometheus_exporter_required {
-                let exporter_parameters = prometheus_exporter_parameters.clone();
-                let mut exporter = PrometheusExporter::new(sensor_boxed);
-                exporter.run(exporter_parameters);
-            } else {
-                let qemu_exporter_required = matches.subcommand_matches("qemu");
-                if let Some(qemu_exporter_parameters) = qemu_exporter_required {
-                    let exporter_parameters = qemu_exporter_parameters.clone();
-                    let mut exporter = QemuExporter::new(sensor_boxed);
-                    exporter.run(exporter_parameters);
-                }
-                error!("Couldn't determine which exporter has been chosen.");
-            }
-        }
+        error!("Couldn't determine which exporter has been chosen.");
     }
 }
 
