@@ -73,11 +73,12 @@ pub fn run(matches: ArgMatches) {
                 exporter.run(exporter_parameters);
             } else {
                 let qemu_exporter_required = matches.subcommand_matches("qemu");
-                if let Some(exporter_parameters) = qemu_exporter_required {
+                if let Some(qemu_exporter_parameters) = qemu_exporter_required {
+                    let exporter_parameters = qemu_exporter_parameters.clone();
                     let mut exporter = QemuExporter::new(sensor_boxed);
-                    exporter.run(exporter_parameters.clone());
+                    exporter.run(exporter_parameters);
                 }
-                error!("Couldn't determine which exporter has been choosed.");
+                error!("Couldn't determine which exporter has been chosen.");
             }
         }
     }
