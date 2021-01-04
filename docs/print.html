@@ -100,7 +100,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded affix "><a href="why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorials/overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="tutorials/quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="tutorials/installation.html"><strong aria-hidden="true">3.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="how-to_guides/overview.html"><strong aria-hidden="true">4.</strong> Overview</a></li><li class="chapter-item expanded "><a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">5.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="explanations/overview.html"><strong aria-hidden="true">6.</strong> Overview</a></li><li class="chapter-item expanded "><a href="explanations/overview.html"><strong aria-hidden="true">7.</strong> Overview</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="references/overview.html"><strong aria-hidden="true">8.</strong> Overview</a></li><li class="chapter-item expanded "><a href="references/exporter-prometheus.html"><strong aria-hidden="true">9.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-qemu.html"><strong aria-hidden="true">10.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-stdout.html"><strong aria-hidden="true">11.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="references/sensor-powercap_rapl.html"><strong aria-hidden="true">12.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="contributing.html">Contributing guide</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.</strong> How to get process-level power consumption in my grafana dashboard</div></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="explanations/overview.html"><strong aria-hidden="true">5.</strong> Overview</a></li><li class="chapter-item expanded "><a href="explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">6.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="explanations/internal-structure.html"><strong aria-hidden="true">7.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="explanations/about-containers.html"><strong aria-hidden="true">8.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="references/overview.html"><strong aria-hidden="true">9.</strong> Overview</a></li><li class="chapter-item expanded "><a href="references/exporter-prometheus.html"><strong aria-hidden="true">10.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-qemu.html"><strong aria-hidden="true">11.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-stdout.html"><strong aria-hidden="true">12.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="references/sensor-powercap_rapl.html"><strong aria-hidden="true">13.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="sources.html">External references you may be interested in</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -131,7 +131,7 @@
                         </button>
                         
                     </div>
-
+                
                     <h1 class="menu-title">Scaphandre documentation</h1>
 
                     <div class="right-buttons">
@@ -169,29 +169,49 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#introduction" id="introduction">Introduction</a></h1>
+<img src="scaphandre.svg" width="250px"/>
 <p>Welcome on <a href="https://github.com/hubblo-org/scaphandre">Scaphandre</a> documentation.</p>
-<p>Scaphandre is a <strong>monitoring agent</strong>, dedicated to <strong>energy consumption</strong> metrics. It's purpose is to make measuring and thus understanding tech services energy consumption patterns. This is key, in our opinion, to enable the tech industry to shift towards more sustainability.</p>
+<p>Scaphandre is a <strong>monitoring agent</strong>, dedicated to <strong>energy consumption</strong> metrics. It's purpose is to help measuring and thus understanding tech services energy consumption patterns. This is key, in our opinion, to enable the tech industry to shift towards more sustainability.</p>
 <p>If at this point you think &quot;why bother ?&quot;, or if you want more details about this project's motivations, please have a look at the <a href="why.html">why</a> section.</p>
 <p>If not and you want to proceed, you may directly jump to the <a href="tutorials/overview.html">tutorials</a> section.</p>
-<h1><a class="header" href="#why-" id="why-">Why ?</a></h1>
-<p>We are facing the biggest challenge of mankind history: to make our activities sustainable enough to not jeopardize our future.</p>
-<p><img src="https://bpetit.nce.re/temperature-anomaly.svg" alt="Global average temperature anomaly" /></p>
-<p>To match the Paris agreement objective of not going further than +2 Celcius degrees on average in 2100, we need to transform our industries.
-The tech industry is no exception and we need to make sure that its benefits are not cancelled (or worse) by its negative impact.</p>
-<p>Measuring power consumption in tech services infrastructures is not as easy as it seems. We often rely on physical devices to do that and need to build in-house data pipelines to get those metrics useful. Furthermore this doesn't give fine graned data regarding applications/processes power consumption but only the host power consumption.
-This is even harder in a virtualization environement or as public cloud customers.</p>
-<p>Even <a href="https://www.iea.org/reports/data-centres-and-data-transmission-networks">recent</a> <a href="https://www.actu-environnement.com/media/pdf/news-36483-etude-UE-consommation-energie-centre-donnees-cloud.pdf">scientific</a> researches about tech energy consumption rely on statistical, both large and narrowed scale, assumptions based data (because it's all we got). Despite their weaknesses, they also all agree on the fact that the current consumption of datacenters and the Internet will increase drastically in the following years.</p>
-<p>Scaphandre aims to initiate a collaboration of tech companies and enthusiasts to provide an easy, lightweight, robust and well understood way to precisely measure the energy consumption and make it useful to take soberness decisions.</p>
-<p>Note that the greenhouse gazes emissions related to this energy consumption depends on the energetic mix of your country. You may find valuable data about that on <a href="https://www.electricitymap.org/map">Electricity Map</a>.</p>
-<h1><a class="header" href="#tutorials" id="tutorials">Tutorials</a></h1>
-<p>In this section you'll have access to easy-to-follow tutorials for the most seen Scaphandre use cases.</p>
 <h1><a class="header" href="#quickstart" id="quickstart">Quickstart</a></h1>
 <p>Here you'll see how to deploy and benefit from Scaphandre quickly.</p>
 <h1><a class="header" href="#installation" id="installation">Installation</a></h1>
-<h1><a class="header" href="#how-to-guides" id="how-to-guides">How-to guides</a></h1>
 <h1><a class="header" href="#propagate-power-consumption-metrics-from-hypervisor-to-virtual-machines-qemukvm" id="propagate-power-consumption-metrics-from-hypervisor-to-virtual-machines-qemukvm">Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></h1>
 <h1><a class="header" href="#explanations-scaphandre-concepts-and-internals" id="explanations-scaphandre-concepts-and-internals">Explanations (Scaphandre concepts and internals)</a></h1>
-<h1><a class="header" href="#explanations-scaphandre-concepts-and-internals-1" id="explanations-scaphandre-concepts-and-internals-1">Explanations (Scaphandre concepts and internals)</a></h1>
+<h1><a class="header" href="#t" id="t">T</a></h1>
+<p>As you may have seen in the <a href="explanations/../references/exporter-prometheus.html">prometheus exporter reference</a>, scaphandre exporters may provide process level power consumption metrics. This section will explain how it is done and how it may be improved in the future.</p>
+<h2><a class="header" href="#some-details-about-rapl" id="some-details-about-rapl">Some details about RAPL</a></h2>
+<p>Most probably you are using the PowercapRAPL sensor to collect the metrics with scaphandre (this is the only one ready as those lines are written). Let's clarify what's happening.
+RAPL stands for Running Average Power Limit. It's a technology embedded in most Intel and AMD x86 CPUs produced afeter 2012. The counters provided a</p>
+<h1><a class="header" href="#internal-structure" id="internal-structure">Internal structure</a></h1>
+<p>Scaphandre is designed to be extensible. As it performs basically two tasks: <strong>collecting</strong>/pre-computing the power consumption metrics and <strong>shipping</strong> it, it is composed of two main components: a <strong>sensor</strong> and an <strong>exporter</strong>. Each can be implemented in different wats, to match a certain use case. When you run scaphandre from the command line, <code>-s</code> allows you to choose the sensor you want to use, and the next subcommand is the name of the exporter.</p>
+<h2><a class="header" href="#sensors" id="sensors">Sensors</a></h2>
+<p>Sensors are meant to:</p>
+<ol>
+<li>get the power consumptions metrics of the host</li>
+<li>make it available for the exporter</li>
+</ol>
+<p>The <a href="explanations/../references/sensors-powercap_rapl.html">PowercapRAPL</a> for instance, gets and transforms metrics coming from the powercap Linux kernel module, that serves as an interface to get the data from the <a href="https://01.org/blogs/2014/running-average-power-limit-%E2%80%93-rapl">RAPL</a> feature of x86 CPUs. Because this feature is only accessible when you are running on a bare metal machine, this sensor will not work in a virtual machine, except if you first run scaphandre on the hypervisor and make the VM metrics available, with the <a href="explanations/../references/exporter-qemu.html">qemu exporter</a>, to scaphandre running inside the virtual machine.</p>
+<p>When you don't have access to the hypervisor/bare-metal machine (ie. when you run on public cloud instances and your provider doesn't run scaphandre) you still have the option to estimate the power consumption, based on both the ressources (cpu/gpu/ram/io...) consumed by the virtual machine at a given time, and the characteristics of the underlying hardware. This is the way we are designing the future <a href="https://github.com/hubblo-org/scaphandre/issues/25">estimation-based sensor</a>, to match that use case.</p>
+<p>Looking at the code, you'll find that the interface between metrics and the exporters is in fact the <a href="https://docs.rs/scaphandre/0.1.1/scaphandre/sensors/struct.Topology.html">Topology</a> object. This is intended to be asked by the exporter through the <a href="https://docs.rs/scaphandre/0.1.1/scaphandre/sensors/trait.Sensor.html#tymethod.get_topology">get_topology</a> method of the sensor.</p>
+<h2><a class="header" href="#exporters" id="exporters">Exporters</a></h2>
+<p>An exporter is expected to:</p>
+<ol>
+<li>ask the sensors to get new metrics and store them for later, potential usage</li>
+<li>export the current metrics </li>
+</ol>
+<p>The <a href="explanations/../references/exporter-stdout.html">Stdout</a> exporter exposes the metrics on the standard output (in your terminal). The <a href="explanations/../references/exporter-prometheus.html">prometheus</a> exporter exposes the metrics on an http endpoint, to be scraped by a <a href="https://prometheus.io">prometheus</a> instance. An exporter should be created for each monitoring scenario (do you want to feed your favorite monitoring/data analysis tool with scaphandre metrics ? feel free to open a <a href="https://github.com/hubblo-org/scaphandre/pulls">PR</a> to create a new exporter !).</p>
+<p>As introduced in the <a href="explanations/internal-structure.html#sensors">sensors</a> section, the <a href="explanations/../references/exporter-qemu.html">Qemu</a> exporter, is very specific. It is only intended to collect metrics related to running virtual machines on a Qemu/KVM hypervisor. Those metrics can then be made available to each virtual machine and it's own scaphandre instance, running the <a href="explanations/../references/sensor-powercap_rapl.html">PowercapRAPL</a> sensor (with the <code>--vm</code> flag on). The qemu exporter puts VM's metrics in files the same way the powercap kernel module does it. It mimics this behavior, so the sensor can act the same way it would on a bare metal machine.</p>
+<h1><a class="header" href="#about-containers" id="about-containers">About containers</a></h1>
+<p>Let's first define what you want to achieve. Do you want to:</p>
+<ol>
+<li>run scaphandre <strong>in a container</strong>, to not have to manage the dependencies, then measure the power consumption of a <strong>bare metal host</strong> ?</li>
+<li>measure the <strong>power consumption of containers</strong> running on a host ?</li>
+<li>measure the power consumption of a distributed <strong>container orchestrator</strong> (like <a href="explanations/">kubernetes</a>) and the applications running on it ?</li>
+</ol>
+<p>Use case <strong>1</strong> is described <a href="explanations/../tutorials/in-container.html">here</a>, <strong>2</strong> has a dedicated <a href="explanations/../how-to_guides/measure-containers-power.html">how-to</a>, <strong>3</strong> is described <a href="explanations/../tutorials/kubernetes.html">here</a>.</p>
+<p>As described <a href="explanations/../compatibility.html">here</a>, scaphandre provides several ways (<a href="explanations/../explanations/sensors.html">sensors</a>) to collect the power consumption metrics. Depending on your use case a sensor should be more suitable than the other. Each of them comes with strengths and weaknesses. This is basically always a tradeoff between precision and simplicity.</p>
 <h1><a class="header" href="#references" id="references">References</a></h1>
 <h2><a class="header" href="#components" id="components">Components</a></h2>
 <p>As you may have read in the <a href="references/../explanations/overview.html">explanations</a> section, Scaphandre is composed of <em>sensors</em> and <em>exporters</em> components. In this section you'll find the detailled reference of each sensor and exporter capabilities and behaviors.</p>
@@ -377,7 +397,49 @@ and <a href="https://www.phoronix.com/scan.php?page=news_item&amp;px=AMD-RAPL-Li
 </code></pre>
 <p>Therefor, the user running scaphandre needs to have read access to <em>energy_uj</em> files in <code>/sys/class/powercap</code>.</p>
 <p>You can run the <a href="references/../../init.sh">init.sh</a> script to apply appropriate permissions to the required files.</p>
+<h1><a class="header" href="#why-" id="why-">Why ?</a></h1>
+<p>We are facing the biggest challenge of mankind history: to make our activities sustainable enough to not jeopardize our future.</p>
+<p><img src="https://bpetit.nce.re/temperature-anomaly.svg" alt="Global average temperature anomaly" /></p>
+<p>To match the Paris agreement objective of not going further than +2 Celcius degrees on average in 2100, we need to transform our industries.
+The tech industry is no exception and we need to make sure that its benefits are not cancelled (or worse) by its negative impact.</p>
+<p>Measuring power consumption in tech services infrastructures is not as easy as it seems. We often rely on physical devices to do that and need to build in-house data pipelines to get those metrics useful. Furthermore this doesn't give fine graned data regarding applications/processes power consumption but only the host power consumption.
+This is even harder in a virtualization environement or as public cloud customers.</p>
+<p>Even <a href="https://www.iea.org/reports/data-centres-and-data-transmission-networks">recent</a> <a href="https://www.actu-environnement.com/media/pdf/news-36483-etude-UE-consommation-energie-centre-donnees-cloud.pdf">scientific</a> researches about tech energy consumption rely on statistical, both large and narrowed scale, assumptions based data (because it's all we got). Despite their weaknesses, they also all agree on the fact that the current consumption of datacenters and the Internet will increase drastically in the following years.</p>
+<p>Scaphandre aims to initiate a collaboration of tech companies and enthusiasts to provide an easy, lightweight, robust and well understood way to precisely measure the energy consumption and make it useful to take soberness decisions.</p>
+<p>Note that the greenhouse gazes emissions related to this energy consumption depends on the energetic mix of your country. You may find valuable data about that on <a href="https://www.electricitymap.org/map">Electricity Map</a>.</p>
+<h1><a class="header" href="#compatibility" id="compatibility">Compatibility</a></h1>
+<p>Scaphandre intends to provide multiple ways to gather power consumption metrics and make understanding tech services footprint possible in many situations. Depending on how you use scaph, you may have some restrictions.</p>
+<p>To summarize, scaphandre should provide two ways to estimate the power consumption of a service, process or machine. Either by <strong>measuring it</strong>, using software interfaces that give access to hardware metrics, or by <strong>estimating it</strong> if measuring is not an option (this is a <a href="https://github.com/hubblo-org/scaphandre/issues/25">planned feature</a>, not yet implemented as those lines are written, in december 2020).</p>
+<p>In scaphandre, the code responsible to collect the power consumption data before any further processing is grouped in components called <strong>sensors</strong>. If you want more details about scaphandre structure, <a href="explanations/internal-structure.html">here are the explanations</a>.</p>
+<p>The <a href="references/sensor-powercap_rapl.html">PowercapRAPL sensor</a> enables you to measure the power consumption, it is the most precise solution, but it doesn't work in all contexts. A future sensor is to be developped to support other use cases. Here is the current state of scaphandre's compatibility:</p>
+<table><thead><tr><th align="left">Sensor</th><th align="center">x86 bare metal</th><th align="center">ARM bare metal</th><th align="center">Virtual Machine</th><th align="center">Public cloud instance</th><th align="center">Container</th></tr></thead><tbody>
+<tr><td align="left">PowercapRAPL</td><td align="center"><a href="references/sensor-powercap_rapl.html">Yes</a></td><td align="center">We don't know yet</td><td align="center">Yes, if on a qemu/KVM hypervisor that runs scaphandre and the <a href="references/exporter-qemu.html">Qemu exporter</a></td><td align="center">No, until your cloud provider uses scaphandre on its hypervisors</td><td align="center"><a href="">Depends on what you want</a></td></tr>
+<tr><td align="left">Future estimation based sensor</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td></tr>
+</tbody></table>
 <h1><a class="header" href="#contributing-guide" id="contributing-guide">Contributing guide</a></h1>
+<h1><a class="header" href="#additional-references-for-documentation" id="additional-references-for-documentation">Additional references for documentation</a></h1>
+<ul>
+<li><a href="http://www.linuxhowtos.org/System/procstat.htm">/proc/stat explained</a></li>
+<li><a href="https://www.idnt.net/en-US/kb/941772">Gathering CPU utilization from /proc/stat</a></li>
+<li><a href="https://www.mjmwired.net/kernel/Documentation/filesystems/proc.txt#1212">proc filesystem documentation</a></li>
+<li><a href="https://www.opsdash.com/blog/cpu-usage-linux.html">CPU usage on Linux</a></li>
+<li><a href="https://community.intel.com/t5/Software-Tuning-Performance/Using-RAPL-to-read-PP0-and-DRAM-energy-on-haswell/td-p/1076202">Using RAPL to read PP0 and DRAM energy on Haswell</a></li>
+<li><a href="http://web.eece.maine.edu/%7Evweaver/projects/rapl/">RAPL reference</a></li>
+<li><a href="https://ma.ttias.be/how-to-measure-linux-performance-avoiding-most-typical-mistakes-cpu/">How to measure linux performance avoiding most typical mistakes: CPU</a></li>
+<li><a href="https://www.embedded.com/how-to-calculate-cpu-utilization/">How to calculate cpu utilization</a></li>
+</ul>
+<h1><a class="header" href="#powercaprapl-source-code-in-the-kernel" id="powercaprapl-source-code-in-the-kernel">Powercap/RAPL source code in the kernel</a></h1>
+<ul>
+<li>arch/x86/events/intel/rapl.c</li>
+<li>drivers/powercap</li>
+</ul>
+<h1><a class="header" href="#topics-to-investigate" id="topics-to-investigate">Topics to investigate</a></h1>
+<ul>
+<li><a href="https://facebookmicrosites.github.io/psi/docs/overview">PSI</a></li>
+<li><a href="https://unixism.net/2019/08/linux-pressure-stall-information-psi-by-example/">Linux PSI by example</a></li>
+<li><a href="https://www.kernel.org/doc/html/latest/accounting/psi.html">PSI - Pressure Stall Information</a></li>
+<li><a href="https://ma.ttias.be/how-to-measure-linux-performance-avoiding-most-typical-mistakes-memory/">How to measure linux performance avoiding most typical mistakes: memory</a></li>
+</ul>
 
                     </main>
 

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - Scaphandre documentation</title>
+        <title>Compatibility - Scaphandre documentation</title>
         
         
 
@@ -98,7 +98,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html" class="active">Introduction</a></li><li class="chapter-item expanded affix "><a href="why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorials/overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="tutorials/quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="tutorials/installation.html"><strong aria-hidden="true">3.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="how-to_guides/overview.html"><strong aria-hidden="true">4.</strong> Overview</a></li><li class="chapter-item expanded "><a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">5.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="explanations/overview.html"><strong aria-hidden="true">6.</strong> Overview</a></li><li class="chapter-item expanded "><a href="explanations/overview.html"><strong aria-hidden="true">7.</strong> Overview</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="references/overview.html"><strong aria-hidden="true">8.</strong> Overview</a></li><li class="chapter-item expanded "><a href="references/exporter-prometheus.html"><strong aria-hidden="true">9.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-qemu.html"><strong aria-hidden="true">10.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-stdout.html"><strong aria-hidden="true">11.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="references/sensor-powercap_rapl.html"><strong aria-hidden="true">12.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="contributing.html">Contributing guide</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.</strong> How to get process-level power consumption in my grafana dashboard</div></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="explanations/overview.html"><strong aria-hidden="true">5.</strong> Overview</a></li><li class="chapter-item expanded "><a href="explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">6.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="explanations/internal-structure.html"><strong aria-hidden="true">7.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="explanations/about-containers.html"><strong aria-hidden="true">8.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="references/overview.html"><strong aria-hidden="true">9.</strong> Overview</a></li><li class="chapter-item expanded "><a href="references/exporter-prometheus.html"><strong aria-hidden="true">10.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-qemu.html"><strong aria-hidden="true">11.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-stdout.html"><strong aria-hidden="true">12.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="references/sensor-powercap_rapl.html"><strong aria-hidden="true">13.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="compatibility.html" class="active">Compatibility</a></li><li class="chapter-item expanded affix "><a href="contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="sources.html">External references you may be interested in</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -129,7 +129,7 @@
                         </button>
                         
                     </div>
-
+                
                     <h1 class="menu-title">Scaphandre documentation</h1>
 
                     <div class="right-buttons">
@@ -166,20 +166,28 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#introduction" id="introduction">Introduction</a></h1>
-<p>Welcome on <a href="https://github.com/hubblo-org/scaphandre">Scaphandre</a> documentation.</p>
-<p>Scaphandre is a <strong>monitoring agent</strong>, dedicated to <strong>energy consumption</strong> metrics. It's purpose is to make measuring and thus understanding tech services energy consumption patterns. This is key, in our opinion, to enable the tech industry to shift towards more sustainability.</p>
-<p>If at this point you think &quot;why bother ?&quot;, or if you want more details about this project's motivations, please have a look at the <a href="why.html">why</a> section.</p>
-<p>If not and you want to proceed, you may directly jump to the <a href="tutorials/overview.html">tutorials</a> section.</p>
+                        <h1><a class="header" href="#compatibility" id="compatibility">Compatibility</a></h1>
+<p>Scaphandre intends to provide multiple ways to gather power consumption metrics and make understanding tech services footprint possible in many situations. Depending on how you use scaph, you may have some restrictions.</p>
+<p>To summarize, scaphandre should provide two ways to estimate the power consumption of a service, process or machine. Either by <strong>measuring it</strong>, using software interfaces that give access to hardware metrics, or by <strong>estimating it</strong> if measuring is not an option (this is a <a href="https://github.com/hubblo-org/scaphandre/issues/25">planned feature</a>, not yet implemented as those lines are written, in december 2020).</p>
+<p>In scaphandre, the code responsible to collect the power consumption data before any further processing is grouped in components called <strong>sensors</strong>. If you want more details about scaphandre structure, <a href="explanations/internal-structure.html">here are the explanations</a>.</p>
+<p>The <a href="references/sensor-powercap_rapl.html">PowercapRAPL sensor</a> enables you to measure the power consumption, it is the most precise solution, but it doesn't work in all contexts. A future sensor is to be developped to support other use cases. Here is the current state of scaphandre's compatibility:</p>
+<table><thead><tr><th align="left">Sensor</th><th align="center">x86 bare metal</th><th align="center">ARM bare metal</th><th align="center">Virtual Machine</th><th align="center">Public cloud instance</th><th align="center">Container</th></tr></thead><tbody>
+<tr><td align="left">PowercapRAPL</td><td align="center"><a href="references/sensor-powercap_rapl.html">Yes</a></td><td align="center">We don't know yet</td><td align="center">Yes, if on a qemu/KVM hypervisor that runs scaphandre and the <a href="references/exporter-qemu.html">Qemu exporter</a></td><td align="center">No, until your cloud provider uses scaphandre on its hypervisors</td><td align="center"><a href="">Depends on what you want</a></td></tr>
+<tr><td align="left">Future estimation based sensor</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td></tr>
+</tbody></table>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
+                            <a rel="prev" href="why.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
 
                         
-                            <a rel="next" href="why.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="contributing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -191,9 +199,13 @@
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
+                    <a rel="prev" href="why.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
 
                 
-                    <a rel="next" href="why.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="contributing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

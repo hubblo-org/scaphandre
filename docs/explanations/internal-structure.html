@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Qemu exporter - Scaphandre documentation</title>
+        <title>Internal structure - Scaphandre documentation</title>
         
         
 
@@ -98,7 +98,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="../tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.</strong> How to get process-level power consumption in my grafana dashboard</div></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="../explanations/overview.html"><strong aria-hidden="true">5.</strong> Overview</a></li><li class="chapter-item expanded "><a href="../explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">6.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="../explanations/internal-structure.html"><strong aria-hidden="true">7.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="../explanations/about-containers.html"><strong aria-hidden="true">8.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="../references/overview.html"><strong aria-hidden="true">9.</strong> Overview</a></li><li class="chapter-item expanded "><a href="../references/exporter-prometheus.html"><strong aria-hidden="true">10.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-qemu.html" class="active"><strong aria-hidden="true">11.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-stdout.html"><strong aria-hidden="true">12.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="../references/sensor-powercap_rapl.html"><strong aria-hidden="true">13.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="../why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="../compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="../contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="../sources.html">External references you may be interested in</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="../tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.</strong> How to get process-level power consumption in my grafana dashboard</div></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="../explanations/overview.html"><strong aria-hidden="true">5.</strong> Overview</a></li><li class="chapter-item expanded "><a href="../explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">6.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="../explanations/internal-structure.html" class="active"><strong aria-hidden="true">7.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="../explanations/about-containers.html"><strong aria-hidden="true">8.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="../references/overview.html"><strong aria-hidden="true">9.</strong> Overview</a></li><li class="chapter-item expanded "><a href="../references/exporter-prometheus.html"><strong aria-hidden="true">10.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-qemu.html"><strong aria-hidden="true">11.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-stdout.html"><strong aria-hidden="true">12.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="../references/sensor-powercap_rapl.html"><strong aria-hidden="true">13.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="../why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="../compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="../contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="../sources.html">External references you may be interested in</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -166,62 +166,38 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#qemu-exporter" id="qemu-exporter">Qemu exporter</a></h1>
-<p>Computes energy consumption metrics for each Qemu/KVM virtual machine found on the host.
-Exposes those metrics as filetrees compatible with the <a href="../sensors/powercap_rapl.html">powercap_rapl sensor</a>.</p>
-<p>Note that this is still experimental. Metrics are already considered trustworthy, but there are discussions and tests to be performed about the acceptable ways to share the data with the guests/vms. Any feedback or thoughts about this are welcome. Please refer to the contributing/contact section of the <a href="https://github.com/hubblo-org/scaphandre/#contributing">README</a>.</p>
-<h2><a class="header" href="#usage" id="usage">Usage</a></h2>
+                        <h1><a class="header" href="#internal-structure" id="internal-structure">Internal structure</a></h1>
+<p>Scaphandre is designed to be extensible. As it performs basically two tasks: <strong>collecting</strong>/pre-computing the power consumption metrics and <strong>shipping</strong> it, it is composed of two main components: a <strong>sensor</strong> and an <strong>exporter</strong>. Each can be implemented in different wats, to match a certain use case. When you run scaphandre from the command line, <code>-s</code> allows you to choose the sensor you want to use, and the next subcommand is the name of the exporter.</p>
+<h2><a class="header" href="#sensors" id="sensors">Sensors</a></h2>
+<p>Sensors are meant to:</p>
 <ol>
-<li>
-<p>Run the scaphandre with the qemu exporter on your bare metal hypervisor machine:</p>
-<pre><code> scaphandre qemu # this is suitable for a test, please run it as a systemd service for a production setup
-</code></pre>
-</li>
-<li>
-<p>Default is to expose virtual machines metrics in <code>/var/lib/libvirt/scaphandre/${DOMAIN_NAME}</code> with <code>DOMAIN_NAME</code> being the libvirt domain name of the virtual machine.
-First create a tmpfs mount point to isolate metrics for that virtual machine:</p>
-<pre><code> mount -t tmpfs tmpfs_DOMAIN_NAME /var/lib/libvirt/scaphandre/DOMAIN_NAME -o size=10m
-</code></pre>
-</li>
-<li>
-<p>Ensure you expose the content of this folder to the virtual machine by having this configuration in the xml configuration of the domain:</p>
-<pre><code> &lt;filesystem type='mount' accessmode='passthrough'&gt;
-   &lt;driver type='virtiofs'/&gt;
-   &lt;source dir='/var/lib/libvirt/scaphandre/DOMAIN_NAME'/&gt;
-   &lt;target dir='scaphandre'/&gt;
-   &lt;readonly /&gt;
- &lt;/filesystem&gt;
-</code></pre>
-</li>
-<li>
-<p>Ensure the VM has been started once the configuration is applied, then mount the filesystem on the VM/guest:</p>
-<pre><code> mount -t 9p -o trans=virtio scaphandre /var/scaphandre
-</code></pre>
-</li>
-<li>
-<p>Still in the guest, run scaphandre in VM mode with the default sensor:</p>
-<pre><code> scaphandre --vm prometheus
-</code></pre>
-</li>
-<li>
-<p>Collect your virtual machine specific power usage metrics. (requesting http://VM_IP:8080/metrics in this example, using the prometheus exporter)</p>
-</li>
+<li>get the power consumptions metrics of the host</li>
+<li>make it available for the exporter</li>
 </ol>
-<p>As always exporter's options can be displayed with <code>-h</code>:</p>
-<pre><code>scaphandre qemu -h</code></pre>
+<p>The <a href="../references/sensors-powercap_rapl.html">PowercapRAPL</a> for instance, gets and transforms metrics coming from the powercap Linux kernel module, that serves as an interface to get the data from the <a href="https://01.org/blogs/2014/running-average-power-limit-%E2%80%93-rapl">RAPL</a> feature of x86 CPUs. Because this feature is only accessible when you are running on a bare metal machine, this sensor will not work in a virtual machine, except if you first run scaphandre on the hypervisor and make the VM metrics available, with the <a href="../references/exporter-qemu.html">qemu exporter</a>, to scaphandre running inside the virtual machine.</p>
+<p>When you don't have access to the hypervisor/bare-metal machine (ie. when you run on public cloud instances and your provider doesn't run scaphandre) you still have the option to estimate the power consumption, based on both the ressources (cpu/gpu/ram/io...) consumed by the virtual machine at a given time, and the characteristics of the underlying hardware. This is the way we are designing the future <a href="https://github.com/hubblo-org/scaphandre/issues/25">estimation-based sensor</a>, to match that use case.</p>
+<p>Looking at the code, you'll find that the interface between metrics and the exporters is in fact the <a href="https://docs.rs/scaphandre/0.1.1/scaphandre/sensors/struct.Topology.html">Topology</a> object. This is intended to be asked by the exporter through the <a href="https://docs.rs/scaphandre/0.1.1/scaphandre/sensors/trait.Sensor.html#tymethod.get_topology">get_topology</a> method of the sensor.</p>
+<h2><a class="header" href="#exporters" id="exporters">Exporters</a></h2>
+<p>An exporter is expected to:</p>
+<ol>
+<li>ask the sensors to get new metrics and store them for later, potential usage</li>
+<li>export the current metrics </li>
+</ol>
+<p>The <a href="../references/exporter-stdout.html">Stdout</a> exporter exposes the metrics on the standard output (in your terminal). The <a href="../references/exporter-prometheus.html">prometheus</a> exporter exposes the metrics on an http endpoint, to be scraped by a <a href="https://prometheus.io">prometheus</a> instance. An exporter should be created for each monitoring scenario (do you want to feed your favorite monitoring/data analysis tool with scaphandre metrics ? feel free to open a <a href="https://github.com/hubblo-org/scaphandre/pulls">PR</a> to create a new exporter !).</p>
+<p>As introduced in the <a href="#sensors">sensors</a> section, the <a href="../references/exporter-qemu.html">Qemu</a> exporter, is very specific. It is only intended to collect metrics related to running virtual machines on a Qemu/KVM hypervisor. Those metrics can then be made available to each virtual machine and it's own scaphandre instance, running the <a href="../references/sensor-powercap_rapl.html">PowercapRAPL</a> sensor (with the <code>--vm</code> flag on). The qemu exporter puts VM's metrics in files the same way the powercap kernel module does it. It mimics this behavior, so the sensor can act the same way it would on a bare metal machine.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="../references/exporter-prometheus.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../explanations/how-scaph-computes-per-process-power-consumption.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="../references/exporter-stdout.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../explanations/about-containers.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -233,13 +209,13 @@ First create a tmpfs mount point to isolate metrics for that virtual machine:</p
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="../references/exporter-prometheus.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../explanations/how-scaph-computes-per-process-power-consumption.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="../references/exporter-stdout.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../explanations/about-containers.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
