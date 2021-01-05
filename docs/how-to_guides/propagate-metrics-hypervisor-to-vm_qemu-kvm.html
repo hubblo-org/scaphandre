@@ -167,6 +167,41 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#propagate-power-consumption-metrics-from-hypervisor-to-virtual-machines-qemukvm" id="propagate-power-consumption-metrics-from-hypervisor-to-virtual-machines-qemukvm">Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></h1>
+<h2><a class="header" href="#introduction" id="introduction">Introduction</a></h2>
+<p>A major pain point in measuring power consumption is doing so inside a virtual machine. A virtual machine usually doesn't have access to power metrics.</p>
+<p>Scaphandre aims at solving that by enabling a communication between a scaphandre instance <strong>on the hypervisor/bare metal machine</strong> and <strong>another one</strong> running <strong>on the virtual machine</strong>.
+The scaphandre agent on the hypervisor will <strong>compute the metrics meaningful for that virtual machine</strong> and the one <strong>on the VM access those metrics</strong> to allow its user/administrator to use the data as if they had access to power metrics in the first place (as if they were on a bare metal machine).</p>
+<p>This allows to break opacity in a virtualization context, if you have access to the hypervisor, or in a  public cloud context if the provider uses scaphandre on its hypervisors.</p>
+<img src="../virtu.cleaned.png" width="650"/>
+<h2><a class="header" href="#how-to" id="how-to">How to</a></h2>
+<p>This is working on Qemu/KVM hypervisors only.</p>
+<p>The idea is to run the agent on the hypervisor, with the <a href="../references/exporter-qemu.html">qemu exporter</a>:</p>
+<pre><code>scaphandre qemu
+</code></pre>
+<p>More examples for a production ready setup will be added soon (systemd service, docker container, ...). If you think the documentation needs a refresh now, please <a href="https://github.com/hubblo-org/scaphandre/pulls">contribute</a> :)</p>
+<p>For each virtual machine you want to give access to its metrics, create a <a href="https://en.wikipedia.org/wiki/Tmpfs">tmpfs</a> mountpoint:</p>
+<pre><code> mount -t tmpfs tmpfs_DOMAIN_NAME /var/lib/libvirt/scaphandre/DOMAIN_NAME -o size=5m
+</code></pre>
+<p>In the definition of the virtual machine (ehre we are using libvirt), ensure you have a filesystem configuration to give access to the mountpoint:</p>
+<pre><code>virsh edit DOMAIN_NAME
+</code></pre>
+<p>Then add:</p>
+<pre><code>&lt;filesystem type='mount' accessmode='passthrough'&gt;
+    &lt;driver type='virtiofs'/&gt;
+    &lt;source dir='/var/lib/libvirt/scaphandre/DOMAIN_NAME'/&gt;
+    &lt;target dir='scaphandre'/&gt;
+    &lt;readonly /&gt;
+&lt;/filesystem&gt;
+</code></pre>
+<p>Save and (re)start the virtual machine.</p>
+<p>Then connect to the virtual machine and mount the filesystem:</p>
+<pre><code> mount -t 9p -o trans=virtio scaphandre /var/scaphandre
+</code></pre>
+<p>You can now run scaphandre to export the metrics with the exporter of your choice (here prometheus):</p>
+<pre><code> scaphandre --vm prometheus
+</code></pre>
+<p>Please refer to the <a href="docs/exporters/qemu.html">qemu exporter</a> reference for more details.</p>
+<p><strong>Note:</strong> This how to is only suitable for a &quot;manual&quot; use case. For all automated systems like openstack or proxmox, some more work needs to be done to make the integration of those steps easier.</p>
 
                     </main>
 

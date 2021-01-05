@@ -178,6 +178,41 @@
 <p>Here you'll see how to deploy and benefit from Scaphandre quickly.</p>
 <h1><a class="header" href="#installation" id="installation">Installation</a></h1>
 <h1><a class="header" href="#propagate-power-consumption-metrics-from-hypervisor-to-virtual-machines-qemukvm" id="propagate-power-consumption-metrics-from-hypervisor-to-virtual-machines-qemukvm">Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></h1>
+<h2><a class="header" href="#introduction-1" id="introduction-1">Introduction</a></h2>
+<p>A major pain point in measuring power consumption is doing so inside a virtual machine. A virtual machine usually doesn't have access to power metrics.</p>
+<p>Scaphandre aims at solving that by enabling a communication between a scaphandre instance <strong>on the hypervisor/bare metal machine</strong> and <strong>another one</strong> running <strong>on the virtual machine</strong>.
+The scaphandre agent on the hypervisor will <strong>compute the metrics meaningful for that virtual machine</strong> and the one <strong>on the VM access those metrics</strong> to allow its user/administrator to use the data as if they had access to power metrics in the first place (as if they were on a bare metal machine).</p>
+<p>This allows to break opacity in a virtualization context, if you have access to the hypervisor, or in a  public cloud context if the provider uses scaphandre on its hypervisors.</p>
+<img src="how-to_guides/../virtu.cleaned.png" width="650"/>
+<h2><a class="header" href="#how-to" id="how-to">How to</a></h2>
+<p>This is working on Qemu/KVM hypervisors only.</p>
+<p>The idea is to run the agent on the hypervisor, with the <a href="how-to_guides/../references/exporter-qemu.html">qemu exporter</a>:</p>
+<pre><code>scaphandre qemu
+</code></pre>
+<p>More examples for a production ready setup will be added soon (systemd service, docker container, ...). If you think the documentation needs a refresh now, please <a href="https://github.com/hubblo-org/scaphandre/pulls">contribute</a> :)</p>
+<p>For each virtual machine you want to give access to its metrics, create a <a href="https://en.wikipedia.org/wiki/Tmpfs">tmpfs</a> mountpoint:</p>
+<pre><code> mount -t tmpfs tmpfs_DOMAIN_NAME /var/lib/libvirt/scaphandre/DOMAIN_NAME -o size=5m
+</code></pre>
+<p>In the definition of the virtual machine (ehre we are using libvirt), ensure you have a filesystem configuration to give access to the mountpoint:</p>
+<pre><code>virsh edit DOMAIN_NAME
+</code></pre>
+<p>Then add:</p>
+<pre><code>&lt;filesystem type='mount' accessmode='passthrough'&gt;
+    &lt;driver type='virtiofs'/&gt;
+    &lt;source dir='/var/lib/libvirt/scaphandre/DOMAIN_NAME'/&gt;
+    &lt;target dir='scaphandre'/&gt;
+    &lt;readonly /&gt;
+&lt;/filesystem&gt;
+</code></pre>
+<p>Save and (re)start the virtual machine.</p>
+<p>Then connect to the virtual machine and mount the filesystem:</p>
+<pre><code> mount -t 9p -o trans=virtio scaphandre /var/scaphandre
+</code></pre>
+<p>You can now run scaphandre to export the metrics with the exporter of your choice (here prometheus):</p>
+<pre><code> scaphandre --vm prometheus
+</code></pre>
+<p>Please refer to the <a href="how-to_guides/docs/exporters/qemu.html">qemu exporter</a> reference for more details.</p>
+<p><strong>Note:</strong> This how to is only suitable for a &quot;manual&quot; use case. For all automated systems like openstack or proxmox, some more work needs to be done to make the integration of those steps easier.</p>
 <h1><a class="header" href="#how-scaphandre-computes-per-process-power-consumption" id="how-scaphandre-computes-per-process-power-consumption">How scaphandre computes per process power consumption</a></h1>
 <p>As you can see with the <a href="explanations/../references/exporter-prometheus.html">prometheus exporter reference</a>, scaphandre exporters can provide process level power consumption metrics. This section will explain how it is done and how it may be improved in the future.</p>
 <h2><a class="header" href="#some-details-about-rapl" id="some-details-about-rapl">Some details about RAPL</a></h2>
@@ -328,7 +363,16 @@ First create a tmpfs mount point to isolate metrics for that virtual machine:</p
 </li>
 </ol>
 <p>As always exporter's options can be displayed with <code>-h</code>:</p>
-<pre><code>scaphandre qemu -h</code></pre>
+<pre><code>scaphandre-qemu 
+Qemu exporter watches all Qemu/KVM virtual machines running on the host and exposes metrics of each of them in a
+dedicated folder
+
+USAGE:
+    scaphandre qemu
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information</code></pre>
 <h1><a class="header" href="#stdout-exporter" id="stdout-exporter">Stdout exporter</a></h1>
 <h2><a class="header" href="#usage-2" id="usage-2">Usage</a></h2>
 <p>You can launch the stdout exporter this way (running the default powercap_rapl sensor):</p>

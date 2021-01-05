@@ -208,7 +208,16 @@ First create a tmpfs mount point to isolate metrics for that virtual machine:</p
 </li>
 </ol>
 <p>As always exporter's options can be displayed with <code>-h</code>:</p>
-<pre><code>scaphandre qemu -h</code></pre>
+<pre><code>scaphandre-qemu 
+Qemu exporter watches all Qemu/KVM virtual machines running on the host and exposes metrics of each of them in a
+dedicated folder
+
+USAGE:
+    scaphandre qemu
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information</code></pre>
 
                     </main>
 

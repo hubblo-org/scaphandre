@@ -37,4 +37,13 @@ First create a tmpfs mount point to isolate metrics for that virtual machine:
 
 As always exporter's options can be displayed with `-h`:
 
-	scaphandre qemu -h
+	scaphandre-qemu 
+	Qemu exporter watches all Qemu/KVM virtual machines running on the host and exposes metrics of each of them in a
+	dedicated folder
+	
+	USAGE:
+	    scaphandre qemu
+	
+	FLAGS:
+	    -h, --help       Prints help information
+	    -V, --version    Prints version information
