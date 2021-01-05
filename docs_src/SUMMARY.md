@@ -29,5 +29,6 @@
 
 [Why this project ?](why.md)
 [Compatibility](compatibility.md)
+[Troubleshooting](troubleshooting.md)
 [Contributing guide](contributing.md)
 [External references you may be interested in](sources.md)

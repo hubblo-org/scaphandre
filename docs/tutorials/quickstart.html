@@ -98,7 +98,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="../tutorials/quickstart.html" class="active"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.</strong> How to get process-level power consumption in my grafana dashboard</div></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="../explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">5.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="../explanations/internal-structure.html"><strong aria-hidden="true">6.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="../explanations/about-containers.html"><strong aria-hidden="true">7.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="../references/exporter-prometheus.html"><strong aria-hidden="true">8.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-qemu.html"><strong aria-hidden="true">9.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-stdout.html"><strong aria-hidden="true">10.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="../references/sensor-powercap_rapl.html"><strong aria-hidden="true">11.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="../why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="../compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="../contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="../sources.html">External references you may be interested in</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="../tutorials/quickstart.html" class="active"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.</strong> How to get process-level power consumption in my grafana dashboard</div></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="../explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">5.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="../explanations/internal-structure.html"><strong aria-hidden="true">6.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="../explanations/about-containers.html"><strong aria-hidden="true">7.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="../references/exporter-prometheus.html"><strong aria-hidden="true">8.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-qemu.html"><strong aria-hidden="true">9.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-stdout.html"><strong aria-hidden="true">10.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="../references/sensor-powercap_rapl.html"><strong aria-hidden="true">11.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="../why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="../compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="../troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="../contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="../sources.html">External references you may be interested in</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -168,6 +168,39 @@
                     <main>
                         <h1><a class="header" href="#quickstart" id="quickstart">Quickstart</a></h1>
 <p>Here you'll see how to deploy and benefit from Scaphandre quickly.</p>
+<p>The quickest way to get scaphandre is to download the <a href="https://github.com/hubblo-org/releases">latest binary</a> suitable for your environment.</p>
+<p>Uncompress the file:</p>
+<pre><code>gunzip scaphandre-v0.1.1-Ubuntu_20.04-x86_64.gz &amp;&amp; mv scaphandre-v0.1.1-Ubuntu_20.04-x86_64 scaphandre
+</code></pre>
+<p>You can now run scaphandre. Let's see if you can get metrics directly in your terminal:</p>
+<pre><code>./scaphandre stdout -t 15
+</code></pre>
+<p>Here we are using the stdout <a href="../explanations/internal-structure.html">exporter</a> to print current power consumption usage in the terminal during 15 seconds.</p>
+<p>You should get an output like:</p>
+<pre><code>Host:	9.391334 W	Core		Uncore		DRAM
+Socket0	9.392    W	1.497082 W	
+Top 5 consumers:
+Power	PID	Exe
+4.808363 W	642	&quot;/usr/sbin/dockerd&quot;
+4.808363 W	703	&quot;/usr/bin/docker-containerd&quot;
+4.808363 W	1028	&quot;/usr/local/bin/redis-server&quot;
+0 W	1	&quot;/usr/lib/systemd/systemd&quot;
+0 W	2	&quot;&quot;
+------------------------------------------------------------
+</code></pre>
+<p>Let's briefly describe what you see here. First Line is the power consumption of the machine (between the two last measurements).
+Second line is the power consumption of the first CPU socket plus the detail by RAPL Domain.
+If you have more than one CPU Socket, you'll have multiple <em>SocketX</em> lines.
+Then you have the 5 processes consuming the most power during the last two measurements.</p>
+<p>If you don't get this output and get an error, jump to the <a href="../troubleshooting.html">Troubleshooting</a> section of the documentation.</p>
+<p>At that point, you're ready to use scaphandre the way you like. The Stdout exporter is very basic and other exporters should allow you to use and send those metrics the way you like.</p>
+<p>The <a href="references/exporter-prometheus.html">prometheus exporter</a>, for example, allows you to expose power consumption metrics as an HTTP endpoint that can be scrapped by a <a href="https://prometheus.io">prometheus</a> instance:</p>
+<pre><code>scaphandre prometheus
+</code></pre>
+<p>To validate that the metrics are available, send an http request from another terminal:</p>
+<pre><code>curl -s http://localhost:8080/metrics
+</code></pre>
+<p><a href="https://metrics.hubblo.org">Here</a> you can see examples of graphs you can get thanks to scaphandre, the prometheus exporter, prometheus and <a href="https://grafana.com/">grafana</a>.</p>
 
                     </main>
 

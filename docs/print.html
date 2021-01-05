@@ -100,7 +100,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.</strong> How to get process-level power consumption in my grafana dashboard</div></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">5.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="explanations/internal-structure.html"><strong aria-hidden="true">6.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="explanations/about-containers.html"><strong aria-hidden="true">7.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="references/exporter-prometheus.html"><strong aria-hidden="true">8.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-qemu.html"><strong aria-hidden="true">9.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-stdout.html"><strong aria-hidden="true">10.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="references/sensor-powercap_rapl.html"><strong aria-hidden="true">11.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="sources.html">External references you may be interested in</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.</strong> How to get process-level power consumption in my grafana dashboard</div></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">5.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="explanations/internal-structure.html"><strong aria-hidden="true">6.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="explanations/about-containers.html"><strong aria-hidden="true">7.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="references/exporter-prometheus.html"><strong aria-hidden="true">8.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-qemu.html"><strong aria-hidden="true">9.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-stdout.html"><strong aria-hidden="true">10.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="references/sensor-powercap_rapl.html"><strong aria-hidden="true">11.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="sources.html">External references you may be interested in</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -176,7 +176,47 @@
 <p>If not and you want to proceed, just directly jump to the <a href="tutorials/overview.html">tutorials</a> section.</p>
 <h1><a class="header" href="#quickstart" id="quickstart">Quickstart</a></h1>
 <p>Here you'll see how to deploy and benefit from Scaphandre quickly.</p>
+<p>The quickest way to get scaphandre is to download the <a href="https://github.com/hubblo-org/releases">latest binary</a> suitable for your environment.</p>
+<p>Uncompress the file:</p>
+<pre><code>gunzip scaphandre-v0.1.1-Ubuntu_20.04-x86_64.gz &amp;&amp; mv scaphandre-v0.1.1-Ubuntu_20.04-x86_64 scaphandre
+</code></pre>
+<p>You can now run scaphandre. Let's see if you can get metrics directly in your terminal:</p>
+<pre><code>./scaphandre stdout -t 15
+</code></pre>
+<p>Here we are using the stdout <a href="tutorials/../explanations/internal-structure.html">exporter</a> to print current power consumption usage in the terminal during 15 seconds.</p>
+<p>You should get an output like:</p>
+<pre><code>Host:	9.391334 W	Core		Uncore		DRAM
+Socket0	9.392    W	1.497082 W	
+Top 5 consumers:
+Power	PID	Exe
+4.808363 W	642	&quot;/usr/sbin/dockerd&quot;
+4.808363 W	703	&quot;/usr/bin/docker-containerd&quot;
+4.808363 W	1028	&quot;/usr/local/bin/redis-server&quot;
+0 W	1	&quot;/usr/lib/systemd/systemd&quot;
+0 W	2	&quot;&quot;
+------------------------------------------------------------
+</code></pre>
+<p>Let's briefly describe what you see here. First Line is the power consumption of the machine (between the two last measurements).
+Second line is the power consumption of the first CPU socket plus the detail by RAPL Domain.
+If you have more than one CPU Socket, you'll have multiple <em>SocketX</em> lines.
+Then you have the 5 processes consuming the most power during the last two measurements.</p>
+<p>If you don't get this output and get an error, jump to the <a href="tutorials/../troubleshooting.html">Troubleshooting</a> section of the documentation.</p>
+<p>At that point, you're ready to use scaphandre the way you like. The Stdout exporter is very basic and other exporters should allow you to use and send those metrics the way you like.</p>
+<p>The <a href="tutorials/references/exporter-prometheus.html">prometheus exporter</a>, for example, allows you to expose power consumption metrics as an HTTP endpoint that can be scrapped by a <a href="https://prometheus.io">prometheus</a> instance:</p>
+<pre><code>scaphandre prometheus
+</code></pre>
+<p>To validate that the metrics are available, send an http request from another terminal:</p>
+<pre><code>curl -s http://localhost:8080/metrics
+</code></pre>
+<p><a href="https://metrics.hubblo.org">Here</a> you can see examples of graphs you can get thanks to scaphandre, the prometheus exporter, prometheus and <a href="https://grafana.com/">grafana</a>.</p>
 <h1><a class="header" href="#installation" id="installation">Installation</a></h1>
+<p>More tutorials to come, for a proper installation, namely:</p>
+<ul>
+<li>install scaphandre as a proper systemd service</li>
+<li>run scaphandre in a container</li>
+<li>run scaphandre on kubernetes</li>
+<li>and more...</li>
+</ul>
 <h1><a class="header" href="#propagate-power-consumption-metrics-from-hypervisor-to-virtual-machines-qemukvm" id="propagate-power-consumption-metrics-from-hypervisor-to-virtual-machines-qemukvm">Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></h1>
 <h2><a class="header" href="#introduction-1" id="introduction-1">Introduction</a></h2>
 <p>A major pain point in measuring power consumption is doing so inside a virtual machine. A virtual machine usually doesn't have access to power metrics.</p>
@@ -461,7 +501,27 @@ This is even harder in a virtualization environement or as public cloud customer
 <tr><td align="left">PowercapRAPL</td><td align="center"><a href="references/sensor-powercap_rapl.html">Yes</a></td><td align="center">We don't know yet</td><td align="center">Yes, if on a qemu/KVM hypervisor that runs scaphandre and the <a href="references/exporter-qemu.html">Qemu exporter</a></td><td align="center">No, until your cloud provider uses scaphandre on its hypervisors</td><td align="center"><a href="">Depends on what you want</a></td></tr>
 <tr><td align="left">Future estimation based sensor</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td></tr>
 </tbody></table>
+<h1><a class="header" href="#troubleshooting-1" id="troubleshooting-1">Troubleshooting</a></h1>
+<h3><a class="header" href="#i-get-a-permission-denied-error-when-i-run-scaphandre-no-matter-what-is-the-exporter" id="i-get-a-permission-denied-error-when-i-run-scaphandre-no-matter-what-is-the-exporter">I get a <strong>permission denied</strong> error when I run scaphandre, no matter what is the exporter</a></h3>
+<p>On some Linux distributions (ubuntu 20.04 for sure), the energy counters files that the <a href="references/sensor-powercap_rapl.html">PowercapRAPL sensor</a> uses, are owned by root. (since late 2020)</p>
+<p>To ensure this is your issue and fix that quickly you can run the <a href="https://raw.githubusercontent.com/hubblo-org/scaphandre/main/init.sh">init.sh</a> script:</p>
+<pre><code>bash init.sh
+</code></pre>
+<p>Then run scaphandre. If it does not work, the issue is somewhere else.</p>
+<h3><a class="header" href="#i-get-a-no-such-device-error-the-intel_rapl-of-intel_rapl_common-kernel-modules-are-present" id="i-get-a-no-such-device-error-the-intel_rapl-of-intel_rapl_common-kernel-modules-are-present">I get a <strong>no such device</strong> error, the intel_rapl of intel_rapl_common kernel modules are present</a></h3>
+<p>It can mean that your cpu doesn't support RAPL. Please refer to the <a href="compatibility.html">compatibility</a> section to be sure.</p>
 <h1><a class="header" href="#contributing-guide" id="contributing-guide">Contributing guide</a></h1>
+<p>Feel free to propose pull requests, or open new issues at will. Scaphandre is a collaborative project and all opinions and propositions shall be heard and studied. The contributions will be received with kindness, gratitude and with an open mind. Remember that we are all <a href="https://en.wikipedia.org/wiki/Standing_on_the_shoulders_of_giants">dwarfs standing on the shoulders of giants</a>. We all have to learn from others and to give back, with due mutual respect.</p>
+<h3><a class="header" href="#code-of-conduct" id="code-of-conduct">Code of conduct</a></h3>
+<p>This project adheres to the Rust Code of Conduct, which <a href="https://www.rust-lang.org/conduct.html">can be found here</a>.</p>
+<h3><a class="header" href="#ways-to-contribute" id="ways-to-contribute">Ways to contribute</a></h3>
+<p>Contributions may take multiple forms: <strong>code</strong> and <strong>documentation</strong> of cource, but not only. Any help on <strong>communication</strong> and <strong>structuring the project</strong> and the <strong>community</strong> would be very much appreciated. This project intends to unite a lot of people to have a lot of impact.</p>
+<h3><a class="header" href="#contact" id="contact">Contact</a></h3>
+<p>Discussions and questions about the project are welcome on <a href="https://gitter.im/hubblo-org/scaphandre?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge">gitter</a> or by <a href="mailto://bpetit@hubblo.org?Subject=About%20Scaphandre">email</a>.</p>
+<h3><a class="header" href="#contribution-guidelines" id="contribution-guidelines">Contribution guidelines</a></h3>
+<p>This project intends to use <a href="https://conventionalcommits.org/">conventionnal commit messages</a> and the <a href="https://nvie.com/posts/a-successful-git-branching-model/">gitflow</a> workflow.</p>
+<p>Scaphandre is a not only a tool, but a framework. Modules dedicated to collect energy comsumption data from the host are called <a href="docs/sensors"><strong>Sensors</strong></a>.
+Modules that are dedicated to send this data to a given channel or remote system are called <a href="docs/exporters"><strong>Exporters</strong></a>. New Sensors and Exporters are going to be created and all contributions are welcome. For more on the internal structure please jump <a href="explanations/internal-structure.html">here</a>.</p>
 <h1><a class="header" href="#additional-references-for-documentation" id="additional-references-for-documentation">Additional references for documentation</a></h1>
 <ul>
 <li><a href="http://www.linuxhowtos.org/System/procstat.htm">/proc/stat explained</a></li>
