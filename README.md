@@ -1,6 +1,8 @@
 # Scaphandre
 
-<img src="https://github.com/hubblo-org/scaphandre/raw/main/scaphandre.cleaned.png" width="200">
+<p align="center">
+    <img src="https://github.com/hubblo-org/scaphandre/raw/main/scaphandre.cleaned.png" width="200">
+</p>
 
 ---
 
@@ -30,7 +32,7 @@ You can see some samples of metrics that scaphandre allows you to gather [here](
 
 <a href="https://metrics.hubblo.org"><img src="https://github.com/hubblo-org/scaphandre/raw/main/grafana-dash-scaphandre.cleaned.png" width="800"></a>
 
-## How to ... ?
+## 📄 How to ... ?
 
 You'll find everything you may want to know about scaphandre in the [documentation](https://hubblo-org.github.io/scaphandre), like:
 
