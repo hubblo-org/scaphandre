@@ -166,7 +166,25 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#installation" id="installation">Installation</a></h1>
+                        <h1><a class="header" href="#installation--compilation" id="installation--compilation">Installation &amp; compilation</a></h1>
+<h2><a class="header" href="#compile-scaphandre-from-source" id="compile-scaphandre-from-source">Compile scaphandre from source</a></h2>
+<p>We recommand using this version of the rust toolchain or later:</p>
+<pre><code>cargo --version
+cargo 1.48.0 (65cbdd2dc 2020-10-14)
+rustc --version
+rustc 1.48.0 (7eac88abb 2020-11-16)
+</code></pre>
+<p>To be sure to be up to date, you may install rust from the <a href="https://www.rust-lang.org/">official website</a> instead of your package manager.</p>
+<p>To hack <em>scaph</em>, or simply be up to date with latest developments, you can download scaphandre from the main branch:</p>
+<pre><code>git clone https://github.com/hubblo-org/scaphandre.git
+cd scaphandre
+cargo build # binary path is target/debug/scaphandre
+</code></pre>
+<p>To use the latest code for a true use case, build for release instead of debug:</p>
+<pre><code>cargo build --release
+</code></pre>
+<p>Binary path is <code>target/release/scaphandre</code>.</p>
+<h2><a class="header" href="#more-to-come" id="more-to-come">More to come</a></h2>
 <p>More tutorials to come, for a proper installation, like:</p>
 <ul>
 <li>install scaphandre as a proper systemd service</li>
