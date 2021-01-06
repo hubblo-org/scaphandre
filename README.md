@@ -6,7 +6,7 @@
 </h1>
 
 <h3 align="center">
-    Your tech stack don't need so much energy
+    Your tech stack doesn't need so much energy
 </h3>
 
 ---
