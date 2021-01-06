@@ -1,8 +1,13 @@
-# Scaphandre
-
 <p align="center">
     <img src="https://github.com/hubblo-org/scaphandre/raw/main/scaphandre.cleaned.png" width="200">
 </p>
+<h1 align="center">
+  Scaphandre
+</h1>
+
+<h3 align="center">
+    Your tech stack don't need so much energy
+</h3>
 
 ---
 
