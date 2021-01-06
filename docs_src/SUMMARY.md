@@ -8,7 +8,6 @@
 
 - [Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)](how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.md)
 - [Get process-level power consumption in my grafana dashboard](how-to_guides/get-process-level-power-in-grafana.md)
-- [Measure containers power consumption](how-to_guides/measure-containers-power.md)
 # Explanations
 
 - [How scaphandre computes per process power consumption](explanations/how-scaph-computes-per-process-power-consumption.md)

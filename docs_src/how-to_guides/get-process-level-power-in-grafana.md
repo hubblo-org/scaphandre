@@ -15,10 +15,14 @@ The metric that I need from the prometheus exporter to do that is: `scaph_proces
 
 This is a prometheus metrics, so you have labels to filter on the processes you are interested in. Currently the available labels are: `instance`, `exe`, `job` and `pid`.
 
-If I want to get metrics for all processes related to [nginx](https://nginx.org/) running on a host with ip 10.0.0.9 I may use that query, in grafana, based on the prometheus datasource:
+If I want to get power consumption (in Watts) for all processes related to [nginx](https://nginx.org/) running on a host with ip 10.0.0.9 I may use that query, in grafana, based on the prometheus datasource:
 
     scaph_process_power_consumption_microwatts{cmdline=~".*nginx.*", instance="10.0.0.9:8080"} / 1000000
 
 Here we assume that scaphandre/the prometheus exporter is running on port number `8080`.
+
+Here how it looks, creating a panel in grafana:
+
+![](../grafana-edit.png)
 
 Those labels are explained in much more detail [here](../references/exporter-prometheus.md#scaph_process_power_consumption_microwatts).
