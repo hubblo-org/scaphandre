@@ -49,10 +49,10 @@ You'll find everything you may want to know about scaphandre in the [documentati
 
 If you are only interested in the code documentation [here it is](https://docs.rs/scaphandre).
 
-## Roadmap
+## 📅 Roadmap
 
 The ongoing roadmap can be seen [here](https://github.com/hubblo-org/scaphandre/projects/1). Feature requests are welcome, please join us.
 
-## Footprint
+## ⚖️  Footprint
 
 In opposition to its name, scaphandre aims to be as light and clean as possible. One of the main focus areas of the project is to come as close as possible to a 0 overhead, both about resources consumption and power consumption.
