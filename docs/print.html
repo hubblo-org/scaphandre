@@ -100,7 +100,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.</strong> How to get process-level power consumption in my grafana dashboard</div></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">5.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="explanations/internal-structure.html"><strong aria-hidden="true">6.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="explanations/about-containers.html"><strong aria-hidden="true">7.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="references/exporter-prometheus.html"><strong aria-hidden="true">8.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-qemu.html"><strong aria-hidden="true">9.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-stdout.html"><strong aria-hidden="true">10.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="references/sensor-powercap_rapl.html"><strong aria-hidden="true">11.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="sources.html">External references you may be interested in</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">4.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded "><a href="how-to_guides/measure-containers-power.html"><strong aria-hidden="true">5.</strong> Measure containers power consumption</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">6.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="explanations/internal-structure.html"><strong aria-hidden="true">7.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="explanations/about-containers.html"><strong aria-hidden="true">8.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="references/exporter-prometheus.html"><strong aria-hidden="true">9.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-qemu.html"><strong aria-hidden="true">10.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-stdout.html"><strong aria-hidden="true">11.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="references/sensor-powercap_rapl.html"><strong aria-hidden="true">12.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="sources.html">External references you may be interested in</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -210,11 +210,13 @@ Then you have the 5 processes consuming the most power during the last two measu
 </code></pre>
 <p><a href="https://metrics.hubblo.org">Here</a> you can see examples of graphs you can get thanks to scaphandre, the prometheus exporter, prometheus and <a href="https://grafana.com/">grafana</a>.</p>
 <h1><a class="header" href="#installation" id="installation">Installation</a></h1>
-<p>More tutorials to come, for a proper installation, namely:</p>
+<p>More tutorials to come, for a proper installation, like:</p>
 <ul>
 <li>install scaphandre as a proper systemd service</li>
+<li>scaphandre in your favorite GNU/Linux distribution (package creators)</li>
 <li>run scaphandre in a container</li>
 <li>run scaphandre on kubernetes</li>
+<li>scaphandre on MacOSX</li>
 <li>and more...</li>
 </ul>
 <h1><a class="header" href="#propagate-power-consumption-metrics-from-hypervisor-to-virtual-machines-qemukvm" id="propagate-power-consumption-metrics-from-hypervisor-to-virtual-machines-qemukvm">Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></h1>
@@ -253,6 +255,24 @@ The scaphandre agent on the hypervisor will <strong>compute the metrics meaningf
 </code></pre>
 <p>Please refer to the <a href="how-to_guides/docs/exporters/qemu.html">qemu exporter</a> reference for more details.</p>
 <p><strong>Note:</strong> This how to is only suitable for a &quot;manual&quot; use case. For all automated systems like openstack or proxmox, some more work needs to be done to make the integration of those steps easier.</p>
+<h1><a class="header" href="#get-process-level-power-consumption-in-my-grafana-dashboard" id="get-process-level-power-consumption-in-my-grafana-dashboard">Get process-level power consumption in my grafana dashboard</a></h1>
+<p>Now we'll see how to get valuable data in a dashboard. Let's say you want to track the power consumption of a given process or application in a dashboard and eventually set thresholds on it. WHat do you need to get that subset of the power consumption of the host visually ?</p>
+<p>You need basically 3 components for that:</p>
+<ul>
+<li>scaphandre running with the <a href="how-to_guides/../references/exporter-prometheus.html">prometheus exporter</a></li>
+<li><a href="https://prometheus.io">prometheus</a></li>
+<li><a href="https://grafana.com">grafana</a></li>
+</ul>
+<p>We'll say that you already have a running prometheus server and an available grafana instance and that you have added prometheus as a datasource in grafana.</p>
+<p>How to get metrics per process as you may see <a href="https://metrics.hubblo.org">here</a> ?</p>
+<p>The metric that I need from the prometheus exporter to do that is: <code>scaph_process_power_consumption_microwatts</code>. This metric is a wallet for the power consumption of all the running processes on the host at a given time.</p>
+<p>This is a prometheus metrics, so you have labels to filter on the processes you are interested in. Currently the available labels are: <code>instance</code>, <code>exe</code>, <code>job</code> and <code>pid</code>.</p>
+<p>If I want to get metrics for all processes related to <a href="https://nginx.org/">nginx</a> running on a host with ip 10.0.0.9 I may use that query, in grafana, based on the prometheus datasource:</p>
+<pre><code>scaph_process_power_consumption_microwatts{cmdline=~&quot;.*nginx.*&quot;, instance=&quot;10.0.0.9:8080&quot;} / 1000000
+</code></pre>
+<p>Here we assume that scaphandre/the prometheus exporter is running on port number <code>8080</code>.</p>
+<p>Those labels are explained in much more detail <a href="how-to_guides/../references/exporter-prometheus.html#scaph_process_power_consumption_microwatts">here</a>.</p>
+<h1><a class="header" href="#measure-containers-power-consumption" id="measure-containers-power-consumption">Measure containers power consumption</a></h1>
 <h1><a class="header" href="#how-scaphandre-computes-per-process-power-consumption" id="how-scaphandre-computes-per-process-power-consumption">How scaphandre computes per process power consumption</a></h1>
 <p>As you can see with the <a href="explanations/../references/exporter-prometheus.html">prometheus exporter reference</a>, scaphandre exporters can provide process level power consumption metrics. This section will explain how it is done and how it may be improved in the future.</p>
 <h2><a class="header" href="#some-details-about-rapl" id="some-details-about-rapl">Some details about RAPL</a></h2>
@@ -325,6 +345,7 @@ OPTIONS:
 <li><code>scaph_host_power_microwatts</code>: Power measurement on the whole host, in microwatts (GAUGE)</li>
 <li><code>scaph_process_power_consumption_microwatts{exe=&quot;$PROCESS_EXE&quot;,pid=&quot;$PROCESS_PID&quot;,cmdline=&quot;path/to/exe --and-maybe-options&quot;}</code>: Power consumption due to the process, measured on at the topology level, in microwatts. PROCESS_EXE being the name of the executable and PROCESS_PID being the pid of the process. (GAUGE)</li>
 </ul>
+<p>For more details on that metric labels, see <a href="references/exporter-prometheus.html#scaph_process_power_consumption_microwatts">this section</a>.</p>
 <p>And some more deep metrics that you may want if you need to make more complex calculations and data processing:</p>
 <ul>
 <li><code>scaph_host_energy_microjoules</code> : Energy measurement for the whole host, as extracted from the sensor, in microjoules. (COUNTER)</li>
@@ -360,6 +381,14 @@ OPTIONS:
 <li>
 <p><code>scaph_self_domain_records_nb{socket_id=&quot;SOCKET_ID&quot;,rapl_domain_name=&quot;RAPL_DOMAIN_NAME &quot;}</code>: Number of energy consumption Records stored for a Domain, where SOCKET_ID identifies the socket and RAPL_DOMAIN_NAME identifies the rapl domain measured on that socket</p>
 </li>
+</ul>
+<h3><a class="header" href="#scaph_process_power_consumption_microwatts" id="scaph_process_power_consumption_microwatts">scaph_process_power_consumption_microwatts</a></h3>
+<p>Here are available labels for the <code>scaph_process_power_consumption_microwatts</code> metric that you may need to extract the data you need:</p>
+<ul>
+<li><code>exe</code>: is the name of the executable that is the origin of that process. This is good to be used when your application is running one or only a few processes.</li>
+<li><code>cmdline</code>: this contains the whole command line with the executable path and its parameters (concatenated). You can filter on this label by using prometheus <code>=~</code> operator to match a regular expression pattern. This is very practical in many situations.</li>
+<li><code>instance</code>: this is a prometheus generated label to enable you to filter the metrics by the originating host. This is very useful when you monitor distributed services, so that you can not only sum the metrics for the same service on the different hosts but also see what instance of that service is consuming the most, or notice differences beteween hosts that may not have the same hardware, and so on...</li>
+<li><code>pid</code>: is the process id, which is useful if you want to track a specific process and have your eyes on what's happening on the host, but not so practical to use in a more general use case</li>
 </ul>
 <h1><a class="header" href="#qemu-exporter" id="qemu-exporter">Qemu exporter</a></h1>
 <p>Computes energy consumption metrics for each Qemu/KVM virtual machine found on the host.

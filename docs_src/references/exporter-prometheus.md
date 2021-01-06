@@ -38,6 +38,8 @@ Here are some key metrics that you will most probably be interested in:
 - `scaph_host_power_microwatts`: Power measurement on the whole host, in microwatts (GAUGE)
 - `scaph_process_power_consumption_microwatts{exe="$PROCESS_EXE",pid="$PROCESS_PID",cmdline="path/to/exe --and-maybe-options"}`: Power consumption due to the process, measured on at the topology level, in microwatts. PROCESS_EXE being the name of the executable and PROCESS_PID being the pid of the process. (GAUGE)
 
+For more details on that metric labels, see [this section](#scaph_process_power_consumption_microwatts).
+
 And some more deep metrics that you may want if you need to make more complex calculations and data processing:
 
 - `scaph_host_energy_microjoules` : Energy measurement for the whole host, as extracted from the sensor, in microjoules. (COUNTER)
@@ -64,3 +66,12 @@ If you hack scaph or just want to tinvestigate its behavior, you may be interest
 
 - `scaph_self_domain_records_nb{socket_id="SOCKET_ID",rapl_domain_name="RAPL_DOMAIN_NAME
 "}`: Number of energy consumption Records stored for a Domain, where SOCKET_ID identifies the socket and RAPL_DOMAIN_NAME identifies the rapl domain measured on that socket
+
+### scaph_process_power_consumption_microwatts
+
+Here are available labels for the `scaph_process_power_consumption_microwatts` metric that you may need to extract the data you need:
+
+- `exe`: is the name of the executable that is the origin of that process. This is good to be used when your application is running one or only a few processes.
+- `cmdline`: this contains the whole command line with the executable path and its parameters (concatenated). You can filter on this label by using prometheus `=~` operator to match a regular expression pattern. This is very practical in many situations.
+- `instance`: this is a prometheus generated label to enable you to filter the metrics by the originating host. This is very useful when you monitor distributed services, so that you can not only sum the metrics for the same service on the different hosts but also see what instance of that service is consuming the most, or notice differences beteween hosts that may not have the same hardware, and so on...
+- `pid`: is the process id, which is useful if you want to track a specific process and have your eyes on what's happening on the host, but not so practical to use in a more general use case
