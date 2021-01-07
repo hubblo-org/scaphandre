@@ -6,7 +6,7 @@
 </h1>
 
 <h3 align="center">
-    Your tech stack doesn't need so much energy
+    Your tech stack doesn't need so much energy ⚡
 </h3>
 
 ---
@@ -44,8 +44,8 @@ You'll find everything you may want to know about scaphandre in the [documentati
 - 🏁 [Getting started](https://hubblo-org.github.io/scaphandre/tutorials/quickstart.html)
 - 💻 [Installation & compilation](https://hubblo-org.github.io/scaphandre/tutorials/installation.html)
 - 👁️ [Give a virtual machine access to its power consumption metrics, and break the opacity of being on the computer of someone else](https://hubblo-org.github.io/scaphandre/how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html)
-- 👥 [Contributing guide](https://hubblo-org.github.io/scaphandre/contributing.html)
-- And [much more](https://hubblo-org.github.io/scaphandre)
+- 🎉 [Contributing guide](https://hubblo-org.github.io/scaphandre/contributing.html)
+- [And much more](https://hubblo-org.github.io/scaphandre)
 
 If you are only interested in the code documentation [here it is](https://docs.rs/scaphandre).
 
