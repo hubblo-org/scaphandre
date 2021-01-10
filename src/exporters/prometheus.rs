@@ -385,7 +385,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
         let metric_name = "socket_energy_microjoules";
         body = push_metric(
             body,
-            String::from("Socket related energy measurement in mirojoules."),
+            String::from("Socket related energy measurement in microjoules."),
             String::from("counter"),
             String::from(metric_name),
             format_metric(metric_name, socket_energy_microjoules, Some(&labels)),
