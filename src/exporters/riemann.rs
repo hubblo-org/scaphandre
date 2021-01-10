@@ -1,6 +1,7 @@
 use crate::exporters::*;
-use crate::sensors::{RecordGenerator, Sensor};
+use crate::sensors::{Record, RecordGenerator, Sensor};
 use clap::crate_version;
+use riemann_client::proto::Attribute;
 use riemann_client::proto::Event;
 use riemann_client::Client;
 use std::collections::HashMap;
@@ -68,7 +69,7 @@ impl Metric for f64 {
 
 impl Metric for &str {
     fn set_metric(self, event: &mut Event) {
-        let metric = self.replace(",", ".");
+        let metric = self.replace(",", ".").replace("\n", "");
         if metric.contains('.') {
             event.set_metric_d(metric.parse::<f64>().expect("Cannot parse metric"));
         } else {
@@ -79,7 +80,7 @@ impl Metric for &str {
 
 impl Metric for String {
     fn set_metric(self, event: &mut Event) {
-        let metric = self.replace(",", ".");
+        let metric = self.replace(",", ".").replace("\n", "");
         if metric.contains('.') {
             event.set_metric_d(metric.parse::<f64>().expect("Cannot parse metric"));
         } else {
@@ -108,7 +109,8 @@ impl Riemann {
         hostname: &str,
         service: &str,
         state: &str,
-        tag: Vec<String>,
+        tags: Vec<String>,
+        attributes: Vec<Attribute>,
         description: &str,
         metric: T,
     ) {
@@ -123,7 +125,10 @@ impl Riemann {
         event.set_host(hostname.to_string());
         event.set_service(service.to_string());
         event.set_state(state.to_string());
-        event.set_tags(protobuf::RepeatedField::from_vec(tag));
+        event.set_tags(protobuf::RepeatedField::from_vec(tags));
+        if !attributes.is_empty() {
+            event.set_attributes(protobuf::RepeatedField::from_vec(attributes));
+        }
         event.set_description(description.to_string());
         metric.set_metric(&mut event);
         self.client
@@ -171,28 +176,24 @@ impl Exporter for RiemannExporter {
         println!("Press CTRL-C to stop scaphandre");
         println!("Measurement step is: {}s", dispatch_duration);
 
+        let mut topology = self.sensor.get_topology().unwrap();
         loop {
-            let mut topology = self.sensor.get_topology().unwrap();
+            debug!("Beginning of measure loop");
             topology
                 .proc_tracker
                 .clean_terminated_process_records_vectors();
+            debug!("Refresh topology");
             topology.refresh();
 
-            let mut host_energy_microjoules = String::from("NaN");
-            let mut host_energy_timestamp_seconds = String::from("NaN");
             let records = topology.get_records_passive();
-            if !records.is_empty() {
-                let record = records.last().unwrap();
-                host_energy_microjoules = record.value.clone();
-                host_energy_timestamp_seconds = record.timestamp.as_secs().to_string();
-            }
 
             rclient.send_metric(
-                dispatch_duration as f32,
+                60.0,
                 &hostname,
                 "self_version",
                 "ok",
                 vec!["scaphandre".to_string()],
+                vec![],
                 "Version number of scaphandre represented as a float.",
                 get_scaphandre_version(),
             );
@@ -201,11 +202,12 @@ impl Exporter for RiemannExporter {
                 procfs::process::Process::myself().unwrap().pid,
             ) {
                 rclient.send_metric(
-                    dispatch_duration as f32,
+                    60.0,
                     &hostname,
                     "self_cpu_usage_percent",
                     "ok",
                     vec!["scaphandre".to_string()],
+                    vec![],
                     "CPU % consumed by this scaphandre prometheus exporter.",
                     metric_value,
                 );
@@ -214,33 +216,36 @@ impl Exporter for RiemannExporter {
             if let Ok(metric_value) = procfs::process::Process::myself().unwrap().statm() {
                 let value = metric_value.size * procfs::page_size().unwrap() as u64;
                 rclient.send_metric(
-                    dispatch_duration as f32,
+                    60.0,
                     &hostname,
                     "self_mem_total_program_size",
                     "ok",
                     vec!["scaphandre".to_string()],
+                    vec![],
                     "Total program size, measured in pages",
                     value,
                 );
 
                 let value = metric_value.resident * procfs::page_size().unwrap() as u64;
                 rclient.send_metric(
-                    dispatch_duration as f32,
+                    60.0,
                     &hostname,
                     "self_mem_resident_set_size",
                     "ok",
                     vec!["scaphandre".to_string()],
+                    vec![],
                     "Resident set size, measured in pages",
                     value,
                 );
 
                 let value = metric_value.size * procfs::page_size().unwrap() as u64;
                 rclient.send_metric(
-                    dispatch_duration as f32,
+                    60.0,
                     &hostname,
                     "self_mem_shared_resident_size",
                     "ok",
                     vec!["scaphandre".to_string()],
+                    vec![],
                     "Number of resident shared pages (i.e., backed by a file)",
                     value,
                 );
@@ -250,77 +255,231 @@ impl Exporter for RiemannExporter {
             let topo_record_buffer_len = topology.record_buffer.len();
             let topo_procs_len = topology.proc_tracker.procs.len();
             rclient.send_metric(
-                dispatch_duration as f32,
+                60.0,
                 &hostname,
                 "self_topo_stats_nb",
                 "ok",
                 vec!["scaphandre".to_string()],
+                vec![],
                 "Number of CPUStat traces stored for the host",
                 topo_stat_buffer_len,
             );
 
             rclient.send_metric(
-                dispatch_duration as f32,
+                60.0,
                 &hostname,
                 "self_topo_records_nb",
                 "ok",
                 vec!["scaphandre".to_string()],
+                vec![],
                 "Number of energy consumption Records stored for the host",
                 topo_record_buffer_len,
             );
 
             rclient.send_metric(
-                dispatch_duration as f32,
+                60.0,
                 &hostname,
                 "self_topo_procs_nb",
                 "ok",
                 vec!["scaphandre".to_string()],
+                vec![],
                 "Number of processes monitored for the host",
                 topo_procs_len,
             );
 
             rclient.send_metric(
-                dispatch_duration as f32,
+                60.0,
                 &hostname,
                 "self_topo_procs_nb",
                 "ok",
                 vec!["scaphandre".to_string()],
+                vec![],
                 "Number of processes monitored for the host",
                 topo_procs_len,
             );
 
-            for s in &topology.sockets {
+            for socket in &topology.sockets {
+                let mut attribute = Attribute::new();
+                attribute.set_key("socket_id".to_string());
+                attribute.set_value(socket.id.to_string());
                 rclient.send_metric(
-                    dispatch_duration as f32,
+                    60.0,
                     &hostname,
                     "self_socket_stats_nb",
                     "ok",
                     vec!["scaphandre".to_string()],
+                    vec![attribute.clone()],
                     "Number of CPUStat traces stored for each socket",
-                    s.stat_buffer.len(),
+                    socket.stat_buffer.len(),
                 );
 
                 rclient.send_metric(
-                    dispatch_duration as f32,
+                    60.0,
                     &hostname,
                     "self_socket_records_nb",
                     "ok",
                     vec!["scaphandre".to_string()],
+                    vec![attribute.clone()],
                     "Number of energy consumption Records stored for each socket",
-                    s.stat_buffer.len(),
+                    socket.stat_buffer.len(),
                 );
 
-                for d in &s.domains {
+                for domain in &socket.domains {
+                    let mut attribute = Attribute::new();
+                    attribute.set_key("rapl_domain_name".to_string());
+                    attribute.set_value(domain.name.to_string());
                     rclient.send_metric(
-                        dispatch_duration as f32,
+                        60.0,
                         &hostname,
                         "self_domain_records_nb",
                         "ok",
                         vec!["scaphandre".to_string()],
+                        vec![attribute.clone()],
                         "Number of energy consumption Records stored for a Domain",
-                        d.record_buffer.len(),
+                        domain.record_buffer.len(),
                     );
                 }
+            }
+
+            // metrics
+            let mut host_energy_microjoules = String::from("0");
+            let mut host_energy_timestamp_seconds = String::from("0");
+            if !records.is_empty() {
+                let record = records.last().unwrap();
+                host_energy_microjoules = record.value.clone();
+                host_energy_timestamp_seconds = record.timestamp.as_secs().to_string();
+            }
+            rclient.send_metric(
+                60.0,
+                &hostname,
+                "host_energy_microjoules",
+                "ok",
+                vec!["scaphandre".to_string()],
+                vec![],
+                "Energy measurement for the whole host, as extracted from the sensor, in microjoules.",
+                host_energy_microjoules
+            );
+
+            rclient.send_metric(
+                60.0,
+                &hostname,
+                "host_energy_timestamp_seconds",
+                "ok",
+                vec!["scaphandre".to_string()],
+                vec![],
+                "Timestamp in seconds when hose_energy_microjoules has been computed.",
+                host_energy_timestamp_seconds,
+            );
+
+            let mut host_power_microwatts = "0";
+            let host_power_record: Record;
+            if let Some(power) = topology.get_records_diff_power_microwatts() {
+                host_power_record = power;
+                host_power_microwatts = &host_power_record.value;
+            }
+
+            rclient.send_metric(
+                60.0,
+                &hostname,
+                "host_power_microwatts",
+                "ok",
+                vec!["scaphandre".to_string()],
+                vec![],
+                "Power measurement on the whole host, in microwatts",
+                host_power_microwatts,
+            );
+
+            let sockets = topology.get_sockets_passive();
+            for socket in sockets {
+                let records = socket.get_records_passive();
+                let mut socket_energy_microjoules = "0";
+                if !records.is_empty() {
+                    socket_energy_microjoules = &records.last().unwrap().value;
+                }
+
+                let mut attribute = Attribute::new();
+                attribute.set_key("socket_id".to_string());
+                attribute.set_value(socket.id.to_string());
+                rclient.send_metric(
+                    60.0,
+                    &hostname,
+                    "socket_energy_microjoules",
+                    "ok",
+                    vec!["scaphandre".to_string()],
+                    vec![attribute.clone()],
+                    "Socket related energy measurement in microjoules.",
+                    socket_energy_microjoules,
+                );
+
+                let mut socket_power_microwatts = "0";
+                let socket_power_record: Record;
+                if let Some(power) = topology.get_records_diff_power_microwatts() {
+                    socket_power_record = power;
+                    socket_power_microwatts = &socket_power_record.value;
+                }
+
+                rclient.send_metric(
+                    60.0,
+                    &hostname,
+                    "socket_power_microwatts",
+                    "ok",
+                    vec!["scaphandre".to_string()],
+                    vec![attribute.clone()],
+                    "Power measurement relative to a CPU socket, in microwatts",
+                    socket_power_microwatts,
+                );
+            }
+
+            if let Some(metric_value) = topology.read_nb_process_total_count() {
+                rclient.send_metric(
+                    60.0,
+                    &hostname,
+                    "forks_since_boot_total",
+                    "ok",
+                    vec!["scaphandre".to_string()],
+                    vec![],
+                    "Number of forks that have occured since boot (number of processes to have existed so far).",
+                    metric_value,
+                );
+            }
+
+            if let Some(metric_value) = topology.read_nb_process_running_current() {
+                rclient.send_metric(
+                    60.0,
+                    &hostname,
+                    "processes_running_current",
+                    "ok",
+                    vec!["scaphandre".to_string()],
+                    vec![],
+                    "Number of processes currently running.",
+                    metric_value,
+                );
+            }
+
+            if let Some(metric_value) = topology.read_nb_process_blocked_current() {
+                rclient.send_metric(
+                    60.0,
+                    &hostname,
+                    "processes_blocked_current",
+                    "ok",
+                    vec!["scaphandre".to_string()],
+                    vec![],
+                    "Number of processes currently blocked waiting for I/O.",
+                    metric_value,
+                );
+            }
+
+            if let Some(metric_value) = topology.read_nb_context_switches_total_count() {
+                rclient.send_metric(
+                    60.0,
+                    &hostname,
+                    "context_switches_total",
+                    "ok",
+                    vec!["scaphandre".to_string()],
+                    vec![],
+                    "Number of context switches since boot.",
+                    metric_value,
+                );
             }
 
             thread::sleep(Duration::new(dispatch_duration, 0));
