@@ -1,0 +1,336 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Prometheus exporter - Scaphandre documentation</title>
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="Extensible and lightweight monitoring agent for energy consumption metrics">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="../favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="../favicon.png">
+        
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        
+        <link rel="stylesheet" href="../css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="../fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="../tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="../how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">4.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="../explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">5.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="../explanations/internal-structure.html"><strong aria-hidden="true">6.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="../explanations/about-containers.html"><strong aria-hidden="true">7.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="../references/exporter-prometheus.html" class="active"><strong aria-hidden="true">8.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-qemu.html"><strong aria-hidden="true">9.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-stdout.html"><strong aria-hidden="true">10.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="../references/sensor-powercap_rapl.html"><strong aria-hidden="true">11.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="../why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="../compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="../troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="../contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="../sources.html">External references you may be interested in</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+                
+                    <h1 class="menu-title">Scaphandre documentation</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#prometheus-exporter" id="prometheus-exporter">Prometheus exporter</a></h1>
+<img src="https://github.com/hubblo-org/scaphandre/raw/main/screen-prometheus.cleaned.png">
+<h2><a class="header" href="#usage" id="usage">Usage</a></h2>
+<p>You can launch the prometheus exporter this way (running the default powercap_rapl sensor):</p>
+<pre><code>scaphandre prometheus
+</code></pre>
+<p>As always exporter's options can be displayed with <code>-h</code>:</p>
+<pre><code>scaphandre prometheus -h
+scaphandre-prometheus 
+prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted
+format.
+
+USAGE:
+	scaphandre --sensor &lt;sensor&gt; prometheus [OPTIONS]
+
+FLAGS:
+	-h, --help       Prints help information
+	-V, --version    Prints version information
+
+OPTIONS:
+	-a, --address &lt;address&gt;    ipv6 or ipv4 address to expose the service to [default: ::]
+	-p, --port &lt;port&gt;          TCP port number to expose the service [default: 8080]
+	-s, --suffix &lt;suffix&gt;      url suffix to access metrics [default: metrics]
+</code></pre>
+<p>With default options values, the metrics are exposed on http://localhost:8080/metrics.</p>
+<h2><a class="header" href="#metrics-exposed" id="metrics-exposed">Metrics exposed</a></h2>
+<p>All metrics have a HELP section provided on /metrics (or whatever suffix you choosed to expose them).</p>
+<p>Here are some key metrics that you will most probably be interested in:</p>
+<ul>
+<li><code>scaph_host_power_microwatts</code>: Power measurement on the whole host, in microwatts (GAUGE)</li>
+<li><code>scaph_process_power_consumption_microwatts{exe=&quot;$PROCESS_EXE&quot;,pid=&quot;$PROCESS_PID&quot;,cmdline=&quot;path/to/exe --and-maybe-options&quot;}</code>: Power consumption due to the process, measured on at the topology level, in microwatts. PROCESS_EXE being the name of the executable and PROCESS_PID being the pid of the process. (GAUGE)</li>
+</ul>
+<p>For more details on that metric labels, see <a href="#scaph_process_power_consumption_microwatts">this section</a>.</p>
+<p>And some more deep metrics that you may want if you need to make more complex calculations and data processing:</p>
+<ul>
+<li><code>scaph_host_energy_microjoules</code> : Energy measurement for the whole host, as extracted from the sensor, in microjoules. (COUNTER)</li>
+<li><code>scaph_host_energy_timestamp_seconds</code>: Timestamp in seconds when hose_energy_microjoules has been computed. (COUNTER)</li>
+<li><code>scaph_socket_power_microwatts{socket_id=&quot;$SOCKET_ID&quot;}</code>: Power measurement relative to a CPU socket, in microwatts. SOCKET_ID being the socket numerical id (GAUGE)</li>
+</ul>
+<p>If you hack scaph or just want to tinvestigate its behavior, you may be interested in some internal metrics:</p>
+<ul>
+<li>
+<p><code>scaph_self_mem_total_program_size</code>: Total program size, measured in pages</p>
+</li>
+<li>
+<p><code>scaph_self_mem_resident_set_size</code>: Resident set size, measured in pages</p>
+</li>
+<li>
+<p><code>scaph_self_mem_shared_resident_size</code>: Number of resident shared pages (i.e., backed by a file)</p>
+</li>
+<li>
+<p><code>scaph_self_topo_stats_nb</code>: Number of CPUStat traces stored for the host</p>
+</li>
+<li>
+<p><code>scaph_self_topo_records_nb</code>: Number of energy consumption Records stored for the host</p>
+</li>
+<li>
+<p><code>scaph_self_topo_procs_nb</code>: Number of processes monitored by scaph</p>
+</li>
+<li>
+<p><code>scaph_self_socket_stats_nb{socket_id=&quot;SOCKET_ID&quot;}</code>: Number of CPUStat traces stored for each socket</p>
+</li>
+<li>
+<p><code>scaph_self_socket_records_nb{socket_id=&quot;SOCKET_ID&quot;}</code>: Number of energy consumption Records stored for each socket, with SOCKET_ID being the id of the socket measured</p>
+</li>
+<li>
+<p><code>scaph_self_domain_records_nb{socket_id=&quot;SOCKET_ID&quot;,rapl_domain_name=&quot;RAPL_DOMAIN_NAME &quot;}</code>: Number of energy consumption Records stored for a Domain, where SOCKET_ID identifies the socket and RAPL_DOMAIN_NAME identifies the rapl domain measured on that socket</p>
+</li>
+</ul>
+<h3><a class="header" href="#scaph_process_power_consumption_microwatts" id="scaph_process_power_consumption_microwatts">scaph_process_power_consumption_microwatts</a></h3>
+<p>Here are available labels for the <code>scaph_process_power_consumption_microwatts</code> metric that you may need to extract the data you need:</p>
+<ul>
+<li><code>exe</code>: is the name of the executable that is the origin of that process. This is good to be used when your application is running one or only a few processes.</li>
+<li><code>cmdline</code>: this contains the whole command line with the executable path and its parameters (concatenated). You can filter on this label by using prometheus <code>=~</code> operator to match a regular expression pattern. This is very practical in many situations.</li>
+<li><code>instance</code>: this is a prometheus generated label to enable you to filter the metrics by the originating host. This is very useful when you monitor distributed services, so that you can not only sum the metrics for the same service on the different hosts but also see what instance of that service is consuming the most, or notice differences beteween hosts that may not have the same hardware, and so on...</li>
+<li><code>pid</code>: is the process id, which is useful if you want to track a specific process and have your eyes on what's happening on the host, but not so practical to use in a more general use case</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="../explanations/about-containers.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="../references/exporter-qemu.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="../explanations/about-containers.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a rel="next" href="../references/exporter-qemu.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3000/__livereload");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_line_numbers = true;
+        </script>
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+        <script src="../ace.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../editor.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mode-rust.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../theme-dawn.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../theme-tomorrow_night.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        
+        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>

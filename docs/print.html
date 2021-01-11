@@ -1,0 +1,687 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Scaphandre documentation</title>
+        
+        <meta name="robots" content="noindex" />
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="Extensible and lightweight monitoring agent for energy consumption metrics">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">4.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">5.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="explanations/internal-structure.html"><strong aria-hidden="true">6.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="explanations/about-containers.html"><strong aria-hidden="true">7.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="references/exporter-prometheus.html"><strong aria-hidden="true">8.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-qemu.html"><strong aria-hidden="true">9.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-stdout.html"><strong aria-hidden="true">10.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="references/sensor-powercap_rapl.html"><strong aria-hidden="true">11.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="sources.html">External references you may be interested in</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+                
+                    <h1 class="menu-title">Scaphandre documentation</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#introduction" id="introduction">Introduction</a></h1>
+<p><a href="https://github.com/hubblo-org/scaphandre/"><img src="scaphandre.svg" width="250px"/></a></p>
+<p>Welcome on <a href="https://github.com/hubblo-org/scaphandre">Scaphandre</a> documentation.</p>
+<p>Scaphandre is a <strong>monitoring agent</strong>, dedicated to <strong>energy consumption</strong> metrics. It's purpose is to help measuring and thus understanding tech services energy consumption patterns. This is key, in our opinion, to enable the tech industry to shift towards more sustainability. 💚</p>
+<p>If at this point you think &quot;why bother ?&quot;, or if you want more details about this project's motivations, please have a look at the <a href="why.html">why</a> section.</p>
+<p>If not and you want to proceed, just directly jump to the <a href="tutorials/overview.html">tutorials</a> section.</p>
+<p>If you need more in-depth, use-case oriented instructions, the <a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html">how-to guides</a> are here for you.</p>
+<p><a href="section">Explanations</a> is about theoritical concepts behind scaphandre and the reasons for the technical choices that have been made so far.</p>
+<p>If you are already using, hacking or exploring scaphandre and need precise informations about one of its components, go to the <a href="references/exporter-prometheus.html">references</a> section. (The code documenentation itself is <a href="docs.rs/scaphandre/">here</a>).</p>
+<h1><a class="header" href="#quickstart" id="quickstart">Quickstart</a></h1>
+<p>To quickly run scaphandre in your terminal you may use <a href="https://www.docker.com/">docker</a>:</p>
+<pre><code>docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -ti hubblo/scaphandre stdout -t 15
+</code></pre>
+<p>Or if you downloaded or built a <a href="https://github.com/hubblo-org/scaphandre/releases/latest/download/scaphandre-v0.1.1-Ubuntu_20.04-x86_64.gz">binary</a>, you'd run:</p>
+<pre><code>scaphandre stdout -t 15
+</code></pre>
+<p>Here we are using the stdout <a href="tutorials/../explanations/internal-structure.html">exporter</a> to print current power consumption usage in the terminal during 15 seconds.</p>
+<p>You should get an output like:</p>
+<pre><code>Host:	9.391334 W	Core		Uncore		DRAM
+Socket0	9.392    W	1.497082 W	
+Top 5 consumers:
+Power	PID	Exe
+4.808363 W	642	&quot;/usr/sbin/dockerd&quot;
+4.808363 W	703	&quot;/usr/bin/docker-containerd&quot;
+4.808363 W	1028	&quot;/usr/local/bin/redis-server&quot;
+0 W	1	&quot;/usr/lib/systemd/systemd&quot;
+0 W	2	&quot;&quot;
+------------------------------------------------------------
+</code></pre>
+<p>Let's briefly describe what you see here. First Line is the power consumption of the machine (between the two last measurements).
+Second line is the power consumption of the first CPU socket plus the detail by RAPL Domain.
+If you have more than one CPU Socket, you'll have multiple <em>SocketX</em> lines.
+Then you have the 5 processes consuming the most power during the last two measurements.</p>
+<p>If you don't get this output and get an error, jump to the <a href="tutorials/../troubleshooting.html">Troubleshooting</a> section of the documentation.</p>
+<p>At that point, you're ready to use scaphandre. The Stdout exporter is very basic and other exporters should allow you to use and send those metrics the way you like.</p>
+<p>The <a href="tutorials/references/exporter-prometheus.html">prometheus exporter</a>, for example, allows you to expose power consumption metrics as an HTTP endpoint that can be scrapped by a <a href="https://prometheus.io">prometheus</a> instance:</p>
+<pre><code>docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -p 8080:8080 -ti hubblo/scaphandre prometheus
+</code></pre>
+<p>Here is the same command with a simple binary:</p>
+<pre><code>scaphandre prometheus
+</code></pre>
+<p>To validate that the metrics are available, send an http request from another terminal:</p>
+<pre><code>curl -s http://localhost:8080/metrics
+</code></pre>
+<p><a href="https://metrics.hubblo.org">Here</a> you can see examples of graphs you can get thanks to scaphandre, the prometheus exporter, prometheus and <a href="https://grafana.com/">grafana</a>.</p>
+<h1><a class="header" href="#installation--compilation" id="installation--compilation">Installation &amp; compilation</a></h1>
+<h2><a class="header" href="#compile-scaphandre-from-source" id="compile-scaphandre-from-source">Compile scaphandre from source</a></h2>
+<p>We recommand using this version of the rust toolchain or later:</p>
+<pre><code>cargo --version
+cargo 1.48.0 (65cbdd2dc 2020-10-14)
+rustc --version
+rustc 1.48.0 (7eac88abb 2020-11-16)
+</code></pre>
+<p>To be sure to be up to date, you may install rust from the <a href="https://www.rust-lang.org/">official website</a> instead of your package manager.</p>
+<p>To hack <em>scaph</em>, or simply be up to date with latest developments, you can download scaphandre from the main branch:</p>
+<pre><code>git clone https://github.com/hubblo-org/scaphandre.git
+cd scaphandre
+cargo build # binary path is target/debug/scaphandre
+</code></pre>
+<p>To use the latest code for a true use case, build for release instead of debug:</p>
+<pre><code>cargo build --release
+</code></pre>
+<p>Binary path is <code>target/release/scaphandre</code>.</p>
+<h2><a class="header" href="#more-to-come" id="more-to-come">More to come</a></h2>
+<p>More tutorials to come, for a proper installation, like:</p>
+<ul>
+<li>install scaphandre as a proper systemd service</li>
+<li>scaphandre in your favorite GNU/Linux distribution (package creators)</li>
+<li>run scaphandre in a container</li>
+<li>run scaphandre on kubernetes</li>
+<li>scaphandre on MacOSX</li>
+<li>and more...</li>
+</ul>
+<h1><a class="header" href="#propagate-power-consumption-metrics-from-hypervisor-to-virtual-machines-qemukvm" id="propagate-power-consumption-metrics-from-hypervisor-to-virtual-machines-qemukvm">Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></h1>
+<h2><a class="header" href="#introduction-1" id="introduction-1">Introduction</a></h2>
+<p>A major pain point in measuring power consumption is doing so inside a virtual machine. A virtual machine usually doesn't have access to power metrics.</p>
+<p>Scaphandre aims at solving that by enabling a communication between a scaphandre instance <strong>on the hypervisor/bare metal machine</strong> and <strong>another one</strong> running <strong>on the virtual machine</strong>.
+The scaphandre agent on the hypervisor will <strong>compute the metrics meaningful for that virtual machine</strong> and the one <strong>on the VM access those metrics</strong> to allow its user/administrator to use the data as if they had access to power metrics in the first place (as if they were on a bare metal machine).</p>
+<p>This allows to break opacity in a virtualization context, if you have access to the hypervisor, or in a  public cloud context if the provider uses scaphandre on its hypervisors.</p>
+<img src="how-to_guides/../virtu.cleaned.png" width="650"/>
+<h2><a class="header" href="#how-to" id="how-to">How to</a></h2>
+<p>This is working on Qemu/KVM hypervisors only.</p>
+<p>The idea is to run the agent on the hypervisor, with the <a href="how-to_guides/../references/exporter-qemu.html">qemu exporter</a>:</p>
+<pre><code>scaphandre qemu
+</code></pre>
+<p>More examples for a production ready setup will be added soon (systemd service, docker container, ...). If you think the documentation needs a refresh now, please <a href="https://github.com/hubblo-org/scaphandre/pulls">contribute</a> :)</p>
+<p>For each virtual machine you want to give access to its metrics, create a <a href="https://en.wikipedia.org/wiki/Tmpfs">tmpfs</a> mountpoint:</p>
+<pre><code> mount -t tmpfs tmpfs_DOMAIN_NAME /var/lib/libvirt/scaphandre/DOMAIN_NAME -o size=5m
+</code></pre>
+<p>In the definition of the virtual machine (ehre we are using libvirt), ensure you have a filesystem configuration to give access to the mountpoint:</p>
+<pre><code>virsh edit DOMAIN_NAME
+</code></pre>
+<p>Then add:</p>
+<pre><code>&lt;filesystem type='mount' accessmode='passthrough'&gt;
+    &lt;driver type='virtiofs'/&gt;
+    &lt;source dir='/var/lib/libvirt/scaphandre/DOMAIN_NAME'/&gt;
+    &lt;target dir='scaphandre'/&gt;
+    &lt;readonly /&gt;
+&lt;/filesystem&gt;
+</code></pre>
+<p>Save and (re)start the virtual machine.</p>
+<p>Then connect to the virtual machine and mount the filesystem:</p>
+<pre><code> mount -t 9p -o trans=virtio scaphandre /var/scaphandre
+</code></pre>
+<p>You can now run scaphandre to export the metrics with the exporter of your choice (here prometheus):</p>
+<pre><code> scaphandre --vm prometheus
+</code></pre>
+<p>Please refer to the <a href="how-to_guides/docs/exporters/qemu.html">qemu exporter</a> reference for more details.</p>
+<p><strong>Note:</strong> This how to is only suitable for a &quot;manual&quot; use case. For all automated systems like openstack or proxmox, some more work needs to be done to make the integration of those steps easier.</p>
+<h1><a class="header" href="#get-process-level-power-consumption-in-my-grafana-dashboard" id="get-process-level-power-consumption-in-my-grafana-dashboard">Get process-level power consumption in my grafana dashboard</a></h1>
+<p>Now we'll see how to get valuable data in a dashboard. Let's say you want to track the power consumption of a given process or application in a dashboard and eventually set thresholds on it. WHat do you need to get that subset of the power consumption of the host visually ?</p>
+<p>You need basically 3 components for that:</p>
+<ul>
+<li>scaphandre running with the <a href="how-to_guides/../references/exporter-prometheus.html">prometheus exporter</a></li>
+<li><a href="https://prometheus.io">prometheus</a></li>
+<li><a href="https://grafana.com">grafana</a></li>
+</ul>
+<p>We'll say that you already have a running prometheus server and an available grafana instance and that you have added prometheus as a datasource in grafana.</p>
+<p>How to get metrics per process as you may see <a href="https://metrics.hubblo.org">here</a> ?</p>
+<p>The metric that I need from the prometheus exporter to do that is: <code>scaph_process_power_consumption_microwatts</code>. This metric is a wallet for the power consumption of all the running processes on the host at a given time.</p>
+<p>This is a prometheus metrics, so you have labels to filter on the processes you are interested in. Currently the available labels are: <code>instance</code>, <code>exe</code>, <code>job</code> and <code>pid</code>.</p>
+<p>If I want to get power consumption (in Watts) for all processes related to <a href="https://nginx.org/">nginx</a> running on a host with ip 10.0.0.9 I may use that query, in grafana, based on the prometheus datasource:</p>
+<pre><code>scaph_process_power_consumption_microwatts{cmdline=~&quot;.*nginx.*&quot;, instance=&quot;10.0.0.9:8080&quot;} / 1000000
+</code></pre>
+<p>Here we assume that scaphandre/the prometheus exporter is running on port number <code>8080</code>.</p>
+<p>Here how it looks, creating a panel in grafana:</p>
+<p><img src="how-to_guides/../grafana-edit.png" alt="" /></p>
+<p>Those labels are explained in much more detail <a href="how-to_guides/../references/exporter-prometheus.html#scaph_process_power_consumption_microwatts">here</a>.</p>
+<h1><a class="header" href="#how-scaphandre-computes-per-process-power-consumption" id="how-scaphandre-computes-per-process-power-consumption">How scaphandre computes per process power consumption</a></h1>
+<p>As you can see with the <a href="explanations/../references/exporter-prometheus.html">prometheus exporter reference</a>, scaphandre exporters can provide process level power consumption metrics. This section will explain how it is done and how it may be improved in the future.</p>
+<h2><a class="header" href="#some-details-about-rapl" id="some-details-about-rapl">Some details about RAPL</a></h2>
+<p>We'll talk here about the case where scaphandre is able to effectively measure the power consumption of the host (see <a href="explanations/../compatibility.html">compatibility</a> section for more on sensors and their prerequesites) and specifically about the <a href="explanations/../references/sensor-powercap_rapl.html">PowercapRAPL</a> sensor.</p>
+<p>Let's clarify what's happening when you collect metrics with scaphandre and this sensor.
+RAPL stands for <a href="https://01.org/blogs/2014/running-average-power-limit-%E2%80%93-rapl">Running Average Power Limit</a>. It's a technnology embedded in most Intel and AMD x86 CPUs produced afeter 2012. Thanks to this technology it is possible to get the total energy consumption of the CPU, of the consumption per CPU socket, plus in some cases, the consumption of the DRAM controller. In most cases it represents the vast majority of the energy consumption of the machine (except when running GPU intensive workloads, for example). Further improvements shall be made in scaphandre to fully measure the consumption when GPU are involved (or a lot of hard drives on the same host...).</p>
+<p>Between scaphandre and those data is the powercap kernel module that writes the energy consumption in files. Scaphandre, reads those files, stores the data in buffer and then allows for more processing through the exporters.</p>
+<h2><a class="header" href="#how-to-get-the-consumption-of-one-process-" id="how-to-get-the-consumption-of-one-process-">How to get the consumption of one process ?</a></h2>
+<p>The PowercapRAPL sensor does actually some more than just collecting those energy consumption metrics (and casting it in power consumption metrics). Every time the exporter asks for a measurement (either periodically like in the <a href="explanations/../references/exporter-stdout.html">Stdout</a> exporter, or every time a request comes like for the Prometheus exporter) the sensor reads the values of the energy counters from powercap, stores those values and does the same for the CPU usage statistics of the CPU (the one you can see in <code>/proc/stats</code>) and for each running process on the machine at that time (see <code>/proc/PID/stats</code>). With those data it is possible to compute the ratio of CPU time actively spent for a given PID on the CPU time actively spent doing something. With this ratio we can then get the subset of power consumption that is related to that PID on a given timeframe (between two measurement requests).</p>
+<h2><a class="header" href="#how-to-get-the-consumption-of-an-applicationa-service-" id="how-to-get-the-consumption-of-an-applicationa-service-">How to get the consumption of an application/a service ?</a></h2>
+<p>Services and programs are often not running only one PID. It's needed to aggregate the consumption of all related PIDs to know what this service is actually consuming. </p>
+<p>To do that, in the current state of scaphandre development, you can use the Prometheus exporter, and then use Prometheus TSDB and query language capabilities. You'll find examples looking at the graphs and queries <a href="https://metrics.hubblo.org">here</a>. In a near future, more advanced features may be implemented in scaphandre to allow such classification even if you don't have access to a proper TSDB.</p>
+<h1><a class="header" href="#internal-structure" id="internal-structure">Internal structure</a></h1>
+<p>Scaphandre is designed to be extensible. As it performs basically two tasks: <strong>collecting</strong>/pre-computing the power consumption metrics and <strong>shipping</strong> it, it is composed of two main components: a <strong>sensor</strong> and an <strong>exporter</strong>. Each can be implemented in different wats, to match a certain use case. When you run scaphandre from the command line, <code>-s</code> allows you to choose the sensor you want to use, and the next subcommand is the name of the exporter.</p>
+<h2><a class="header" href="#sensors" id="sensors">Sensors</a></h2>
+<p>Sensors are meant to:</p>
+<ol>
+<li>get the power consumptions metrics of the host</li>
+<li>make it available for the exporter</li>
+</ol>
+<p>The <a href="explanations/../references/sensors-powercap_rapl.html">PowercapRAPL</a> for instance, gets and transforms metrics coming from the powercap Linux kernel module, that serves as an interface to get the data from the <a href="https://01.org/blogs/2014/running-average-power-limit-%E2%80%93-rapl">RAPL</a> feature of x86 CPUs. Because this feature is only accessible when you are running on a bare metal machine, this sensor will not work in a virtual machine, except if you first run scaphandre on the hypervisor and make the VM metrics available, with the <a href="explanations/../references/exporter-qemu.html">qemu exporter</a>, to scaphandre running inside the virtual machine.</p>
+<p>When you don't have access to the hypervisor/bare-metal machine (ie. when you run on public cloud instances and your provider doesn't run scaphandre) you still have the option to estimate the power consumption, based on both the ressources (cpu/gpu/ram/io...) consumed by the virtual machine at a given time, and the characteristics of the underlying hardware. This is the way we are designing the future <a href="https://github.com/hubblo-org/scaphandre/issues/25">estimation-based sensor</a>, to match that use case.</p>
+<p>Looking at the code, you'll find that the interface between metrics and the exporters is in fact the <a href="https://docs.rs/scaphandre/0.1.1/scaphandre/sensors/struct.Topology.html">Topology</a> object. This is intended to be asked by the exporter through the <a href="https://docs.rs/scaphandre/0.1.1/scaphandre/sensors/trait.Sensor.html#tymethod.get_topology">get_topology</a> method of the sensor.</p>
+<h2><a class="header" href="#exporters" id="exporters">Exporters</a></h2>
+<p>An exporter is expected to:</p>
+<ol>
+<li>ask the sensors to get new metrics and store them for later, potential usage</li>
+<li>export the current metrics </li>
+</ol>
+<p>The <a href="explanations/../references/exporter-stdout.html">Stdout</a> exporter exposes the metrics on the standard output (in your terminal). The <a href="explanations/../references/exporter-prometheus.html">prometheus</a> exporter exposes the metrics on an http endpoint, to be scraped by a <a href="https://prometheus.io">prometheus</a> instance. An exporter should be created for each monitoring scenario (do you want to feed your favorite monitoring/data analysis tool with scaphandre metrics ? feel free to open a <a href="https://github.com/hubblo-org/scaphandre/pulls">PR</a> to create a new exporter !).</p>
+<p>As introduced in the <a href="explanations/internal-structure.html#sensors">sensors</a> section, the <a href="explanations/../references/exporter-qemu.html">Qemu</a> exporter, is very specific. It is only intended to collect metrics related to running virtual machines on a Qemu/KVM hypervisor. Those metrics can then be made available to each virtual machine and it's own scaphandre instance, running the <a href="explanations/../references/sensor-powercap_rapl.html">PowercapRAPL</a> sensor (with the <code>--vm</code> flag on). The qemu exporter puts VM's metrics in files the same way the powercap kernel module does it. It mimics this behavior, so the sensor can act the same way it would on a bare metal machine.</p>
+<h1><a class="header" href="#about-containers" id="about-containers">About containers</a></h1>
+<p>There are several ways scaphandre can interact with containers.</p>
+<p>You may run scaphandre <strong>in a container</strong>, to not have to manage the dependencies, then measure the power consumption of the <strong>bare metal host</strong>. This is described in the <a href="explanations/../tutorials/quickstart.html">quickstart tutorial</a>.</p>
+<p>Scaphandre may help you measure the <strong>power consumption of containers</strong> running on a given host. You can already get to that goal using the tips provided in the howto section called <a href="explanations/../how-to_guides/get-process-level-power-in-grafana.html">&quot;Get process level power consumption&quot;</a>. It may still require some tweaking and inventiveness from you in making the approriate queries to your favorite TSDB. This should be made easier by the upcoming <a href="https://github.com/hubblo-org/scaphandre/projects/1">scaphandre features</a>.</p>
+<p>Another use case scenario would be to measure the power consumption of a <strong>container orchestrator</strong> (like <a href="https://kubernetes.io/">kubernetes</a>), its nodes and the containers and applications running on it. This is a feature we are <a href="https://github.com/hubblo-org/scaphandre/issues/29#issuecomment-755353175">currently working on</a> (you may try yourself the helm chart that is proposed in that thread, before it is officially supported).</p>
+<p>As described <a href="explanations/../compatibility.html">here</a>, scaphandre provides several ways (<a href="explanations/../explanations/sensors.html">sensors</a>) to collect the power consumption metrics. Depending on your use case a sensor should be more suitable than the other. Each of them comes with strengths and weaknesses. This is basically always a tradeoff between precision and simplicity. This is especially true if you run a container-based workloads on public cloud instances. We are working to provide a solution <a href="https://github.com/hubblo-org/scaphandre/issues/25">for that as well</a>.</p>
+<h1><a class="header" href="#prometheus-exporter" id="prometheus-exporter">Prometheus exporter</a></h1>
+<img src="https://github.com/hubblo-org/scaphandre/raw/main/screen-prometheus.cleaned.png">
+<h2><a class="header" href="#usage" id="usage">Usage</a></h2>
+<p>You can launch the prometheus exporter this way (running the default powercap_rapl sensor):</p>
+<pre><code>scaphandre prometheus
+</code></pre>
+<p>As always exporter's options can be displayed with <code>-h</code>:</p>
+<pre><code>scaphandre prometheus -h
+scaphandre-prometheus 
+prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted
+format.
+
+USAGE:
+	scaphandre --sensor &lt;sensor&gt; prometheus [OPTIONS]
+
+FLAGS:
+	-h, --help       Prints help information
+	-V, --version    Prints version information
+
+OPTIONS:
+	-a, --address &lt;address&gt;    ipv6 or ipv4 address to expose the service to [default: ::]
+	-p, --port &lt;port&gt;          TCP port number to expose the service [default: 8080]
+	-s, --suffix &lt;suffix&gt;      url suffix to access metrics [default: metrics]
+</code></pre>
+<p>With default options values, the metrics are exposed on http://localhost:8080/metrics.</p>
+<h2><a class="header" href="#metrics-exposed" id="metrics-exposed">Metrics exposed</a></h2>
+<p>All metrics have a HELP section provided on /metrics (or whatever suffix you choosed to expose them).</p>
+<p>Here are some key metrics that you will most probably be interested in:</p>
+<ul>
+<li><code>scaph_host_power_microwatts</code>: Power measurement on the whole host, in microwatts (GAUGE)</li>
+<li><code>scaph_process_power_consumption_microwatts{exe=&quot;$PROCESS_EXE&quot;,pid=&quot;$PROCESS_PID&quot;,cmdline=&quot;path/to/exe --and-maybe-options&quot;}</code>: Power consumption due to the process, measured on at the topology level, in microwatts. PROCESS_EXE being the name of the executable and PROCESS_PID being the pid of the process. (GAUGE)</li>
+</ul>
+<p>For more details on that metric labels, see <a href="references/exporter-prometheus.html#scaph_process_power_consumption_microwatts">this section</a>.</p>
+<p>And some more deep metrics that you may want if you need to make more complex calculations and data processing:</p>
+<ul>
+<li><code>scaph_host_energy_microjoules</code> : Energy measurement for the whole host, as extracted from the sensor, in microjoules. (COUNTER)</li>
+<li><code>scaph_host_energy_timestamp_seconds</code>: Timestamp in seconds when hose_energy_microjoules has been computed. (COUNTER)</li>
+<li><code>scaph_socket_power_microwatts{socket_id=&quot;$SOCKET_ID&quot;}</code>: Power measurement relative to a CPU socket, in microwatts. SOCKET_ID being the socket numerical id (GAUGE)</li>
+</ul>
+<p>If you hack scaph or just want to tinvestigate its behavior, you may be interested in some internal metrics:</p>
+<ul>
+<li>
+<p><code>scaph_self_mem_total_program_size</code>: Total program size, measured in pages</p>
+</li>
+<li>
+<p><code>scaph_self_mem_resident_set_size</code>: Resident set size, measured in pages</p>
+</li>
+<li>
+<p><code>scaph_self_mem_shared_resident_size</code>: Number of resident shared pages (i.e., backed by a file)</p>
+</li>
+<li>
+<p><code>scaph_self_topo_stats_nb</code>: Number of CPUStat traces stored for the host</p>
+</li>
+<li>
+<p><code>scaph_self_topo_records_nb</code>: Number of energy consumption Records stored for the host</p>
+</li>
+<li>
+<p><code>scaph_self_topo_procs_nb</code>: Number of processes monitored by scaph</p>
+</li>
+<li>
+<p><code>scaph_self_socket_stats_nb{socket_id=&quot;SOCKET_ID&quot;}</code>: Number of CPUStat traces stored for each socket</p>
+</li>
+<li>
+<p><code>scaph_self_socket_records_nb{socket_id=&quot;SOCKET_ID&quot;}</code>: Number of energy consumption Records stored for each socket, with SOCKET_ID being the id of the socket measured</p>
+</li>
+<li>
+<p><code>scaph_self_domain_records_nb{socket_id=&quot;SOCKET_ID&quot;,rapl_domain_name=&quot;RAPL_DOMAIN_NAME &quot;}</code>: Number of energy consumption Records stored for a Domain, where SOCKET_ID identifies the socket and RAPL_DOMAIN_NAME identifies the rapl domain measured on that socket</p>
+</li>
+</ul>
+<h3><a class="header" href="#scaph_process_power_consumption_microwatts" id="scaph_process_power_consumption_microwatts">scaph_process_power_consumption_microwatts</a></h3>
+<p>Here are available labels for the <code>scaph_process_power_consumption_microwatts</code> metric that you may need to extract the data you need:</p>
+<ul>
+<li><code>exe</code>: is the name of the executable that is the origin of that process. This is good to be used when your application is running one or only a few processes.</li>
+<li><code>cmdline</code>: this contains the whole command line with the executable path and its parameters (concatenated). You can filter on this label by using prometheus <code>=~</code> operator to match a regular expression pattern. This is very practical in many situations.</li>
+<li><code>instance</code>: this is a prometheus generated label to enable you to filter the metrics by the originating host. This is very useful when you monitor distributed services, so that you can not only sum the metrics for the same service on the different hosts but also see what instance of that service is consuming the most, or notice differences beteween hosts that may not have the same hardware, and so on...</li>
+<li><code>pid</code>: is the process id, which is useful if you want to track a specific process and have your eyes on what's happening on the host, but not so practical to use in a more general use case</li>
+</ul>
+<h1><a class="header" href="#qemu-exporter" id="qemu-exporter">Qemu exporter</a></h1>
+<p>Computes energy consumption metrics for each Qemu/KVM virtual machine found on the host.
+Exposes those metrics as filetrees compatible with the <a href="references/../sensors/powercap_rapl.html">powercap_rapl sensor</a>.</p>
+<p>Note that this is still experimental. Metrics are already considered trustworthy, but there are discussions and tests to be performed about the acceptable ways to share the data with the guests/vms. Any feedback or thoughts about this are welcome. Please refer to the contributing/contact section of the <a href="https://github.com/hubblo-org/scaphandre/#contributing">README</a>.</p>
+<h2><a class="header" href="#usage-1" id="usage-1">Usage</a></h2>
+<ol>
+<li>
+<p>Run the scaphandre with the qemu exporter on your bare metal hypervisor machine:</p>
+<pre><code> scaphandre qemu # this is suitable for a test, please run it as a systemd service for a production setup
+</code></pre>
+</li>
+<li>
+<p>Default is to expose virtual machines metrics in <code>/var/lib/libvirt/scaphandre/${DOMAIN_NAME}</code> with <code>DOMAIN_NAME</code> being the libvirt domain name of the virtual machine.
+First create a tmpfs mount point to isolate metrics for that virtual machine:</p>
+<pre><code> mount -t tmpfs tmpfs_DOMAIN_NAME /var/lib/libvirt/scaphandre/DOMAIN_NAME -o size=10m
+</code></pre>
+</li>
+<li>
+<p>Ensure you expose the content of this folder to the virtual machine by having this configuration in the xml configuration of the domain:</p>
+<pre><code> &lt;filesystem type='mount' accessmode='passthrough'&gt;
+   &lt;driver type='virtiofs'/&gt;
+   &lt;source dir='/var/lib/libvirt/scaphandre/DOMAIN_NAME'/&gt;
+   &lt;target dir='scaphandre'/&gt;
+   &lt;readonly /&gt;
+ &lt;/filesystem&gt;
+</code></pre>
+</li>
+<li>
+<p>Ensure the VM has been started once the configuration is applied, then mount the filesystem on the VM/guest:</p>
+<pre><code> mount -t 9p -o trans=virtio scaphandre /var/scaphandre
+</code></pre>
+</li>
+<li>
+<p>Still in the guest, run scaphandre in VM mode with the default sensor:</p>
+<pre><code> scaphandre --vm prometheus
+</code></pre>
+</li>
+<li>
+<p>Collect your virtual machine specific power usage metrics. (requesting http://VM_IP:8080/metrics in this example, using the prometheus exporter)</p>
+</li>
+</ol>
+<p>As always exporter's options can be displayed with <code>-h</code>:</p>
+<pre><code>scaphandre-qemu 
+Qemu exporter watches all Qemu/KVM virtual machines running on the host and exposes metrics of each of them in a
+dedicated folder
+
+USAGE:
+    scaphandre qemu
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information</code></pre>
+<h1><a class="header" href="#stdout-exporter" id="stdout-exporter">Stdout exporter</a></h1>
+<h2><a class="header" href="#usage-2" id="usage-2">Usage</a></h2>
+<p>You can launch the stdout exporter this way (running the default powercap_rapl sensor):</p>
+<pre><code>scaphandre stdout
+</code></pre>
+<p>Default behavior is to measure and show metrics periodically during 10 seconds. You can change that timeout with <code>-t</code>. Here is how to display metrics during one minute:</p>
+<pre><code>scaphandre stdout -t 60
+</code></pre>
+<p>You can change as well the step measure duration with -s. Here is how to display metrics during one minutes with a 5s step:</p>
+<pre><code>scaphandre stdout -t 60 -s 5
+</code></pre>
+<p>As always exporter's options can be displayed with <code>-h</code>:</p>
+<pre><code>$ scaphandre stdout -h
+scaphandre-stdout
+Stdout exporter allows you to output the power consumption data in the terminal.
+
+USAGE:
+    scaphandre stdout [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+-s, --step &lt;step_duration&gt;    Set measurement step duration in seconds. [default: 2]
+-t, --timeout &lt;timeout&gt;       Maximum time spent measuring, in seconds. [default: 10]
+</code></pre>
+<h1><a class="header" href="#powercap_rapl-sensor" id="powercap_rapl-sensor">Powercap_rapl sensor</a></h1>
+<h2><a class="header" href="#pre-requesites" id="pre-requesites">Pre-requesites</a></h2>
+<p>At the time those lines are written, this sensor works only on:</p>
+<ul>
+<li>OS: GNU/Linux</li>
+<li>Intel and AMD x86 CPUs, produced after 2012 (or some laptop cpu prior to 2012)</li>
+</ul>
+<p>It needs the following kernel modules to be present and running:</p>
+<p>On kernels 5.0 or later: <code>intel_rapl_common</code></p>
+<p>On kernel prior 5.0: <code>intel_rapl</code></p>
+<p>For AMD processors, it seems that powercap/rapl <a href="https://www.phoronix.com/scan.php?page=news_item&amp;px=Google-Zen-RAPL-PowerCap">will work only since kernel 5.8</a>
+and <a href="https://www.phoronix.com/scan.php?page=news_item&amp;px=AMD-RAPL-Linux-Now-19h">5.11 for family 19h</a>.</p>
+<p>Energy consumption data can be directly collected on a <strong>physical machine</strong> only.</p>
+<p>To collect energy consumption on a virtual machine, you may first collect power consumption data from the hypervisor thanks to the <a href="references/../exporters/qemu.html">qemu exporter</a> and then collect those metrics in the virtual machine thanks to this sensor, with <code>--vm</code> flag enabled.</p>
+<h2><a class="header" href="#usage-3" id="usage-3">Usage</a></h2>
+<p>To explicitely call the powercap_rapl sensor from the command line use:</p>
+<pre><code>scaphandre -s powercap_rapl EXPORTER # EXPORTER being the exporter name you want to use
+</code></pre>
+<p>You can see arguments available from the cli for this sensors with:</p>
+<pre><code>scaphandre -s powercap_rapl -h
+</code></pre>
+<p>If running in a virtual machine:</p>
+<pre><code>scaphandre --vm -s powercap_rapl EXPORTER
+</code></pre>
+<p>Please refer to doc.rs code documentation for more details.</p>
+<h2><a class="header" href="#options-available" id="options-available">Options available</a></h2>
+<ul>
+<li><code>sensor-buffer-per-socket-max-kB</code>: Maximum memory size allowed, in KiloBytes, for storing energy consumption for each socket</li>
+<li><code>sensor-buffer-per-domain-max-kB</code>: Maximum memory size allowed, in KiloBytes, for storing energy consumption for each domain</li>
+</ul>
+<h2><a class="header" href="#environment-variables" id="environment-variables">Environment variables</a></h2>
+<p>If in <code>--vm</code> mode, you want to read metrics from another path than the default <code>/var/scaphandre</code>, set env var <code>SCAPHANDRE_POWERCAP_PATH</code> with the desired path.</p>
+<h2><a class="header" href="#troubleshooting" id="troubleshooting">Troubleshooting</a></h2>
+<h3><a class="header" href="#when-running-scaphandre-on-ubuntu-20xx-i-get-a-permission-denied-error" id="when-running-scaphandre-on-ubuntu-20xx-i-get-a-permission-denied-error">When running scaphandre on Ubuntu 20.xx I get a <code>permission denied</code> error</a></h3>
+<p>Since linux kernel package 5.4.0-53.59 in debian/ubuntu, powercap attributes are only accessible by root:</p>
+<pre><code>linux (5.4.0-53.59) focal; urgency=medium
+
+  * CVE-2020-8694
+    - powercap: make attributes only readable by root
+</code></pre>
+<p>Therefor, the user running scaphandre needs to have read access to <em>energy_uj</em> files in <code>/sys/class/powercap</code>.</p>
+<p>You can run the <a href="references/../../init.sh">init.sh</a> script to apply appropriate permissions to the required files.</p>
+<h1><a class="header" href="#why-" id="why-">Why ?</a></h1>
+<p>We are facing the biggest challenge of mankind history: to make our activities sustainable enough to not jeopardize our future.</p>
+<p><img src="https://bpetit.nce.re/temperature-anomaly.svg" alt="Global average temperature anomaly" /></p>
+<p>To match the Paris agreement objective of not going further than +2 Celcius degrees on average in 2100, we need to transform our industries.
+The tech industry is no exception and we need to make sure that its benefits are not cancelled (or worse) by its negative impact.</p>
+<p>Measuring power consumption in tech services infrastructures is not as easy as it seems. We often rely on physical devices to do that and need to build in-house data pipelines to get those metrics useful. Furthermore this doesn't give fine graned data regarding applications/processes power consumption but only the host power consumption.
+This is even harder in a virtualization environement or as public cloud customers.</p>
+<p>Even <a href="https://www.iea.org/reports/data-centres-and-data-transmission-networks">recent</a> <a href="https://www.actu-environnement.com/media/pdf/news-36483-etude-UE-consommation-energie-centre-donnees-cloud.pdf">scientific</a> researches about tech energy consumption rely on statistical, both large and narrowed scale, assumptions based data (because it's all we got). Despite their weaknesses, they also all agree on the fact that the current consumption of datacenters and the Internet will increase drastically in the following years.</p>
+<p>Scaphandre aims to initiate a collaboration of tech companies and enthusiasts to provide an easy, lightweight, robust and well understood way to precisely measure the energy consumption and make it useful to take soberness decisions.</p>
+<p>Note that the greenhouse gazes emissions related to this energy consumption depends on the energetic mix of your country. You may find valuable data about that on <a href="https://www.electricitymap.org/map">Electricity Map</a>.</p>
+<h1><a class="header" href="#compatibility" id="compatibility">Compatibility</a></h1>
+<p>Scaphandre intends to provide multiple ways to gather power consumption metrics and make understanding tech services footprint possible in many situations. Depending on how you use scaph, you may have some restrictions.</p>
+<p>To summarize, scaphandre should provide two ways to estimate the power consumption of a service, process or machine. Either by <strong>measuring it</strong>, using software interfaces that give access to hardware metrics, or by <strong>estimating it</strong> if measuring is not an option (this is a <a href="https://github.com/hubblo-org/scaphandre/issues/25">planned feature</a>, not yet implemented as those lines are written, in december 2020).</p>
+<p>In scaphandre, the code responsible to collect the power consumption data before any further processing is grouped in components called <strong>sensors</strong>. If you want more details about scaphandre structure, <a href="explanations/internal-structure.html">here are the explanations</a>.</p>
+<p>The <a href="references/sensor-powercap_rapl.html">PowercapRAPL sensor</a> enables you to measure the power consumption, it is the most precise solution, but it doesn't work in all contexts. A future sensor is to be developped to support other use cases. Here is the current state of scaphandre's compatibility:</p>
+<table><thead><tr><th align="left">Sensor</th><th align="center">x86 bare metal</th><th align="center">ARM bare metal</th><th align="center">Virtual Machine</th><th align="center">Public cloud instance</th><th align="center">Container</th></tr></thead><tbody>
+<tr><td align="left">PowercapRAPL</td><td align="center"><a href="references/sensor-powercap_rapl.html">Yes</a></td><td align="center">We don't know yet</td><td align="center">Yes, if on a qemu/KVM hypervisor that runs scaphandre and the <a href="references/exporter-qemu.html">Qemu exporter</a></td><td align="center">No, until your cloud provider uses scaphandre on its hypervisors</td><td align="center"><a href="explanations/about-containers.html">Depends on what you want</a></td></tr>
+<tr><td align="left">Future estimation based sensor</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td></tr>
+</tbody></table>
+<h1><a class="header" href="#troubleshooting-1" id="troubleshooting-1">Troubleshooting</a></h1>
+<h3><a class="header" href="#i-get-a-permission-denied-error-when-i-run-scaphandre-no-matter-what-is-the-exporter" id="i-get-a-permission-denied-error-when-i-run-scaphandre-no-matter-what-is-the-exporter">I get a <strong>permission denied</strong> error when I run scaphandre, no matter what is the exporter</a></h3>
+<p>On some Linux distributions (ubuntu 20.04 for sure), the energy counters files that the <a href="references/sensor-powercap_rapl.html">PowercapRAPL sensor</a> uses, are owned by root. (since late 2020)</p>
+<p>To ensure this is your issue and fix that quickly you can run the <a href="https://raw.githubusercontent.com/hubblo-org/scaphandre/main/init.sh">init.sh</a> script:</p>
+<pre><code>bash init.sh
+</code></pre>
+<p>Then run scaphandre. If it does not work, the issue is somewhere else.</p>
+<h3><a class="header" href="#i-get-a-no-such-device-error-the-intel_rapl-of-intel_rapl_common-kernel-modules-are-present" id="i-get-a-no-such-device-error-the-intel_rapl-of-intel_rapl_common-kernel-modules-are-present">I get a <strong>no such device</strong> error, the intel_rapl of intel_rapl_common kernel modules are present</a></h3>
+<p>It can mean that your cpu doesn't support RAPL. Please refer to the <a href="compatibility.html">compatibility</a> section to be sure.</p>
+<h1><a class="header" href="#contributing-guide" id="contributing-guide">Contributing guide</a></h1>
+<p>If you are reading this, you may be  to contribute. Just for that, a big thank you ! 👏</p>
+<p>Feel free to propose pull requests, or open new <a href="https://github.com/hubblo-org/scaphandre/discussions">discussions</a> or <a href="https://github.com/hubblo-org/scaphandre/issues">issues</a> at will. Scaphandre is a collaborative project and all opinions and propositions shall be heard and studied. The contributions will be received with kindness, gratitude and with an open mind. Remember that we are all <a href="https://en.wikipedia.org/wiki/Standing_on_the_shoulders_of_giants">dwarfs standing on the shoulders of giants</a>. We all have to learn from others and to give back, with due mutual respect.</p>
+<h3><a class="header" href="#code-of-conduct" id="code-of-conduct">Code of conduct</a></h3>
+<p>This project adheres to the Rust Code of Conduct, which <a href="https://www.rust-lang.org/conduct.html">can be found here</a>.</p>
+<h3><a class="header" href="#ways-to-contribute" id="ways-to-contribute">Ways to contribute</a></h3>
+<p>Contributions may take multiple forms:</p>
+<ul>
+<li>💻 <strong>code</strong>, of course, but not only (there is a lot more !)</li>
+<li>📖 <strong>documentation</strong></li>
+<li>🎤 Any help on <strong>communication</strong>: writing blog posts, speaking about scaphandre in conferences, speaking and writing about the responsibility of tech to be sustainable as well !</li>
+<li>🧬 <strong>structuring the project</strong> and the <strong>community</strong> is also a very important topic. Feel free to propose help, or start <a href="https://github.com/hubblo-org/scaphandre/discussions">discussions</a> about that.</li>
+</ul>
+<p>This project intends to unite a lot of people to have a lot of positive impact. Any action going helping us to get there will be very much appreciated ! 🎉</p>
+<h3><a class="header" href="#contact" id="contact">Contact</a></h3>
+<p>Discussions and questions about the project are welcome on <a href="https://gitter.im/hubblo-org/scaphandre?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge">gitter</a> or by <a href="mailto://bpetit@hubblo.org?Subject=About%20Scaphandre">email</a>.</p>
+<h3><a class="header" href="#contribution-guidelines" id="contribution-guidelines">Contribution guidelines</a></h3>
+<p>This project intends to use <a href="https://conventionalcommits.org/">conventionnal commit messages</a> and the <a href="https://nvie.com/posts/a-successful-git-branching-model/">gitflow</a> workflow.</p>
+<p>Scaphandre is a not only a tool, but a framework. Modules dedicated to collect energy comsumption data from the host are called <a href="docs/sensors"><strong>Sensors</strong></a>.
+Modules that are dedicated to send this data to a given channel or remote system are called <a href="docs/exporters"><strong>Exporters</strong></a>. New Sensors and Exporters are going to be created and all contributions are welcome. For more on the internal structure please jump <a href="explanations/internal-structure.html">here</a>.</p>
+<h1><a class="header" href="#additional-references-for-documentation" id="additional-references-for-documentation">Additional references for documentation</a></h1>
+<ul>
+<li><a href="http://www.linuxhowtos.org/System/procstat.htm">/proc/stat explained</a></li>
+<li><a href="https://www.idnt.net/en-US/kb/941772">Gathering CPU utilization from /proc/stat</a></li>
+<li><a href="https://www.mjmwired.net/kernel/Documentation/filesystems/proc.txt#1212">proc filesystem documentation</a></li>
+<li><a href="https://www.opsdash.com/blog/cpu-usage-linux.html">CPU usage on Linux</a></li>
+<li><a href="https://community.intel.com/t5/Software-Tuning-Performance/Using-RAPL-to-read-PP0-and-DRAM-energy-on-haswell/td-p/1076202">Using RAPL to read PP0 and DRAM energy on Haswell</a></li>
+<li><a href="http://web.eece.maine.edu/%7Evweaver/projects/rapl/">RAPL reference</a></li>
+<li><a href="https://ma.ttias.be/how-to-measure-linux-performance-avoiding-most-typical-mistakes-cpu/">How to measure linux performance avoiding most typical mistakes: CPU</a></li>
+<li><a href="https://www.embedded.com/how-to-calculate-cpu-utilization/">How to calculate cpu utilization</a></li>
+</ul>
+<h1><a class="header" href="#powercaprapl-source-code-in-the-kernel" id="powercaprapl-source-code-in-the-kernel">Powercap/RAPL source code in the kernel</a></h1>
+<ul>
+<li>arch/x86/events/intel/rapl.c</li>
+<li>drivers/powercap</li>
+</ul>
+<h1><a class="header" href="#topics-to-investigate" id="topics-to-investigate">Topics to investigate</a></h1>
+<ul>
+<li><a href="https://facebookmicrosites.github.io/psi/docs/overview">PSI</a></li>
+<li><a href="https://unixism.net/2019/08/linux-pressure-stall-information-psi-by-example/">Linux PSI by example</a></li>
+<li><a href="https://www.kernel.org/doc/html/latest/accounting/psi.html">PSI - Pressure Stall Information</a></li>
+<li><a href="https://ma.ttias.be/how-to-measure-linux-performance-avoiding-most-typical-mistakes-memory/">How to measure linux performance avoiding most typical mistakes: memory</a></li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3000/__livereload");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_line_numbers = true;
+        </script>
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+        <script src="ace.js" type="text/javascript" charset="utf-8"></script>
+        <script src="editor.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mode-rust.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-dawn.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-tomorrow_night.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+        
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+        
+        
+
+    </body>
+</html>
