@@ -12,7 +12,7 @@ build-dir = "docs"
 edition = "2018"
 
 [output.html]
-mathjax-support = true
+mathjax-support = false
 site-url = "/docs/"
 
 [output.html.playground]
