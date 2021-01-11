@@ -30,7 +30,7 @@ Then you have the 5 processes consuming the most power during the last two measu
 
 If you don't get this output and get an error, jump to the [Troubleshooting](../troubleshooting.md) section of the documentation.
 
-At that point, you're ready to use scaphandre the way you like. The Stdout exporter is very basic and other exporters should allow you to use and send those metrics the way you like.
+At that point, you're ready to use scaphandre. The Stdout exporter is very basic and other exporters should allow you to use and send those metrics the way you like.
 
 The [prometheus exporter](references/exporter-prometheus.md), for example, allows you to expose power consumption metrics as an HTTP endpoint that can be scrapped by a [prometheus](https://prometheus.io) instance:
 
