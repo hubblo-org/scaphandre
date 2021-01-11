@@ -10,5 +10,5 @@ The [PowercapRAPL sensor](references/sensor-powercap_rapl.md) enables you to mea
 
 | Sensor         | x86 bare metal                            | ARM bare metal    | Virtual Machine | Public cloud instance | Container |
 | :------------- | :---------------------------------------: | :---------------: | :-------------: | :-------------------: | :-----: |
-| PowercapRAPL   | [Yes](references/sensor-powercap_rapl.md) | We don't know yet | Yes, if on a qemu/KVM hypervisor that runs scaphandre and the [Qemu exporter](references/exporter-qemu.md) | No, until your cloud provider uses scaphandre on its hypervisors | [Depends on what you want]() |
+| PowercapRAPL   | [Yes](references/sensor-powercap_rapl.md) | We don't know yet | Yes, if on a qemu/KVM hypervisor that runs scaphandre and the [Qemu exporter](references/exporter-qemu.md) | No, until your cloud provider uses scaphandre on its hypervisors | [Depends on what you want](explanations/about-containers.md) |
 | Future estimation based sensor | Future Yes | Future Yes | Future Yes | Future Yes | Future Yes |

@@ -1,11 +1,11 @@
 # About containers
 
-Let's first define what you want to achieve. Do you want to:
+There are several ways scaphandre can interact with containers.
 
-1. run scaphandre **in a container**, to not have to manage the dependencies, then measure the power consumption of a **bare metal host** ?
-2. measure the **power consumption of containers** running on a host ?
-3. measure the power consumption of a distributed **container orchestrator** (like [kubernetes]()) and the applications running on it ?
+You may run scaphandre **in a container**, to not have to manage the dependencies, then measure the power consumption of the **bare metal host**. This is described in the [quickstart tutorial](../tutorials/quickstart.md).
 
-Use case **1** is described [here](../tutorials/in-container.md), **2** has a dedicated [how-to](../how-to_guides/measure-containers-power.md), **3** is described [here](../tutorials/kubernetes.md).
+Scaphandre may help you measure the **power consumption of containers** running on a given host. You can already get to that goal using the tips provided in the howto section called ["Get process level power consumption"](../how-to_guides/get-process-level-power-in-grafana.md). It may still require some tweaking and inventiveness from you in making the approriate queries to your favorite TSDB. This should be made easier by the upcoming [scaphandre features](https://github.com/hubblo-org/scaphandre/projects/1).
 
-As described [here](../compatibility.md), scaphandre provides several ways ([sensors](../explanations/sensors.md)) to collect the power consumption metrics. Depending on your use case a sensor should be more suitable than the other. Each of them comes with strengths and weaknesses. This is basically always a tradeoff between precision and simplicity.
+Another use case scenario would be to measure the power consumption of a **container orchestrator** (like [kubernetes](https://kubernetes.io/)), its nodes and the containers and applications running on it. This is a feature we are [currently working on](https://github.com/hubblo-org/scaphandre/issues/29#issuecomment-755353175) (you may try yourself the helm chart that is proposed in that thread, before it is officially supported).
+
+As described [here](../compatibility.md), scaphandre provides several ways ([sensors](../explanations/sensors.md)) to collect the power consumption metrics. Depending on your use case a sensor should be more suitable than the other. Each of them comes with strengths and weaknesses. This is basically always a tradeoff between precision and simplicity. This is especially true if you run a container-based workloads on public cloud instances. We are working to provide a solution [for that as well](https://github.com/hubblo-org/scaphandre/issues/25).

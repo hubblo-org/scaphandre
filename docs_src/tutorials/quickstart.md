@@ -1,16 +1,12 @@
 # Quickstart
 
-Here you'll see how to deploy and benefit from Scaphandre quickly.
+To quickly run scaphandre in your terminal you may use [docker](https://www.docker.com/):
 
-The quickest way to get scaphandre is to download the [latest binary](https://github.com/hubblo-org/releases) suitable for your environment.
+    docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -ti hubblo/scaphandre stdout -t 15
 
-Uncompress the file:
+Or if you downloaded or built a [binary](https://github.com/hubblo-org/scaphandre/releases/latest/download/scaphandre-v0.1.1-Ubuntu_20.04-x86_64.gz), you'd run:
 
-    gunzip scaphandre-v0.1.1-Ubuntu_20.04-x86_64.gz && mv scaphandre-v0.1.1-Ubuntu_20.04-x86_64 scaphandre
-
-You can now run scaphandre. Let's see if you can get metrics directly in your terminal:
-
-    ./scaphandre stdout -t 15
+    scaphandre stdout -t 15
 
 Here we are using the stdout [exporter](../explanations/internal-structure.md) to print current power consumption usage in the terminal during 15 seconds.
 
@@ -37,6 +33,10 @@ If you don't get this output and get an error, jump to the [Troubleshooting](../
 At that point, you're ready to use scaphandre the way you like. The Stdout exporter is very basic and other exporters should allow you to use and send those metrics the way you like.
 
 The [prometheus exporter](references/exporter-prometheus.md), for example, allows you to expose power consumption metrics as an HTTP endpoint that can be scrapped by a [prometheus](https://prometheus.io) instance:
+
+    docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -p 8080:8080 -ti hubblo/scaphandre prometheus
+
+Here is the same command with a simple binary:
 
     scaphandre prometheus
 

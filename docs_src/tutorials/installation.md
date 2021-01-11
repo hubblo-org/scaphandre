@@ -1,5 +1,4 @@
 # Installation & compilation
-
 ## Compile scaphandre from source
 
 We recommand using this version of the rust toolchain or later:
@@ -22,7 +21,6 @@ To use the latest code for a true use case, build for release instead of debug:
     cargo build --release
 
 Binary path is `target/release/scaphandre`.
-
 ## More to come
 
 More tutorials to come, for a proper installation, like:

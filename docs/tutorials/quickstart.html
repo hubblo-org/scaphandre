@@ -167,13 +167,11 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#quickstart" id="quickstart">Quickstart</a></h1>
-<p>Here you'll see how to deploy and benefit from Scaphandre quickly.</p>
-<p>The quickest way to get scaphandre is to download the <a href="https://github.com/hubblo-org/releases">latest binary</a> suitable for your environment.</p>
-<p>Uncompress the file:</p>
-<pre><code>gunzip scaphandre-v0.1.1-Ubuntu_20.04-x86_64.gz &amp;&amp; mv scaphandre-v0.1.1-Ubuntu_20.04-x86_64 scaphandre
+<p>To quickly run scaphandre in your terminal you may use <a href="https://www.docker.com/">docker</a>:</p>
+<pre><code>docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -ti hubblo/scaphandre stdout -t 15
 </code></pre>
-<p>You can now run scaphandre. Let's see if you can get metrics directly in your terminal:</p>
-<pre><code>./scaphandre stdout -t 15
+<p>Or if you downloaded or built a <a href="https://github.com/hubblo-org/scaphandre/releases/latest/download/scaphandre-v0.1.1-Ubuntu_20.04-x86_64.gz">binary</a>, you'd run:</p>
+<pre><code>scaphandre stdout -t 15
 </code></pre>
 <p>Here we are using the stdout <a href="../explanations/internal-structure.html">exporter</a> to print current power consumption usage in the terminal during 15 seconds.</p>
 <p>You should get an output like:</p>
@@ -195,6 +193,9 @@ Then you have the 5 processes consuming the most power during the last two measu
 <p>If you don't get this output and get an error, jump to the <a href="../troubleshooting.html">Troubleshooting</a> section of the documentation.</p>
 <p>At that point, you're ready to use scaphandre the way you like. The Stdout exporter is very basic and other exporters should allow you to use and send those metrics the way you like.</p>
 <p>The <a href="references/exporter-prometheus.html">prometheus exporter</a>, for example, allows you to expose power consumption metrics as an HTTP endpoint that can be scrapped by a <a href="https://prometheus.io">prometheus</a> instance:</p>
+<pre><code>docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -p 8080:8080 -ti hubblo/scaphandre prometheus
+</code></pre>
+<p>Here is the same command with a simple binary:</p>
 <pre><code>scaphandre prometheus
 </code></pre>
 <p>To validate that the metrics are available, send an http request from another terminal:</p>
