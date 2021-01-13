@@ -14,4 +14,4 @@ If you need more in-depth, use-case oriented instructions, the [how-to guides](h
 
 [Explanations](section) is about theoritical concepts behind scaphandre and the reasons for the technical choices that have been made so far.
 
-If you are already using, hacking or exploring scaphandre and need precise informations about one of its components, go to the [references](references/exporter-prometheus.md) section. (The code documentation itself is [here](https://docs.rs/scaphandre/).
+If you are already using, hacking or exploring scaphandre and need precise informations about one of its components, go to the [references](references/exporter-prometheus.md) section. (The code documentation itself is [here](https://docs.rs/scaphandre/)).
