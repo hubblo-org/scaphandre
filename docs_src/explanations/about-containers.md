@@ -2,7 +2,7 @@
 
 There are several ways scaphandre can interact with containers.
 
-You may run scaphandre **in a container**, to not have to manage the dependencies, then measure the power consumption of the **bare metal host**. This is described in the [quickstart tutorial](../tutorials/quickstart.md).
+You may run scaphandre **in a container**, to not have to manage the dependencies, then measure the power consumption of the **bare metal host**. This is described in the [quickstart tutorial](../tutorials/quickstart.md). Note that you need to expose `/sys/class/powercap` and `/proc` as volumes in the container to allow scaphandre to get the relevant metrics from the bare metal host.
 
 Scaphandre may help you measure the **power consumption of containers** running on a given host. You can already get to that goal using the tips provided in the howto section called ["Get process level power consumption"](../how-to_guides/get-process-level-power-in-grafana.md). It may still require some tweaking and inventiveness from you in making the approriate queries to your favorite TSDB. This should be made easier by the upcoming [scaphandre features](https://github.com/hubblo-org/scaphandre/projects/1).
 
