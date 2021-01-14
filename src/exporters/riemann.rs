@@ -483,7 +483,7 @@ impl Exporter for RiemannExporter {
         options.insert(
             String::from("address"),
             ExporterOption {
-                default_value: String::from(DEFAULT_IP_ADDRESS),
+                default_value: Some(String::from(DEFAULT_IP_ADDRESS)),
                 help: String::from("Riemann ipv6 or ipv4 address"),
                 long: String::from("address"),
                 short: String::from("a"),
@@ -494,7 +494,7 @@ impl Exporter for RiemannExporter {
         options.insert(
             String::from("port"),
             ExporterOption {
-                default_value: String::from(DEFAULT_PORT),
+                default_value: Some(String::from(DEFAULT_PORT)),
                 help: String::from("Riemann TCP port number"),
                 long: String::from("port"),
                 short: String::from("p"),
@@ -505,7 +505,7 @@ impl Exporter for RiemannExporter {
         options.insert(
             String::from("dispatch_duration"),
             ExporterOption {
-                default_value: String::from("5"),
+                default_value: Some(String::from("5")),
                 help: String::from("Duration between metrics dispatch"),
                 long: String::from("dispatch"),
                 short: String::from("d"),
