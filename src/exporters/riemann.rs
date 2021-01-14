@@ -1,5 +1,5 @@
 use crate::exporters::*;
-use crate::sensors::{Record, RecordGenerator, Sensor};
+use crate::sensors::{RecordGenerator, Sensor};
 use clap::crate_version;
 use riemann_client::proto::Attribute;
 use riemann_client::proto::Event;
@@ -342,14 +342,12 @@ impl Exporter for RiemannExporter {
             }
 
             // metrics
-            let mut host_energy_microjoules = String::from("0");
-            let mut host_energy_timestamp_seconds = String::from("0");
             if !records.is_empty() {
                 let record = records.last().unwrap();
-                host_energy_microjoules = record.value.clone();
-                host_energy_timestamp_seconds = record.timestamp.as_secs().to_string();
-            }
-            rclient.send_metric(
+                let host_energy_microjoules = record.value.clone();
+                let host_energy_timestamp_seconds = record.timestamp.as_secs().to_string();
+
+                rclient.send_metric(
                 60.0,
                 &hostname,
                 "host_energy_microjoules",
@@ -360,74 +358,66 @@ impl Exporter for RiemannExporter {
                 host_energy_microjoules
             );
 
-            rclient.send_metric(
-                60.0,
-                &hostname,
-                "host_energy_timestamp_seconds",
-                "ok",
-                vec!["scaphandre".to_string()],
-                vec![],
-                "Timestamp in seconds when hose_energy_microjoules has been computed.",
-                host_energy_timestamp_seconds,
-            );
+                rclient.send_metric(
+                    60.0,
+                    &hostname,
+                    "host_energy_timestamp_seconds",
+                    "ok",
+                    vec!["scaphandre".to_string()],
+                    vec![],
+                    "Timestamp in seconds when host_energy_microjoules has been computed.",
+                    host_energy_timestamp_seconds,
+                );
 
-            let mut host_power_microwatts = "0";
-            let host_power_record: Record;
-            if let Some(power) = topology.get_records_diff_power_microwatts() {
-                host_power_record = power;
-                host_power_microwatts = &host_power_record.value;
+                if let Some(power) = topology.get_records_diff_power_microwatts() {
+                    rclient.send_metric(
+                        60.0,
+                        &hostname,
+                        "host_power_microwatts",
+                        "ok",
+                        vec!["scaphandre".to_string()],
+                        vec![],
+                        "Power measurement on the whole host, in microwatts",
+                        power.value,
+                    );
+                }
             }
-
-            rclient.send_metric(
-                60.0,
-                &hostname,
-                "host_power_microwatts",
-                "ok",
-                vec!["scaphandre".to_string()],
-                vec![],
-                "Power measurement on the whole host, in microwatts",
-                host_power_microwatts,
-            );
 
             let sockets = topology.get_sockets_passive();
             for socket in sockets {
                 let records = socket.get_records_passive();
-                let mut socket_energy_microjoules = "0";
                 if !records.is_empty() {
-                    socket_energy_microjoules = &records.last().unwrap().value;
+                    let socket_energy_microjoules = &records.last().unwrap().value;
+
+                    let mut attribute = Attribute::new();
+                    attribute.set_key("socket_id".to_string());
+                    attribute.set_value(socket.id.to_string());
+                    rclient.send_metric(
+                        60.0,
+                        &hostname,
+                        "socket_energy_microjoules",
+                        "ok",
+                        vec!["scaphandre".to_string()],
+                        vec![attribute.clone()],
+                        "Socket related energy measurement in microjoules.",
+                        socket_energy_microjoules.as_ref(),
+                    );
+
+                    if let Some(power) = topology.get_records_diff_power_microwatts() {
+                        let socket_power_microwatts = &power.value;
+
+                        rclient.send_metric(
+                            60.0,
+                            &hostname,
+                            "socket_power_microwatts",
+                            "ok",
+                            vec!["scaphandre".to_string()],
+                            vec![attribute.clone()],
+                            "Power measurement relative to a CPU socket, in microwatts",
+                            socket_power_microwatts.as_ref(),
+                        );
+                    }
                 }
-
-                let mut attribute = Attribute::new();
-                attribute.set_key("socket_id".to_string());
-                attribute.set_value(socket.id.to_string());
-                rclient.send_metric(
-                    60.0,
-                    &hostname,
-                    "socket_energy_microjoules",
-                    "ok",
-                    vec!["scaphandre".to_string()],
-                    vec![attribute.clone()],
-                    "Socket related energy measurement in microjoules.",
-                    socket_energy_microjoules,
-                );
-
-                let mut socket_power_microwatts = "0";
-                let socket_power_record: Record;
-                if let Some(power) = topology.get_records_diff_power_microwatts() {
-                    socket_power_record = power;
-                    socket_power_microwatts = &socket_power_record.value;
-                }
-
-                rclient.send_metric(
-                    60.0,
-                    &hostname,
-                    "socket_power_microwatts",
-                    "ok",
-                    vec!["scaphandre".to_string()],
-                    vec![attribute.clone()],
-                    "Power measurement relative to a CPU socket, in microwatts",
-                    socket_power_microwatts,
-                );
             }
 
             if let Some(metric_value) = topology.read_nb_process_total_count() {
