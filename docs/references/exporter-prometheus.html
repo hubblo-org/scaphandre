@@ -170,24 +170,27 @@
 <pre><code>scaphandre prometheus
 </code></pre>
 <p>As always exporter's options can be displayed with <code>-h</code>:</p>
-<pre><code>scaphandre prometheus -h
-scaphandre-prometheus 
-prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted
-format.
+<pre><code>	scaphandre prometheus -h
+	scaphandre-prometheus
+	Prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted
+	format
 
-USAGE:
-	scaphandre --sensor &lt;sensor&gt; prometheus [OPTIONS]
+	USAGE:
+		scaphandre prometheus [FLAGS] [OPTIONS]
 
-FLAGS:
-	-h, --help       Prints help information
-	-V, --version    Prints version information
+	FLAGS:
+		-h, --help       Prints help information
+		-q, --qemu       Instruct that scaphandre is running on an hypervisor
+		-V, --version    Prints version information
 
-OPTIONS:
-	-a, --address &lt;address&gt;    ipv6 or ipv4 address to expose the service to [default: ::]
-	-p, --port &lt;port&gt;          TCP port number to expose the service [default: 8080]
-	-s, --suffix &lt;suffix&gt;      url suffix to access metrics [default: metrics]
+	OPTIONS:
+		-a, --address &lt;address&gt;    ipv6 or ipv4 address to expose the service to [default: ::]
+		-p, --port &lt;port&gt;          TCP port number to expose the service [default: 8080]
+		-s, --suffix &lt;suffix&gt;      url suffix to access metrics [default: metrics]
 </code></pre>
 <p>With default options values, the metrics are exposed on http://localhost:8080/metrics.</p>
+<p>Use -q or --qemu option if you are running scaphandre on a hypervisor. In that case a label with the vm name will be added to all <code>qemu-system*</code> processes.
+This will allow to easily create charts consumption for each vm and defined which one is the top contributor.</p>
 <h2><a class="header" href="#metrics-exposed" id="metrics-exposed">Metrics exposed</a></h2>
 <p>All metrics have a HELP section provided on /metrics (or whatever suffix you choosed to expose them).</p>
 <p>Here are some key metrics that you will most probably be interested in:</p>
@@ -281,7 +284,7 @@ OPTIONS:
         
         <!-- Livereload script (if served using the cli tool) -->
         <script type="text/javascript">
-            var socket = new WebSocket("ws://localhost:3000/__livereload");
+            var socket = new WebSocket("ws://localhost:3001/__livereload");
             socket.onmessage = function (event) {
                 if (event.data === "reload") {
                     socket.close();

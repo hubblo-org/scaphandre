@@ -337,24 +337,27 @@ RAPL stands for <a href="https://01.org/blogs/2014/running-average-power-limit-%
 <pre><code>scaphandre prometheus
 </code></pre>
 <p>As always exporter's options can be displayed with <code>-h</code>:</p>
-<pre><code>scaphandre prometheus -h
-scaphandre-prometheus 
-prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted
-format.
+<pre><code>	scaphandre prometheus -h
+	scaphandre-prometheus
+	Prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted
+	format
 
-USAGE:
-	scaphandre --sensor &lt;sensor&gt; prometheus [OPTIONS]
+	USAGE:
+		scaphandre prometheus [FLAGS] [OPTIONS]
 
-FLAGS:
-	-h, --help       Prints help information
-	-V, --version    Prints version information
+	FLAGS:
+		-h, --help       Prints help information
+		-q, --qemu       Instruct that scaphandre is running on an hypervisor
+		-V, --version    Prints version information
 
-OPTIONS:
-	-a, --address &lt;address&gt;    ipv6 or ipv4 address to expose the service to [default: ::]
-	-p, --port &lt;port&gt;          TCP port number to expose the service [default: 8080]
-	-s, --suffix &lt;suffix&gt;      url suffix to access metrics [default: metrics]
+	OPTIONS:
+		-a, --address &lt;address&gt;    ipv6 or ipv4 address to expose the service to [default: ::]
+		-p, --port &lt;port&gt;          TCP port number to expose the service [default: 8080]
+		-s, --suffix &lt;suffix&gt;      url suffix to access metrics [default: metrics]
 </code></pre>
 <p>With default options values, the metrics are exposed on http://localhost:8080/metrics.</p>
+<p>Use -q or --qemu option if you are running scaphandre on a hypervisor. In that case a label with the vm name will be added to all <code>qemu-system*</code> processes.
+This will allow to easily create charts consumption for each vm and defined which one is the top contributor.</p>
 <h2><a class="header" href="#metrics-exposed" id="metrics-exposed">Metrics exposed</a></h2>
 <p>All metrics have a HELP section provided on /metrics (or whatever suffix you choosed to expose them).</p>
 <p>Here are some key metrics that you will most probably be interested in:</p>
@@ -410,7 +413,7 @@ OPTIONS:
 <h1><a class="header" href="#qemu-exporter" id="qemu-exporter">Qemu exporter</a></h1>
 <p>Computes energy consumption metrics for each Qemu/KVM virtual machine found on the host.
 Exposes those metrics as filetrees compatible with the <a href="references/../sensors/powercap_rapl.html">powercap_rapl sensor</a>.</p>
-<p>Note that this is still experimental. Metrics are already considered trustworthy, but there are discussions and tests to be performed about the acceptable ways to share the data with the guests/vms. Any feedback or thoughts about this are welcome. Please refer to the contributing/contact section of the <a href="https://github.com/hubblo-org/scaphandre/#contributing">README</a>.</p>
+<p>Note that this is still experimental. Metrics are already considered trustworthy, but there are discussions and tests to be performed about the acceptable ways to share the data with the guests/vms. Any feedback or thoughts about this are welcome. Please refer to the <a href="references/../contributing.html">contributing section</a>.</p>
 <h2><a class="header" href="#usage-1" id="usage-1">Usage</a></h2>
 <ol>
 <li>
@@ -426,14 +429,22 @@ First create a tmpfs mount point to isolate metrics for that virtual machine:</p
 </li>
 <li>
 <p>Ensure you expose the content of this folder to the virtual machine by having this configuration in the xml configuration of the domain:</p>
-<pre><code> &lt;filesystem type='mount' accessmode='passthrough'&gt;
-   &lt;driver type='virtiofs'/&gt;
-   &lt;source dir='/var/lib/libvirt/scaphandre/DOMAIN_NAME'/&gt;
-   &lt;target dir='scaphandre'/&gt;
-   &lt;readonly /&gt;
- &lt;/filesystem&gt;
+<pre><code>		&lt;filesystem type='mount' accessmode='passthrough'&gt;
+	      &lt;driver type='virtiofs'/&gt;
+	      &lt;source dir='/var/lib/libvirt/scaphandre/DOMAIN_NAME'/&gt;
+	      &lt;target dir='scaphandre'/&gt;
+		  &lt;readonly /&gt;
+	    &lt;/filesystem&gt;
 </code></pre>
-</li>
+<p>You can edit the vm properties using <code>sudo virsh edit &lt;DOMAIN_NAME&gt;</code> using your usual editor. But it is more convenient to use virtual-manager, as explained in the following screenshots.</p>
+<p><em>It also helps to define the correct syntax which probably depends from the qemu version. You can check that the above configuration is slightly different form the one below</em>.</p>
+<p>a. Right click in the hardware menu:
+<img src="references/images/virtualmgr00.png" alt="virtualmgr00" /></p>
+<p>b. Enter the following parameters:
+<img src="references/images/virtualmgr01.png" alt="virtualmgr01" /></p>
+<p>c. XML generated as a result:
+<img src="references/images/virtualmgr02.png" alt="virtualmgr02" /></p>
+<ol start="4">
 <li>
 <p>Ensure the VM has been started once the configuration is applied, then mount the filesystem on the VM/guest:</p>
 <pre><code> mount -t 9p -o trans=virtio scaphandre /var/scaphandre
@@ -448,17 +459,8 @@ First create a tmpfs mount point to isolate metrics for that virtual machine:</p
 <p>Collect your virtual machine specific power usage metrics. (requesting http://VM_IP:8080/metrics in this example, using the prometheus exporter)</p>
 </li>
 </ol>
-<p>As always exporter's options can be displayed with <code>-h</code>:</p>
-<pre><code>scaphandre-qemu 
-Qemu exporter watches all Qemu/KVM virtual machines running on the host and exposes metrics of each of them in a
-dedicated folder
-
-USAGE:
-    scaphandre qemu
-
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information</code></pre>
+</li>
+</ol>
 <h1><a class="header" href="#stdout-exporter" id="stdout-exporter">Stdout exporter</a></h1>
 <h2><a class="header" href="#usage-2" id="usage-2">Usage</a></h2>
 <p>You can launch the stdout exporter this way (running the default powercap_rapl sensor):</p>
@@ -624,7 +626,7 @@ Modules that are dedicated to send this data to a given channel or remote system
         
         <!-- Livereload script (if served using the cli tool) -->
         <script type="text/javascript">
-            var socket = new WebSocket("ws://localhost:3000/__livereload");
+            var socket = new WebSocket("ws://localhost:3001/__livereload");
             socket.onmessage = function (event) {
                 if (event.data === "reload") {
                     socket.close();

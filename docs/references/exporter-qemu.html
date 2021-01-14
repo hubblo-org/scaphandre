@@ -166,7 +166,7 @@
                         <h1><a class="header" href="#qemu-exporter" id="qemu-exporter">Qemu exporter</a></h1>
 <p>Computes energy consumption metrics for each Qemu/KVM virtual machine found on the host.
 Exposes those metrics as filetrees compatible with the <a href="../sensors/powercap_rapl.html">powercap_rapl sensor</a>.</p>
-<p>Note that this is still experimental. Metrics are already considered trustworthy, but there are discussions and tests to be performed about the acceptable ways to share the data with the guests/vms. Any feedback or thoughts about this are welcome. Please refer to the contributing/contact section of the <a href="https://github.com/hubblo-org/scaphandre/#contributing">README</a>.</p>
+<p>Note that this is still experimental. Metrics are already considered trustworthy, but there are discussions and tests to be performed about the acceptable ways to share the data with the guests/vms. Any feedback or thoughts about this are welcome. Please refer to the <a href="../contributing.html">contributing section</a>.</p>
 <h2><a class="header" href="#usage" id="usage">Usage</a></h2>
 <ol>
 <li>
@@ -182,14 +182,22 @@ First create a tmpfs mount point to isolate metrics for that virtual machine:</p
 </li>
 <li>
 <p>Ensure you expose the content of this folder to the virtual machine by having this configuration in the xml configuration of the domain:</p>
-<pre><code> &lt;filesystem type='mount' accessmode='passthrough'&gt;
-   &lt;driver type='virtiofs'/&gt;
-   &lt;source dir='/var/lib/libvirt/scaphandre/DOMAIN_NAME'/&gt;
-   &lt;target dir='scaphandre'/&gt;
-   &lt;readonly /&gt;
- &lt;/filesystem&gt;
+<pre><code>		&lt;filesystem type='mount' accessmode='passthrough'&gt;
+	      &lt;driver type='virtiofs'/&gt;
+	      &lt;source dir='/var/lib/libvirt/scaphandre/DOMAIN_NAME'/&gt;
+	      &lt;target dir='scaphandre'/&gt;
+		  &lt;readonly /&gt;
+	    &lt;/filesystem&gt;
 </code></pre>
-</li>
+<p>You can edit the vm properties using <code>sudo virsh edit &lt;DOMAIN_NAME&gt;</code> using your usual editor. But it is more convenient to use virtual-manager, as explained in the following screenshots.</p>
+<p><em>It also helps to define the correct syntax which probably depends from the qemu version. You can check that the above configuration is slightly different form the one below</em>.</p>
+<p>a. Right click in the hardware menu:
+<img src="images/virtualmgr00.png" alt="virtualmgr00" /></p>
+<p>b. Enter the following parameters:
+<img src="images/virtualmgr01.png" alt="virtualmgr01" /></p>
+<p>c. XML generated as a result:
+<img src="images/virtualmgr02.png" alt="virtualmgr02" /></p>
+<ol start="4">
 <li>
 <p>Ensure the VM has been started once the configuration is applied, then mount the filesystem on the VM/guest:</p>
 <pre><code> mount -t 9p -o trans=virtio scaphandre /var/scaphandre
@@ -204,17 +212,8 @@ First create a tmpfs mount point to isolate metrics for that virtual machine:</p
 <p>Collect your virtual machine specific power usage metrics. (requesting http://VM_IP:8080/metrics in this example, using the prometheus exporter)</p>
 </li>
 </ol>
-<p>As always exporter's options can be displayed with <code>-h</code>:</p>
-<pre><code>scaphandre-qemu 
-Qemu exporter watches all Qemu/KVM virtual machines running on the host and exposes metrics of each of them in a
-dedicated folder
-
-USAGE:
-    scaphandre qemu
-
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information</code></pre>
+</li>
+</ol>
 
                     </main>
 
@@ -256,7 +255,7 @@ FLAGS:
         
         <!-- Livereload script (if served using the cli tool) -->
         <script type="text/javascript">
-            var socket = new WebSocket("ws://localhost:3000/__livereload");
+            var socket = new WebSocket("ws://localhost:3001/__livereload");
             socket.onmessage = function (event) {
                 if (event.data === "reload") {
                     socket.close();
