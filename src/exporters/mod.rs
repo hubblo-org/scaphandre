@@ -23,7 +23,7 @@ pub struct ExporterOption {
     /// Does the option need a value to be specified ?
     pub takes_value: bool,
     /// The default value, if needed
-    pub default_value: String,
+    pub default_value: Option<String>,
     /// One letter to identify the option (useful for the CLI)
     pub short: String,
     /// A word to identify the option
