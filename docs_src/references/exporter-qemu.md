@@ -17,26 +17,40 @@ First create a tmpfs mount point to isolate metrics for that virtual machine:
 		mount -t tmpfs tmpfs_DOMAIN_NAME /var/lib/libvirt/scaphandre/DOMAIN_NAME -o size=10m
 
 3. Ensure you expose the content of this folder to the virtual machine by having this configuration in the xml configuration of the domain:
-
+```
 		<filesystem type='mount' accessmode='passthrough'>
 	      <driver type='virtiofs'/>
 	      <source dir='/var/lib/libvirt/scaphandre/DOMAIN_NAME'/>
 	      <target dir='scaphandre'/>
 		  <readonly />
 	    </filesystem>
+```
+You can edit the vm properties using `sudo virsh edit <DOMAIN_NAME>` using your usual editor. But it is more convenient to use virtual-manager, as explained in the following screenshots.
 
-3. Ensure the VM has been started once the configuration is applied, then mount the filesystem on the VM/guest:
+*It also helps to define the correct syntax which probably depends from the qemu version. You can check that the above configuration is slightly different form the one below*.
+
+a. Right click in the hardware menu:
+![virtualmgr00](images/virtualmgr00.png)
+
+b. Enter the following parameters:
+![virtualmgr01](images/virtualmgr01.png)
+
+c. XML generated as a result:
+![virtualmgr02](images/virtualmgr02.png)
+
+4. Ensure the VM has been started once the configuration is applied, then mount the filesystem on the VM/guest:
 
 		mount -t 9p -o trans=virtio scaphandre /var/scaphandre
 
-4. Still in the guest, run scaphandre in VM mode with the default sensor:
+5. Still in the guest, run scaphandre in VM mode with the default sensor:
 
 		scaphandre --vm prometheus
 
-5. Collect your virtual machine specific power usage metrics. (requesting http://VM_IP:8080/metrics in this example, using the prometheus exporter)
+6. Collect your virtual machine specific power usage metrics. (requesting http://VM_IP:8080/metrics in this example, using the prometheus exporter)
 
 As always exporter's options can be displayed with `-h`:
 
+<<<<<<< HEAD:docs_src/references/exporter-qemu.md
 	scaphandre-qemu 
 	Qemu exporter watches all Qemu/KVM virtual machines running on the host and exposes metrics of each of them in a
 	dedicated folder
@@ -47,3 +61,6 @@ As always exporter's options can be displayed with `-h`:
 	FLAGS:
 	    -h, --help       Prints help information
 	    -V, --version    Prints version information
+=======
+	scaphandre qemu -h
+>>>>>>> 2f8d832c3d478a1681fe9f96d4071621d4736839:docs/exporters/qemu.md
