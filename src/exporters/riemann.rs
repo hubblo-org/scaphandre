@@ -513,6 +513,17 @@ impl Exporter for RiemannExporter {
                 takes_value: true,
             },
         );
+        options.insert(
+            String::from("qemu"),
+            ExporterOption {
+                default_value: None,
+                help: String::from("Instruct that scaphandre is running on an hypervisor"),
+                long: String::from("qemu"),
+                short: String::from("q"),
+                required: false,
+                takes_value: false,
+            },
+        );
 
         options
     }
