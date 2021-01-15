@@ -27,11 +27,11 @@ This project was born from a deep sense of duty from tech workers. Please refer 
 
 ## ✨ Features
 
-- measuring power consumption on bare metal hosts
-- measuring power consumption of qemu/kvm virtual machines from the host
-- exposing power consumption metrics of a virtual machine in a way that allows to access those metrics in the VM as if it was a bare metal machine (relies on hypervisor features)
-- exposing power consumption metrics as a [prometheus](https://prometheus.io) HTTP exporter
-- showing basic power consumption metrics in the terminal
+- measuring power consumption on **bare metal hosts**
+- measuring power consumption of **qemu/kvm virtual machines** from the host
+- **exposing** power consumption metrics of a virtual machine, to allow **manipulating those metrics in the VM** as if it was a bare metal machine (relies on hypervisor features)
+- exposing power consumption metrics as a **[prometheus](https://prometheus.io) (HTTP) exporter**
+- showing basic power consumption metrics **in the terminal**
 
 You can see some samples of metrics that scaphandre allows you to gather [here](https://metrics.hubblo.org).
 
