@@ -472,6 +472,59 @@ impl Exporter for RiemannExporter {
                 );
             }
 
+            let processes_tracker = &topology.proc_tracker;
+
+            for pid in processes_tracker.get_alive_pids() {
+                let exe = processes_tracker.get_process_name(pid);
+                let cmdline = processes_tracker.get_process_cmdline(pid);
+                let mut attributes = vec![];
+
+                let mut attribute = Attribute::new();
+                attribute.set_key("pid".to_string());
+                attribute.set_value(pid.to_string());
+                attributes.push(attribute);
+
+                let mut attribute = Attribute::new();
+                attribute.set_key("exe".to_string());
+                attribute.set_value(exe.clone());
+                attributes.push(attribute);
+
+                if let Some(cmdline_str) = cmdline {
+                    let mut attribute = Attribute::new();
+                    attribute.set_key("cmdline".to_string());
+                    attribute.set_value(cmdline_str.replace("\"", "\\\""));
+                    attributes.push(attribute);
+
+                    if parameters.is_present("qemu") {
+                        println!("qemu set");
+                    }
+                    // if data.qemu {
+                    //     if let Some(vmname) = filter_qemu_cmdline(&cmdline_str) {
+                    //         plabels.insert(String::from("vmname"), vmname);
+                    //     }
+                    // }
+                }
+
+                let metric_name = format!(
+                    "{}_{}_{}",
+                    "process_power_consumption_microwatts",
+                    pid.to_string(),
+                    exe
+                );
+                if let Some(power) = topology.get_process_power_consumption_microwatts(pid) {
+                    rclient.send_metric(
+                        60.0,
+                        &hostname,
+                        &metric_name,
+                        "ok",
+                        vec!["scaphandre".to_string()],
+                        attributes,
+                        "Power consumption due to the process, measured on at the topology level, in microwatts",
+                        power.to_string(),
+                    );
+                }
+            }
+
             thread::sleep(Duration::new(dispatch_duration, 0));
         }
     }
