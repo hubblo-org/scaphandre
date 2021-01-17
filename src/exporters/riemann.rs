@@ -496,13 +496,13 @@ impl Exporter for RiemannExporter {
                     attributes.push(attribute);
 
                     if parameters.is_present("qemu") {
-                        println!("qemu set");
+                        if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
+                            let mut attribute = Attribute::new();
+                            attribute.set_key("vmname".to_string());
+                            attribute.set_value(vmname);
+                            attributes.push(attribute);
+                        }
                     }
-                    // if data.qemu {
-                    //     if let Some(vmname) = filter_qemu_cmdline(&cmdline_str) {
-                    //         plabels.insert(String::from("vmname"), vmname);
-                    //     }
-                    // }
                 }
 
                 let metric_name = format!(

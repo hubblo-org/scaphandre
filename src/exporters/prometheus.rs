@@ -476,7 +476,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
             //}
             plabels.insert(String::from("cmdline"), cmdline_str.replace("\"", "\\\""));
             if data.qemu {
-                if let Some(vmname) = filter_qemu_cmdline(&cmdline_str) {
+                if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
                     plabels.insert(String::from("vmname"), vmname);
                 }
             }
@@ -510,62 +510,6 @@ async fn landing_page() -> impl Responder {
     HttpResponse::Ok()
         //.set_header("X-TEST", "value")
         .body(body)
-}
-
-fn filter_qemu_cmdline(cmdline: &str) -> Option<String> {
-    if cmdline.contains("qemu-system") && cmdline.contains("guest=") {
-        let vmname: Vec<Vec<&str>> = cmdline
-            .split("guest=")
-            .map(|x| x.split(',').collect())
-            .collect();
-
-        match (vmname[1].len(), vmname[1][0].is_empty()) {
-            (1, _) => return None,
-            (_, true) => return None,
-            (_, false) => return Some(String::from(vmname[1][0])),
-        }
-    }
-    None
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_filter_qemu_cmdline_ok() {
-        let cmdline = "file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sguest=fedora33,debug-threads=on-name/usr/bin/qemu-system-x86_64";
-        assert_eq!(filter_qemu_cmdline(cmdline), Some("fedora33".to_string()));
-    }
-
-    #[test]
-    fn test_filter_qemu_cmdline_ko_not_qemu() {
-        let cmdline = "file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sguest=fedora33,debug-threads=on-name/usr/bin/bidule";
-        assert_eq!(filter_qemu_cmdline(cmdline), None);
-    }
-
-    #[test]
-    fn test_filter_qemu_cmdline_ko_no_guest_token() {
-        let cmdline = "file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sfuest=fedora33,debug-threads=on-name/usr/bin/qemu-system-x86_64";
-        assert_eq!(filter_qemu_cmdline(cmdline), None);
-    }
-
-    #[test]
-    fn test_filter_qemu_cmdline_ko_no_comma_separator() {
-        let cmdline = "file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sguest=fedora33#debug-threads=on-name/usr/bin/qemu-system-x86_64";
-        assert_eq!(filter_qemu_cmdline(cmdline), None);
-    }
-
-    #[test]
-    fn test_filter_qemu_cmdline_ko_empty_guest01() {
-        let cmdline = "file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sguest=,,debug-threads=on-name/usr/bin/qemu-system-x86_64";
-        assert_eq!(filter_qemu_cmdline(cmdline), None);
-    }
-
-    #[test]
-    fn test_filter_qemu_cmdline_ko_empty_guest02() {
-        let cmdline = "qemu-system-x86_64,file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sguest=";
-        assert_eq!(filter_qemu_cmdline(cmdline), None);
-    }
 }
 
 //  Copyright 2020 The scaphandre authors.
