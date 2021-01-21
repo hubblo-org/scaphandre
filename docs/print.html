@@ -558,6 +558,9 @@ This is even harder in a virtualization environement or as public cloud customer
 <p>Then run scaphandre. If it does not work, the issue is somewhere else.</p>
 <h3><a class="header" href="#i-get-a-no-such-device-error-the-intel_rapl-of-intel_rapl_common-kernel-modules-are-present" id="i-get-a-no-such-device-error-the-intel_rapl-of-intel_rapl_common-kernel-modules-are-present">I get a <strong>no such device</strong> error, the intel_rapl of intel_rapl_common kernel modules are present</a></h3>
 <p>It can mean that your cpu doesn't support RAPL. Please refer to the <a href="compatibility.html">compatibility</a> section to be sure.</p>
+<h3><a class="header" href="#i-cant-mount-the-required-kernel-modules-getting-a-couldnt-find-xxx-modules-error" id="i-cant-mount-the-required-kernel-modules-getting-a-couldnt-find-xxx-modules-error">I can't mount the required kernel modules, getting a <code>Could'nt find XXX modules</code> error</a></h3>
+<p>If you are in a situation comparable to <a href="https://github.com/hubblo-org/scaphandre/issues/59">this one</a>, you may need to install additional packages.</p>
+<p>On ubuntu 20.01 and 20.10, try to install <code>linux-modules-extra-$(uname-r)</code> with apt. Then you should be able to <code>modprobe intel_rapl_common</code>.</p>
 <h1><a class="header" href="#contributing-guide" id="contributing-guide">Contributing guide</a></h1>
 <p>If you are reading this, you may be  to contribute. Just for that, a big thank you ! 👏</p>
 <p>Feel free to propose pull requests, or open new <a href="https://github.com/hubblo-org/scaphandre/discussions">discussions</a> or <a href="https://github.com/hubblo-org/scaphandre/issues">issues</a> at will. Scaphandre is a collaborative project and all opinions and propositions shall be heard and studied. The contributions will be received with kindness, gratitude and with an open mind. Remember that we are all <a href="https://en.wikipedia.org/wiki/Standing_on_the_shoulders_of_giants">dwarfs standing on the shoulders of giants</a>. We all have to learn from others and to give back, with due mutual respect.</p>
@@ -626,7 +629,7 @@ Modules that are dedicated to send this data to a given channel or remote system
         
         <!-- Livereload script (if served using the cli tool) -->
         <script type="text/javascript">
-            var socket = new WebSocket("ws://localhost:3001/__livereload");
+            var socket = new WebSocket("ws://localhost:3000/__livereload");
             socket.onmessage = function (event) {
                 if (event.data === "reload") {
                     socket.close();
