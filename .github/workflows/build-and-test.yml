@@ -2,9 +2,9 @@ name: build_and_test
 
 on:
   push:
-    branches: [ ci/#43-add-cargo-test-all-in-ci ]
+    branches: [ main, dev ]
   pull_request:
-    branches: [ ci/#43-add-cargo-test-all-in-ci ]
+    branches: [ main, dev ]
 
 env:
   CARGO_TERM_COLOR: always
