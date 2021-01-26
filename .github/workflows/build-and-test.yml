@@ -1,4 +1,4 @@
-jame: build_and_test
+name: build_and_test
 
 on:
   push:
