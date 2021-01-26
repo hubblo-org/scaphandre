@@ -24,7 +24,7 @@ jobs:
           pip install awxkit
       - name: Install jq
         run: |
-          apt install jq -y
+          sudo apt install jq -y
       - name: Log on AWX 
         id: login
         run: |
