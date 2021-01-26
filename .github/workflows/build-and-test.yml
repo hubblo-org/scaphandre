@@ -14,9 +14,9 @@ jobs:
     name: build_and_test_x86_64
     runs-on: ubuntu-latest
     steps:
-      - name: Set up python
-        with:
-          python-version: '3.8.5'
+      #- name: Set up python
+      #  with:
+      #    python-version: '3.8.5'
       - name: Install dependencies (awxkit)
         run: |
           python -m pip install --upgrade pip
