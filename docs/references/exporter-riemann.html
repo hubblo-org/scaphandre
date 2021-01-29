@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>About containers - Scaphandre documentation</title>
+        <title>Riemann exporter - Scaphandre documentation</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="../tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="../how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">4.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="../explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">5.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="../explanations/internal-structure.html"><strong aria-hidden="true">6.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="../explanations/about-containers.html" class="active"><strong aria-hidden="true">7.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="../references/exporter-prometheus.html"><strong aria-hidden="true">8.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-qemu.html"><strong aria-hidden="true">9.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-riemann.html"><strong aria-hidden="true">10.</strong> Riemann exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-stdout.html"><strong aria-hidden="true">11.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="../references/sensor-powercap_rapl.html"><strong aria-hidden="true">12.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="../why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="../compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="../troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="../contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="../sources.html">External references you may be interested in</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="../tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="../how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">4.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="../explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">5.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="../explanations/internal-structure.html"><strong aria-hidden="true">6.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="../explanations/about-containers.html"><strong aria-hidden="true">7.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="../references/exporter-prometheus.html"><strong aria-hidden="true">8.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-qemu.html"><strong aria-hidden="true">9.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-riemann.html" class="active"><strong aria-hidden="true">10.</strong> Riemann exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-stdout.html"><strong aria-hidden="true">11.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="../references/sensor-powercap_rapl.html"><strong aria-hidden="true">12.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="../why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="../compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="../troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="../contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="../sources.html">External references you may be interested in</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,25 +163,52 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#about-containers" id="about-containers">About containers</a></h1>
-<p>There are several ways scaphandre can interact with containers.</p>
-<p>You may run scaphandre <strong>in a container</strong>, to not have to manage the dependencies, then measure the power consumption of the <strong>bare metal host</strong>. This is described in the <a href="../tutorials/quickstart.html">quickstart tutorial</a>. Note that you need to expose <code>/sys/class/powercap</code> and <code>/proc</code> as volumes in the container to allow scaphandre to get the relevant metrics from the bare metal host.</p>
-<p>Scaphandre may help you measure the <strong>power consumption of containers</strong> running on a given host. You can already get to that goal using the tips provided in the howto section called <a href="../how-to_guides/get-process-level-power-in-grafana.html">&quot;Get process level power consumption&quot;</a>. It may still require some tweaking and inventiveness from you in making the approriate queries to your favorite TSDB. This should be made easier by the upcoming <a href="https://github.com/hubblo-org/scaphandre/projects/1">scaphandre features</a>.</p>
-<p>Another use case scenario would be to measure the power consumption of a <strong>container orchestrator</strong> (like <a href="https://kubernetes.io/">kubernetes</a>), its nodes and the containers and applications running on it. This is a feature we are <a href="https://github.com/hubblo-org/scaphandre/issues/29#issuecomment-755353175">currently working on</a> (you may try yourself the helm chart that is proposed in that thread, before it is officially supported).</p>
-<p>As described <a href="../compatibility.html">here</a>, scaphandre provides several ways (<a href="../explanations/sensors.html">sensors</a>) to collect the power consumption metrics. Depending on your use case a sensor should be more suitable than the other. Each of them comes with strengths and weaknesses. This is basically always a tradeoff between precision and simplicity. This is especially true if you run a container-based workloads on public cloud instances. We are working to provide a solution <a href="https://github.com/hubblo-org/scaphandre/issues/25">for that as well</a>.</p>
+                        <h1><a class="header" href="#riemann-exporter" id="riemann-exporter">Riemann exporter</a></h1>
+<p><img src="images/riemann_exporter.png" alt="riemann exporter" /></p>
+<h2><a class="header" href="#usage" id="usage">Usage</a></h2>
+<p>You can launch the Riemann exporter this way (running the default powercap_rapl sensor):</p>
+<pre><code>scaphandre riemann
+</code></pre>
+<p>As always exporter's options can be displayed with <code>-h</code>:</p>
+<pre><code>scaphandre-riemann
+Riemann exporter sends power consumption metrics to a Riemann server
+
+USAGE:
+    scaphandre riemann [FLAGS] [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -q, --qemu       Instruct that scaphandre is running on an hypervisor
+    -V, --version    Prints version information
+
+OPTIONS:
+    -a, --address &lt;address&gt;               Riemann ipv6 or ipv4 address [default: localhost]
+    -d, --dispatch &lt;dispatch_duration&gt;    Duration between metrics dispatch [default: 5]
+    -p, --port &lt;port&gt;                     Riemann TCP port number [default: 5555]
+
+</code></pre>
+<p>With default options values, the metrics are sent to http://localhost:5555 every 5 seconds</p>
+<p>Use -q or --qemu option if you are running scaphandre on a hypervisor. In that case a label with the vm name will be added to all <code>qemu-system*</code> processes.
+This will allow to easily create charts consumption for each vm and defined which one is the top contributor.</p>
+<h2><a class="header" href="#metrics-exposed" id="metrics-exposed">Metrics exposed</a></h2>
+<p>Typically the Riemann exporter is working in the same way as the prometheus exporter regarding metrics. Please look at details in <a href="exporter-prometheus.html">Prometheus exporter</a> documentations.</p>
+<p>There is only one exception about <code>process_power_consumption_microwatts</code> each process has a service name <code>process_power_consumption_microwatts_pid_exe</code>.</p>
+<p>As an example, process consumption can be retrieved using the following Riemann query:</p>
+<pre><code>(service =~ &quot;process_power_consumption_microwatts_%_firefox&quot;) or (service =~ &quot;process_power_consumption_microwatts_%_scaphandre&quot;)
+</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="../explanations/internal-structure.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../references/exporter-qemu.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="../references/exporter-prometheus.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../references/exporter-stdout.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -193,13 +220,13 @@
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="../explanations/internal-structure.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../references/exporter-qemu.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="../references/exporter-prometheus.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../references/exporter-stdout.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

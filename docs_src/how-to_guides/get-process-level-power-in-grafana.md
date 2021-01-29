@@ -21,7 +21,7 @@ If I want to get power consumption (in Watts) for all processes related to [ngin
 
 Here we assume that scaphandre/the prometheus exporter is running on port number `8080`.
 
-Here how it looks, creating a panel in grafana:
+Here is how it looks, creating a panel in grafana:
 
 ![](../grafana-edit.png)
 
