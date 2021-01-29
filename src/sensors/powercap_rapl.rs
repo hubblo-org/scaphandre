@@ -21,8 +21,9 @@ impl PowercapRAPLSensor {
         buffer_per_socket_max_kbytes: u16,
         buffer_per_domain_max_kbytes: u16,
         virtual_machine: bool,
+        prefix: String
     ) -> PowercapRAPLSensor {
-        let mut powercap_path = String::from("/sys/class/powercap");
+        let mut powercap_path = String::from(format!("{}/sys/class/powercap", prefix));
         if virtual_machine {
             powercap_path = String::from("/var/scaphandre");
             if let Ok(val) = env::var("SCAPHANDRE_POWERCAP_PATH") {
@@ -127,7 +128,7 @@ mod tests {
     }
     #[test]
     fn get_topology_returns_topology_type() {
-        let mut sensor = PowercapRAPLSensor::new(1, 1, false);
+        let mut sensor = PowercapRAPLSensor::new(1, 1, false, String::from(""));
         let topology = sensor.get_topology();
         assert_eq!(
             "alloc::boxed::Box<core::option::Option<scaphandre::sensors::Topology>>",

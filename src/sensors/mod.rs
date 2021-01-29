@@ -1090,14 +1090,14 @@ mod tests {
 
     #[test]
     fn read_topology_stats() {
-        let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
+        let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false, String::from(""));
         let topo = (*sensor.get_topology()).unwrap();
         println!("{:?}", topo.read_stats());
     }
 
     #[test]
     fn read_core_stats() {
-        let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
+        let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false, String::from(""));
         let mut topo = (*sensor.get_topology()).unwrap();
         for s in topo.get_sockets() {
             for c in s.get_cores() {
@@ -1108,7 +1108,7 @@ mod tests {
 
     #[test]
     fn read_socket_stats() {
-        let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
+        let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false, String::from(""));
         let mut topo = (*sensor.get_topology()).unwrap();
         for s in topo.get_sockets() {
             println!("{:?}", s.read_stats());

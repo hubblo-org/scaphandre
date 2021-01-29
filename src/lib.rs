@@ -31,6 +31,7 @@ fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
                 .parse()
                 .unwrap(),
             matches.is_present("vm"),
+            get_argument(matches, "prefix")
         ),
         _ => PowercapRAPLSensor::new(
             get_argument(matches, "sensor-buffer-per-socket-max-kB")
@@ -40,6 +41,7 @@ fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
                 .parse()
                 .unwrap(),
             matches.is_present("vm"),
+            get_argument(matches, "prefix")
         ),
     };
     Box::new(sensor)

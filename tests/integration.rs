@@ -5,7 +5,7 @@ use std::fs::{create_dir, read_dir};
 
 #[test]
 fn exporter_qemu() {
-    let sensor = PowercapRAPLSensor::new(1, 1, false);
+    let sensor = PowercapRAPLSensor::new(1, 1, false, String::from(""));
     let mut exporter = QemuExporter::new(Box::new(sensor));
     // Create integration_tests directory if it does not exist
     let curdir = current_dir().unwrap();

@@ -53,7 +53,16 @@ fn main() {
                 .long("vm")
                 .required(false)
                 .takes_value(false)
+        ).arg(
+            Arg::with_name("prefix")
+                .value_name("prefix")
+                .help("Ask scaphandre to look for data in a specific location instead of the default one (will look in $PREFIX/sys/class/powercap and $PREFIX/proc).")
+                .long("prefix")
+                .required(false)
+                .takes_value(false)
+                .default_value("")
         );
+
 
     for exp in res {
         let mut subcmd = SubCommand::with_name(exp).about(
