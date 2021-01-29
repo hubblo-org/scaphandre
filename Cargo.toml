@@ -18,6 +18,9 @@ clap = "2.33.3"
 regex = "1"
 procfs = "0.8.1"
 actix-web = "3"
+riemann_client = "0.7.0"
+hostname = "0.3.1"
+protobuf = "^1.0.0"
 
 [profile.release]
 lto = true

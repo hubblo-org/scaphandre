@@ -20,6 +20,7 @@
 
 - [Prometheus exporter](references/exporter-prometheus.md)
 - [Qemu exporter](references/exporter-qemu.md)
+- [Riemann exporter](references/exporter-riemann.md)
 - [Stdout exporter](references/exporter-stdout.md)
 
 ## Sensors
