@@ -21,9 +21,9 @@ impl PowercapRAPLSensor {
         buffer_per_socket_max_kbytes: u16,
         buffer_per_domain_max_kbytes: u16,
         virtual_machine: bool,
-        prefix: String
+        prefix: String,
     ) -> PowercapRAPLSensor {
-        let mut powercap_path = String::from(format!("{}/sys/class/powercap", prefix));
+        let mut powercap_path = format!("{}/sys/class/powercap", prefix);
         if virtual_machine {
             powercap_path = String::from("/var/scaphandre");
             if let Ok(val) = env::var("SCAPHANDRE_POWERCAP_PATH") {

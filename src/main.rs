@@ -63,7 +63,6 @@ fn main() {
                 .default_value("")
         );
 
-
     for exp in res {
         let mut subcmd = SubCommand::with_name(exp).about(
             match exp {
