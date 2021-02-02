@@ -6,7 +6,7 @@ pub mod sensors;
 use clap::ArgMatches;
 use exporters::{
     prometheus::PrometheusExporter, qemu::QemuExporter, riemann::RiemannExporter,
-    stdout::StdoutExporter, Exporter, ExporterOption,
+    stdout::StdoutExporter, json::JSONExporter, Exporter, ExporterOption,
 };
 use sensors::{powercap_rapl::PowercapRAPLSensor, Sensor};
 use std::collections::HashMap;
@@ -59,6 +59,10 @@ pub fn run(matches: ArgMatches) {
         exporter_parameters = stdout_exporter_parameters.clone();
         let mut exporter = StdoutExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
+    } else if let Some(json_exporter_parameters) = matches.subcommand_matches("json") {
+        exporter_parameters = json_exporter_parameters.clone();
+        let mut exporter = JSONExporter::new(sensor_boxed);
+        exporter.run(exporter_parameters);
     } else if let Some(riemann_exporter_parameters) = matches.subcommand_matches("riemann") {
         exporter_parameters = riemann_exporter_parameters.clone();
         let mut exporter = RiemannExporter::new(sensor_boxed);
@@ -83,6 +87,10 @@ pub fn get_exporters_options() -> HashMap<String, HashMap<String, ExporterOption
     options.insert(
         String::from("stdout"),
         exporters::stdout::StdoutExporter::get_options(),
+    );
+    options.insert(
+        String::from("json"),
+        exporters::json::JSONExporter::get_options(),
     );
     options.insert(
         String::from("prometheus"),
