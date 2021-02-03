@@ -111,7 +111,7 @@ impl JSONExporter {
     pub fn runner(&mut self, parameters: ArgMatches) {
         let timeout = parameters.value_of("timeout").unwrap();
         if timeout.is_empty() {
-            self.iterate();
+            self.iterate(&parameters);
         } else {
             let now = Instant::now();
 
@@ -133,20 +133,9 @@ impl JSONExporter {
             println!("Measurement step is: {}s", step_duration);
 
             while now.elapsed().as_secs() <= timeout_secs {
-                self.iterate();
+                self.iterate(&parameters);
                 thread::sleep(Duration::new(step_duration, step_duration_nano));
             }
-        }
-        // Serialize it to a JSON string.
-        let json: String = serde_json::to_string(&self.reports).expect("Unable to parse report");
-
-        let file_path = parameters.value_of("file_path").unwrap();
-        // Print json
-        if file_path.is_empty() {
-            println!("{}", &json);
-        } else {
-            let _ = File::create(file_path);
-            fs::write(file_path, &json).expect("Unable to write file");
         }
     }
 
@@ -168,12 +157,12 @@ impl JSONExporter {
         }
     }
 
-    fn iterate(&mut self) {
+    fn iterate(&mut self, parameters: &ArgMatches) {
         self.topology.refresh();
-        self.retrieve_metrics();
+        self.retrieve_metrics(&parameters);
     }
 
-    fn retrieve_metrics(&mut self) {
+    fn retrieve_metrics(&mut self, parameters: &ArgMatches) {
         let host_power = match self.topology.get_records_diff_power_microwatts() {
             Some(record) => record.value.parse::<u64>().unwrap(),
             None => 0,
@@ -229,11 +218,25 @@ impl JSONExporter {
             });
         }
 
-        self.reports.push(Report {
+        let report = Report {
             host: host_power as f32 / 1000000.0,
             consumers: top_consumers,
             sockets: all_sockets,
-        });
+        };
+
+        let file_path = parameters.value_of("file_path").unwrap();
+        // Print json
+        if file_path.is_empty() {
+            let json: String = serde_json::to_string(&report).expect("Unable to parse report");
+            println!("{}", &json);
+        } else {
+            self.reports.push(report);
+            // Serialize it to a JSON string.
+            let json: String =
+                serde_json::to_string(&self.reports).expect("Unable to parse report");
+            let _ = File::create(file_path);
+            fs::write(file_path, &json).expect("Unable to write file");
+        }
     }
 }
 
