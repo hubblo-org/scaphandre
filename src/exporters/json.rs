@@ -179,7 +179,7 @@ impl JSONExporter {
             None => 0,
         };
 
-        let consumers = self.topology.proc_tracker.get_top_consumers(5);
+        let consumers = self.topology.proc_tracker.get_top_consumers(10);
         let mut top_consumers = Vec::new();
         for c in consumers.iter() {
             if let Some(host_stat) = self.topology.get_stats_diff() {
