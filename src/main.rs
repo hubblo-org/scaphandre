@@ -12,7 +12,7 @@ fn main() {
     }
     let mut matches = App::new("scaphandre")
         .author("Benoit Petit <bpetit@hubblo.org>")
-        .version("0.1.0")
+        .version("0.1.1")
         .long_version(crate_version!())
         .about("Extensible metrology agent for energy/electricity consumption related metrics")
         .setting(AppSettings::SubcommandRequiredElseHelp)
