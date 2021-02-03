@@ -47,6 +47,17 @@ impl Exporter for JSONExporter {
             },
         );
         options.insert(
+            String::from("step_duration_nano"),
+            ExporterOption {
+                default_value: Some(String::from("0")),
+                long: String::from("step_nano"),
+                short: String::from("n"),
+                required: false,
+                takes_value: true,
+                help: String::from("Set measurement step duration in nano second."),
+            },
+        );
+        options.insert(
             String::from("file_path"),
             ExporterOption {
                 default_value: Some(String::from("")),
@@ -113,12 +124,17 @@ impl JSONExporter {
                 .unwrap()
                 .parse()
                 .expect("Wrong step_duration value, should be a number of seconds");
+            let step_duration_nano: u32 = parameters
+                .value_of("step_duration_nano")
+                .unwrap()
+                .parse()
+                .expect("Wrong step_duration_nano value, should be a number of nano seconds");
 
             println!("Measurement step is: {}s", step_duration);
 
             while now.elapsed().as_secs() <= timeout_secs {
                 self.iterate();
-                thread::sleep(Duration::new(step_duration, 0));
+                thread::sleep(Duration::new(step_duration, step_duration_nano));
             }
         }
         // Serialize it to a JSON string.
