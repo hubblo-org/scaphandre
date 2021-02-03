@@ -5,8 +5,8 @@ pub mod exporters;
 pub mod sensors;
 use clap::ArgMatches;
 use exporters::{
-    prometheus::PrometheusExporter, qemu::QemuExporter, riemann::RiemannExporter,
-    stdout::StdoutExporter, json::JSONExporter, Exporter, ExporterOption,
+    json::JSONExporter, prometheus::PrometheusExporter, qemu::QemuExporter,
+    riemann::RiemannExporter, stdout::StdoutExporter, Exporter, ExporterOption,
 };
 use sensors::{powercap_rapl::PowercapRAPLSensor, Sensor};
 use std::collections::HashMap;

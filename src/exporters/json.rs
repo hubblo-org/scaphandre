@@ -1,19 +1,18 @@
 use crate::exporters::*;
 use crate::sensors::{Record, Sensor, Topology};
-use std::collections::HashMap;
-use std::thread;
-use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
-use serde_json::Result;
-use std::path::PathBuf;
+use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
+use std::path::PathBuf;
+use std::thread;
+use std::time::{Duration, Instant};
 
 /// An Exporter that displays power consumption data of the host
 /// and its processes on the standard output of the terminal.
 pub struct JSONExporter {
     topology: Topology,
-    reports: Vec<Report>
+    reports: Vec<Report>,
 }
 
 impl Exporter for JSONExporter {
@@ -65,26 +64,26 @@ impl Exporter for JSONExporter {
 #[derive(Serialize, Deserialize)]
 struct Domain {
     name: String,
-    consumption: f32
+    consumption: f32,
 }
 #[derive(Serialize, Deserialize)]
 struct Socket {
     id: u16,
     consumption: f32,
-    domains: Vec<Domain>
+    domains: Vec<Domain>,
 }
 
 #[derive(Serialize, Deserialize)]
 struct Consumer {
     exe: PathBuf,
     pid: i32,
-    consumption: f32
+    consumption: f32,
 }
 #[derive(Serialize, Deserialize)]
 struct Report {
     host: f32,
     consumers: Vec<Consumer>,
-    sockets: Vec<Socket>
+    sockets: Vec<Socket>,
 }
 
 impl JSONExporter {
@@ -93,12 +92,12 @@ impl JSONExporter {
         let some_topology = *sensor.get_topology();
         JSONExporter {
             topology: some_topology.unwrap(),
-            reports: Vec::new()
+            reports: Vec::new(),
         }
     }
 
     /// Runs iteration() every 'step', until 'timeout'
-    pub fn runner(&mut self, parameters: ArgMatches) -> Result<()> {
+    pub fn runner(&mut self, parameters: ArgMatches) {
         let timeout = parameters.value_of("timeout").unwrap();
         if timeout.is_empty() {
             self.iterate();
@@ -123,8 +122,8 @@ impl JSONExporter {
             }
         }
         // Serialize it to a JSON string.
-        let json: String = serde_json::to_string(&self.reports)?;
-    
+        let json: String = serde_json::to_string(&self.reports).expect("Unable to parse report");
+
         let file_path = parameters.value_of("file_path").unwrap();
         // Print json
         if file_path.is_empty() {
@@ -133,8 +132,6 @@ impl JSONExporter {
             let _ = File::create(file_path);
             fs::write(file_path, &json).expect("Unable to write file");
         }
-
-        Ok(())
     }
 
     fn get_domains_power(&self, socket_id: u16) -> Vec<Option<Record>> {
@@ -161,7 +158,6 @@ impl JSONExporter {
     }
 
     fn retrieve_metrics(&mut self) {
-
         let host_power = match self.topology.get_records_diff_power_microwatts() {
             Some(record) => record.value.parse::<u64>().unwrap(),
             None => 0,
@@ -175,9 +171,10 @@ impl JSONExporter {
                 let consumer = Consumer {
                     exe: c.0.exe().unwrap_or_default(),
                     pid: c.0.pid,
-                    consumption: ((c.1 as f32 / (host_time * procfs::ticks_per_second().unwrap() as f32))
+                    consumption: ((c.1 as f32
+                        / (host_time * procfs::ticks_per_second().unwrap() as f32))
                         * host_power as f32)
-                        / 1000000.0
+                        / 1000000.0,
                 };
                 top_consumers.push(consumer)
             }
@@ -204,22 +201,22 @@ impl JSONExporter {
 
                 domains.push(Domain {
                     name: names[index].to_string(),
-                    consumption: domain_power as f32 / 1000000.0
+                    consumption: domain_power as f32 / 1000000.0,
                 });
-                index = index + 1
+                index += 1
             }
 
             all_sockets.push(Socket {
                 id: s.id,
                 consumption: (v.0 as f32) / 1000000.0,
-                domains: domains
+                domains,
             });
         }
-    
+
         self.reports.push(Report {
             host: host_power as f32 / 1000000.0,
             consumers: top_consumers,
-            sockets: all_sockets
+            sockets: all_sockets,
         });
     }
 }
