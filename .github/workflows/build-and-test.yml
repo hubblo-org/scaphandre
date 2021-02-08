@@ -8,6 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  AWX_PUBLIC_ACCESS: "{Xs%g5/a/Si=;_[4LL"
 
 jobs:
   build:
@@ -25,7 +26,7 @@ jobs:
       - name: Log on AWX 
         id: login
         run: |
-          export AWX_TOKEN=$(awx --conf.host ${{ secrets.AWX_HOST }} --conf.username ${{ secrets.AWX_USERNAME }} --conf.password ${{ secrets.AWX_PASSWORD }} login | jq .token | tr -d '"')
+          export AWX_TOKEN=$(awx --conf.host "https://cd.hubblo.org" --conf.username "scaphandre-public" --conf.password ${env.AWX_PUBLIC_ACCESS} login | jq .token | tr -d '"')
           echo "::set-output name=awx_token::${AWX_TOKEN}"
       - name: Launch job
         id: launch
