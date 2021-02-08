@@ -116,6 +116,9 @@ async fn runner(
     if let Err(error) = port.parse::<u64>() {
         panic!("Not a valid TCP port numer: {}", error);
     }
+
+    utils::scaphandre_header("prometheus");
+
     HttpServer::new(move || {
         App::new()
             .data(PowerMetrics {

@@ -1,3 +1,5 @@
+use colored::*;
+
 pub fn filter_qemu_cmdline(cmdline: &str) -> Option<String> {
     if cmdline.contains("qemu-system") && cmdline.contains("guest=") {
         let vmname: Vec<Vec<&str>> = cmdline
@@ -12,6 +14,12 @@ pub fn filter_qemu_cmdline(cmdline: &str) -> Option<String> {
         }
     }
     None
+}
+
+pub fn scaphandre_header(exporter_name: &str) {
+    let title = format!("Scaphandre {} exporter", exporter_name);
+    println!("{}", title.red().bold());
+    println!("Sending ⚡ metrics");
 }
 
 #[cfg(test)]
