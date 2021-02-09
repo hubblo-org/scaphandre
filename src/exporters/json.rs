@@ -130,7 +130,7 @@ impl JSONExporter {
                 .parse()
                 .expect("Wrong step_duration_nano value, should be a number of nano seconds");
 
-            println!("Measurement step is: {}s", step_duration);
+            info!("Measurement step is: {}s", step_duration);
 
             while now.elapsed().as_secs() <= timeout_secs {
                 self.iterate(&parameters);
