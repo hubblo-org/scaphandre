@@ -178,8 +178,7 @@ impl JSONExporter {
                     pid: c.0.pid,
                     consumption: ((c.1 as f32
                         / (host_time * procfs::ticks_per_second().unwrap() as f32))
-                        * host_power as f32)
-                        / 1000000.0,
+                        * host_power as f32),
                 };
                 top_consumers.push(consumer)
             }
@@ -206,20 +205,20 @@ impl JSONExporter {
 
                 domains.push(Domain {
                     name: names[index].to_string(),
-                    consumption: domain_power as f32 / 1000000.0,
+                    consumption: domain_power as f32,
                 });
                 index += 1
             }
 
             all_sockets.push(Socket {
                 id: s.id,
-                consumption: (v.0 as f32) / 1000000.0,
+                consumption: (v.0 as f32),
                 domains,
             });
         }
 
         let report = Report {
-            host: host_power as f32 / 1000000.0,
+            host: host_power as f32,
             consumers: top_consumers,
             sockets: all_sockets,
         };
