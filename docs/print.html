@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">4.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">5.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="explanations/internal-structure.html"><strong aria-hidden="true">6.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="explanations/about-containers.html"><strong aria-hidden="true">7.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="references/exporter-prometheus.html"><strong aria-hidden="true">8.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-qemu.html"><strong aria-hidden="true">9.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-riemann.html"><strong aria-hidden="true">10.</strong> Riemann exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-stdout.html"><strong aria-hidden="true">11.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="references/sensor-powercap_rapl.html"><strong aria-hidden="true">12.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="sources.html">External references you may be interested in</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">3.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">4.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">5.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="explanations/internal-structure.html"><strong aria-hidden="true">6.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="explanations/about-containers.html"><strong aria-hidden="true">7.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="references/exporter-prometheus.html"><strong aria-hidden="true">8.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-qemu.html"><strong aria-hidden="true">9.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-riemann.html"><strong aria-hidden="true">10.</strong> Riemann exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-stdout.html"><strong aria-hidden="true">11.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-json.html"><strong aria-hidden="true">12.</strong> JSON exporter</a></li><li class="chapter-item expanded "><a href="references/sensor-powercap_rapl.html"><strong aria-hidden="true">13.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="sources.html">External references you may be interested in</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -521,6 +521,41 @@ OPTIONS:
 -s, --step &lt;step_duration&gt;    Set measurement step duration in seconds. [default: 2]
 -t, --timeout &lt;timeout&gt;       Maximum time spent measuring, in seconds. [default: 10]
 </code></pre>
+<h1><a class="header" href="#json-exporter" id="json-exporter">JSON exporter</a></h1>
+<h2><a class="header" href="#usage-4" id="usage-4">Usage</a></h2>
+<p>You can launch the JSON exporter this way (running the default powercap_rapl sensor):</p>
+<pre><code>scaphandre json
+</code></pre>
+<p>Default behavior is to measure and show metrics periodically during 10 seconds. You can change that timeout with <code>-t</code>. Here is how to display metrics during one minute:</p>
+<pre><code>scaphandre json -t 60
+</code></pre>
+<p>You can change as well the step measure duration with -s. Here is how to display metrics during one minutes with a 5s step:</p>
+<pre><code>scaphandre json -t 60 -s 5
+</code></pre>
+<p>If you want a faster interval you can use option -n (for nano seconds). Here is how to display metrics during 10s with a 100ms step:</p>
+<pre><code>scaphandre json -t 10 -s 0 -n 100000000
+</code></pre>
+<p>By default, JSON is printed in the terminal, to write result in a file you can provide a path with option -f:</p>
+<pre><code>scaphandre json -t 10 -s 0 -n 100000000 -f report.json
+</code></pre>
+<p>As always exporter's options can be displayed with <code>-h</code>:</p>
+<pre><code>$ scaphandre json -h
+scaphandre-json 
+JSON exporter allows you to output the power consumption data in a json file
+
+USAGE:
+    scaphandre json [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -f, --file &lt;file_path&gt;                  Destination file for the report. [default: ]
+    -s, --step &lt;step_duration&gt;              Set measurement step duration in second. [default: 2]
+    -n, --step_nano &lt;step_duration_nano&gt;    Set measurement step duration in nano second. [default: 0]
+    -t, --timeout &lt;timeout&gt;                 Maximum time spent measuring, in seconds. [default: 10]
+</code></pre>
 <h1><a class="header" href="#powercap_rapl-sensor" id="powercap_rapl-sensor">Powercap_rapl sensor</a></h1>
 <h2><a class="header" href="#pre-requesites" id="pre-requesites">Pre-requesites</a></h2>
 <p>At the time those lines are written, this sensor works only on:</p>
@@ -535,7 +570,7 @@ OPTIONS:
 and <a href="https://www.phoronix.com/scan.php?page=news_item&amp;px=AMD-RAPL-Linux-Now-19h">5.11 for family 19h</a>.</p>
 <p>Energy consumption data can be directly collected on a <strong>physical machine</strong> only.</p>
 <p>To collect energy consumption on a virtual machine, you may first collect power consumption data from the hypervisor thanks to the <a href="references/../exporters/qemu.html">qemu exporter</a> and then collect those metrics in the virtual machine thanks to this sensor, with <code>--vm</code> flag enabled.</p>
-<h2><a class="header" href="#usage-4" id="usage-4">Usage</a></h2>
+<h2><a class="header" href="#usage-5" id="usage-5">Usage</a></h2>
 <p>To explicitely call the powercap_rapl sensor from the command line use:</p>
 <pre><code>scaphandre -s powercap_rapl EXPORTER # EXPORTER being the exporter name you want to use
 </code></pre>
