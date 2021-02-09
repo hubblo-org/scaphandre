@@ -1,3 +1,4 @@
+pub mod json;
 pub mod prometheus;
 pub mod qemu;
 pub mod riemann;

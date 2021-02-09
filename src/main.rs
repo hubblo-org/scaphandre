@@ -12,7 +12,7 @@ fn main() {
     }
     let mut matches = App::new("scaphandre")
         .author("Benoit Petit <bpetit@hubblo.org>")
-        .version("0.1.0")
+        .version("0.1.1")
         .long_version(crate_version!())
         .about("Extensible metrology agent for energy/electricity consumption related metrics")
         .setting(AppSettings::SubcommandRequiredElseHelp)
@@ -59,6 +59,7 @@ fn main() {
         let mut subcmd = SubCommand::with_name(exp).about(
             match exp {
                 "stdout" => "Stdout exporter allows you to output the power consumption data in the terminal",
+                "json" => "JSON exporter allows you to output the power consumption data in a json file",
                 "prometheus" => "Prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted format",
                 "riemann" => "Riemann exporter sends power consumption metrics to a Riemann server",
                 "qemu" => "Qemu exporter watches all Qemu/KVM virtual machines running on the host and exposes metrics of each of them in a dedicated folder",

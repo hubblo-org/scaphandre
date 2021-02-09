@@ -8,6 +8,9 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  AWX_PUBLIC_ACCESS: "{Xs%g5/a/Si=;_[4LL"
+  AWX_PUBLIC_USER: "scaphandre-public"
+  AWX_HOST: "https://cd.hubblo.org"
 
 jobs:
   build:
@@ -17,20 +20,17 @@ jobs:
       - name: Install dependencies (awxkit)
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8.5'
+          python-version: '3.x'
       - name: Install python requirements (awxkit)
         run: |
           python -m pip install --upgrade pip
           pip install awxkit
-          #- name: Install jq
-          #  run: |
-          #    sudo apt install jq -y
       - name: Log on AWX 
         id: login
         run: |
-          export AWX_TOKEN=$(awx --conf.host ${{ secrets.AWX_HOST }} --conf.username ${{ secrets.AWX_USERNAME }} --conf.password ${{ secrets.AWX_PASSWORD }} login | jq .token | tr -d '"')
+          export AWX_TOKEN=$(awx --conf.host "${{env.AWX_HOST}}" --conf.username "${{env.AWX_PUBLIC_USER}}" --conf.password "${{env.AWX_PUBLIC_ACCESS}}" login | jq .token | tr -d '"')
           echo "::set-output name=awx_token::${AWX_TOKEN}"
       - name: Launch job
         id: launch
         run: |
-          awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host https://cd.hubblo.org job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 9 --monitor
+          awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 9 --monitor

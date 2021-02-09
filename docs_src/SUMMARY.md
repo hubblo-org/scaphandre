@@ -22,6 +22,7 @@
 - [Qemu exporter](references/exporter-qemu.md)
 - [Riemann exporter](references/exporter-riemann.md)
 - [Stdout exporter](references/exporter-stdout.md)
+- [JSON exporter](references/exporter-json.md)
 
 ## Sensors
 
