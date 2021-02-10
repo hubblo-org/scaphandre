@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ template "scaphandre.name" . }}
+  labels:
+    {{- include "labels.common" . | nindent 4 }}
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ template "scaphandre.name" . }}
+  template:
+    metadata:
+      name: {{ template "scaphandre.name" . }}
+      labels:
+        {{- include "labels.common" . | nindent 8 }}
+    spec:
+      containers:
+      - name:  {{ template "scaphandre.name" . }}
+        image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"
+        args:
+            - {{ .Values.scaphandre.command }}
+            {{- range $key, $value := .Values.scaphandre.extraArgs }}
+            {{- if $value }}
+            - --{{ $key }}={{ $value }}
+            {{- else }}
+            - --{{ $key }}
+            {{- end }}
+            {{- end }}
+        ports:
+        - name: metrics
+          containerPort: {{ .Values.port }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+        volumeMounts:
+        - mountPath: /proc
+          name: proc
+          readOnly: false
+        - mountPath: /sys/class/powercap
+          name: powercap
+          readOnly: false
+      securityContext:
+        runAsUser: {{ .Values.userID }}
+        runAsGroup: {{ .Values.userGroup }}
+      serviceAccountName: {{ template "scaphandre.name" . }}
+      tolerations:
+      # Tolerate all taints for observability
+      - operator: "Exists"
+      volumes:
+      - hostPath:
+          path: /proc
+          type: "Directory"
+        name: proc
+      - hostPath:
+          path: /sys/class/powercap
+          type: "Directory"
+        name: powercap
