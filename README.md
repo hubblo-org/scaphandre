@@ -32,6 +32,8 @@ This project was born from a deep sense of duty from tech workers. Please refer 
 - **exposing** power consumption metrics of a virtual machine, to allow **manipulating those metrics in the VM** as if it was a bare metal machine (relies on hypervisor features)
 - exposing power consumption metrics as a **[prometheus](https://prometheus.io) (HTTP) exporter**
 - sending power consumption metrics to **[riemann](http://riemann.io/)**
+- works on kubernetes
+- storing power consumption metrics in a JSON file
 - showing basic power consumption metrics **in the terminal**
 
 You can see some samples of metrics that scaphandre allows you to gather [here](https://metrics.hubblo.org).
