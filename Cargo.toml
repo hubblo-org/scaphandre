@@ -1,6 +1,6 @@
 [package]
 name = "scaphandre"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Benoit Petit <bpetit@hubblo.org>"]
 edition = "2018"
 license = "Apache-2.0"
