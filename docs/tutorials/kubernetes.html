@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Qemu exporter - Scaphandre documentation</title>
+        <title>Power consumption of a Kubernetes cluster with scaphandre, prometheus and grafana - Scaphandre documentation</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="../tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="../tutorials/kubernetes.html"><strong aria-hidden="true">3.</strong> Power consumption of a Kubernetes cluster with scaphandre, prometheus and grafana</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">4.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="../how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">5.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="../explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">6.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="../explanations/internal-structure.html"><strong aria-hidden="true">7.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="../explanations/about-containers.html"><strong aria-hidden="true">8.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="../references/exporter-prometheus.html"><strong aria-hidden="true">9.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-qemu.html" class="active"><strong aria-hidden="true">10.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-riemann.html"><strong aria-hidden="true">11.</strong> Riemann exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-stdout.html"><strong aria-hidden="true">12.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-json.html"><strong aria-hidden="true">13.</strong> JSON exporter</a></li><li class="chapter-item expanded "><a href="../references/sensor-powercap_rapl.html"><strong aria-hidden="true">14.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="../why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="../compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="../troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="../contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="../sources.html">External references you may be interested in</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="../tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="../tutorials/kubernetes.html" class="active"><strong aria-hidden="true">3.</strong> Power consumption of a Kubernetes cluster with scaphandre, prometheus and grafana</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">4.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="../how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">5.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="../explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">6.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="../explanations/internal-structure.html"><strong aria-hidden="true">7.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="../explanations/about-containers.html"><strong aria-hidden="true">8.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="../references/exporter-prometheus.html"><strong aria-hidden="true">9.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-qemu.html"><strong aria-hidden="true">10.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-riemann.html"><strong aria-hidden="true">11.</strong> Riemann exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-stdout.html"><strong aria-hidden="true">12.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-json.html"><strong aria-hidden="true">13.</strong> JSON exporter</a></li><li class="chapter-item expanded "><a href="../references/sensor-powercap_rapl.html"><strong aria-hidden="true">14.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="../why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="../compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="../troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="../contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="../sources.html">External references you may be interested in</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,70 +163,64 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#qemu-exporter" id="qemu-exporter">Qemu exporter</a></h1>
-<p>Computes energy consumption metrics for each Qemu/KVM virtual machine found on the host.
-Exposes those metrics as filetrees compatible with the <a href="../sensors/powercap_rapl.html">powercap_rapl sensor</a>.</p>
-<p>Note that this is still experimental. Metrics are already considered trustworthy, but there are discussions and tests to be performed about the acceptable ways to share the data with the guests/vms. Any feedback or thoughts about this are welcome. Please refer to the <a href="../contributing.html">contributing section</a>.</p>
-<h2><a class="header" href="#usage" id="usage">Usage</a></h2>
-<ol>
-<li>
-<p>Run the scaphandre with the qemu exporter on your bare metal hypervisor machine:</p>
-<pre><code> scaphandre qemu # this is suitable for a test, please run it as a systemd service for a production setup
+                        <h1><a class="header" href="#kubernetes" id="kubernetes">Kubernetes</a></h1>
+<p>This tutorial uses <a href="https://helm.sh/docs/intro/quickstart/">Helm</a> to install
+Scaphandre, Prometheus and Grafana.</p>
+<h2><a class="header" href="#install-scaphandre" id="install-scaphandre">Install Scaphandre</a></h2>
+<p>First we install Scaphandre which runs as a daemon set which creates a pod on
+each node for collecting the metrics.</p>
+<pre><code>helm install scaphandre helm/scaphandre
 </code></pre>
-</li>
-<li>
-<p>Default is to expose virtual machines metrics in <code>/var/lib/libvirt/scaphandre/${DOMAIN_NAME}</code> with <code>DOMAIN_NAME</code> being the libvirt domain name of the virtual machine.
-First create a tmpfs mount point to isolate metrics for that virtual machine:</p>
-<pre><code> mount -t tmpfs tmpfs_DOMAIN_NAME /var/lib/libvirt/scaphandre/DOMAIN_NAME -o size=10m
+<h2><a class="header" href="#install-prometheus" id="install-prometheus">Install Prometheus</a></h2>
+<p>Next we will install Prometheus which will scrape the metrics generated by Scaphandre.</p>
+<pre><code>helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add kube-state-metrics https://kubernetes.github.io/kube-state-metrics
+helm repo update
+
+helm install prometheus prometheus-community/prometheus \
+--set alertmanager.persistentVolume.enabled=false \
+--set server.persistentVolume.enabled=false
 </code></pre>
-</li>
-<li>
-<p>Ensure you expose the content of this folder to the virtual machine by having this configuration in the xml configuration of the domain:</p>
-<pre><code>		&lt;filesystem type='mount' accessmode='passthrough'&gt;
-	      &lt;driver type='virtiofs'/&gt;
-	      &lt;source dir='/var/lib/libvirt/scaphandre/DOMAIN_NAME'/&gt;
-	      &lt;target dir='scaphandre'/&gt;
-		  &lt;readonly /&gt;
-	    &lt;/filesystem&gt;
+<p>This setup should only be used for testing as the Prometheus data is not
+persisted if the pods are deleted.</p>
+<p>You can access the Prometheus web UI by creating a port forwarding connection.</p>
+<pre><code>kubectl port-forward deploy/prometheus-server 9090:9090
 </code></pre>
-<p>You can edit the vm properties using <code>sudo virsh edit &lt;DOMAIN_NAME&gt;</code> using your usual editor. But it is more convenient to use virtual-manager, as explained in the following screenshots.</p>
-<p><em>It also helps to define the correct syntax which probably depends from the qemu version. You can check that the above configuration is slightly different form the one below</em>.</p>
-<p>a. Right click in the hardware menu:
-<img src="images/virtualmgr00.png" alt="virtualmgr00" /></p>
-<p>b. Enter the following parameters:
-<img src="images/virtualmgr01.png" alt="virtualmgr01" /></p>
-<p>c. XML generated as a result:
-<img src="images/virtualmgr02.png" alt="virtualmgr02" /></p>
-<ol start="4">
-<li>
-<p>Ensure the VM has been started once the configuration is applied, then mount the filesystem on the VM/guest:</p>
-<pre><code> mount -t 9p -o trans=virtio scaphandre /var/scaphandre
+<h2><a class="header" href="#install-grafana" id="install-grafana">Install Grafana</a></h2>
+<p>Create a configmap to store the Grafana dashboard.</p>
+<pre><code>kubectl create configmap scaphandre-dashboard \
+    --from-file=scaphandre-dashboard.json=docs_src/tutorials/grafana-kubernetes-dashboard.json
 </code></pre>
-</li>
-<li>
-<p>Still in the guest, run scaphandre in VM mode with the default sensor:</p>
-<pre><code> scaphandre --vm prometheus
+<p>Install Grafana.</p>
+<pre><code>helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+
+helm install grafana grafana/grafana --values docs_src/tutorials/grafana-helm-values.yaml
 </code></pre>
-</li>
-<li>
-<p>Collect your virtual machine specific power usage metrics. (requesting http://VM_IP:8080/metrics in this example, using the prometheus exporter)</p>
-</li>
-</ol>
-</li>
-</ol>
+<p>Get the Grafana web UI password which is randomly generated.</p>
+<pre><code>kubectl get secret grafana -o jsonpath=&quot;{.data.admin-password}&quot; | base64 --decode
+</code></pre>
+<p>Create a port forwarding connection to the Grafana pod.</p>
+<pre><code>kubectl port-forward deploy/grafana 3000:3000
+</code></pre>
+<p>Open Grafana in your browser at http://localhost:3000 the username is admin.</p>
+<h2><a class="header" href="#cleaning-up" id="cleaning-up">Cleaning up</a></h2>
+<p>Deleting the Helm releases will remove all the resources we created.</p>
+<pre><code>helm delete grafana prometheus scaphandre
+</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="../references/exporter-prometheus.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../tutorials/installation.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="../references/exporter-riemann.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -238,13 +232,13 @@ First create a tmpfs mount point to isolate metrics for that virtual machine:</p
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="../references/exporter-prometheus.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../tutorials/installation.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="../references/exporter-riemann.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

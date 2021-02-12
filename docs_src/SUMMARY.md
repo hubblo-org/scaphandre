@@ -4,6 +4,8 @@
 
 - [Quickstart](tutorials/quickstart.md)
 - [Installation](tutorials/installation.md)
+- [Power consumption of a Kubernetes cluster with scaphandre, prometheus and grafana](tutorials/kubernetes.md)
+
 # How-to guides
 
 - [Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)](how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.md)
