@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "scaphandre.name" . }}
+  labels:
+    app.kubernetes.io/name: {{ template "scaphandre.name" . }}
+  annotations:
+    prometheus.io/port: "{{ .Values.port  }}"
+    prometheus.io/scheme: "http"
+    prometheus.io/scrape: "true"
+spec:
+  ports:
+  - port: {{ .Values.port }}
+    name: metrics
+    targetPort: metrics
+  selector:
+    app.kubernetes.io/name: {{ template "scaphandre.name" . }}
