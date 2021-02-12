@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/hubblo-org/scaphandre/commits/main)
 
+This may be not up to date, please check main branch.
+
 ## [0.2.0](https://github.com/hubblo-org/scaphandre/releases/tag/v0.2.0)
 
 ### Added
