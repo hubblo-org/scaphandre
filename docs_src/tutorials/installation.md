@@ -1,4 +1,5 @@
 # Installation & compilation
+
 ## Compile scaphandre from source
 
 We recommand using this version of the rust toolchain or later:
@@ -21,13 +22,17 @@ To use the latest code for a true use case, build for release instead of debug:
     cargo build --release
 
 Binary path is `target/release/scaphandre`.
-## More to come
 
-More tutorials to come, for a proper installation, like:
+## Installation for standard usage
+
+Here are some other ways to install scaphandre depending on your context:
+
+- [run scaphandre in a docker container](/tutorials/quickstart.md)
+- [run scaphandre on kubernetes](/tutorials/kubernetes.md)
+
+Other tutorials should come, as:
 
 - install scaphandre as a proper systemd service
-- scaphandre in your favorite GNU/Linux distribution (package creators)
-- run scaphandre in a container
-- run scaphandre on kubernetes
+- scaphandre in your favorite GNU/Linux distribution (need help from packaging gurus !)
 - scaphandre on MacOSX
 - and more...

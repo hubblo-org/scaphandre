@@ -181,13 +181,16 @@ cargo build # binary path is target/debug/scaphandre
 <pre><code>cargo build --release
 </code></pre>
 <p>Binary path is <code>target/release/scaphandre</code>.</p>
-<h2><a class="header" href="#more-to-come" id="more-to-come">More to come</a></h2>
-<p>More tutorials to come, for a proper installation, like:</p>
+<h2><a class="header" href="#installation-for-standard-usage" id="installation-for-standard-usage">Installation for standard usage</a></h2>
+<p>Here are some other ways to install scaphandre depending on your context:</p>
+<ul>
+<li><a href="/tutorials/quickstart.html">run scaphandre in a docker container</a></li>
+<li><a href="/tutorials/kubernetes.html">run scaphandre on kubernetes</a></li>
+</ul>
+<p>Other tutorials should come, as:</p>
 <ul>
 <li>install scaphandre as a proper systemd service</li>
-<li>scaphandre in your favorite GNU/Linux distribution (package creators)</li>
-<li>run scaphandre in a container</li>
-<li>run scaphandre on kubernetes</li>
+<li>scaphandre in your favorite GNU/Linux distribution (need help from packaging gurus !)</li>
 <li>scaphandre on MacOSX</li>
 <li>and more...</li>
 </ul>
@@ -232,7 +235,7 @@ cargo build # binary path is target/debug/scaphandre
         
         <!-- Livereload script (if served using the cli tool) -->
         <script type="text/javascript">
-            var socket = new WebSocket("ws://localhost:3001/__livereload");
+            var socket = new WebSocket("ws://localhost:3000/__livereload");
             socket.onmessage = function (event) {
                 if (event.data === "reload") {
                     socket.close();
