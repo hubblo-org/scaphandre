@@ -69,7 +69,7 @@ impl Sensor for PowercapRAPLSensor {
     fn generate_topology(&self) -> Result<Topology, Box<dyn Error>> {
         let modules_state = PowercapRAPLSensor::check_module();
         if modules_state.is_err() && !self.virtual_machine {
-            panic!("Couldn't find intel_rapl modules.");
+            warn!("Couldn't find intel_rapl modules.");
         }
         let mut topo = Topology::new();
         let re_domain = Regex::new(r"^.*/intel-rapl:\d+:\d+$").unwrap();
