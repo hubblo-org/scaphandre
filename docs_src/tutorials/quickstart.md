@@ -1,5 +1,9 @@
 # Quickstart
 
+Depending on your kernel version, you could need to modprobe the module intel_rapl or intel_rapl_common first:
+
+    modprobe intel_rapl_common # or intel_rapl for kernels < 5
+
 To quickly run scaphandre in your terminal you may use [docker](https://www.docker.com/):
 
     docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -ti hubblo/scaphandre stdout -t 15
@@ -13,7 +17,7 @@ Here we are using the stdout [exporter](../explanations/internal-structure.md) t
 You should get an output like:
 
     Host:	9.391334 W	Core		Uncore		DRAM
-    Socket0	9.392    W	1.497082 W	
+    Socket0	9.392    W	1.497082 W
     Top 5 consumers:
     Power	PID	Exe
     4.808363 W	642	"/usr/sbin/dockerd"

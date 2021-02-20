@@ -164,6 +164,9 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#quickstart" id="quickstart">Quickstart</a></h1>
+<p>Depending on your kernel version, you could need to modprobe the module intel_rapl or intel_rapl_common first:</p>
+<pre><code>modprobe intel_rapl_common # or intel_rapl for kernels &lt; 5
+</code></pre>
 <p>To quickly run scaphandre in your terminal you may use <a href="https://www.docker.com/">docker</a>:</p>
 <pre><code>docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -ti hubblo/scaphandre stdout -t 15
 </code></pre>
@@ -173,7 +176,7 @@
 <p>Here we are using the stdout <a href="../explanations/internal-structure.html">exporter</a> to print current power consumption usage in the terminal during 15 seconds.</p>
 <p>You should get an output like:</p>
 <pre><code>Host:	9.391334 W	Core		Uncore		DRAM
-Socket0	9.392    W	1.497082 W	
+Socket0	9.392    W	1.497082 W
 Top 5 consumers:
 Power	PID	Exe
 4.808363 W	642	&quot;/usr/sbin/dockerd&quot;

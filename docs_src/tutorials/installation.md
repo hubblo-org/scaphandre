@@ -23,6 +23,10 @@ To use the latest code for a true use case, build for release instead of debug:
 
 Binary path is `target/release/scaphandre`.
 
+Depending on your kernel version, you could need to modprobe the module intel_rapl or intel_rapl_common before running scaphandre:
+
+    modprobe intel_rapl_common # or intel_rapl for kernels < 5
+
 ## Installation for standard usage
 
 Here are some other ways to install scaphandre depending on your context:
