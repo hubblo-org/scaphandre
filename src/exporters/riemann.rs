@@ -3,10 +3,10 @@ use crate::sensors::{RecordGenerator, Sensor};
 use riemann_client::proto::Attribute;
 use riemann_client::proto::Event;
 use riemann_client::Client;
-use utils::get_scaphandre_version;
 use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use utils::get_scaphandre_version;
 
 /// Riemann server default ipv4/ipv6 address
 const DEFAULT_IP_ADDRESS: &str = "localhost";
@@ -313,7 +313,7 @@ impl Exporter for RiemannExporter {
                     "Number of CPUStat traces stored for each socket",
                     socket.stat_buffer.len(),
                 );
-
+                //TODO: fix metric
                 rclient.send_metric(
                     60.0,
                     &hostname,
@@ -349,15 +349,15 @@ impl Exporter for RiemannExporter {
                 let host_energy_timestamp_seconds = record.timestamp.as_secs().to_string();
 
                 rclient.send_metric(
-                60.0,
-                &hostname,
-                "scaph_host_energy_microjoules",
-                "ok",
-                vec!["scaphandre".to_string()],
-                vec![],
-                "Energy measurement for the whole host, as extracted from the sensor, in microjoules.",
-                host_energy_microjoules
-            );
+                    60.0,
+                    &hostname,
+                    "scaph_host_energy_microjoules",
+                    "ok",
+                    vec!["scaphandre".to_string()],
+                    vec![],
+                    "Energy measurement for the whole host, as extracted from the sensor, in microjoules.",
+                    host_energy_microjoules
+                );
 
                 rclient.send_metric(
                     60.0,
@@ -404,6 +404,7 @@ impl Exporter for RiemannExporter {
                         socket_energy_microjoules.as_ref(),
                     );
 
+                    //TODO: fix metric
                     if let Some(power) = topology.get_records_diff_power_microwatts() {
                         let socket_power_microwatts = &power.value;
 
