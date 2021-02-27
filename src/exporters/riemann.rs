@@ -1,9 +1,9 @@
 use crate::exporters::*;
 use crate::sensors::{RecordGenerator, Sensor};
-use clap::crate_version;
 use riemann_client::proto::Attribute;
 use riemann_client::proto::Event;
 use riemann_client::Client;
+use utils::get_scaphandre_version;
 use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -238,6 +238,7 @@ impl Exporter for RiemannExporter {
                     value,
                 );
 
+                //TODO: fix this, call resident and not size
                 let value = metric_value.size * procfs::page_size().unwrap() as u64;
                 rclient.send_metric(
                     60.0,
@@ -286,7 +287,7 @@ impl Exporter for RiemannExporter {
                 "Number of processes monitored for the host",
                 topo_procs_len,
             );
-
+            //TODO: metric sent twice ?
             rclient.send_metric(
                 60.0,
                 &hostname,
@@ -582,10 +583,16 @@ impl Exporter for RiemannExporter {
     }
 }
 
-fn get_scaphandre_version() -> String {
-    let mut version_parts = crate_version!().split('.');
-    let major_version = version_parts.next().unwrap();
-    let patch_version = version_parts.next().unwrap();
-    let minor_version = version_parts.next().unwrap();
-    format!("{}.{}{}", major_version, patch_version, minor_version)
-}
+//  Copyright 2020 The scaphandre authors.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.

@@ -3,6 +3,7 @@ pub mod prometheus;
 pub mod qemu;
 pub mod riemann;
 pub mod stdout;
+pub mod warpten;
 pub mod utils;
 use clap::ArgMatches;
 use std::collections::HashMap;
