@@ -2,9 +2,8 @@ use crate::exporters::*;
 use crate::sensors::{RecordGenerator, Sensor, Topology};
 use std::collections::HashMap;
 use std::thread;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 use utils::get_scaphandre_version;
-use warp10;
 
 pub struct Warp10Exporter {
     topology: Topology,
@@ -18,9 +17,10 @@ impl Exporter for Warp10Exporter {
         let port = parameters.value_of("port").unwrap();
         let write_token = parameters.value_of("write-token").unwrap();
         let step = parameters.value_of("step").unwrap();
+        let qemu = parameters.is_present("qemu");
 
         loop {
-            match self.iteration(host, scheme, port.parse::<u16>().unwrap(), write_token) {
+            match self.iteration(host, scheme, port.parse::<u16>().unwrap(), write_token, qemu) {
                 Ok(res) => println!("Result: {:?}", res),
                 Err(err) => error!("Failed ! {:?}", err),
             }
@@ -94,7 +94,7 @@ impl Exporter for Warp10Exporter {
 impl Warp10Exporter {
     pub fn new(mut sensor: Box<dyn Sensor>) -> Warp10Exporter {
         if let Some(topo) = *sensor.get_topology() {
-            return Warp10Exporter { topology: topo };
+            Warp10Exporter { topology: topo }
         } else {
             error!("Could'nt generate the Topology.");
             panic!("Could'nt generate the Topology.");
@@ -107,6 +107,7 @@ impl Warp10Exporter {
         scheme: &str,
         port: u16,
         write_token: &str,
+        qemu: bool
     ) -> Result<warp10::Response, warp10::Error> {
         let client = warp10::Client::new(&format!("{}://{}:{}/", scheme, host, port))?;
         let writer = client.get_writer(write_token.to_string());
@@ -143,8 +144,6 @@ impl Warp10Exporter {
                 labels.clone(),
                 warp10::Value::Int(metric_value as i32),
             ));
-        } else {
-            error!("Failed to get self cpu percentage.");
         }
 
         if let Some(metric_value) = self
@@ -236,15 +235,16 @@ impl Warp10Exporter {
 
             let socket_records = socket.get_records_passive();
             if !socket_records.is_empty() {
-                let metric_value = &socket_records.last().unwrap().value;
-
-                data.push(warp10::Data::new(
-                    time::now_utc().to_timespec(),
-                    None,
-                    String::from("scaph_socket_energy_microjoules"),
-                    metric_labels.clone(),
-                    warp10::Value::Long(metric_value.parse::<i64>().unwrap()),
-                ));
+                let socket_energy_microjoules = &socket_records.last().unwrap().value;
+                if let Ok(metric_value) = socket_energy_microjoules.parse::<i64>() {
+                    data.push(warp10::Data::new(
+                        time::now_utc().to_timespec(),
+                        None,
+                        String::from("scaph_socket_energy_microjoules"),
+                        metric_labels.clone(),
+                        warp10::Value::Long(metric_value),
+                    ));
+                }
 
                 if let Some(metric_value) = socket.get_records_diff_power_microwatts() {
                     data.push(warp10::Data::new(
@@ -290,6 +290,38 @@ impl Warp10Exporter {
                     String::from("scaph_host_power_microwatts"),
                     labels.clone(),
                     warp10::Value::Long(metric_value.value.parse::<i64>().unwrap()),
+                ));
+            }
+        }
+
+        let processes_tracker = &self.topology.proc_tracker;
+        for pid in processes_tracker.get_alive_pids() {
+            let exe = processes_tracker.get_process_name(pid);
+            let cmdline = processes_tracker.get_process_cmdline(pid);
+            let mut plabels = labels.clone();
+            plabels.push(warp10::Label::new("pid", &pid.to_string()));
+            plabels.push(warp10::Label::new("exe", &exe));
+            if let Some(cmdline_str) = cmdline {
+                plabels.push(warp10::Label::new("cmdline", &cmdline_str.replace("\"", "\\\"")));
+                if qemu {
+                    if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {                        
+                        plabels.push(warp10::Label::new("vmname", &vmname));            
+                    }
+                }
+            }
+            let metric_name = format!(
+                "{}_{}_{}",
+                "scaph_process_power_consumption_microwats",
+                pid.to_string(),
+                exe
+            );
+            if let Some(power) = self.topology.get_process_power_consumption_microwatts(pid){
+                data.push(warp10::Data::new(
+                    time::now_utc().to_timespec(),
+                    None,
+                    metric_name,
+                    plabels,
+                    warp10::Value::Long(power as i64),
                 ));
             }
         }
