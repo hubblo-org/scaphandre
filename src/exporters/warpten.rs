@@ -92,6 +92,18 @@ impl Exporter for Warp10Exporter {
                 takes_value: true,
             },
         );
+        options.insert(
+            String::from("qemu"),
+            ExporterOption {
+                default_value: None,
+                help: String::from("Time step between measurements, in seconds."),
+                long: String::from("qemu"),
+                short: String::from("q"),
+                required: false,
+                takes_value: false,
+            },
+        );
+
 
         options
     }
