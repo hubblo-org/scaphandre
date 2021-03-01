@@ -20,7 +20,13 @@ impl Exporter for Warp10Exporter {
         let qemu = parameters.is_present("qemu");
 
         loop {
-            match self.iteration(host, scheme, port.parse::<u16>().unwrap(), write_token, qemu) {
+            match self.iteration(
+                host,
+                scheme,
+                port.parse::<u16>().unwrap(),
+                write_token,
+                qemu,
+            ) {
                 Ok(res) => println!("Result: {:?}", res),
                 Err(err) => error!("Failed ! {:?}", err),
             }
@@ -107,7 +113,7 @@ impl Warp10Exporter {
         scheme: &str,
         port: u16,
         write_token: &str,
-        qemu: bool
+        qemu: bool,
     ) -> Result<warp10::Response, warp10::Error> {
         let client = warp10::Client::new(&format!("{}://{}:{}/", scheme, host, port))?;
         let writer = client.get_writer(write_token.to_string());
@@ -302,10 +308,13 @@ impl Warp10Exporter {
             plabels.push(warp10::Label::new("pid", &pid.to_string()));
             plabels.push(warp10::Label::new("exe", &exe));
             if let Some(cmdline_str) = cmdline {
-                plabels.push(warp10::Label::new("cmdline", &cmdline_str.replace("\"", "\\\"")));
+                plabels.push(warp10::Label::new(
+                    "cmdline",
+                    &cmdline_str.replace("\"", "\\\""),
+                ));
                 if qemu {
-                    if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {                        
-                        plabels.push(warp10::Label::new("vmname", &vmname));            
+                    if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
+                        plabels.push(warp10::Label::new("vmname", &vmname));
                     }
                 }
             }
@@ -315,7 +324,7 @@ impl Warp10Exporter {
                 pid.to_string(),
                 exe
             );
-            if let Some(power) = self.topology.get_process_power_consumption_microwatts(pid){
+            if let Some(power) = self.topology.get_process_power_consumption_microwatts(pid) {
                 data.push(warp10::Data::new(
                     time::now_utc().to_timespec(),
                     None,
