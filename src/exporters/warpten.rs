@@ -3,7 +3,6 @@ use crate::sensors::{RecordGenerator, Sensor, Topology};
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
-use time;
 use utils::get_scaphandre_version;
 
 pub struct Warp10Exporter {
