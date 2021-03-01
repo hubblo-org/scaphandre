@@ -3,8 +3,8 @@ use crate::sensors::{RecordGenerator, Sensor, Topology};
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
-use utils::get_scaphandre_version;
 use time;
+use utils::get_scaphandre_version;
 
 pub struct Warp10Exporter {
     topology: Topology,
