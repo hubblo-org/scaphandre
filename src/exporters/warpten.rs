@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 use utils::get_scaphandre_version;
+use time;
 
 pub struct Warp10Exporter {
     topology: Topology,
@@ -125,8 +126,8 @@ impl Warp10Exporter {
         port: u16,
         write_token: &str,
         qemu: bool,
-    ) -> Result<warp10::Response, warp10::Error> {
-        let client = warp10::Client::new(&format!("{}://{}:{}/", scheme, host, port))?;
+    ) -> Result<warp10::Warp10Response, warp10::Error> {
+        let client = warp10::Client::new(&format!("{}://{}:{}", scheme, host, port))?;
         let writer = client.get_writer(write_token.to_string());
         self.topology
             .proc_tracker
@@ -144,7 +145,7 @@ impl Warp10Exporter {
         ];
 
         let mut data = vec![warp10::Data::new(
-            time::now_utc().to_timespec(),
+            time::OffsetDateTime::now_utc(),
             None,
             String::from("scaph_self_version"),
             labels.clone(),
@@ -155,7 +156,7 @@ impl Warp10Exporter {
             .get_process_cpu_consumption_percentage(procfs::process::Process::myself().unwrap().pid)
         {
             data.push(warp10::Data::new(
-                time::now_utc().to_timespec(),
+                time::OffsetDateTime::now_utc(),
                 None,
                 String::from("scaph_self_cpu_usage_percent"),
                 labels.clone(),
@@ -168,7 +169,7 @@ impl Warp10Exporter {
             .get_process_cpu_consumption_percentage(procfs::process::Process::myself().unwrap().pid)
         {
             data.push(warp10::Data::new(
-                time::now_utc().to_timespec(),
+                time::OffsetDateTime::now_utc(),
                 None,
                 String::from("scaph_self_cpu_usage_percent"),
                 labels.clone(),
@@ -179,7 +180,7 @@ impl Warp10Exporter {
         if let Ok(metric_value) = procfs::process::Process::myself().unwrap().statm() {
             let value = metric_value.size * procfs::page_size().unwrap() as u64;
             data.push(warp10::Data::new(
-                time::now_utc().to_timespec(),
+                time::OffsetDateTime::now_utc(),
                 None,
                 String::from("scaph_self_mem_total_program_size"),
                 labels.clone(),
@@ -187,7 +188,7 @@ impl Warp10Exporter {
             ));
             let value = metric_value.resident * procfs::page_size().unwrap() as u64;
             data.push(warp10::Data::new(
-                time::now_utc().to_timespec(),
+                time::OffsetDateTime::now_utc(),
                 None,
                 String::from("scaph_self_mem_resident_set_size"),
                 labels.clone(),
@@ -195,7 +196,7 @@ impl Warp10Exporter {
             ));
             let value = metric_value.shared * procfs::page_size().unwrap() as u64;
             data.push(warp10::Data::new(
-                time::now_utc().to_timespec(),
+                time::OffsetDateTime::now_utc(),
                 None,
                 String::from("scaph_self_mem_shared_resident_size"),
                 labels.clone(),
@@ -205,7 +206,7 @@ impl Warp10Exporter {
 
         let metric_value = self.topology.stat_buffer.len();
         data.push(warp10::Data::new(
-            time::now_utc().to_timespec(),
+            time::OffsetDateTime::now_utc(),
             None,
             String::from("scaph_self_topo_stats_nb"),
             labels.clone(),
@@ -214,7 +215,7 @@ impl Warp10Exporter {
 
         let metric_value = self.topology.record_buffer.len();
         data.push(warp10::Data::new(
-            time::now_utc().to_timespec(),
+            time::OffsetDateTime::now_utc(),
             None,
             String::from("scaph_self_topo_records_nb"),
             labels.clone(),
@@ -223,7 +224,7 @@ impl Warp10Exporter {
 
         let metric_value = self.topology.proc_tracker.procs.len();
         data.push(warp10::Data::new(
-            time::now_utc().to_timespec(),
+            time::OffsetDateTime::now_utc(),
             None,
             String::from("scaph_self_topo_procs_nb"),
             labels.clone(),
@@ -235,7 +236,7 @@ impl Warp10Exporter {
             metric_labels.push(warp10::Label::new("socket_id", &socket.id.to_string()));
             let metric_value = socket.stat_buffer.len();
             data.push(warp10::Data::new(
-                time::now_utc().to_timespec(),
+                time::OffsetDateTime::now_utc(),
                 None,
                 String::from("scaph_self_socket_stats_nb"),
                 metric_labels.clone(),
@@ -243,7 +244,7 @@ impl Warp10Exporter {
             ));
             let metric_value = socket.record_buffer.len();
             data.push(warp10::Data::new(
-                time::now_utc().to_timespec(),
+                time::OffsetDateTime::now_utc(),
                 None,
                 String::from("scaph_self_socket_records_nb"),
                 metric_labels.clone(),
@@ -255,7 +256,7 @@ impl Warp10Exporter {
                 let socket_energy_microjoules = &socket_records.last().unwrap().value;
                 if let Ok(metric_value) = socket_energy_microjoules.parse::<i64>() {
                     data.push(warp10::Data::new(
-                        time::now_utc().to_timespec(),
+                        time::OffsetDateTime::now_utc(),
                         None,
                         String::from("scaph_socket_energy_microjoules"),
                         metric_labels.clone(),
@@ -265,7 +266,7 @@ impl Warp10Exporter {
 
                 if let Some(metric_value) = socket.get_records_diff_power_microwatts() {
                     data.push(warp10::Data::new(
-                        time::now_utc().to_timespec(),
+                        time::OffsetDateTime::now_utc(),
                         None,
                         String::from("scaph_socket_power_microwatts"),
                         metric_labels.clone(),
@@ -279,7 +280,7 @@ impl Warp10Exporter {
                 metric_labels.push(warp10::Label::new("rapl_domain_name", &domain.name));
                 let metric_value = domain.record_buffer.len();
                 data.push(warp10::Data::new(
-                    time::now_utc().to_timespec(),
+                    time::OffsetDateTime::now_utc(),
                     None,
                     String::from("scaph_self_domain_records_nb"),
                     metric_labels.clone(),
@@ -293,7 +294,7 @@ impl Warp10Exporter {
             let metric_value = record.value.clone();
 
             data.push(warp10::Data::new(
-                time::now_utc().to_timespec(),
+                time::OffsetDateTime::now_utc(),
                 None,
                 String::from("scaph_host_energy_microjoules"),
                 labels.clone(),
@@ -302,7 +303,7 @@ impl Warp10Exporter {
 
             if let Some(metric_value) = self.topology.get_records_diff_power_microwatts() {
                 data.push(warp10::Data::new(
-                    time::now_utc().to_timespec(),
+                    time::OffsetDateTime::now_utc(),
                     None,
                     String::from("scaph_host_power_microwatts"),
                     labels.clone(),
@@ -337,7 +338,7 @@ impl Warp10Exporter {
             );
             if let Some(power) = self.topology.get_process_power_consumption_microwatts(pid) {
                 data.push(warp10::Data::new(
-                    time::now_utc().to_timespec(),
+                    time::OffsetDateTime::now_utc(),
                     None,
                     metric_name,
                     plabels,
@@ -346,7 +347,7 @@ impl Warp10Exporter {
             }
         }
 
-        let res = writer.post(data)?;
+        let res = writer.post_sync(data)?;
         Ok(res)
     }
 }
