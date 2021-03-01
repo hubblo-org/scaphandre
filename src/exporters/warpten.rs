@@ -104,7 +104,6 @@ impl Exporter for Warp10Exporter {
             },
         );
 
-
         options
     }
 }
