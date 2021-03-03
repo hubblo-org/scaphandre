@@ -1,6 +1,7 @@
 use crate::exporters::*;
 use crate::sensors::{RecordGenerator, Sensor, Topology};
 use std::collections::HashMap;
+use std::mem::size_of_val;
 use std::thread;
 use std::time::Duration;
 use utils::get_scaphandre_version;
@@ -18,6 +19,7 @@ impl Exporter for Warp10Exporter {
         let write_token = parameters.value_of("write-token").unwrap();
         let step = parameters.value_of("step").unwrap();
         let qemu = parameters.is_present("qemu");
+        //let limit_size_bytes = parameters.value_of("limit-size-bytes").unwrap();
 
         loop {
             match self.iteration(
@@ -26,6 +28,7 @@ impl Exporter for Warp10Exporter {
                 port.parse::<u16>().unwrap(),
                 write_token,
                 qemu,
+                //limit_size_bytes.parse::<usize>().unwrap(),
             ) {
                 Ok(res) => println!("Result: {:?}", res),
                 Err(err) => error!("Failed ! {:?}", err),
@@ -103,6 +106,17 @@ impl Exporter for Warp10Exporter {
                 takes_value: false,
             },
         );
+        //options.insert(
+        //    String::from("limit-size-bytes"),
+        //    ExporterOption {
+        //        default_value: Some(String::from("2048")),
+        //        help: String::from("Maximum size of the payload, in bytes. Payload will be split in multiple requests if it's above the limit"),
+        //        long: String::from("limit-size-bytes"),
+        //        short: String::from("l"),
+        //        required: false,
+        //        takes_value: true,
+        //    },
+        //);
 
         options
     }
@@ -125,6 +139,7 @@ impl Warp10Exporter {
         port: u16,
         write_token: &str,
         qemu: bool,
+        //limit_size_bytes: usize, //) -> Result<Vec<warp10::Warp10Response>, warp10::Error> {
     ) -> Result<warp10::Warp10Response, warp10::Error> {
         let client = warp10::Client::new(&format!("{}://{}:{}", scheme, host, port))?;
         let writer = client.get_writer(write_token.to_string());
@@ -139,8 +154,8 @@ impl Warp10Exporter {
         let scaphandre_version = get_scaphandre_version();
 
         let labels = vec![
-            warp10::Label::new("scaphandre_self_version", &scaphandre_version),
-            warp10::Label::new("agent", "scaphandre"),
+            //warp10::Label::new("scaphandre_self_version", &scaphandre_version),
+            //warp10::Label::new("agent", "scaphandre"),
         ];
 
         let mut data = vec![warp10::Data::new(
@@ -315,19 +330,20 @@ impl Warp10Exporter {
         for pid in processes_tracker.get_alive_pids() {
             let exe = processes_tracker.get_process_name(pid);
             let cmdline = processes_tracker.get_process_cmdline(pid);
+
             let mut plabels = labels.clone();
             plabels.push(warp10::Label::new("pid", &pid.to_string()));
             plabels.push(warp10::Label::new("exe", &exe));
             if let Some(cmdline_str) = cmdline {
-                plabels.push(warp10::Label::new(
-                    "cmdline",
-                    &cmdline_str.replace("\"", "\\\""),
-                ));
                 if qemu {
                     if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
                         plabels.push(warp10::Label::new("vmname", &vmname));
                     }
                 }
+                plabels.push(warp10::Label::new(
+                    "cmdline",
+                    &cmdline_str.replace("\"", "\\\""),
+                ));
             }
             let metric_name = format!(
                 "{}_{}_{}",
@@ -345,10 +361,27 @@ impl Warp10Exporter {
                 ));
             }
         }
-
+        //let mut data_chunks = self.format_data(data, limit_size_bytes);
+        //let mut res_vec = vec![];
+        //while let Some(chunk) = data_chunks.pop() {
+        //    res_vec.push(writer.post_sync(chunk)?);
+        //}
+        //Ok(res_vec)
         let res = writer.post_sync(data)?;
         Ok(res)
     }
+
+    //fn format_data(&mut self, mut data: Vec<warp10::Data>, limit_size_bytes: usize) -> Vec<Vec<warp10::Data>>{
+    //    let mut res = vec![];
+    //    if size_of_val(&data.get(1).unwrap()) * data.len() > limit_size_bytes {
+    //       let second_half = data.split_off(data.len()/2);
+    //       res.push(data);
+    //       res.push(second_half);
+    //    } else {
+    //        res.push(data);
+    //    }
+    //    res
+    //}
 }
 
 //  Copyright 2020 The scaphandre authors.
