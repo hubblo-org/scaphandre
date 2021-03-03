@@ -1,7 +1,7 @@
 use crate::exporters::*;
 use crate::sensors::{RecordGenerator, Sensor, Topology};
 use std::collections::HashMap;
-use std::mem::size_of_val;
+//use std::mem::size_of_val;
 use std::thread;
 use std::time::Duration;
 use utils::get_scaphandre_version;
