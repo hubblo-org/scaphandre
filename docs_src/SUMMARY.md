@@ -20,11 +20,12 @@
 
 ## Exporters
 
+- [JSON exporter](references/exporter-json.md)
 - [Prometheus exporter](references/exporter-prometheus.md)
 - [Qemu exporter](references/exporter-qemu.md)
 - [Riemann exporter](references/exporter-riemann.md)
 - [Stdout exporter](references/exporter-stdout.md)
-- [JSON exporter](references/exporter-json.md)
+- [Warp10 exporter](references/exporter-warp10.md)
 
 ## Sensors
 

@@ -55,7 +55,7 @@ impl Exporter for Warp10Exporter {
         options.insert(
             String::from("scheme"),
             ExporterOption {
-                default_value: Some(String::from("https")),
+                default_value: Some(String::from("http")),
                 help: String::from("Either 'http' or 'https'"),
                 long: String::from("scheme"),
                 short: String::from("s"),

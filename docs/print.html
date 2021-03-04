@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="tutorials/kubernetes.html"><strong aria-hidden="true">3.</strong> Power consumption of a Kubernetes cluster with scaphandre, prometheus and grafana</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">4.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">5.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">6.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="explanations/internal-structure.html"><strong aria-hidden="true">7.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="explanations/about-containers.html"><strong aria-hidden="true">8.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="references/exporter-prometheus.html"><strong aria-hidden="true">9.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-qemu.html"><strong aria-hidden="true">10.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-riemann.html"><strong aria-hidden="true">11.</strong> Riemann exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-stdout.html"><strong aria-hidden="true">12.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-json.html"><strong aria-hidden="true">13.</strong> JSON exporter</a></li><li class="chapter-item expanded "><a href="references/sensor-powercap_rapl.html"><strong aria-hidden="true">14.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="sources.html">External references you may be interested in</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorials/quickstart.html"><strong aria-hidden="true">1.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="tutorials/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="tutorials/kubernetes.html"><strong aria-hidden="true">3.</strong> Power consumption of a Kubernetes cluster with scaphandre, prometheus and grafana</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">4.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">5.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">6.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="explanations/internal-structure.html"><strong aria-hidden="true">7.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="explanations/about-containers.html"><strong aria-hidden="true">8.</strong> About containers</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="references/exporter-json.html"><strong aria-hidden="true">9.</strong> JSON exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-prometheus.html"><strong aria-hidden="true">10.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-qemu.html"><strong aria-hidden="true">11.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-riemann.html"><strong aria-hidden="true">12.</strong> Riemann exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-stdout.html"><strong aria-hidden="true">13.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-warp10.html"><strong aria-hidden="true">14.</strong> Warp10 exporter</a></li><li class="chapter-item expanded "><a href="references/sensor-powercap_rapl.html"><strong aria-hidden="true">15.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="sources.html">External references you may be interested in</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -384,9 +384,44 @@ RAPL stands for <a href="https://01.org/blogs/2014/running-average-power-limit-%
 <p>Scaphandre may help you measure the <strong>power consumption of containers</strong> running on a given host. You can already get to that goal using the tips provided in the howto section called <a href="explanations/../how-to_guides/get-process-level-power-in-grafana.html">&quot;Get process level power consumption&quot;</a>. It may still require some tweaking and inventiveness from you in making the approriate queries to your favorite TSDB. This should be made easier by the upcoming <a href="https://github.com/hubblo-org/scaphandre/projects/1">scaphandre features</a>.</p>
 <p>Another use case scenario would be to measure the power consumption of a <strong>container orchestrator</strong> (like <a href="https://kubernetes.io/">kubernetes</a>), its nodes and the containers and applications running on it. This is a feature we are <a href="https://github.com/hubblo-org/scaphandre/issues/29#issuecomment-755353175">currently working on</a> (you may try yourself the helm chart that is proposed in that thread, before it is officially supported).</p>
 <p>As described <a href="explanations/../compatibility.html">here</a>, scaphandre provides several ways (<a href="explanations/../explanations/sensors.html">sensors</a>) to collect the power consumption metrics. Depending on your use case a sensor should be more suitable than the other. Each of them comes with strengths and weaknesses. This is basically always a tradeoff between precision and simplicity. This is especially true if you run a container-based workloads on public cloud instances. We are working to provide a solution <a href="https://github.com/hubblo-org/scaphandre/issues/25">for that as well</a>.</p>
+<h1><a class="header" href="#json-exporter" id="json-exporter">JSON exporter</a></h1>
+<h2><a class="header" href="#usage" id="usage">Usage</a></h2>
+<p>You can launch the JSON exporter this way (running the default powercap_rapl sensor):</p>
+<pre><code>scaphandre json
+</code></pre>
+<p>Default behavior is to measure and show metrics periodically during 10 seconds. You can change that timeout with <code>-t</code>. Here is how to display metrics during one minute:</p>
+<pre><code>scaphandre json -t 60
+</code></pre>
+<p>You can change as well the step measure duration with -s. Here is how to display metrics during one minutes with a 5s step:</p>
+<pre><code>scaphandre json -t 60 -s 5
+</code></pre>
+<p>If you want a faster interval you can use option -n (for nano seconds). Here is how to display metrics during 10s with a 100ms step:</p>
+<pre><code>scaphandre json -t 10 -s 0 -n 100000000
+</code></pre>
+<p>By default, JSON is printed in the terminal, to write result in a file you can provide a path with option -f:</p>
+<pre><code>scaphandre json -t 10 -s 0 -n 100000000 -f report.json
+</code></pre>
+<p>As always exporter's options can be displayed with <code>-h</code>:</p>
+<pre><code>$ scaphandre json -h
+scaphandre-json 
+JSON exporter allows you to output the power consumption data in a json file
+
+USAGE:
+    scaphandre json [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -f, --file &lt;file_path&gt;                  Destination file for the report. [default: ]
+    -s, --step &lt;step_duration&gt;              Set measurement step duration in second. [default: 2]
+    -n, --step_nano &lt;step_duration_nano&gt;    Set measurement step duration in nano second. [default: 0]
+    -t, --timeout &lt;timeout&gt;                 Maximum time spent measuring, in seconds. [default: 10]
+</code></pre>
 <h1><a class="header" href="#prometheus-exporter" id="prometheus-exporter">Prometheus exporter</a></h1>
 <img src="https://github.com/hubblo-org/scaphandre/raw/main/screen-prometheus.cleaned.png">
-<h2><a class="header" href="#usage" id="usage">Usage</a></h2>
+<h2><a class="header" href="#usage-1" id="usage-1">Usage</a></h2>
 <p>You can launch the prometheus exporter this way (running the default powercap_rapl sensor):</p>
 <pre><code>scaphandre prometheus
 </code></pre>
@@ -468,7 +503,7 @@ This will allow to easily create charts consumption for each vm and defined whic
 <p>Computes energy consumption metrics for each Qemu/KVM virtual machine found on the host.
 Exposes those metrics as filetrees compatible with the <a href="references/../sensors/powercap_rapl.html">powercap_rapl sensor</a>.</p>
 <p>Note that this is still experimental. Metrics are already considered trustworthy, but there are discussions and tests to be performed about the acceptable ways to share the data with the guests/vms. Any feedback or thoughts about this are welcome. Please refer to the <a href="references/../contributing.html">contributing section</a>.</p>
-<h2><a class="header" href="#usage-1" id="usage-1">Usage</a></h2>
+<h2><a class="header" href="#usage-2" id="usage-2">Usage</a></h2>
 <ol>
 <li>
 <p>Run the scaphandre with the qemu exporter on your bare metal hypervisor machine:</p>
@@ -517,7 +552,7 @@ First create a tmpfs mount point to isolate metrics for that virtual machine:</p
 </ol>
 <h1><a class="header" href="#riemann-exporter" id="riemann-exporter">Riemann exporter</a></h1>
 <p><img src="references/images/riemann_exporter.png" alt="riemann exporter" /></p>
-<h2><a class="header" href="#usage-2" id="usage-2">Usage</a></h2>
+<h2><a class="header" href="#usage-3" id="usage-3">Usage</a></h2>
 <p>You can launch the Riemann exporter this way (running the default powercap_rapl sensor):</p>
 <pre><code>scaphandre riemann
 </code></pre>
@@ -549,7 +584,7 @@ This will allow to easily create charts consumption for each vm and defined whic
 <pre><code>(service =~ &quot;process_power_consumption_microwatts_%_firefox&quot;) or (service =~ &quot;process_power_consumption_microwatts_%_scaphandre&quot;)
 </code></pre>
 <h1><a class="header" href="#stdout-exporter" id="stdout-exporter">Stdout exporter</a></h1>
-<h2><a class="header" href="#usage-3" id="usage-3">Usage</a></h2>
+<h2><a class="header" href="#usage-4" id="usage-4">Usage</a></h2>
 <p>You can launch the stdout exporter this way (running the default powercap_rapl sensor):</p>
 <pre><code>scaphandre stdout
 </code></pre>
@@ -575,41 +610,36 @@ OPTIONS:
 -s, --step &lt;step_duration&gt;    Set measurement step duration in seconds. [default: 2]
 -t, --timeout &lt;timeout&gt;       Maximum time spent measuring, in seconds. [default: 10]
 </code></pre>
-<h1><a class="header" href="#json-exporter" id="json-exporter">JSON exporter</a></h1>
-<h2><a class="header" href="#usage-4" id="usage-4">Usage</a></h2>
-<p>You can launch the JSON exporter this way (running the default powercap_rapl sensor):</p>
-<pre><code>scaphandre json
-</code></pre>
-<p>Default behavior is to measure and show metrics periodically during 10 seconds. You can change that timeout with <code>-t</code>. Here is how to display metrics during one minute:</p>
-<pre><code>scaphandre json -t 60
-</code></pre>
-<p>You can change as well the step measure duration with -s. Here is how to display metrics during one minutes with a 5s step:</p>
-<pre><code>scaphandre json -t 60 -s 5
-</code></pre>
-<p>If you want a faster interval you can use option -n (for nano seconds). Here is how to display metrics during 10s with a 100ms step:</p>
-<pre><code>scaphandre json -t 10 -s 0 -n 100000000
-</code></pre>
-<p>By default, JSON is printed in the terminal, to write result in a file you can provide a path with option -f:</p>
-<pre><code>scaphandre json -t 10 -s 0 -n 100000000 -f report.json
+<h1><a class="header" href="#warp10-exporter" id="warp10-exporter">Warp10 exporter</a></h1>
+<p><img src="references/images/warp10.png" alt="warp10 exporter" /></p>
+<h2><a class="header" href="#usage-5" id="usage-5">Usage</a></h2>
+<p>You can launch the Warp10 exporter this way (running the default powercap_rapl sensor):</p>
+<pre><code>scaphandre warp10
 </code></pre>
 <p>As always exporter's options can be displayed with <code>-h</code>:</p>
-<pre><code>$ scaphandre json -h
-scaphandre-json 
-JSON exporter allows you to output the power consumption data in a json file
+<pre><code>scaphandre-warp10 
+Warp10 exporter sends data to a Warp10 host, through HTTP
 
 USAGE:
-    scaphandre json [OPTIONS]
+    scaphandre warp10 [FLAGS] [OPTIONS] --step &lt;step&gt; --write-token &lt;write-token&gt;
 
 FLAGS:
     -h, --help       Prints help information
+    -q, --qemu       Time step between measurements, in seconds.
     -V, --version    Prints version information
 
 OPTIONS:
-    -f, --file &lt;file_path&gt;                  Destination file for the report. [default: ]
-    -s, --step &lt;step_duration&gt;              Set measurement step duration in second. [default: 2]
-    -n, --step_nano &lt;step_duration_nano&gt;    Set measurement step duration in nano second. [default: 0]
-    -t, --timeout &lt;timeout&gt;                 Maximum time spent measuring, in seconds. [default: 10]
+    -H, --host &lt;host&gt;                  Warp10 host's FQDN or IP address to send data to [default: localhost]
+    -p, --port &lt;port&gt;                  TCP port to join Warp10 on the host [default: 8080]
+    -s, --scheme &lt;scheme&gt;              Either 'http' or 'https' [default: https]
+    -S, --step &lt;step&gt;                  Time step between measurements, in seconds. [default: 60]
+    -t, --write-token &lt;write-token&gt;    Auth. token to write on Warp10
 </code></pre>
+<p>With default options values, the metrics are sent to http://localhost:8080 every 60 seconds</p>
+<p>Use -q or --qemu option if you are running scaphandre on a hypervisor. In that case a label with the vm name will be added to all <code>qemu-system*</code> processes.
+This will allow to easily create charts consumption for each vm and defined which one is the top contributor.</p>
+<h2><a class="header" href="#metrics-exposed-2" id="metrics-exposed-2">Metrics exposed</a></h2>
+<p>Typically the Warp10 exporter is working in the same way as the riemann exporter regarding metrics. Please look at details in <a href="references/exporter-prometheus.html">Prometheus exporter</a> documentations to get the extensive list of metrics available.</p>
 <h1><a class="header" href="#powercap_rapl-sensor" id="powercap_rapl-sensor">Powercap_rapl sensor</a></h1>
 <h2><a class="header" href="#pre-requesites" id="pre-requesites">Pre-requesites</a></h2>
 <p>At the time those lines are written, this sensor works only on:</p>
@@ -624,7 +654,7 @@ OPTIONS:
 and <a href="https://www.phoronix.com/scan.php?page=news_item&amp;px=AMD-RAPL-Linux-Now-19h">5.11 for family 19h</a>.</p>
 <p>Energy consumption data can be directly collected on a <strong>physical machine</strong> only.</p>
 <p>To collect energy consumption on a virtual machine, you may first collect power consumption data from the hypervisor thanks to the <a href="references/../exporters/qemu.html">qemu exporter</a> and then collect those metrics in the virtual machine thanks to this sensor, with <code>--vm</code> flag enabled.</p>
-<h2><a class="header" href="#usage-5" id="usage-5">Usage</a></h2>
+<h2><a class="header" href="#usage-6" id="usage-6">Usage</a></h2>
 <p>To explicitely call the powercap_rapl sensor from the command line use:</p>
 <pre><code>scaphandre -s powercap_rapl EXPORTER # EXPORTER being the exporter name you want to use
 </code></pre>
