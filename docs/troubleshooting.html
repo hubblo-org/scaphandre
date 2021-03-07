@@ -175,6 +175,35 @@
 <h3><a class="header" href="#i-cant-mount-the-required-kernel-modules-getting-a-couldnt-find-xxx-modules-error" id="i-cant-mount-the-required-kernel-modules-getting-a-couldnt-find-xxx-modules-error">I can't mount the required kernel modules, getting a <code>Could'nt find XXX modules</code> error</a></h3>
 <p>If you are in a situation comparable to <a href="https://github.com/hubblo-org/scaphandre/issues/59">this one</a>, you may need to install additional packages.</p>
 <p>On ubuntu 20.01 and 20.10, try to install <code>linux-modules-extra-$(uname-r)</code> with apt. Then you should be able to <code>modprobe intel_rapl_common</code>.</p>
+<h3><a class="header" href="#on-an-amd-cpu-machine-i-get-the-following-stracktrace" id="on-an-amd-cpu-machine-i-get-the-following-stracktrace">On an AMD cpu machine, I get the following stracktrace</a></h3>
+<pre><code>scaphandre::sensors::powercap_rapl: Couldn't find intel_rapl modules.
+thread 'main' panicked at 'Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line', src/sensors/mod.rs:238:18
+stack backtrace:
+   0: rust_begin_unwind
+             at /build/rust/src/rustc-1.49.0-src/library/std/src/panicking.rs:495:5
+   1: core::panicking::panic_fmt
+             at /build/rust/src/rustc-1.49.0-src/library/core/src/panicking.rs:92:14
+   2: core::option::expect_failed
+             at /build/rust/src/rustc-1.49.0-src/library/core/src/option.rs:1260:5
+   3: core::option::Option&lt;T&gt;::expect
+             at /build/rust/src/rustc-1.49.0-src/library/core/src/option.rs:349:21
+   4: scaphandre::sensors::Topology::add_cpu_cores
+             at ./src/sensors/mod.rs:234:26
+   5: &lt;scaphandre::sensors::powercap_rapl::PowercapRAPLSensor as scaphandre::sensors::Sensor&gt;::generate_topology
+             at ./src/sensors/powercap_rapl.rs:106:9
+   6: &lt;scaphandre::sensors::powercap_rapl::PowercapRAPLSensor as scaphandre::sensors::Sensor&gt;::get_topology
+             at ./src/sensors/powercap_rapl.rs:112:24
+   7: scaphandre::exporters::stdout::StdoutExporter::new
+             at ./src/exporters/stdout.rs:51:30
+   8: scaphandre::run
+             at ./src/lib.rs:60:28
+   9: scaphandre::main
+             at ./src/main.rs:91:5
+  10: core::ops::function::FnOnce::call_once
+             at /build/rust/src/rustc-1.49.0-src/library/core/src/ops/function.rs:227:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+</code></pre>
+<p>We verified that scaphandre (and especially the powercap_rapl sensor) works on AMD Zen processors with a Linux kernel <strong>5.11 or later</strong>. Before that kernel version, it won't probably work as the <a href="https://www.phoronix.com/scan.php?page=news_item&amp;px=AMD-Zen-PowerCap-RAPL-5.11">drivers</a> needed to feed powercap with rapl data are not present.</p>
 
                     </main>
 
