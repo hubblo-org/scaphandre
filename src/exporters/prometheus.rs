@@ -27,6 +27,9 @@ impl PrometheusExporter {
 }
 
 impl Exporter for PrometheusExporter {
+    // fn manage_metric<T>(&self, client: T, data: &Vec<Metric>) {
+    //     unimplemented!()
+    // }
     /// Runs HTTP server and metrics exposure through the runner function.
     fn run(&mut self, parameters: ArgMatches) {
         match runner(

@@ -5,8 +5,25 @@ pub mod riemann;
 pub mod stdout;
 pub mod utils;
 pub mod warpten;
+use crate::sensors::Topology;
 use clap::ArgMatches;
 use std::collections::HashMap;
+use utils::get_scaphandre_version;
+
+#[derive(Debug)]
+pub struct Metric {
+    // timestamp: TBD is the timestamp must be in the struct here ?
+    // Or computed just before sending the metric
+    name: String, // Will be used as service for Riemann
+    metric_type: String,
+    ttl: f32,
+    hostname: String,
+    state: String,
+    tags: Vec<String>,
+    attributes: HashMap<String, String>,
+    description: String,
+    metric: f64, // Use a f64 for the moment however this may need to be generic
+}
 
 /// An Exporter is what tells scaphandre when to collect metrics and how to export
 /// or expose them.
@@ -19,6 +36,136 @@ use std::collections::HashMap;
 pub trait Exporter {
     fn run(&mut self, parameters: ArgMatches);
     fn get_options() -> HashMap<String, ExporterOption>;
+
+    // Due to the fact that we collect all metric then send at the end,
+    // client does not need to be passed. It is definitively a simpler approach
+    fn get_self_metrics(&self, topology: &Topology, data: &mut Vec<Metric>, hostname: &str) {
+        data.push(Metric {
+            name: String::from("scaph_self_version"),
+            metric_type: String::from("gauge"),
+            ttl: 60.0,
+            hostname: String::from(hostname),
+            state: String::from("ok"),
+            tags: vec!["scaphandre".to_string()],
+            attributes: HashMap::new(),
+            description: String::from("Version number of scaphandre represented as a float."),
+            metric: get_scaphandre_version().parse().unwrap(), // Convert to f64 for the moment
+        });
+
+        if let Some(metric_value) = topology
+            .get_process_cpu_consumption_percentage(procfs::process::Process::myself().unwrap().pid)
+        {
+            data.push(Metric {
+                name: String::from("scaph_self_cpu_usage_percent"),
+                metric_type: String::from("gauge"),
+                ttl: 60.0,
+                hostname: String::from(hostname),
+                state: String::from("ok"),
+                tags: vec!["scaphandre".to_string()],
+                attributes: HashMap::new(),
+                description: String::from("CPU % consumed by this scaphandre prometheus exporter."),
+                metric: metric_value,
+            });
+        }
+    }
+    //             if let Ok(metric_value) = procfs::process::Process::myself().unwrap().statm() {
+    //                 let value = metric_value.size * procfs::page_size().unwrap() as u64;
+    //                 rclient.send_metric(
+    //                     60.0,
+    //                     &hostname,
+    //                     "scaph_self_mem_total_program_size",
+    //                     "ok",
+    //                     vec!["scaphandre".to_string()],
+    //                     vec![],
+    //                     "Total program size, measured in pages",
+    //                     value,
+    //                 );
+
+    //                 let value = metric_value.resident * procfs::page_size().unwrap() as u64;
+    //                 rclient.send_metric(
+    //                     60.0,
+    //                     &hostname,
+    //                     "scaph_self_mem_resident_set_size",
+    //                     "ok",
+    //                     vec!["scaphandre".to_string()],
+    //                     vec![],
+    //                     "Resident set size, measured in pages",
+    //                     value,
+    //                 );
+
+    //                 let value = metric_value.size * procfs::page_size().unwrap() as u64;
+    //                 rclient.send_metric(
+    //                     60.0,
+    //                     &hostname,
+    //                     "scaph_self_mem_shared_resident_size",
+    //                     "ok",
+    //                     vec!["scaphandre".to_string()],
+    //                     vec![],
+    //                     "Number of resident shared pages (i.e., backed by a file)",
+    //                     value,
+    //                 );
+    //             }
+
+    //             let topo_stat_buffer_len = topology.stat_buffer.len();
+    //             let topo_record_buffer_len = topology.record_buffer.len();
+    //             let topo_procs_len = topology.proc_tracker.procs.len();
+    //             rclient.send_metric(
+    //                 60.0,
+    //                 &hostname,
+    //                 "scaph_self_topo_stats_nb",
+    //                 "ok",
+    //                 vec!["scaphandre".to_string()],
+    //                 vec![],
+    //                 "Number of CPUStat traces stored for the host",
+    //                 topo_stat_buffer_len,
+    //             );
+
+    //             rclient.send_metric(
+    //                 60.0,
+    //                 &hostname,
+    //                 "scaph_self_topo_records_nb",
+    //                 "ok",
+    //                 vec!["scaphandre".to_string()],
+    //                 vec![],
+    //                 "Number of energy consumption Records stored for the host",
+    //                 topo_record_buffer_len,
+    //             );
+
+    //             rclient.send_metric(
+    //                 60.0,
+    //                 &hostname,
+    //                 "scaph_self_topo_procs_nb",
+    //                 "ok",
+    //                 vec!["scaphandre".to_string()],
+    //                 vec![],
+    //                 "Number of processes monitored for the host",
+    //                 topo_procs_len,
+    //             );
+
+    //             rclient.send_metric(
+    //                 60.0,
+    //                 &hostname,
+    //                 "scaph_self_topo_procs_nb",
+    //                 "ok",
+    //                 vec!["scaphandre".to_string()],
+    //                 vec![],
+    //                 "Number of processes monitored for the host",
+    //                 topo_procs_len,
+    //             );
+    // }
+    fn get_host_metrics(&self, topology: &Topology, data: &Vec<Metric>) {
+        unimplemented!()
+    }
+    fn get_socket_metrics(&self, topology: &Topology, data: &Vec<Metric>) {
+        unimplemented!()
+    }
+    fn get_system_metrics(&self, topology: &Topology, data: &Vec<Metric>) {
+        unimplemented!()
+    }
+    fn get_process_metrics(&self, topology: &Topology, data: &Vec<Metric>) {
+        unimplemented!()
+    }
+    //fn manage_metric<T>(&self, client: T, data: &Vec<Metric>);
 }
 
 pub struct ExporterOption {

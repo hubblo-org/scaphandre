@@ -6,7 +6,6 @@ use riemann_client::Client;
 use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use utils::get_scaphandre_version;
 
 /// Riemann server default ipv4/ipv6 address
 const DEFAULT_IP_ADDRESS: &str = "localhost";
@@ -15,59 +14,59 @@ const DEFAULT_IP_ADDRESS: &str = "localhost";
 const DEFAULT_PORT: &str = "5555";
 
 /// Metric trait to deal with metric types
-trait Metric {
+trait Rmetric {
     fn set_metric(self, event: &mut Event);
 }
 
-impl Metric for usize {
+impl Rmetric for usize {
     fn set_metric(self, event: &mut Event) {
         event.set_metric_sint64(self as i64);
     }
 }
 
-impl Metric for u64 {
+impl Rmetric for u64 {
     fn set_metric(self, event: &mut Event) {
         event.set_metric_sint64(self as i64);
     }
 }
 
-impl Metric for u32 {
+impl Rmetric for u32 {
     fn set_metric(self, event: &mut Event) {
         event.set_metric_sint64(self as i64);
     }
 }
 
-impl Metric for isize {
+impl Rmetric for isize {
     fn set_metric(self, event: &mut Event) {
         event.set_metric_sint64(self as i64);
     }
 }
 
-impl Metric for i64 {
+impl Rmetric for i64 {
     fn set_metric(self, event: &mut Event) {
         event.set_metric_sint64(self);
     }
 }
 
-impl Metric for i32 {
+impl Rmetric for i32 {
     fn set_metric(self, event: &mut Event) {
         event.set_metric_sint64(self as i64);
     }
 }
 
-impl Metric for f32 {
+impl Rmetric for f32 {
     fn set_metric(self, event: &mut Event) {
         event.set_metric_f(self);
     }
 }
 
-impl Metric for f64 {
+impl Rmetric for f64 {
     fn set_metric(self, event: &mut Event) {
         event.set_metric_d(self);
     }
 }
 
-impl Metric for &str {
+impl Rmetric for &str {
     fn set_metric(self, event: &mut Event) {
         let metric = self.replace(",", ".").replace("\n", "");
         if metric.contains('.') {
@@ -78,7 +77,7 @@ impl Metric for &str {
     }
 }
 
-impl Metric for String {
+impl Rmetric for String {
     fn set_metric(self, event: &mut Event) {
         let metric = self.replace(",", ".").replace("\n", "");
         if metric.contains('.') {
@@ -103,7 +102,7 @@ impl Riemann {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn send_metric<T: Metric>(
+    fn send_metric<T: Rmetric>(
         &mut self,
         ttl: f32,
         hostname: &str,
@@ -152,6 +151,9 @@ impl RiemannExporter {
 }
 
 impl Exporter for RiemannExporter {
+    // fn manage_metric<T>(&self, client: T, data: &Vec<Metric>) {
+    //     unimplemented!()
+    // }
     /// Runs HTTP server and metrics exposure through the runner function.
     fn run(&mut self, parameters: ArgMatches) {
         let dispatch_duration: u64 = parameters
@@ -172,6 +174,8 @@ impl Exporter for RiemannExporter {
             parameters.value_of("port").unwrap(),
         );
 
+        let mut data: Vec<Metric> = vec![];
+
         info!("Starting Riemann exporter");
         println!("Press CTRL-C to stop scaphandre");
         println!("Measurement step is: {}s", dispatch_duration);
@@ -187,106 +191,30 @@ impl Exporter for RiemannExporter {
 
             let records = topology.get_records_passive();
 
-            rclient.send_metric(
-                60.0,
-                &hostname,
-                "scaph_self_version",
-                "ok",
-                vec!["scaphandre".to_string()],
-                vec![],
-                "Version number of scaphandre represented as a float.",
-                get_scaphandre_version(),
-            );
+            self.get_self_metrics(&topology, &mut data, &hostname);
+            println!("data: {:?}", data);
 
-            if let Some(metric_value) = topology.get_process_cpu_consumption_percentage(
-                procfs::process::Process::myself().unwrap().pid,
-            ) {
+            // This should be the lastest part of the run method
+            for msg in &data {
+                let mut attributes: Vec<Attribute> = vec![];
+                for (key, value) in &msg.attributes {
+                    let mut attribute = Attribute::new();
+                    attribute.set_key(key.clone());
+                    attribute.set_value(value.clone());
+                    attributes.push(attribute);
+                }
+
                 rclient.send_metric(
-                    60.0,
-                    &hostname,
-                    "scaph_self_cpu_usage_percent",
-                    "ok",
-                    vec!["scaphandre".to_string()],
-                    vec![],
-                    "CPU % consumed by this scaphandre prometheus exporter.",
-                    metric_value,
+                    msg.ttl,
+                    &msg.hostname,
+                    &msg.name,
+                    &msg.state,
+                    msg.tags.clone(),
+                    attributes,
+                    &msg.description,
+                    msg.metric,
                 );
             }
-
-            if let Ok(metric_value) = procfs::process::Process::myself().unwrap().statm() {
-                let value = metric_value.size * procfs::page_size().unwrap() as u64;
-                rclient.send_metric(
-                    60.0,
-                    &hostname,
-                    "scaph_self_mem_total_program_size",
-                    "ok",
-                    vec!["scaphandre".to_string()],
-                    vec![],
-                    "Total program size, measured in pages",
-                    value,
-                );
-
-                let value = metric_value.resident * procfs::page_size().unwrap() as u64;
-                rclient.send_metric(
-                    60.0,
-                    &hostname,
-                    "scaph_self_mem_resident_set_size",
-                    "ok",
-                    vec!["scaphandre".to_string()],
-                    vec![],
-                    "Resident set size, measured in pages",
-                    value,
-                );
-
-                //TODO: PR to fix this, call shared and not size (same error in prom exporter)
-                let value = metric_value.size * procfs::page_size().unwrap() as u64;
-                rclient.send_metric(
-                    60.0,
-                    &hostname,
-                    "scaph_self_mem_shared_resident_size",
-                    "ok",
-                    vec!["scaphandre".to_string()],
-                    vec![],
-                    "Number of resident shared pages (i.e., backed by a file)",
-                    value,
-                );
-            }
-
-            let topo_stat_buffer_len = topology.stat_buffer.len();
-            let topo_record_buffer_len = topology.record_buffer.len();
-            let topo_procs_len = topology.proc_tracker.procs.len();
-            rclient.send_metric(
-                60.0,
-                &hostname,
-                "scaph_self_topo_stats_nb",
-                "ok",
-                vec!["scaphandre".to_string()],
-                vec![],
-                "Number of CPUStat traces stored for the host",
-                topo_stat_buffer_len,
-            );
-
-            rclient.send_metric(
-                60.0,
-                &hostname,
-                "scaph_self_topo_records_nb",
-                "ok",
-                vec!["scaphandre".to_string()],
-                vec![],
-                "Number of energy consumption Records stored for the host",
-                topo_record_buffer_len,
-            );
-
-            rclient.send_metric(
-                60.0,
-                &hostname,
-                "scaph_self_topo_procs_nb",
-                "ok",
-                vec!["scaphandre".to_string()],
-                vec![],
-                "Number of processes monitored for the host",
-                topo_procs_len,
-            );
 
             for socket in &topology.sockets {
                 let mut attribute = Attribute::new();
@@ -302,6 +230,7 @@ impl Exporter for RiemannExporter {
                     "Number of CPUStat traces stored for each socket",
                     socket.stat_buffer.len(),
                 );
+
                 rclient.send_metric(
                     60.0,
                     &hostname,
@@ -310,7 +239,7 @@ impl Exporter for RiemannExporter {
                     vec!["scaphandre".to_string()],
                     vec![attribute.clone()],
                     "Number of energy consumption Records stored for each socket",
-                    socket.record_buffer.len(),
+                    socket.stat_buffer.len(),
                 );
 
                 for domain in &socket.domains {
@@ -337,15 +266,15 @@ impl Exporter for RiemannExporter {
                 let host_energy_timestamp_seconds = record.timestamp.as_secs().to_string();
 
                 rclient.send_metric(
-                    60.0,
-                    &hostname,
-                    "scaph_host_energy_microjoules",
-                    "ok",
-                    vec!["scaphandre".to_string()],
-                    vec![],
-                    "Energy measurement for the whole host, as extracted from the sensor, in microjoules.",
-                    host_energy_microjoules
-                );
+                60.0,
+                &hostname,
+                "scaph_host_energy_microjoules",
+                "ok",
+                vec!["scaphandre".to_string()],
+                vec![],
+                "Energy measurement for the whole host, as extracted from the sensor, in microjoules.",
+                host_energy_microjoules
+            );
 
                 rclient.send_metric(
                     60.0,
@@ -392,7 +321,7 @@ impl Exporter for RiemannExporter {
                         socket_energy_microjoules.as_ref(),
                     );
 
-                    if let Some(power) = socket.get_records_diff_power_microwatts() {
+                    if let Some(power) = topology.get_records_diff_power_microwatts() {
                         let socket_power_microwatts = &power.value;
 
                         rclient.send_metric(
@@ -570,17 +499,3 @@ impl Exporter for RiemannExporter {
         options
     }
 }
-
-//  Copyright 2020 The scaphandre authors.
-//
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
