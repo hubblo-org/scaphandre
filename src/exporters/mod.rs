@@ -1,3 +1,5 @@
+#[cfg(feature = "datadog")]
+pub mod datadog;
 pub mod json;
 pub mod prometheus;
 pub mod qemu;
