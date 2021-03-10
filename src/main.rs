@@ -64,6 +64,8 @@ fn main() {
                 "riemann" => "Riemann exporter sends power consumption metrics to a Riemann server",
                 "qemu" => "Qemu exporter watches all Qemu/KVM virtual machines running on the host and exposes metrics of each of them in a dedicated folder",
                 "warp10" => "Warp10 exporter sends data to a Warp10 host, through HTTP",
+                #[cfg(feature = "datadog")]
+                "datadog" => "Datadog exporter sends power consumption metrics to Datadog",
                 _ => "Unknown exporter",
             }
         );
