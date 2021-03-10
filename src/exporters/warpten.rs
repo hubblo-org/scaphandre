@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 use utils::get_scaphandre_version;
+//use warp10::data::Format;
 
 /// An exporter that sends power consumption data of the host and its processes to
 /// a [Warp10](https://warp10.io) instance through **HTTP(s)**
@@ -19,6 +20,7 @@ impl Exporter for Warp10Exporter {
         let scheme = parameters.value_of("scheme").unwrap();
         let port = parameters.value_of("port").unwrap();
         let write_token = parameters.value_of("write-token").unwrap();
+        //let read_token = parameters.value_of("read-token");
         let step = parameters.value_of("step").unwrap();
         let qemu = parameters.is_present("qemu");
 
@@ -28,6 +30,7 @@ impl Exporter for Warp10Exporter {
                 scheme,
                 port.parse::<u16>().unwrap(),
                 write_token,
+                //read_token,
                 qemu,
             ) {
                 Ok(res) => println!("Result: {:?}", res),
@@ -85,6 +88,17 @@ impl Exporter for Warp10Exporter {
                 takes_value: true,
             },
         );
+        //options.insert(
+        //    String::from("read-token"),
+        //    ExporterOption {
+        //        default_value: None,
+        //        help: String::from("Auth. token to read on Warp10"),
+        //        long: String::from("read-token"),
+        //        short: String::from("r"),
+        //        required: false,
+        //        takes_value: true,
+        //    },
+        //);
         options.insert(
             String::from("step"),
             ExporterOption {
@@ -132,6 +146,7 @@ impl Warp10Exporter {
         scheme: &str,
         port: u16,
         write_token: &str,
+        //read_token: Option<&str>,
         qemu: bool,
     ) -> Result<warp10::Warp10Response, warp10::Error> {
         let client = warp10::Client::new(&format!("{}://{}:{}", scheme, host, port))?;
@@ -352,6 +367,23 @@ impl Warp10Exporter {
             }
         }
         let res = writer.post_sync(data)?;
+
+        //if let Some(token) = read_token {
+        //let reader = client.get_reader(token.to_owned());
+        //let parameters = warp10::data::ParameterSet::new(
+        //"scaph_host_power_microwatts{}".to_string(),
+        //Format::Text,
+        //None, None, None,
+        //Some(String::from("now")), Some(String::from("-10")),
+        //None, None, None
+        //);
+        //let response = reader.get_sync(parameters);
+        //match response {
+        //Ok(resp) => warn!("response is: {:?}", resp),
+        //Err(err) => panic!("error is: {:?}", err)
+        //}
+        //}
+
         Ok(res)
     }
 }
