@@ -181,7 +181,7 @@
 <p>To quickly run scaphandre in your terminal you may use <a href="https://www.docker.com/">docker</a>:</p>
 <pre><code>docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -ti hubblo/scaphandre stdout -t 15
 </code></pre>
-<p>Or if you downloaded or built a <a href="https://github.com/hubblo-org/scaphandre/releases/latest/download/scaphandre-v0.1.1-Ubuntu_20.04-x86_64.gz">binary</a>, you'd run:</p>
+<p>Or if you downloaded or built a binary, you'd run:</p>
 <pre><code>scaphandre stdout -t 15
 </code></pre>
 <p>Here we are using the stdout <a href="tutorials/../explanations/internal-structure.html">exporter</a> to print current power consumption usage in the terminal during 15 seconds.</p>
