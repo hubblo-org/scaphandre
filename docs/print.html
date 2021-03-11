@@ -697,9 +697,9 @@ This is even harder in a virtualization environement or as public cloud customer
 <p>To summarize, scaphandre should provide two ways to estimate the power consumption of a service, process or machine. Either by <strong>measuring it</strong>, using software interfaces that give access to hardware metrics, or by <strong>estimating it</strong> if measuring is not an option (this is a <a href="https://github.com/hubblo-org/scaphandre/issues/25">planned feature</a>, not yet implemented as those lines are written, in december 2020).</p>
 <p>In scaphandre, the code responsible to collect the power consumption data before any further processing is grouped in components called <strong>sensors</strong>. If you want more details about scaphandre structure, <a href="explanations/internal-structure.html">here are the explanations</a>.</p>
 <p>The <a href="references/sensor-powercap_rapl.html">PowercapRAPL sensor</a> enables you to measure the power consumption, it is the most precise solution, but it doesn't work in all contexts. A future sensor is to be developped to support other use cases. Here is the current state of scaphandre's compatibility:</p>
-<table><thead><tr><th align="left">Sensor</th><th align="center">x86 bare metal</th><th align="center">ARM bare metal</th><th align="center">Virtual Machine</th><th align="center">Public cloud instance</th><th align="center">Container</th></tr></thead><tbody>
-<tr><td align="left">PowercapRAPL</td><td align="center"><a href="references/sensor-powercap_rapl.html">Yes</a></td><td align="center">We don't know yet</td><td align="center">Yes, if on a qemu/KVM hypervisor that runs scaphandre and the <a href="references/exporter-qemu.html">Qemu exporter</a></td><td align="center">No, until your cloud provider uses scaphandre on its hypervisors</td><td align="center"><a href="explanations/about-containers.html">Depends on what you want</a></td></tr>
-<tr><td align="left">Future estimation based sensor</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td></tr>
+<table><thead><tr><th align="left">Sensor</th><th align="center">Intel x86 bare metal</th><th align="center">AMD x86 bare metal</th><th align="center">ARM bare metal</th><th align="center">Virtual Machine</th><th align="center">Public cloud instance</th><th align="center">Container</th></tr></thead><tbody>
+<tr><td align="left">PowercapRAPL</td><td align="center"><a href="references/sensor-powercap_rapl.html">Yes</a></td><td align="center">Yes ⚠️  kernel &gt; 5.11 required</td><td align="center">We don't know yet</td><td align="center">Yes, if on a qemu/KVM hypervisor that runs scaphandre and the <a href="references/exporter-qemu.html">Qemu exporter</a></td><td align="center">No, until your cloud provider uses scaphandre on its hypervisors</td><td align="center"><a href="explanations/about-containers.html">Depends on what you want</a></td></tr>
+<tr><td align="left">Future estimation based sensor</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center">Future Yes</td><td align="center"></td></tr>
 </tbody></table>
 <h1><a class="header" href="#troubleshooting-1" id="troubleshooting-1">Troubleshooting</a></h1>
 <h3><a class="header" href="#i-get-a-permission-denied-error-when-i-run-scaphandre-no-matter-what-is-the-exporter" id="i-get-a-permission-denied-error-when-i-run-scaphandre-no-matter-what-is-the-exporter">I get a <strong>permission denied</strong> error when I run scaphandre, no matter what is the exporter</a></h3>
@@ -713,6 +713,35 @@ This is even harder in a virtualization environement or as public cloud customer
 <h3><a class="header" href="#i-cant-mount-the-required-kernel-modules-getting-a-couldnt-find-xxx-modules-error" id="i-cant-mount-the-required-kernel-modules-getting-a-couldnt-find-xxx-modules-error">I can't mount the required kernel modules, getting a <code>Could'nt find XXX modules</code> error</a></h3>
 <p>If you are in a situation comparable to <a href="https://github.com/hubblo-org/scaphandre/issues/59">this one</a>, you may need to install additional packages.</p>
 <p>On ubuntu 20.01 and 20.10, try to install <code>linux-modules-extra-$(uname-r)</code> with apt. Then you should be able to <code>modprobe intel_rapl_common</code>.</p>
+<h3><a class="header" href="#on-an-amd-cpu-machine-i-get-the-following-stracktrace" id="on-an-amd-cpu-machine-i-get-the-following-stracktrace">On an AMD cpu machine, I get the following stracktrace</a></h3>
+<pre><code>scaphandre::sensors::powercap_rapl: Couldn't find intel_rapl modules.
+thread 'main' panicked at 'Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line', src/sensors/mod.rs:238:18
+stack backtrace:
+   0: rust_begin_unwind
+             at /build/rust/src/rustc-1.49.0-src/library/std/src/panicking.rs:495:5
+   1: core::panicking::panic_fmt
+             at /build/rust/src/rustc-1.49.0-src/library/core/src/panicking.rs:92:14
+   2: core::option::expect_failed
+             at /build/rust/src/rustc-1.49.0-src/library/core/src/option.rs:1260:5
+   3: core::option::Option&lt;T&gt;::expect
+             at /build/rust/src/rustc-1.49.0-src/library/core/src/option.rs:349:21
+   4: scaphandre::sensors::Topology::add_cpu_cores
+             at ./src/sensors/mod.rs:234:26
+   5: &lt;scaphandre::sensors::powercap_rapl::PowercapRAPLSensor as scaphandre::sensors::Sensor&gt;::generate_topology
+             at ./src/sensors/powercap_rapl.rs:106:9
+   6: &lt;scaphandre::sensors::powercap_rapl::PowercapRAPLSensor as scaphandre::sensors::Sensor&gt;::get_topology
+             at ./src/sensors/powercap_rapl.rs:112:24
+   7: scaphandre::exporters::stdout::StdoutExporter::new
+             at ./src/exporters/stdout.rs:51:30
+   8: scaphandre::run
+             at ./src/lib.rs:60:28
+   9: scaphandre::main
+             at ./src/main.rs:91:5
+  10: core::ops::function::FnOnce::call_once
+             at /build/rust/src/rustc-1.49.0-src/library/core/src/ops/function.rs:227:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+</code></pre>
+<p>We verified that scaphandre (and especially the powercap_rapl sensor) works on AMD Zen processors with a Linux kernel <strong>5.11 or later</strong>. Before that kernel version, it won't probably work as the <a href="https://www.phoronix.com/scan.php?page=news_item&amp;px=AMD-Zen-PowerCap-RAPL-5.11">drivers</a> needed to feed powercap with rapl data are not present.</p>
 <h1><a class="header" href="#contributing-guide" id="contributing-guide">Contributing guide</a></h1>
 <p>If you are reading this, you may be  to contribute. Just for that, a big thank you ! 👏</p>
 <p>Feel free to propose pull requests, or open new <a href="https://github.com/hubblo-org/scaphandre/discussions">discussions</a> or <a href="https://github.com/hubblo-org/scaphandre/issues">issues</a> at will. Scaphandre is a collaborative project and all opinions and propositions shall be heard and studied. The contributions will be received with kindness, gratitude and with an open mind. Remember that we are all <a href="https://en.wikipedia.org/wiki/Standing_on_the_shoulders_of_giants">dwarfs standing on the shoulders of giants</a>. We all have to learn from others and to give back, with due mutual respect.</p>
