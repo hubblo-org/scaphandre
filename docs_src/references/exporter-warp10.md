@@ -39,4 +39,4 @@ This will allow to easily create charts consumption for each vm and defined whic
 
 ## Metrics exposed
 
-Typically the Warp10 exporter is working in the same way as the riemann exporter regarding metrics. Please look at details in [Prometheus exporter](exporter-prometheus.md) documentations to get the extensive list of metrics available.
+Typically the Warp10 exporter is working the same way as the riemann and the prometheus exporters regarding metrics. Please look at details in [Prometheus exporter](exporter-prometheus.md) documentations to get the extensive list of metrics available.
