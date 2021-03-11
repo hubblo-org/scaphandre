@@ -1,3 +1,5 @@
+use clap::crate_version;
+
 pub fn filter_qemu_cmdline(cmdline: &str) -> Option<String> {
     if cmdline.contains("qemu-system") && cmdline.contains("guest=") {
         let vmname: Vec<Vec<&str>> = cmdline
@@ -12,6 +14,14 @@ pub fn filter_qemu_cmdline(cmdline: &str) -> Option<String> {
         }
     }
     None
+}
+
+pub fn get_scaphandre_version() -> String {
+    let mut version_parts = crate_version!().split('.');
+    let major_version = version_parts.next().unwrap();
+    let patch_version = version_parts.next().unwrap();
+    let minor_version = version_parts.next().unwrap();
+    format!("{}.{}{}", major_version, patch_version, minor_version)
 }
 
 #[cfg(test)]

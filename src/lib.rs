@@ -6,7 +6,8 @@ pub mod sensors;
 use clap::ArgMatches;
 use exporters::{
     json::JSONExporter, prometheus::PrometheusExporter, qemu::QemuExporter,
-    riemann::RiemannExporter, stdout::StdoutExporter, Exporter, ExporterOption,
+    riemann::RiemannExporter, stdout::StdoutExporter, warpten::Warp10Exporter, Exporter,
+    ExporterOption,
 };
 use sensors::{powercap_rapl::PowercapRAPLSensor, Sensor};
 use std::collections::HashMap;
@@ -75,6 +76,10 @@ pub fn run(matches: ArgMatches) {
         exporter_parameters = qemu_exporter_parameters.clone();
         let mut exporter = QemuExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
+    } else if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
+        exporter_parameters = warp10_exporter_parameters.clone();
+        let mut exporter = Warp10Exporter::new(sensor_boxed);
+        exporter.run(exporter_parameters);
     } else {
         error!("Couldn't determine which exporter has been chosen.");
     }
@@ -103,6 +108,10 @@ pub fn get_exporters_options() -> HashMap<String, HashMap<String, ExporterOption
     options.insert(
         String::from("qemu"),
         exporters::qemu::QemuExporter::get_options(),
+    );
+    options.insert(
+        String::from("warp10"),
+        exporters::warpten::Warp10Exporter::get_options(),
     );
     options
 }

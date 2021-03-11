@@ -1,0 +1,12 @@
+<html>
+<head>
+  <title>Test</title>
+  <script src="warpview.js"></script>
+</head>
+<body>
+    <warpview-tile
+          url="https://localhost:8086/api/v0/exec"
+          responsive="true"
+          type="pie">0 2 <% 'j' STORE NEWGTS 'serie' $j TOSTRING + RENAME NOW NaN NaN NaN RAND ADDVALUE %> FOR</warpview-tile>
+</body>
+</html>

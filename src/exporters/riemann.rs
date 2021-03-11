@@ -1,12 +1,12 @@
 use crate::exporters::*;
 use crate::sensors::{RecordGenerator, Sensor};
-use clap::crate_version;
 use riemann_client::proto::Attribute;
 use riemann_client::proto::Event;
 use riemann_client::Client;
 use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use utils::get_scaphandre_version;
 
 /// Riemann server default ipv4/ipv6 address
 const DEFAULT_IP_ADDRESS: &str = "localhost";
@@ -238,6 +238,7 @@ impl Exporter for RiemannExporter {
                     value,
                 );
 
+                //TODO: PR to fix this, call shared and not size (same error in prom exporter)
                 let value = metric_value.size * procfs::page_size().unwrap() as u64;
                 rclient.send_metric(
                     60.0,
@@ -287,17 +288,6 @@ impl Exporter for RiemannExporter {
                 topo_procs_len,
             );
 
-            rclient.send_metric(
-                60.0,
-                &hostname,
-                "scaph_self_topo_procs_nb",
-                "ok",
-                vec!["scaphandre".to_string()],
-                vec![],
-                "Number of processes monitored for the host",
-                topo_procs_len,
-            );
-
             for socket in &topology.sockets {
                 let mut attribute = Attribute::new();
                 attribute.set_key("socket_id".to_string());
@@ -312,7 +302,6 @@ impl Exporter for RiemannExporter {
                     "Number of CPUStat traces stored for each socket",
                     socket.stat_buffer.len(),
                 );
-
                 rclient.send_metric(
                     60.0,
                     &hostname,
@@ -321,7 +310,7 @@ impl Exporter for RiemannExporter {
                     vec!["scaphandre".to_string()],
                     vec![attribute.clone()],
                     "Number of energy consumption Records stored for each socket",
-                    socket.stat_buffer.len(),
+                    socket.record_buffer.len(),
                 );
 
                 for domain in &socket.domains {
@@ -348,15 +337,15 @@ impl Exporter for RiemannExporter {
                 let host_energy_timestamp_seconds = record.timestamp.as_secs().to_string();
 
                 rclient.send_metric(
-                60.0,
-                &hostname,
-                "scaph_host_energy_microjoules",
-                "ok",
-                vec!["scaphandre".to_string()],
-                vec![],
-                "Energy measurement for the whole host, as extracted from the sensor, in microjoules.",
-                host_energy_microjoules
-            );
+                    60.0,
+                    &hostname,
+                    "scaph_host_energy_microjoules",
+                    "ok",
+                    vec!["scaphandre".to_string()],
+                    vec![],
+                    "Energy measurement for the whole host, as extracted from the sensor, in microjoules.",
+                    host_energy_microjoules
+                );
 
                 rclient.send_metric(
                     60.0,
@@ -403,7 +392,7 @@ impl Exporter for RiemannExporter {
                         socket_energy_microjoules.as_ref(),
                     );
 
-                    if let Some(power) = topology.get_records_diff_power_microwatts() {
+                    if let Some(power) = socket.get_records_diff_power_microwatts() {
                         let socket_power_microwatts = &power.value;
 
                         rclient.send_metric(
@@ -582,10 +571,16 @@ impl Exporter for RiemannExporter {
     }
 }
 
-fn get_scaphandre_version() -> String {
-    let mut version_parts = crate_version!().split('.');
-    let major_version = version_parts.next().unwrap();
-    let patch_version = version_parts.next().unwrap();
-    let minor_version = version_parts.next().unwrap();
-    format!("{}.{}{}", major_version, patch_version, minor_version)
-}
+//  Copyright 2020 The scaphandre authors.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.

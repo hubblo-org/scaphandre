@@ -4,6 +4,7 @@ pub mod qemu;
 pub mod riemann;
 pub mod stdout;
 pub mod utils;
+pub mod warpten;
 use clap::ArgMatches;
 use std::collections::HashMap;
 

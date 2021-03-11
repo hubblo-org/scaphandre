@@ -185,7 +185,9 @@ impl ProcessTracker {
             if let Ok(mut cmdline_vec) = vec.process.cmdline() {
                 let mut cmdline = String::from("");
                 while !cmdline_vec.is_empty() {
-                    cmdline.push_str(&cmdline_vec.pop().unwrap());
+                    if !cmdline_vec.is_empty() {
+                        cmdline.push_str(&cmdline_vec.remove(0));
+                    }
                 }
                 return Some(cmdline);
             }
