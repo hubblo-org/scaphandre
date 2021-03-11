@@ -238,7 +238,7 @@ impl Exporter for RiemannExporter {
                     value,
                 );
 
-                //TODO: fix this, call resident and not size
+                //TODO: PR to fix this, call shared and not size (same error in prom exporter)
                 let value = metric_value.size * procfs::page_size().unwrap() as u64;
                 rclient.send_metric(
                     60.0,
@@ -287,17 +287,6 @@ impl Exporter for RiemannExporter {
                 "Number of processes monitored for the host",
                 topo_procs_len,
             );
-            //TODO: metric sent twice ?
-            rclient.send_metric(
-                60.0,
-                &hostname,
-                "scaph_self_topo_procs_nb",
-                "ok",
-                vec!["scaphandre".to_string()],
-                vec![],
-                "Number of processes monitored for the host",
-                topo_procs_len,
-            );
 
             for socket in &topology.sockets {
                 let mut attribute = Attribute::new();
@@ -313,7 +302,6 @@ impl Exporter for RiemannExporter {
                     "Number of CPUStat traces stored for each socket",
                     socket.stat_buffer.len(),
                 );
-                //TODO: fix metric
                 rclient.send_metric(
                     60.0,
                     &hostname,
@@ -322,7 +310,7 @@ impl Exporter for RiemannExporter {
                     vec!["scaphandre".to_string()],
                     vec![attribute.clone()],
                     "Number of energy consumption Records stored for each socket",
-                    socket.stat_buffer.len(),
+                    socket.record_buffer.len(),
                 );
 
                 for domain in &socket.domains {
@@ -404,8 +392,7 @@ impl Exporter for RiemannExporter {
                         socket_energy_microjoules.as_ref(),
                     );
 
-                    //TODO: fix metric
-                    if let Some(power) = topology.get_records_diff_power_microwatts() {
+                    if let Some(power) = socket.get_records_diff_power_microwatts() {
                         let socket_power_microwatts = &power.value;
 
                         rclient.send_metric(
