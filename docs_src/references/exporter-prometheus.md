@@ -50,7 +50,7 @@ And some more deep metrics that you may want if you need to make more complex ca
 - `scaph_host_energy_timestamp_seconds`: Timestamp in seconds when hose_energy_microjoules has been computed. (COUNTER)
 - `scaph_socket_power_microwatts{socket_id="$SOCKET_ID"}`: Power measurement relative to a CPU socket, in microwatts. SOCKET_ID being the socket numerical id (GAUGE)
 
-If you hack scaph or just want to tinvestigate its behavior, you may be interested in some internal metrics:
+If you hack scaph or just want to investigate its behavior, you may be interested in some internal metrics:
 
 - `scaph_self_mem_total_program_size`: Total program size, measured in pages
 
