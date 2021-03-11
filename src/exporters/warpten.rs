@@ -19,9 +19,9 @@ impl Exporter for Warp10Exporter {
         let host = parameters.value_of("host").unwrap();
         let scheme = parameters.value_of("scheme").unwrap();
         let port = parameters.value_of("port").unwrap();
-        let mut write_token = String::from("");
+        let write_token;
         if let Some(token) = parameters.value_of("write-token") {
-            write_token.push_str(token);
+            write_token = token.to_owned();
         } else {
             write_token = match env::var("SCAPH_WARP10_WRITE_TOKEN") {
                 Ok(val) => val,
@@ -112,11 +112,11 @@ impl Exporter for Warp10Exporter {
         options.insert(
             String::from("step"),
             ExporterOption {
-                default_value: Some(String::from("60")),
+                default_value: Some(String::from("30")),
                 help: String::from("Time step between measurements, in seconds."),
                 long: String::from("step"),
                 short: String::from("S"),
-                required: true,
+                required: false,
                 takes_value: true,
             },
         );
@@ -124,7 +124,7 @@ impl Exporter for Warp10Exporter {
             String::from("qemu"),
             ExporterOption {
                 default_value: None,
-                help: String::from("Time step between measurements, in seconds."),
+                help: String::from("Tells scaphandre it is running on a Qemu hypervisor."),
                 long: String::from("qemu"),
                 short: String::from("q"),
                 required: false,
