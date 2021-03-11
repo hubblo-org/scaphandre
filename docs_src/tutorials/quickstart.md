@@ -8,7 +8,7 @@ To quickly run scaphandre in your terminal you may use [docker](https://www.dock
 
     docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -ti hubblo/scaphandre stdout -t 15
 
-Or if you downloaded or built a [binary](https://github.com/hubblo-org/scaphandre/releases/latest/download/scaphandre-v0.1.1-Ubuntu_20.04-x86_64.gz), you'd run:
+Or if you downloaded or built a binary, you'd run:
 
     scaphandre stdout -t 15
 
