@@ -1,8 +1,8 @@
 use crate::exporters::*;
 use crate::sensors::{RecordGenerator, Sensor, Topology};
 use std::collections::HashMap;
-use std::thread;
 use std::time::Duration;
+use std::{env, thread};
 use utils::get_scaphandre_version;
 //use warp10::data::Format;
 
@@ -19,7 +19,17 @@ impl Exporter for Warp10Exporter {
         let host = parameters.value_of("host").unwrap();
         let scheme = parameters.value_of("scheme").unwrap();
         let port = parameters.value_of("port").unwrap();
-        let write_token = parameters.value_of("write-token").unwrap();
+        let mut write_token = String::from("");
+        if let Some(token) = parameters.value_of("write-token") {
+            write_token.push_str(token);
+        } else {
+            write_token = match env::var("SCAPH_WARP10_WRITE_TOKEN") {
+                Ok(val) => val,
+                Err(_e) => panic!(
+                    "SCAPH_WARP10_WRITE_TOKEN not found in env, nor write-token flag was used."
+                ),
+            };
+        }
         //let read_token = parameters.value_of("read-token");
         let step = parameters.value_of("step").unwrap();
         let qemu = parameters.is_present("qemu");
@@ -29,11 +39,11 @@ impl Exporter for Warp10Exporter {
                 host,
                 scheme,
                 port.parse::<u16>().unwrap(),
-                write_token,
+                &write_token,
                 //read_token,
                 qemu,
             ) {
-                Ok(res) => println!("Result: {:?}", res),
+                Ok(res) => debug!("Result: {:?}", res),
                 Err(err) => error!("Failed ! {:?}", err),
             }
             thread::sleep(Duration::new(step.parse::<u64>().unwrap(), 0));
@@ -84,7 +94,7 @@ impl Exporter for Warp10Exporter {
                 help: String::from("Auth. token to write on Warp10"),
                 long: String::from("write-token"),
                 short: String::from("t"),
-                required: true,
+                required: false,
                 takes_value: true,
             },
         );
