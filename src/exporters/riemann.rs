@@ -4,6 +4,7 @@ use riemann_client::proto::Attribute;
 use riemann_client::proto::Event;
 use riemann_client::Client;
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -135,19 +136,6 @@ impl Riemann {
             .expect("Fail to send metric to Riemann");
     }
 
-    #[allow(clippy::too_many_arguments)]
-    // fn send_metric_new(
-    //     &mut self,
-    //     ttl: f32,
-    //     hostname: &str,
-    //     service: &str,
-    //     state: &str,
-    //     tags: Vec<String>,
-    //     attributes: Vec<Attribute>,
-    //     description: &str,
-    //     metric_value: &MetricValueType,
-    // ) {
-    // }
     fn send_metric_new(&mut self, msg: &Metric) {
         let mut event = Event::new();
 
@@ -178,13 +166,18 @@ impl Riemann {
         match msg.metric_value {
             MetricValueType::Float(value) => event.set_metric_f(value),
             MetricValueType::FloatDouble(value) => event.set_metric_d(value),
-            MetricValueType::Int(value) => event.set_metric_sint64(value as i64),
+            MetricValueType::IntSigned(value) => event.set_metric_sint64(value),
+            MetricValueType::IntUnsigned(value) => event.set_metric_sint64(
+                i64::try_from(value).expect("Metric cannot be converted to signed integer."),
+            ),
             MetricValueType::Text(ref value) => {
-                let metric = value.replace(",", ".").replace("\n", "");
-                if metric.contains('.') {
-                    event.set_metric_d(metric.parse::<f64>().expect("Cannot parse metric"));
+                let value = value.replace(",", ".").replace("\n", "");
+                if value.contains('.') {
+                    event.set_metric_d(value.parse::<f64>().expect("Cannot parse metric value."));
                 } else {
-                    event.set_metric_sint64(metric.parse::<i64>().expect("Cannot parse metric"));
+                    event.set_metric_sint64(
+                        value.parse::<i64>().expect("Cannot parse metric value."),
+                    );
                 }
             }
         }
@@ -241,43 +234,24 @@ impl Exporter for RiemannExporter {
 
         let mut topology = self.sensor.get_topology().unwrap();
         loop {
-            debug!("Beginning of measure loop");
+            info!("Beginning of measure loop");
             topology
                 .proc_tracker
                 .clean_terminated_process_records_vectors();
-            debug!("Refresh topology");
+            info!("Refresh topology");
             topology.refresh();
 
             let records = topology.get_records_passive();
 
             self.get_self_metrics(&topology, &mut data, &hostname);
-            println!("data: {:?}", data);
+            debug!("self_metrics: {:#?}", data);
 
             // This should be the lastest part of the run method
-            // for msg in &data {
-            //     let mut attributes: Vec<Attribute> = vec![];
-            //     for (key, value) in &msg.attributes {
-            //         let mut attribute = Attribute::new();
-            //         attribute.set_key(key.clone());
-            //         attribute.set_value(value.clone());
-            //         attributes.push(attribute);
-            //     }
-
-            //     rclient.send_metric_new(
-            //         msg.ttl,
-            //         &msg.hostname,
-            //         &msg.name,
-            //         &msg.state,
-            //         msg.tags.clone(),
-            //         attributes,
-            //         &msg.description,
-            //         &msg.metric_value,
-            //     );
-            // }
             for msg in &data {
                 rclient.send_metric_new(msg);
             }
 
+            // TODO: Move next parts into Exporter functions
             for socket in &topology.sockets {
                 let mut attribute = Attribute::new();
                 attribute.set_key("socket_id".to_string());

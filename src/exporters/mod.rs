@@ -27,7 +27,8 @@ pub struct Metric {
 }
 
 enum MetricValueType {
-    Int(usize),
+    IntUnsigned(u64),
+    IntSigned(i64),
     Float(f32),
     FloatDouble(f64),
     Text(String),
@@ -39,7 +40,8 @@ impl fmt::Debug for MetricValueType {
             MetricValueType::Text(text) => write!(f, "{}", text),
             MetricValueType::Float(value) => write!(f, "{}", value),
             MetricValueType::FloatDouble(value) => write!(f, "{}", value),
-            MetricValueType::Int(value) => write!(f, "{}", value),
+            MetricValueType::IntUnsigned(value) => write!(f, "{}", value),
+            MetricValueType::IntSigned(value) => write!(f, "{}", value),
         }
     }
 }
@@ -58,6 +60,7 @@ pub trait Exporter {
 
     // Due to the fact that we collect all metric then send at the end,
     // client does not need to be passed. It is definitively a simpler approach
+    /// Retrieve all scaphandre self metrics
     fn get_self_metrics(&self, topology: &Topology, data: &mut Vec<Metric>, hostname: &str) {
         data.push(Metric {
             name: String::from("scaph_self_version"),
@@ -82,105 +85,110 @@ pub trait Exporter {
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
-                description: String::from("CPU % consumed by this scaphandre prometheus exporter."),
+                description: String::from("CPU % consumed by this scaphandre exporter."),
                 metric_value: MetricValueType::FloatDouble(metric_value),
             });
         }
+
+        if let Ok(metric_value) = procfs::process::Process::myself().unwrap().statm() {
+            let value = metric_value.size * procfs::page_size().unwrap() as u64;
+            data.push(Metric {
+                name: String::from("scaph_self_mem_total_program_size"),
+                metric_type: String::from("gauge"),
+                ttl: 60.0,
+                hostname: String::from(hostname),
+                state: String::from("ok"),
+                tags: vec!["scaphandre".to_string()],
+                attributes: HashMap::new(),
+                // TODO: Do not use pages but human readable value (KB or MB)
+                description: String::from("Total program size, measured in pages."),
+                metric_value: MetricValueType::IntUnsigned(value),
+            });
+
+            let value = metric_value.resident * procfs::page_size().unwrap() as u64;
+            data.push(Metric {
+                name: String::from("scaph_self_mem_resident_set_size"),
+                metric_type: String::from("gauge"),
+                ttl: 60.0,
+                hostname: String::from(hostname),
+                state: String::from("ok"),
+                tags: vec!["scaphandre".to_string()],
+                attributes: HashMap::new(),
+                // TODO: Do not use pages but human readable value (KB or MB)
+                description: String::from("Resident set size, measured in pages."),
+                metric_value: MetricValueType::IntUnsigned(value),
+            });
+
+            let value = metric_value.size * procfs::page_size().unwrap() as u64;
+            data.push(Metric {
+                name: String::from("scaph_self_mem_shared_resident_size"),
+                metric_type: String::from("gauge"),
+                ttl: 60.0,
+                hostname: String::from(hostname),
+                state: String::from("ok"),
+                tags: vec!["scaphandre".to_string()],
+                attributes: HashMap::new(),
+                // TODO: Do not use pages but human readable value (KB or MB)
+                description: String::from(
+                    "Number of resident shared pages (i.e., backed by a file).",
+                ),
+                metric_value: MetricValueType::IntUnsigned(value),
+            });
+        }
+
+        let topo_stat_buffer_len = topology.stat_buffer.len();
+        let topo_record_buffer_len = topology.record_buffer.len();
+        let topo_procs_len = topology.proc_tracker.procs.len();
+
+        data.push(Metric {
+            name: String::from("scaph_self_topo_stats_nb"),
+            metric_type: String::from("gauge"),
+            ttl: 60.0,
+            hostname: String::from(hostname),
+            state: String::from("ok"),
+            tags: vec!["scaphandre".to_string()],
+            attributes: HashMap::new(),
+            description: String::from("Number of CPUStat traces stored for the host."),
+            metric_value: MetricValueType::IntUnsigned(topo_stat_buffer_len as u64),
+        });
+
+        data.push(Metric {
+            name: String::from("scaph_self_topo_records_nb"),
+            metric_type: String::from("gauge"),
+            ttl: 60.0,
+            hostname: String::from(hostname),
+            state: String::from("ok"),
+            tags: vec!["scaphandre".to_string()],
+            attributes: HashMap::new(),
+            description: String::from("Number of energy consumption Records stored for the host."),
+            metric_value: MetricValueType::IntUnsigned(topo_record_buffer_len as u64),
+        });
+
+        data.push(Metric {
+            name: String::from("scaph_self_topo_procs_nb"),
+            metric_type: String::from("gauge"),
+            ttl: 60.0,
+            hostname: String::from(hostname),
+            state: String::from("ok"),
+            tags: vec!["scaphandre".to_string()],
+            attributes: HashMap::new(),
+            description: String::from("Number of processes monitored for the host."),
+            metric_value: MetricValueType::IntUnsigned(topo_procs_len as u64),
+        });
     }
-    //             if let Ok(metric_value) = procfs::process::Process::myself().unwrap().statm() {
-    //                 let value = metric_value.size * procfs::page_size().unwrap() as u64;
-    //                 rclient.send_metric(
-    //                     60.0,
-    //                     &hostname,
-    //                     "scaph_self_mem_total_program_size",
-    //                     "ok",
-    //                     vec!["scaphandre".to_string()],
-    //                     vec![],
-    //                     "Total program size, measured in pages",
-    //                     value,
-    //                 );
 
-    //                 let value = metric_value.resident * procfs::page_size().unwrap() as u64;
-    //                 rclient.send_metric(
-    //                     60.0,
-    //                     &hostname,
-    //                     "scaph_self_mem_resident_set_size",
-    //                     "ok",
-    //                     vec!["scaphandre".to_string()],
-    //                     vec![],
-    //                     "Resident set size, measured in pages",
-    //                     value,
-    //                 );
-
-    //                 let value = metric_value.size * procfs::page_size().unwrap() as u64;
-    //                 rclient.send_metric(
-    //                     60.0,
-    //                     &hostname,
-    //                     "scaph_self_mem_shared_resident_size",
-    //                     "ok",
-    //                     vec!["scaphandre".to_string()],
-    //                     vec![],
-    //                     "Number of resident shared pages (i.e., backed by a file)",
-    //                     value,
-    //                 );
-    //             }
-
-    //             let topo_stat_buffer_len = topology.stat_buffer.len();
-    //             let topo_record_buffer_len = topology.record_buffer.len();
-    //             let topo_procs_len = topology.proc_tracker.procs.len();
-    //             rclient.send_metric(
-    //                 60.0,
-    //                 &hostname,
-    //                 "scaph_self_topo_stats_nb",
-    //                 "ok",
-    //                 vec!["scaphandre".to_string()],
-    //                 vec![],
-    //                 "Number of CPUStat traces stored for the host",
-    //                 topo_stat_buffer_len,
-    //             );
-
-    //             rclient.send_metric(
-    //                 60.0,
-    //                 &hostname,
-    //                 "scaph_self_topo_records_nb",
-    //                 "ok",
-    //                 vec!["scaphandre".to_string()],
-    //                 vec![],
-    //                 "Number of energy consumption Records stored for the host",
-    //                 topo_record_buffer_len,
-    //             );
-
-    //             rclient.send_metric(
-    //                 60.0,
-    //                 &hostname,
-    //                 "scaph_self_topo_procs_nb",
-    //                 "ok",
-    //                 vec!["scaphandre".to_string()],
-    //                 vec![],
-    //                 "Number of processes monitored for the host",
-    //                 topo_procs_len,
-    //             );
-
-    //             rclient.send_metric(
-    //                 60.0,
-    //                 &hostname,
-    //                 "scaph_self_topo_procs_nb",
-    //                 "ok",
-    //                 vec!["scaphandre".to_string()],
-    //                 vec![],
-    //                 "Number of processes monitored for the host",
-    //                 topo_procs_len,
-    //             );
-    // }
     fn get_host_metrics(&self, topology: &Topology, data: &Vec<Metric>) {
         unimplemented!()
     }
+
     fn get_socket_metrics(&self, topology: &Topology, data: &Vec<Metric>) {
         unimplemented!()
     }
+
     fn get_system_metrics(&self, topology: &Topology, data: &Vec<Metric>) {
         unimplemented!()
     }
+
     fn get_process_metrics(&self, topology: &Topology, data: &Vec<Metric>) {
         unimplemented!()
     }
