@@ -134,6 +134,65 @@ impl Riemann {
             .event(event)
             .expect("Fail to send metric to Riemann");
     }
+
+    #[allow(clippy::too_many_arguments)]
+    // fn send_metric_new(
+    //     &mut self,
+    //     ttl: f32,
+    //     hostname: &str,
+    //     service: &str,
+    //     state: &str,
+    //     tags: Vec<String>,
+    //     attributes: Vec<Attribute>,
+    //     description: &str,
+    //     metric_value: &MetricValueType,
+    // ) {
+    // }
+    fn send_metric_new(&mut self, msg: &Metric) {
+        let mut event = Event::new();
+
+        let mut attributes: Vec<Attribute> = vec![];
+        for (key, value) in &msg.attributes {
+            let mut attribute = Attribute::new();
+            attribute.set_key(key.clone());
+            attribute.set_value(value.clone());
+            attributes.push(attribute);
+        }
+
+        event.set_time(
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64,
+        );
+        event.set_ttl(msg.ttl);
+        event.set_host(msg.hostname.to_string());
+        event.set_service(msg.name.to_string());
+        event.set_state(msg.state.to_string());
+        event.set_tags(protobuf::RepeatedField::from_vec(msg.tags.clone()));
+        if !attributes.is_empty() {
+            event.set_attributes(protobuf::RepeatedField::from_vec(attributes));
+        }
+        event.set_description(msg.description.to_string());
+
+        match msg.metric_value {
+            MetricValueType::Float(value) => event.set_metric_f(value),
+            MetricValueType::FloatDouble(value) => event.set_metric_d(value),
+            MetricValueType::Int(value) => event.set_metric_sint64(value as i64),
+            MetricValueType::Text(ref value) => {
+                let metric = value.replace(",", ".").replace("\n", "");
+                if metric.contains('.') {
+                    event.set_metric_d(metric.parse::<f64>().expect("Cannot parse metric"));
+                } else {
+                    event.set_metric_sint64(metric.parse::<i64>().expect("Cannot parse metric"));
+                }
+            }
+        }
+
+        self.client
+            .event(event)
+            .expect("Fail to send metric to Riemann");
+    }
 }
 
 /// Exporter sends metrics to a Riemann server
@@ -195,25 +254,28 @@ impl Exporter for RiemannExporter {
             println!("data: {:?}", data);
 
             // This should be the lastest part of the run method
-            for msg in &data {
-                let mut attributes: Vec<Attribute> = vec![];
-                for (key, value) in &msg.attributes {
-                    let mut attribute = Attribute::new();
-                    attribute.set_key(key.clone());
-                    attribute.set_value(value.clone());
-                    attributes.push(attribute);
-                }
+            // for msg in &data {
+            //     let mut attributes: Vec<Attribute> = vec![];
+            //     for (key, value) in &msg.attributes {
+            //         let mut attribute = Attribute::new();
+            //         attribute.set_key(key.clone());
+            //         attribute.set_value(value.clone());
+            //         attributes.push(attribute);
+            //     }
 
-                rclient.send_metric(
-                    msg.ttl,
-                    &msg.hostname,
-                    &msg.name,
-                    &msg.state,
-                    msg.tags.clone(),
-                    attributes,
-                    &msg.description,
-                    msg.metric,
-                );
+            //     rclient.send_metric_new(
+            //         msg.ttl,
+            //         &msg.hostname,
+            //         &msg.name,
+            //         &msg.state,
+            //         msg.tags.clone(),
+            //         attributes,
+            //         &msg.description,
+            //         &msg.metric_value,
+            //     );
+            // }
+            for msg in &data {
+                rclient.send_metric_new(msg);
             }
 
             for socket in &topology.sockets {

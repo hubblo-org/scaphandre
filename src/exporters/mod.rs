@@ -8,6 +8,7 @@ pub mod warpten;
 use crate::sensors::Topology;
 use clap::ArgMatches;
 use std::collections::HashMap;
+use std::fmt;
 use utils::get_scaphandre_version;
 
 #[derive(Debug)]
@@ -22,7 +23,25 @@ pub struct Metric {
     tags: Vec<String>,
     attributes: HashMap<String, String>,
     description: String,
-    metric: f64, // Use a f64 for the moment however this may need to be generic
+    metric_value: MetricValueType,
+}
+
+enum MetricValueType {
+    Int(usize),
+    Float(f32),
+    FloatDouble(f64),
+    Text(String),
+}
+
+impl fmt::Debug for MetricValueType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self {
+            MetricValueType::Text(text) => write!(f, "{}", text),
+            MetricValueType::Float(value) => write!(f, "{}", value),
+            MetricValueType::FloatDouble(value) => write!(f, "{}", value),
+            MetricValueType::Int(value) => write!(f, "{}", value),
+        }
+    }
 }
 
 /// An Exporter is what tells scaphandre when to collect metrics and how to export
@@ -49,7 +68,7 @@ pub trait Exporter {
             tags: vec!["scaphandre".to_string()],
             attributes: HashMap::new(),
             description: String::from("Version number of scaphandre represented as a float."),
-            metric: get_scaphandre_version().parse().unwrap(), // Convert to f64 for the moment
+            metric_value: MetricValueType::Text(get_scaphandre_version()),
         });
 
         if let Some(metric_value) = topology
@@ -64,7 +83,7 @@ pub trait Exporter {
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
                 description: String::from("CPU % consumed by this scaphandre prometheus exporter."),
-                metric: metric_value,
+                metric_value: MetricValueType::FloatDouble(metric_value),
             });
         }
     }
