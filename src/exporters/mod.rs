@@ -119,7 +119,7 @@ pub trait Exporter {
                 metric_value: MetricValueType::IntUnsigned(value),
             });
 
-            let value = metric_value.size * procfs::page_size().unwrap() as u64;
+            let value = metric_value.shared * procfs::page_size().unwrap() as u64;
             data.push(Metric {
                 name: String::from("scaph_self_mem_shared_resident_size"),
                 metric_type: String::from("gauge"),
