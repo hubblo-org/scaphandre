@@ -2,7 +2,6 @@ use crate::current_system_time_since_epoch;
 use crate::exporters::*;
 use crate::sensors::{Record, RecordGenerator, Sensor, Topology};
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
-use clap::crate_version;
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::Mutex;
@@ -27,9 +26,6 @@ impl PrometheusExporter {
 }
 
 impl Exporter for PrometheusExporter {
-    // fn manage_metric<T>(&self, client: T, data: &Vec<Metric>) {
-    //     unimplemented!()
-    // }
     /// Runs HTTP server and metrics exposure through the runner function.
     fn run(&mut self, parameters: ArgMatches) {
         match runner(
@@ -137,8 +133,7 @@ async fn runner(
 
 /// Returns a well formatted Prometheus metric string.
 fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>>) -> String {
-    let prefix = "scaph";
-    let mut result = format!("{}_{}", prefix, key);
+    let mut result = format!("{}", key);
     if let Some(labels) = labels {
         result.push('{');
         for (k, v) in labels.iter() {
@@ -169,9 +164,9 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     let now = current_system_time_since_epoch();
     let mut last_request = data.last_request.lock().unwrap();
 
-    let mut topo_stat_buffer_len = 0;
-    let mut topo_record_buffer_len = 0;
-    let mut topo_procs_len = 0;
+    // let mut topo_stat_buffer_len = 0;
+    // let mut topo_record_buffer_len = 0;
+    // let mut topo_procs_len = 0;
 
     if now - (*last_request) > Duration::from_secs(5) {
         {
@@ -181,17 +176,20 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
                 .proc_tracker
                 .clean_terminated_process_records_vectors();
             (*topology).refresh();
-            topo_stat_buffer_len = (*topology).stat_buffer.len();
-            //let stat_buffer_size = size_of_val(&(*topology).stat_buffer.get(0).unwrap()) *  stat_buffer_len;
-            topo_record_buffer_len = (*topology).record_buffer.len();
-            //let record_buffer_size: size_of_val(&(*topology).record_buffer.get(0).unwrap()) * record_buffer_len;
-            topo_procs_len = (*topology).proc_tracker.procs.len();
+            //topo_stat_buffer_len = (*topology).stat_buffer.len();
+            ////let stat_buffer_size = size_of_val(&(*topology).stat_buffer.get(0).unwrap()) *  stat_buffer_len;
+            //topo_record_buffer_len = (*topology).record_buffer.len();
+            ////let record_buffer_size: size_of_val(&(*topology).record_buffer.get(0).unwrap()) * record_buffer_len;
+            //topo_procs_len = (*topology).proc_tracker.procs.len();
         }
     }
 
     *last_request = now;
     let topo = data.topology.lock().unwrap();
     let records = (*topo).get_records_passive();
+    let metric_generator = MetricGenerator;
+    let mut outputdata: Vec<Metric> = Vec::new();
+
     let mut body = String::from(""); // initialize empty body
     let mut host_energy_microjoules = String::from("NaN");
     let mut host_energy_timestamp_seconds = String::from("NaN");
@@ -202,99 +200,120 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     }
 
     // self metrics
+    //
+    metric_generator.get_self_metrics(&*topo, &mut outputdata, "hostname");
 
-    let metric_name = "self_version";
-    let mut version_parts = crate_version!().split('.');
-    let major_version = version_parts.next().unwrap();
-    let patch_version = version_parts.next().unwrap();
-    //let mut patch_str = String::from("");
-    //if patch_version.len() == 1 {
-    //    patch_str.push('0');
-    //}
-    //patch_str.push_str(patch_version);
-    let minor_version = version_parts.next().unwrap();
-    //let mut minor_str = String::from("");
-    //if minor_version.len() == 1 {
-    //    minor_str.push('0');
-    //}
-    //minor_str.push_str(minor_version);
-    let metric_value = format!("{}.{}{}", major_version, patch_version, minor_version);
-    body = push_metric(
-        body,
-        String::from("Version number of scaphandre represented as a float."),
-        String::from("gauge"),
-        String::from(metric_name),
-        format_metric(metric_name, &metric_value, None),
-    );
-
-    let metric_name = "self_cpu_usage_percent";
-    if let Some(metric_value) = (*topo)
-        .get_process_cpu_consumption_percentage(procfs::process::Process::myself().unwrap().pid)
-    {
+    // Send all data
+    for msg in &outputdata {
+        let value = match msg.metric_value {
+            // MetricValueType::IntSigned(value) => event.set_metric_sint64(value),
+            // MetricValueType::Float(value) => event.set_metric_f(value),
+            MetricValueType::FloatDouble(value) => value.to_string(),
+            MetricValueType::IntUnsigned(value) => value.to_string(),
+            MetricValueType::Text(ref value) => value.to_string(),
+        };
         body = push_metric(
             body,
-            String::from("CPU % consumed by this scaphandre prometheus exporter."),
-            String::from("gauge"),
-            String::from(metric_name),
-            format_metric(metric_name, &metric_value.to_string(), None),
+            msg.description.clone(),
+            msg.metric_type.clone(),
+            msg.name.clone(),
+            format_metric(&msg.name, &value, None),
         );
     }
 
-    let metric_gathering = procfs::process::Process::myself().unwrap().statm();
-    if let Ok(metric_value) = metric_gathering {
-        let metric_name = "self_mem_total_program_size";
-        let value = metric_value.size * procfs::page_size().unwrap() as u64;
-        body = push_metric(
-            body,
-            String::from("Total program size, measured in pages"),
-            String::from("gauge"),
-            String::from(metric_name),
-            format_metric(metric_name, &value.to_string(), None),
-        );
-        let metric_name = "self_mem_resident_set_size";
-        let value = metric_value.resident * procfs::page_size().unwrap() as u64;
-        body = push_metric(
-            body,
-            String::from("Resident set size, measured in pages"),
-            String::from("gauge"),
-            String::from(metric_name),
-            format_metric(metric_name, &value.to_string(), None),
-        );
-        let metric_name = "self_mem_shared_resident_size";
-        let value = metric_value.size * procfs::page_size().unwrap() as u64;
-        body = push_metric(
-            body,
-            String::from("Number of resident shared pages (i.e., backed by a file)"),
-            String::from("gauge"),
-            String::from(metric_name),
-            format_metric(metric_name, &value.to_string(), None),
-        );
-    }
+    //let metric_name = "self_version";
+    //let mut version_parts = crate_version!().split('.');
+    //let major_version = version_parts.next().unwrap();
+    //let patch_version = version_parts.next().unwrap();
+    ////let mut patch_str = String::from("");
+    ////if patch_version.len() == 1 {
+    ////    patch_str.push('0');
+    ////}
+    ////patch_str.push_str(patch_version);
+    //let minor_version = version_parts.next().unwrap();
+    ////let mut minor_str = String::from("");
+    ////if minor_version.len() == 1 {
+    ////    minor_str.push('0');
+    ////}
+    ////minor_str.push_str(minor_version);
+    //let metric_value = format!("{}.{}{}", major_version, patch_version, minor_version);
+    //body = push_metric(
+    //    body,
+    //    String::from("Version number of scaphandre represented as a float."),
+    //    String::from("gauge"),
+    //    String::from(metric_name),
+    //    format_metric(metric_name, &metric_value, None),
+    //);
 
-    let metric_name = "self_topo_stats_nb";
-    body = push_metric(
-        body,
-        String::from("Number of CPUStat traces stored for the host"),
-        String::from("gauge"),
-        String::from(metric_name),
-        format_metric(metric_name, &topo_stat_buffer_len.to_string(), None),
-    );
-    let metric_name = "self_topo_records_nb";
-    body = push_metric(
-        body,
-        String::from("Number of energy consumption Records stored for the host"),
-        String::from("gauge"),
-        String::from(metric_name),
-        format_metric(metric_name, &topo_record_buffer_len.to_string(), None),
-    );
-    let metric_name = "self_topo_procs_nb";
-    body = push_metric(
-        body,
-        String::from("Number of processes monitored for the host"),
-        String::from("gauge"),
-        String::from(metric_name),
-        format_metric(metric_name, &topo_procs_len.to_string(), None),
-    );
+    //let metric_name = "self_cpu_usage_percent";
+    //if let Some(metric_value) = (*topo)
+    //    .get_process_cpu_consumption_percentage(procfs::process::Process::myself().unwrap().pid)
+    //{
+    //    body = push_metric(
+    //        body,
+    //        String::from("CPU % consumed by this scaphandre prometheus exporter."),
+    //        String::from("gauge"),
+    //        String::from(metric_name),
+    //        format_metric(metric_name, &metric_value.to_string(), None),
+    //    );
+    //}
+
+    //let metric_gathering = procfs::process::Process::myself().unwrap().statm();
+    //if let Ok(metric_value) = metric_gathering {
+    //    let metric_name = "self_mem_total_program_size";
+    //    let value = metric_value.size * procfs::page_size().unwrap() as u64;
+    //    body = push_metric(
+    //        body,
+    //        String::from("Total program size, measured in pages"),
+    //        String::from("gauge"),
+    //        String::from(metric_name),
+    //        format_metric(metric_name, &value.to_string(), None),
+    //    );
+    //    let metric_name = "self_mem_resident_set_size";
+    //    let value = metric_value.resident * procfs::page_size().unwrap() as u64;
+    //    body = push_metric(
+    //        body,
+    //        String::from("Resident set size, measured in pages"),
+    //        String::from("gauge"),
+    //        String::from(metric_name),
+    //        format_metric(metric_name, &value.to_string(), None),
+    //    );
+    //    let metric_name = "self_mem_shared_resident_size";
+    //    let value = metric_value.size * procfs::page_size().unwrap() as u64;
+    //    body = push_metric(
+    //        body,
+    //        String::from("Number of resident shared pages (i.e., backed by a file)"),
+    //        String::from("gauge"),
+    //        String::from(metric_name),
+    //        format_metric(metric_name, &value.to_string(), None),
+    //    );
+    //}
+
+    //let metric_name = "self_topo_stats_nb";
+    //body = push_metric(
+    //    body,
+    //    String::from("Number of CPUStat traces stored for the host"),
+    //    String::from("gauge"),
+    //    String::from(metric_name),
+    //    format_metric(metric_name, &topo_stat_buffer_len.to_string(), None),
+    //);
+    //let metric_name = "self_topo_records_nb";
+    //body = push_metric(
+    //    body,
+    //    String::from("Number of energy consumption Records stored for the host"),
+    //    String::from("gauge"),
+    //    String::from(metric_name),
+    //    format_metric(metric_name, &topo_record_buffer_len.to_string(), None),
+    //);
+    //let metric_name = "self_topo_procs_nb";
+    //body = push_metric(
+    //    body,
+    //    String::from("Number of processes monitored for the host"),
+    //    String::from("gauge"),
+    //    String::from(metric_name),
+    //    format_metric(metric_name, &topo_procs_len.to_string(), None),
+    //);
+
     for s in &(*topo).sockets {
         let mut labels = HashMap::new();
         labels.insert(String::from("socket_id"), s.id.to_string());
