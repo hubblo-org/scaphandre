@@ -95,10 +95,6 @@ impl RiemannExporter {
 }
 
 impl Exporter for RiemannExporter {
-    // fn manage_metric<T>(&self, client: T, data: &Vec<Metric>) {
-    //     unimplemented!()
-    // }
-    /// Runs HTTP server and metrics exposure through the runner function.
     fn run(&mut self, parameters: ArgMatches) {
         let dispatch_duration: u64 = parameters
             .value_of("dispatch_duration")
@@ -118,8 +114,6 @@ impl Exporter for RiemannExporter {
             parameters.value_of("port").unwrap(),
         );
 
-        //let now: DateTime<Utc> = Utc::now();
-        //now.format("%a %b %e %T %Y")
         info!(
             "{}: Starting Riemann exporter",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
@@ -128,14 +122,17 @@ impl Exporter for RiemannExporter {
         println!("Measurement step is: {}s", dispatch_duration);
 
         let mut topology = self.sensor.get_topology().unwrap();
+        let metric_generator = MetricGenerator;
         loop {
             info!(
                 "{}: Beginning of measure loop",
                 Utc::now().format("%Y-%m-%dT%H:%M:%S")
             );
+
             topology
                 .proc_tracker
                 .clean_terminated_process_records_vectors();
+
             info!(
                 "{}: Refresh topology",
                 Utc::now().format("%Y-%m-%dT%H:%M:%S")
@@ -143,7 +140,6 @@ impl Exporter for RiemannExporter {
             topology.refresh();
 
             info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-
             let mut data: Vec<Metric> = Vec::new();
             let records = topology.get_records_passive();
 
@@ -151,27 +147,32 @@ impl Exporter for RiemannExporter {
                 "{}: Get self metrics",
                 Utc::now().format("%Y-%m-%dT%H:%M:%S")
             );
-            self.get_self_metrics(&topology, &mut data, &hostname);
+            metric_generator.get_self_metrics(&topology, &mut data, &hostname);
             info!(
                 "{}: Get host metrics",
                 Utc::now().format("%Y-%m-%dT%H:%M:%S")
             );
-            self.get_host_metrics(&topology, &mut data, &hostname, &records);
+            metric_generator.get_host_metrics(&topology, &mut data, &hostname, &records);
             info!(
                 "{}: Get socket metrics",
                 Utc::now().format("%Y-%m-%dT%H:%M:%S")
             );
-            self.get_socket_metrics(&topology, &mut data, &hostname);
+            metric_generator.get_socket_metrics(&topology, &mut data, &hostname);
             info!(
                 "{}: Get system metrics",
                 Utc::now().format("%Y-%m-%dT%H:%M:%S")
             );
-            self.get_system_metrics(&topology, &mut data, &hostname);
+            metric_generator.get_system_metrics(&topology, &mut data, &hostname);
             info!(
                 "{}: Get process metrics",
                 Utc::now().format("%Y-%m-%dT%H:%M:%S")
             );
-            self.get_process_metrics(&topology, &mut data, &hostname, parameters.clone());
+            metric_generator.get_process_metrics(
+                &topology,
+                &mut data,
+                &hostname,
+                parameters.clone(),
+            );
             debug!("self_metrics: {:#?}", data);
 
             // Send all data
