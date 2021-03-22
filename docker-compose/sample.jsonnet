@@ -19,14 +19,6 @@ dashboard.new(
     )
 )
 .addTemplate(
-    template.datasource(
-        'PROMETHEUS_DS',
-        'prometheus',
-        'Prometheus',
-        hide='label',
-    )
-)
-.addTemplate(
     template.text(
         name='process_filter',
     )
@@ -38,7 +30,7 @@ dashboard.new(
   .addPanel(
       grafana.graphPanel.new(
           title='Hosts power consumption',
-          datasource='Prometheus-scaph',
+          datasource='${PROMETHEUS_DS}',
           format='W',
           span=6,
       )
@@ -53,7 +45,7 @@ dashboard.new(
   .addPanel(
       grafana.graphPanel.new(
           title='Hosts power consumption total (dynamic time range)',
-          datasource='Prometheus-scaph',
+          datasource='${PROMETHEUS_DS}',
           span=4,
           bars=true,
           format='Wh',
@@ -76,7 +68,7 @@ dashboard.new(
     .addPanel(
         grafana.graphPanel.new(
             title='Socket power consumption',
-            datasource='Prometheus-scaph',
+            datasource='${PROMETHEUS_DS}',
             format='W',
             span=6,
         )
@@ -95,7 +87,7 @@ dashboard.new(
     .addPanel(
         grafana.statPanel.new(
             title='Top process consumers',
-            datasource='Prometheus-scaph',
+            datasource='${PROMETHEUS_DS}',
         )
         .addTarget(
             grafana.prometheus.target(
@@ -107,7 +99,7 @@ dashboard.new(
     .addPanel(
         grafana.graphPanel.new(
             title='Filtered process (process_filter) power, by exe',
-            datasource='Prometheus-scaph',
+            datasource='${PROMETHEUS_DS}',
             span=8,
             format='W',
             legend_rightSide=true,

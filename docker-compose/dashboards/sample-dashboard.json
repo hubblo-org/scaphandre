@@ -21,7 +21,7 @@
                "bars": false,
                "dashLength": 10,
                "dashes": false,
-               "datasource": "Prometheus-scaph",
+               "datasource": "${PROMETHEUS_DS}",
                "fill": 1,
                "fillGradient": 0,
                "gridPos": { },
@@ -102,7 +102,7 @@
                "bars": true,
                "dashLength": 10,
                "dashes": false,
-               "datasource": "Prometheus-scaph",
+               "datasource": "${PROMETHEUS_DS}",
                "fill": 1,
                "fillGradient": 0,
                "gridPos": { },
@@ -199,7 +199,7 @@
                "bars": false,
                "dashLength": 10,
                "dashes": false,
-               "datasource": "Prometheus-scaph",
+               "datasource": "${PROMETHEUS_DS}",
                "fill": 1,
                "fillGradient": 0,
                "gridPos": { },
@@ -289,7 +289,7 @@
          "collapsed": false,
          "panels": [
             {
-               "datasource": "Prometheus-scaph",
+               "datasource": "${PROMETHEUS_DS}",
                "fieldConfig": {
                   "defaults": {
                      "links": [ ],
@@ -336,7 +336,7 @@
                "bars": false,
                "dashLength": 10,
                "dashes": false,
-               "datasource": "Prometheus-scaph",
+               "datasource": "${PROMETHEUS_DS}",
                "fill": 1,
                "fillGradient": 0,
                "gridPos": { },
@@ -431,20 +431,6 @@
    ],
    "templating": {
       "list": [
-         {
-            "current": {
-               "text": "Prometheus",
-               "value": "Prometheus"
-            },
-            "hide": 1,
-            "label": null,
-            "name": "PROMETHEUS_DS",
-            "options": [ ],
-            "query": "prometheus",
-            "refresh": 1,
-            "regex": "",
-            "type": "datasource"
-         },
          {
             "current": {
                "text": "Prometheus",
