@@ -1,0 +1,54 @@
+version: '3.2'
+
+services:
+
+  grafana:
+    build:
+      context: ./grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "secret"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: "/var/lib/grafana/dashboards/sample/sample-dashboard.json"
+    depends_on:
+      - prometheus
+    ports: 
+      - "3000:3000"
+    networks:
+      - scaphandre-network
+    volumes:
+      - type: bind
+        source: "./dashboards/sample-dashboard.json"
+        target: "/var/lib/grafana/dashboards/sample/sample-dashboard.json"
+  scaphandre:
+    image: hubblo/scaphandre
+    ports: 
+      - "8080:8080"
+    volumes:
+      - type: bind
+        source: /proc
+        target: /proc
+      - type: bind
+        source: /sys/class/powercap
+        target: /sys/class/powercap
+    command: ["prometheus"]                         
+    networks:
+      - scaphandre-network
+    
+  prometheus:
+    build:
+      context: ./prom
+    ports: 
+      - "9090:9090"
+    volumes: 
+      - promdata-scaphandre:/prometheus 
+    networks:
+      - scaphandre-network
+
+volumes:
+  promdata-scaphandre:
+
+networks:
+  scaphandre-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.33.0/24
