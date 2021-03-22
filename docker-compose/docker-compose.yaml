@@ -7,14 +7,17 @@ services:
       context: ./grafana
     environment:
       GF_SECURITY_ADMIN_PASSWORD: "secret"
-      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: "/var/lib/grafana/dashboards/sample-dashboard.json"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: "/var/lib/grafana/dashboards/sample/sample-dashboard.json"
     depends_on:
       - prometheus
     ports: 
       - "3000:3000"
     networks:
       - scaphandre-network
-
+    volumes:
+      - type: bind
+        source: "./dashboards/sample-dashboard.json"
+        target: "/var/lib/grafana/dashboards/sample/sample-dashboard.json"
   scaphandre:
     image: hubblo/scaphandre
     ports: 
