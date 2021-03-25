@@ -119,8 +119,7 @@ impl MetricGenerator {
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
-                // TODO: Do not use pages but human readable value (KB or MB)
-                description: String::from("Total program size, measured in pages."),
+                description: String::from("Total program size, measured in bytes."),
                 metric_value: MetricValueType::IntUnsigned(value),
             });
 
@@ -133,8 +132,7 @@ impl MetricGenerator {
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
-                // TODO: Do not use pages but human readable value (KB or MB)
-                description: String::from("Resident set size, measured in pages."),
+                description: String::from("Resident set size, measured in bytes."),
                 metric_value: MetricValueType::IntUnsigned(value),
             });
 
@@ -147,9 +145,8 @@ impl MetricGenerator {
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
-                // TODO: Do not use pages but human readable value (KB or MB)
                 description: String::from(
-                    "Number of resident shared pages (i.e., backed by a file).",
+                    "Number of resident shared bytes (i.e., backed by a file).",
                 ),
                 metric_value: MetricValueType::IntUnsigned(value),
             });
@@ -230,12 +227,11 @@ impl MetricGenerator {
                 description: String::from(
                     "Number of energy consumption Records stored for each socket",
                 ),
-                // TODO: Look to be the same metric as above, need to check. Removal ?
-                metric_value: MetricValueType::IntUnsigned(socket.stat_buffer.len() as u64),
+                metric_value: MetricValueType::IntUnsigned(socket.record_buffer.len() as u64),
             });
 
             for domain in &socket.domains {
-                let mut attributes = HashMap::new();
+                // TODO: Sensor must trim output to avoid carriage returns in exporter
                 attributes.insert("rapl_domain_name".to_string(), domain.name.to_string());
 
                 data.push(Metric {
@@ -245,7 +241,7 @@ impl MetricGenerator {
                     hostname: String::from(hostname),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
-                    attributes,
+                    attributes: attributes.clone(),
                     description: String::from(
                         "Number of energy consumption Records stored for a Domain",
                     ),
@@ -262,7 +258,7 @@ impl MetricGenerator {
 
             data.push(Metric {
                     name: String::from("scaph_host_energy_microjoules"),
-                    metric_type: String::from("gauge"),
+                    metric_type: String::from("counter"),
                     ttl: 60.0,
                     hostname: String::from(hostname),
                     state: String::from("ok"),
@@ -276,7 +272,7 @@ impl MetricGenerator {
 
             data.push(Metric {
                 name: String::from("scaph_host_energy_timestamp_seconds"),
-                metric_type: String::from("gauge"),
+                metric_type: String::from("counter"),
                 ttl: 60.0,
                 hostname: String::from(hostname),
                 state: String::from("ok"),
@@ -316,7 +312,7 @@ impl MetricGenerator {
 
                 data.push(Metric {
                     name: String::from("scaph_socket_energy_microjoules"),
-                    metric_type: String::from("gauge"),
+                    metric_type: String::from("counter"),
                     ttl: 60.0,
                     hostname: String::from(hostname),
                     state: String::from("ok"),
@@ -351,7 +347,7 @@ impl MetricGenerator {
         if let Some(metric_value) = topology.read_nb_process_total_count() {
             data.push(Metric {
                 name: String::from("scaph_forks_since_boot_total"),
-                metric_type: String::from("gauge"),
+                metric_type: String::from("counter"),
                 ttl: 60.0,
                 hostname: String::from(hostname),
                 state: String::from("ok"),
@@ -393,7 +389,7 @@ impl MetricGenerator {
         if let Some(metric_value) = topology.read_nb_context_switches_total_count() {
             data.push(Metric {
                 name: String::from("scaph_context_switches_total"),
-                metric_type: String::from("gauge"),
+                metric_type: String::from("counter"),
                 ttl: 60.0,
                 hostname: String::from(hostname),
                 state: String::from("ok"),

@@ -1,7 +1,8 @@
 use crate::current_system_time_since_epoch;
 use crate::exporters::*;
-use crate::sensors::{Record, RecordGenerator, Sensor, Topology};
+use crate::sensors::{RecordGenerator, Sensor, Topology};
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+// use regex::internal::Input;
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::Mutex;
@@ -34,6 +35,7 @@ impl Exporter for PrometheusExporter {
             parameters.value_of("port").unwrap().to_string(),
             parameters.value_of("suffix").unwrap().to_string(),
             parameters.is_present("qemu"),
+            // parameters,
         ) {
             Ok(()) => warn!("Prometheus exporter shut down gracefully."),
             Err(error) => panic!("Something failed in the prometheus exporter: {}", error),
@@ -98,6 +100,7 @@ pub struct PowerMetrics {
     topology: Mutex<Topology>,
     last_request: Mutex<Duration>,
     qemu: bool,
+    // parameters: ArgMatches<'a>,
 }
 
 #[actix_web::main]
@@ -108,6 +111,7 @@ async fn runner(
     port: String,
     suffix: String,
     qemu: bool,
+    // parameters: ArgMatches<'static>,
 ) -> std::io::Result<()> {
     if let Err(error) = address.parse::<IpAddr>() {
         panic!("{} is not a valid ip address: {}", address, error);
@@ -121,6 +125,7 @@ async fn runner(
                 topology: Mutex::new(topology.clone()),
                 last_request: Mutex::new(Duration::new(0, 0)),
                 qemu,
+                // parameters,
             })
             .service(web::resource(&suffix).route(web::get().to(show_metrics)))
             .default_service(web::route().to(landing_page))
@@ -191,20 +196,21 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     let mut outputdata: Vec<Metric> = Vec::new();
 
     let mut body = String::from(""); // initialize empty body
-    let mut host_energy_microjoules = String::from("NaN");
-    let mut host_energy_timestamp_seconds = String::from("NaN");
-    if !records.is_empty() {
-        let record = records.last().unwrap();
-        host_energy_microjoules = record.value.clone();
-        host_energy_timestamp_seconds = record.timestamp.as_secs().to_string();
-    }
-
-    // self metrics
-    //
+                                     // self metrics
+                                     // TODO: Better manage hostname
     metric_generator.get_self_metrics(&*topo, &mut outputdata, "hostname");
+    metric_generator.get_host_metrics(&*topo, &mut outputdata, "hostname", &records);
+    metric_generator.get_socket_metrics(&*topo, &mut outputdata, "hostname");
+    metric_generator.get_system_metrics(&*topo, &mut outputdata, "hostname");
+    // metric_generator.get_process_metrics(&*topo, &mut outputdata, "hostname", &parameters);
 
     // Send all data
     for msg in &outputdata {
+        let mut attributes: Option<&HashMap<String, String>> = None;
+        if !msg.attributes.is_empty() {
+            attributes = Some(&msg.attributes);
+        }
+
         let value = match msg.metric_value {
             // MetricValueType::IntSigned(value) => event.set_metric_sint64(value),
             // MetricValueType::Float(value) => event.set_metric_f(value),
@@ -217,7 +223,8 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
             msg.description.clone(),
             msg.metric_type.clone(),
             msg.name.clone(),
-            format_metric(&msg.name, &value, None),
+            // TODO: manage Option<Hashmap<String,String>>
+            format_metric(&msg.name, &value, attributes),
         );
     }
 
@@ -314,210 +321,210 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     //    format_metric(metric_name, &topo_procs_len.to_string(), None),
     //);
 
-    for s in &(*topo).sockets {
-        let mut labels = HashMap::new();
-        labels.insert(String::from("socket_id"), s.id.to_string());
-        let metric_name = "self_socket_stats_nb";
-        body = push_metric(
-            body,
-            String::from("Number of CPUStat traces stored for each socket"),
-            String::from("gauge"),
-            String::from(metric_name),
-            format_metric(metric_name, &s.stat_buffer.len().to_string(), Some(&labels)),
-        );
-        let mut labels = HashMap::new();
-        labels.insert(String::from("socket_id"), s.id.to_string());
-        let metric_name = "self_socket_records_nb";
-        body = push_metric(
-            body,
-            String::from("Number of energy consumption Records stored for each socket"),
-            String::from("gauge"),
-            String::from(metric_name),
-            format_metric(
-                metric_name,
-                &s.record_buffer.len().to_string(),
-                Some(&labels),
-            ),
-        );
-        for d in &s.domains {
-            labels.insert(String::from("rapl_domain_name"), d.name.clone());
-            let metric_name = "self_domain_records_nb";
-            body = push_metric(
-                body,
-                String::from("Number of energy consumption Records stored for a Domain"),
-                String::from("gauge"),
-                String::from(metric_name),
-                format_metric(
-                    metric_name,
-                    &d.record_buffer.len().to_string(),
-                    Some(&labels),
-                ),
-            );
-        }
-    }
+    // for s in &(*topo).sockets {
+    //     let mut labels = HashMap::new();
+    //     labels.insert(String::from("socket_id"), s.id.to_string());
+    //     let metric_name = "self_socket_stats_nb";
+    //     body = push_metric(
+    //         body,
+    //         String::from("Number of CPUStat traces stored for each socket"),
+    //         String::from("gauge"),
+    //         String::from(metric_name),
+    //         format_metric(metric_name, &s.stat_buffer.len().to_string(), Some(&labels)),
+    //     );
+    //     let mut labels = HashMap::new();
+    //     labels.insert(String::from("socket_id"), s.id.to_string());
+    //     let metric_name = "self_socket_records_nb";
+    //     body = push_metric(
+    //         body,
+    //         String::from("Number of energy consumption Records stored for each socket"),
+    //         String::from("gauge"),
+    //         String::from(metric_name),
+    //         format_metric(
+    //             metric_name,
+    //             &s.record_buffer.len().to_string(),
+    //             Some(&labels),
+    //         ),
+    //     );
+    //     for d in &s.domains {
+    //         labels.insert(String::from("rapl_domain_name"), d.name.clone());
+    //         let metric_name = "self_domain_records_nb";
+    //         body = push_metric(
+    //             body,
+    //             String::from("Number of energy consumption Records stored for a Domain"),
+    //             String::from("gauge"),
+    //             String::from(metric_name),
+    //             format_metric(
+    //                 metric_name,
+    //                 &d.record_buffer.len().to_string(),
+    //                 Some(&labels),
+    //             ),
+    //         );
+    //     }
+    // }
 
-    // metrics
+    // // metrics
 
-    let metric_name = "host_energy_microjoules";
-    body = push_metric(
-        body,
-        String::from(
-            "Energy measurement for the whole host, as extracted from the sensor, in microjoules.",
-        ),
-        String::from("counter"),
-        String::from(metric_name),
-        format_metric(metric_name, &host_energy_microjoules, None),
-    );
+    // let metric_name = "host_energy_microjoules";
+    // body = push_metric(
+    //     body,
+    //     String::from(
+    //         "Energy measurement for the whole host, as extracted from the sensor, in microjoules.",
+    //     ),
+    //     String::from("counter"),
+    //     String::from(metric_name),
+    //     format_metric(metric_name, &host_energy_microjoules, None),
+    // );
 
-    let metric_name = "host_energy_timestamp_seconds";
-    body = push_metric(
-        body,
-        String::from("Timestamp in seconds when hose_energy_microjoules has been computed."),
-        String::from("counter"),
-        String::from(metric_name),
-        format_metric(metric_name, &host_energy_timestamp_seconds, None),
-    );
+    // let metric_name = "host_energy_timestamp_seconds";
+    // body = push_metric(
+    //     body,
+    //     String::from("Timestamp in seconds when hose_energy_microjoules has been computed."),
+    //     String::from("counter"),
+    //     String::from(metric_name),
+    //     format_metric(metric_name, &host_energy_timestamp_seconds, None),
+    // );
 
-    let mut host_power_microwatts = "Nan";
-    let host_power_record: Record;
-    if let Some(power) = (*topo).get_records_diff_power_microwatts() {
-        host_power_record = power;
-        host_power_microwatts = &host_power_record.value;
-    }
+    // let mut host_power_microwatts = "Nan";
+    // let host_power_record: Record;
+    // if let Some(power) = (*topo).get_records_diff_power_microwatts() {
+    //     host_power_record = power;
+    //     host_power_microwatts = &host_power_record.value;
+    // }
 
-    let metric_name = "host_power_microwatts";
-    body = push_metric(
-        body,
-        String::from("Power measurement on the whole host, in microwatts"),
-        String::from("gauge"),
-        String::from(metric_name),
-        format_metric(metric_name, host_power_microwatts, None),
-    );
+    // let metric_name = "host_power_microwatts";
+    // body = push_metric(
+    //     body,
+    //     String::from("Power measurement on the whole host, in microwatts"),
+    //     String::from("gauge"),
+    //     String::from(metric_name),
+    //     format_metric(metric_name, host_power_microwatts, None),
+    // );
 
-    let sockets = (*topo).get_sockets_passive();
-    for s in sockets {
-        let records = s.get_records_passive();
-        let mut socket_energy_microjoules = "NaN";
-        if !records.is_empty() {
-            socket_energy_microjoules = &records.last().unwrap().value;
-        }
-        let mut labels = HashMap::new();
-        labels.insert(String::from("socket_id"), s.id.to_string());
+    // let sockets = (*topo).get_sockets_passive();
+    // for s in sockets {
+    //     let records = s.get_records_passive();
+    //     let mut socket_energy_microjoules = "NaN";
+    //     if !records.is_empty() {
+    //         socket_energy_microjoules = &records.last().unwrap().value;
+    //     }
+    //     let mut labels = HashMap::new();
+    //     labels.insert(String::from("socket_id"), s.id.to_string());
 
-        let metric_name = "socket_energy_microjoules";
-        body = push_metric(
-            body,
-            String::from("Socket related energy measurement in microjoules."),
-            String::from("counter"),
-            String::from(metric_name),
-            format_metric(metric_name, socket_energy_microjoules, Some(&labels)),
-        );
-        let mut socket_power_microwatts = "NaN";
-        let socket_power_record: Record;
-        if let Some(power) = (*topo).get_records_diff_power_microwatts() {
-            socket_power_record = power;
-            socket_power_microwatts = &socket_power_record.value;
-        }
+    //     let metric_name = "socket_energy_microjoules";
+    //     body = push_metric(
+    //         body,
+    //         String::from("Socket related energy measurement in microjoules."),
+    //         String::from("counter"),
+    //         String::from(metric_name),
+    //         format_metric(metric_name, socket_energy_microjoules, Some(&labels)),
+    //     );
+    //     let mut socket_power_microwatts = "NaN";
+    //     let socket_power_record: Record;
+    //     if let Some(power) = (*topo).get_records_diff_power_microwatts() {
+    //         socket_power_record = power;
+    //         socket_power_microwatts = &socket_power_record.value;
+    //     }
 
-        let metric_name = "socket_power_microwatts";
-        body = push_metric(
-            body,
-            String::from("Power measurement relative to a CPU socket, in microwatts"),
-            String::from("gauge"),
-            String::from(metric_name),
-            format_metric(metric_name, socket_power_microwatts, Some(&labels)),
-        );
-    }
+    //     let metric_name = "socket_power_microwatts";
+    //     body = push_metric(
+    //         body,
+    //         String::from("Power measurement relative to a CPU socket, in microwatts"),
+    //         String::from("gauge"),
+    //         String::from(metric_name),
+    //         format_metric(metric_name, socket_power_microwatts, Some(&labels)),
+    //     );
+    // }
 
-    let metric_name = "forks_since_boot_total";
-    let mut metric_value_string = String::from("NaN");
-    if let Some(metric_value) = &(*topo).read_nb_process_total_count() {
-        metric_value_string = metric_value.to_string();
-    }
-    body = push_metric(
-        body, String::from(
-            "Number of forks that have occured since boot (number of processes to have existed so far)."
-        ),
-        String::from("counter"),
-        String::from(metric_name),
-        format_metric(
-            metric_name, &metric_value_string, None
-        )
-    );
+    // let metric_name = "forks_since_boot_total";
+    // let mut metric_value_string = String::from("NaN");
+    // if let Some(metric_value) = &(*topo).read_nb_process_total_count() {
+    //     metric_value_string = metric_value.to_string();
+    // }
+    // body = push_metric(
+    //     body, String::from(
+    //         "Number of forks that have occured since boot (number of processes to have existed so far)."
+    //     ),
+    //     String::from("counter"),
+    //     String::from(metric_name),
+    //     format_metric(
+    //         metric_name, &metric_value_string, None
+    //     )
+    // );
 
-    let metric_name = "processes_running_current";
-    let mut metric_value_string = String::from("NaN");
-    if let Some(metric_value) = &(*topo).read_nb_process_running_current() {
-        metric_value_string = metric_value.to_string();
-    }
-    body = push_metric(
-        body,
-        String::from("Number of processes currently running."),
-        String::from("gauge"),
-        String::from(metric_name),
-        format_metric(metric_name, &metric_value_string, None),
-    );
+    // let metric_name = "processes_running_current";
+    // let mut metric_value_string = String::from("NaN");
+    // if let Some(metric_value) = &(*topo).read_nb_process_running_current() {
+    //     metric_value_string = metric_value.to_string();
+    // }
+    // body = push_metric(
+    //     body,
+    //     String::from("Number of processes currently running."),
+    //     String::from("gauge"),
+    //     String::from(metric_name),
+    //     format_metric(metric_name, &metric_value_string, None),
+    // );
 
-    let metric_name = "processes_blocked_current";
-    let mut metric_value_string = String::from("NaN");
-    if let Some(metric_value) = &(*topo).read_nb_process_blocked_current() {
-        metric_value_string = metric_value.to_string();
-    }
-    body = push_metric(
-        body,
-        String::from("Number of processes currently blocked waiting for I/O."),
-        String::from("gauge"),
-        String::from(metric_name),
-        format_metric(metric_name, &metric_value_string, None),
-    );
-    let metric_name = "context_switches_total";
-    let mut metric_value_string = String::from("NaN");
-    if let Some(metric_value) = &(*topo).read_nb_context_switches_total_count() {
-        metric_value_string = metric_value.to_string();
-    }
-    body = push_metric(
-        body,
-        String::from("Number of context switches since boot."),
-        String::from("counter"),
-        String::from(metric_name),
-        format_metric(metric_name, &metric_value_string, None),
-    );
+    // let metric_name = "processes_blocked_current";
+    // let mut metric_value_string = String::from("NaN");
+    // if let Some(metric_value) = &(*topo).read_nb_process_blocked_current() {
+    //     metric_value_string = metric_value.to_string();
+    // }
+    // body = push_metric(
+    //     body,
+    //     String::from("Number of processes currently blocked waiting for I/O."),
+    //     String::from("gauge"),
+    //     String::from(metric_name),
+    //     format_metric(metric_name, &metric_value_string, None),
+    // );
+    // let metric_name = "context_switches_total";
+    // let mut metric_value_string = String::from("NaN");
+    // if let Some(metric_value) = &(*topo).read_nb_context_switches_total_count() {
+    //     metric_value_string = metric_value.to_string();
+    // }
+    // body = push_metric(
+    //     body,
+    //     String::from("Number of context switches since boot."),
+    //     String::from("counter"),
+    //     String::from(metric_name),
+    //     format_metric(metric_name, &metric_value_string, None),
+    // );
 
-    let processes_tracker = &(*topo).proc_tracker;
+    //let processes_tracker = &(*topo).proc_tracker;
 
-    for pid in processes_tracker.get_alive_pids() {
-        let exe = processes_tracker.get_process_name(pid);
-        let cmdline = processes_tracker.get_process_cmdline(pid);
+    //for pid in processes_tracker.get_alive_pids() {
+    //    let exe = processes_tracker.get_process_name(pid);
+    //    let cmdline = processes_tracker.get_process_cmdline(pid);
 
-        let mut plabels = HashMap::new();
-        plabels.insert(String::from("pid"), pid.to_string());
-        plabels.insert(String::from("exe"), exe);
-        if let Some(cmdline_str) = cmdline {
-            //if cmdline_str.len() > 350 {
-            //    cmdline_str = String::from(&cmdline_str[..350]);
-            //}
-            plabels.insert(String::from("cmdline"), cmdline_str.replace("\"", "\\\""));
-            if data.qemu {
-                if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
-                    plabels.insert(String::from("vmname"), vmname);
-                }
-            }
-        }
+    //    let mut plabels = HashMap::new();
+    //    plabels.insert(String::from("pid"), pid.to_string());
+    //    plabels.insert(String::from("exe"), exe);
+    //    if let Some(cmdline_str) = cmdline {
+    //        //if cmdline_str.len() > 350 {
+    //        //    cmdline_str = String::from(&cmdline_str[..350]);
+    //        //}
+    //        plabels.insert(String::from("cmdline"), cmdline_str.replace("\"", "\\\""));
+    //        if data.qemu {
+    //            if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
+    //                plabels.insert(String::from("vmname"), vmname);
+    //            }
+    //        }
+    //    }
 
-        let metric_name = "process_power_consumption_microwatts";
-        let mut process_power_value = String::from("0");
-        if let Some(power) = topo.get_process_power_consumption_microwatts(pid) {
-            process_power_value = power.to_string();
-        }
-        body = push_metric(
-            body, "Power consumption due to the process, measured on at the topology level, in microwatts".to_string(),
-            String::from("gauge"), String::from(metric_name),
-            format_metric (
-                metric_name, &process_power_value,
-                Some(&plabels)
-            )
-        );
-    }
+    //    let metric_name = "process_power_consumption_microwatts";
+    //    let mut process_power_value = String::from("0");
+    //    if let Some(power) = topo.get_process_power_consumption_microwatts(pid) {
+    //        process_power_value = power.to_string();
+    //    }
+    //    body = push_metric(
+    //        body, "Power consumption due to the process, measured on at the topology level, in microwatts".to_string(),
+    //        String::from("gauge"), String::from(metric_name),
+    //        format_metric (
+    //            metric_name, &process_power_value,
+    //            Some(&plabels)
+    //        )
+    //    );
+    //}
 
     HttpResponse::Ok()
         //.set_header("X-TEST", "value")
