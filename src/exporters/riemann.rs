@@ -135,19 +135,12 @@ impl Exporter for RiemannExporter {
             topology.refresh();
 
             info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-            let metric_generator = MetricGenerator::new(&topology, &hostname);
-            let mut outputdata: Vec<Metric> = Vec::new();
-
-            metric_generator.get_all_metrics(
-                &mut outputdata,
-                &topology,
-                &hostname,
-                parameters.is_present("qemu"),
-            );
+            let mut metric_generator = MetricGenerator::new(&topology, &hostname);
+            metric_generator.gen_all_metrics(parameters.is_present("qemu"));
 
             // Send all data
             info!("{}: Send data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-            for msg in &outputdata {
+            for msg in metric_generator.get_metrics() {
                 rclient.send_metric(msg);
             }
 

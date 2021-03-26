@@ -79,6 +79,12 @@ pub struct ExporterOption {
 /// MetricGenerator is an exporter helper structure to collect Scaphandre metrics.
 /// The goal is to provide a standard Vec\<Metric\> that can be used by exporters
 /// to avoid code duplication.
+/// `data` will be used to store the metrics retrieved.
+///
+/// `topology` is the system physical layout retrieve via the sensors crate with
+/// associated metrics.
+///
+/// `hostname` is the system name where the metrics belongs.
 struct MetricGenerator<'a> {
     data: Vec<Metric>,
     topology: &'a Topology,
@@ -87,7 +93,7 @@ struct MetricGenerator<'a> {
 
 /// This is not mandatory to use MetricGenerator methods. Exporter can use dedicated
 /// code into the [Exporter] run() method to collect metrics. However it is advised
-/// to use the following methods to avoid discrepencies beetween exporters.
+/// to use the following methods to avoid discrepancies between exporters.
 impl<'a> MetricGenerator<'a> {
     fn new(topology: &'a Topology, hostname: &'a str) -> MetricGenerator<'a> {
         let data = Vec::new();
@@ -97,461 +103,8 @@ impl<'a> MetricGenerator<'a> {
             hostname,
         }
     }
-    /// Retrieve all scaphandre (self) metrics.
-    ///
-    /// `data` will be used to store the metrics retrieved.
-    ///
-    /// `topology` is the system physical layout retrieve via the sensors crate with
-    /// associated metrics.
-    ///
-    /// `hostname` is the system name where the metrics belongs.
-    fn get_self_metrics(&self, data: &mut Vec<Metric>, topology: &Topology, hostname: &str) {
-        data.push(Metric {
-            name: String::from("scaph_self_version"),
-            metric_type: String::from("gauge"),
-            ttl: 60.0,
-            hostname: String::from(hostname),
-            state: String::from("ok"),
-            tags: vec!["scaphandre".to_string()],
-            attributes: HashMap::new(),
-            description: String::from("Version number of scaphandre represented as a float."),
-            metric_value: MetricValueType::Text(get_scaphandre_version()),
-        });
 
-        if let Some(metric_value) = topology
-            .get_process_cpu_consumption_percentage(procfs::process::Process::myself().unwrap().pid)
-        {
-            data.push(Metric {
-                name: String::from("scaph_self_cpu_usage_percent"),
-                metric_type: String::from("gauge"),
-                ttl: 60.0,
-                hostname: String::from(hostname),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from("CPU % consumed by this scaphandre exporter."),
-                metric_value: MetricValueType::FloatDouble(metric_value),
-            });
-        }
-
-        if let Ok(metric_value) = procfs::process::Process::myself().unwrap().statm() {
-            let value = metric_value.size * procfs::page_size().unwrap() as u64;
-            data.push(Metric {
-                name: String::from("scaph_self_mem_total_program_size"),
-                metric_type: String::from("gauge"),
-                ttl: 60.0,
-                hostname: String::from(hostname),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from("Total program size, measured in bytes."),
-                metric_value: MetricValueType::IntUnsigned(value),
-            });
-
-            let value = metric_value.resident * procfs::page_size().unwrap() as u64;
-            data.push(Metric {
-                name: String::from("scaph_self_mem_resident_set_size"),
-                metric_type: String::from("gauge"),
-                ttl: 60.0,
-                hostname: String::from(hostname),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from("Resident set size, measured in bytes."),
-                metric_value: MetricValueType::IntUnsigned(value),
-            });
-
-            let value = metric_value.shared * procfs::page_size().unwrap() as u64;
-            data.push(Metric {
-                name: String::from("scaph_self_mem_shared_resident_size"),
-                metric_type: String::from("gauge"),
-                ttl: 60.0,
-                hostname: String::from(hostname),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from(
-                    "Number of resident shared bytes (i.e., backed by a file).",
-                ),
-                metric_value: MetricValueType::IntUnsigned(value),
-            });
-        }
-
-        let topo_stat_buffer_len = topology.stat_buffer.len();
-        let topo_record_buffer_len = topology.record_buffer.len();
-        let topo_procs_len = topology.proc_tracker.procs.len();
-
-        data.push(Metric {
-            name: String::from("scaph_self_topo_stats_nb"),
-            metric_type: String::from("gauge"),
-            ttl: 60.0,
-            hostname: String::from(hostname),
-            state: String::from("ok"),
-            tags: vec!["scaphandre".to_string()],
-            attributes: HashMap::new(),
-            description: String::from("Number of CPUStat traces stored for the host."),
-            metric_value: MetricValueType::IntUnsigned(topo_stat_buffer_len as u64),
-        });
-
-        data.push(Metric {
-            name: String::from("scaph_self_topo_records_nb"),
-            metric_type: String::from("gauge"),
-            ttl: 60.0,
-            hostname: String::from(hostname),
-            state: String::from("ok"),
-            tags: vec!["scaphandre".to_string()],
-            attributes: HashMap::new(),
-            description: String::from("Number of energy consumption Records stored for the host."),
-            metric_value: MetricValueType::IntUnsigned(topo_record_buffer_len as u64),
-        });
-
-        data.push(Metric {
-            name: String::from("scaph_self_topo_procs_nb"),
-            metric_type: String::from("gauge"),
-            ttl: 60.0,
-            hostname: String::from(hostname),
-            state: String::from("ok"),
-            tags: vec!["scaphandre".to_string()],
-            attributes: HashMap::new(),
-            description: String::from("Number of processes monitored for the host."),
-            metric_value: MetricValueType::IntUnsigned(topo_procs_len as u64),
-        });
-    }
-
-    /// Retrieve host metrics.
-    ///
-    /// `data` will be used to store the metrics retrieved.
-    ///
-    /// `topology` is the system physical layout retrieve via the sensors crate with
-    /// associated metrics.
-    ///
-    /// `hostname` is the system name where the metrics belongs.
-    fn get_host_metrics(&self, data: &mut Vec<Metric>, topology: &Topology, hostname: &str) {
-        let records = topology.get_records_passive();
-        for socket in &topology.sockets {
-            let mut attributes = HashMap::new();
-            attributes.insert("socket_id".to_string(), socket.id.to_string());
-
-            data.push(Metric {
-                name: String::from("scaph_self_socket_stats_nb"),
-                metric_type: String::from("gauge"),
-                ttl: 60.0,
-                hostname: String::from(hostname),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: attributes.clone(),
-                description: String::from("Number of CPUStat traces stored for each socket"),
-                metric_value: MetricValueType::IntUnsigned(socket.stat_buffer.len() as u64),
-            });
-
-            data.push(Metric {
-                name: String::from("scaph_self_socket_records_nb"),
-                metric_type: String::from("gauge"),
-                ttl: 60.0,
-                hostname: String::from(hostname),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: attributes.clone(),
-                description: String::from(
-                    "Number of energy consumption Records stored for each socket",
-                ),
-                metric_value: MetricValueType::IntUnsigned(socket.record_buffer.len() as u64),
-            });
-
-            for domain in &socket.domains {
-                // TODO: Sensor must trim output to avoid carriage returns in exporter
-                attributes.insert("rapl_domain_name".to_string(), domain.name.to_string());
-
-                data.push(Metric {
-                    name: String::from("scaph_self_domain_records_nb"),
-                    metric_type: String::from("gauge"),
-                    ttl: 60.0,
-                    hostname: String::from(hostname),
-                    state: String::from("ok"),
-                    tags: vec!["scaphandre".to_string()],
-                    attributes: attributes.clone(),
-                    description: String::from(
-                        "Number of energy consumption Records stored for a Domain",
-                    ),
-                    metric_value: MetricValueType::IntUnsigned(domain.record_buffer.len() as u64),
-                });
-            }
-        }
-
-        // metrics
-        if !records.is_empty() {
-            let record = records.last().unwrap();
-            let host_energy_microjoules = record.value.clone();
-            let host_energy_timestamp_seconds = record.timestamp.as_secs().to_string();
-
-            data.push(Metric {
-                    name: String::from("scaph_host_energy_microjoules"),
-                    metric_type: String::from("counter"),
-                    ttl: 60.0,
-                    hostname: String::from(hostname),
-                    state: String::from("ok"),
-                    tags: vec!["scaphandre".to_string()],
-                    attributes: HashMap::new(),
-                    description: String::from(
-                        "Energy measurement for the whole host, as extracted from the sensor, in microjoules.",
-                    ),
-                    metric_value: MetricValueType::Text(host_energy_microjoules),
-                });
-
-            data.push(Metric {
-                name: String::from("scaph_host_energy_timestamp_seconds"),
-                metric_type: String::from("counter"),
-                ttl: 60.0,
-                hostname: String::from(hostname),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from(
-                    "Timestamp in seconds when host_energy_microjoules has been computed.",
-                ),
-                metric_value: MetricValueType::Text(host_energy_timestamp_seconds),
-            });
-
-            if let Some(power) = topology.get_records_diff_power_microwatts() {
-                data.push(Metric {
-                    name: String::from("scaph_host_power_microwatts"),
-                    metric_type: String::from("gauge"),
-                    ttl: 60.0,
-                    hostname: String::from(hostname),
-                    state: String::from("ok"),
-                    tags: vec!["scaphandre".to_string()],
-                    attributes: HashMap::new(),
-                    description: String::from("Power measurement on the whole host, in microwatts"),
-                    metric_value: MetricValueType::Text(power.value),
-                });
-            }
-        }
-    }
-
-    /// Retrieve socket metrics.
-    ///
-    /// `data` will be used to store the metrics retrieved.
-    ///
-    /// `topology` is the system physical layout retrieve via the sensors crate with
-    /// associated metrics.
-    ///
-    /// `hostname` is the system name where the metrics belongs.
-    fn get_socket_metrics(&self, data: &mut Vec<Metric>, topology: &Topology, hostname: &str) {
-        let sockets = topology.get_sockets_passive();
-        for socket in sockets {
-            let records = socket.get_records_passive();
-            if !records.is_empty() {
-                let socket_energy_microjoules = &records.last().unwrap().value;
-
-                let mut attributes = HashMap::new();
-                attributes.insert("socket_id".to_string(), socket.id.to_string());
-
-                data.push(Metric {
-                    name: String::from("scaph_socket_energy_microjoules"),
-                    metric_type: String::from("counter"),
-                    ttl: 60.0,
-                    hostname: String::from(hostname),
-                    state: String::from("ok"),
-                    tags: vec!["scaphandre".to_string()],
-                    attributes: attributes.clone(),
-                    description: String::from("Socket related energy measurement in microjoules."),
-                    metric_value: MetricValueType::Text(socket_energy_microjoules.clone()),
-                });
-
-                if let Some(power) = topology.get_records_diff_power_microwatts() {
-                    let socket_power_microwatts = &power.value;
-
-                    data.push(Metric {
-                        name: String::from("scaph_socket_power_microwatts"),
-                        metric_type: String::from("gauge"),
-                        ttl: 60.0,
-                        hostname: String::from(hostname),
-                        state: String::from("ok"),
-                        tags: vec!["scaphandre".to_string()],
-                        attributes: attributes.clone(),
-                        description: String::from(
-                            "Power measurement relative to a CPU socket, in microwatts",
-                        ),
-                        metric_value: MetricValueType::Text(socket_power_microwatts.clone()),
-                    });
-                }
-            }
-        }
-    }
-
-    /// Retrieve system metrics.
-    ///
-    /// `data` will be used to store the metrics retrieved.
-    ///
-    /// `topology` is the system physical layout retrieve via the sensors crate with
-    /// associated metrics.
-    ///
-    /// `hostname` is the system name where the metrics belongs.
-    fn get_system_metrics(&self, data: &mut Vec<Metric>, topology: &Topology, hostname: &str) {
-        if let Some(metric_value) = topology.read_nb_process_total_count() {
-            data.push(Metric {
-                name: String::from("scaph_forks_since_boot_total"),
-                metric_type: String::from("counter"),
-                ttl: 60.0,
-                hostname: String::from(hostname),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from("Number of forks that have occured since boot (number of processes to have existed so far)."),
-                metric_value: MetricValueType::IntUnsigned(metric_value),
-            });
-        }
-
-        if let Some(metric_value) = topology.read_nb_process_running_current() {
-            data.push(Metric {
-                name: String::from("scaph_processes_running_current"),
-                metric_type: String::from("gauge"),
-                ttl: 60.0,
-                hostname: String::from(hostname),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from("Number of processes currently running."),
-                metric_value: MetricValueType::IntUnsigned(metric_value as u64),
-            });
-        }
-
-        if let Some(metric_value) = topology.read_nb_process_blocked_current() {
-            data.push(Metric {
-                name: String::from("scaph_processes_blocked_current"),
-                metric_type: String::from("gauge"),
-                ttl: 60.0,
-                hostname: String::from(hostname),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from("Number of processes currently blocked waiting for I/O."),
-                metric_value: MetricValueType::IntUnsigned(metric_value as u64),
-            });
-        }
-
-        if let Some(metric_value) = topology.read_nb_context_switches_total_count() {
-            data.push(Metric {
-                name: String::from("scaph_context_switches_total"),
-                metric_type: String::from("counter"),
-                ttl: 60.0,
-                hostname: String::from(hostname),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from("Number of context switches since boot."),
-                metric_value: MetricValueType::IntUnsigned(metric_value as u64),
-            });
-        }
-    }
-
-    /// Retrieve process metrics.
-    ///
-    /// `data` will be used to store the metrics retrieved.
-    ///
-    /// `topology` is the system physical layout retrieve via the sensors crate with
-    /// associated metrics.
-    ///
-    /// `hostname` is the system name where the metrics belongs.
-    ///
-    /// `qemu` is a switch to instruct Scaphandre that it runs on a hypervisor. So it will
-    /// add attributes to map the qemu process consumption to the VM name.
-    fn get_process_metrics(
-        &self,
-        data: &mut Vec<Metric>,
-        topology: &Topology,
-        hostname: &str,
-        qemu: bool,
-    ) {
-        let processes_tracker = &topology.proc_tracker;
-
-        for pid in processes_tracker.get_alive_pids() {
-            let exe = processes_tracker.get_process_name(pid);
-            let cmdline = processes_tracker.get_process_cmdline(pid);
-
-            let mut attributes = HashMap::new();
-            attributes.insert("pid".to_string(), pid.to_string());
-
-            attributes.insert("exe".to_string(), exe.clone());
-
-            if let Some(cmdline_str) = cmdline {
-                attributes.insert("cmdline".to_string(), cmdline_str.replace("\"", "\\\""));
-
-                if qemu {
-                    if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
-                        attributes.insert("vmname".to_string(), vmname);
-                    }
-                }
-            }
-
-            let metric_name = format!(
-                "{}_{}_{}",
-                "scaph_process_power_consumption_microwatts",
-                pid.to_string(),
-                exe
-            );
-            if let Some(power) = topology.get_process_power_consumption_microwatts(pid) {
-                data.push(Metric {
-                    name: metric_name,
-                    metric_type: String::from("gauge"),
-                    ttl: 60.0,
-                    hostname: String::from(hostname),
-                    state: String::from("ok"),
-                    tags: vec!["scaphandre".to_string()],
-                    attributes,
-                    description: String::from("Power consumption due to the process, measured on at the topology level, in microwatts"),
-                    metric_value: MetricValueType::Text(power.to_string()),
-                });
-            }
-        }
-    }
-
-    /// Retrieve all metrics provided by Scaphandre agent.
-    ///
-    /// `data` will be used to store the metrics retrieved.
-    ///
-    /// `topology` is the system physical layout retrieve via the sensors crate with
-    /// associated metrics.
-    ///
-    /// `hostname` is the system name where the metrics belongs.
-    ///
-    /// `qemu` is a switch to instruct Scaphandre that it runs on a hypervisor. So it will
-    /// add attributes to map the qemu process consumption to the VM name.
-    fn get_all_metrics(
-        &self,
-        data: &mut Vec<Metric>,
-        topology: &Topology,
-        hostname: &str,
-        qemu: bool,
-    ) {
-        info!(
-            "{}: Get self metrics",
-            Utc::now().format("%Y-%m-%dT%H:%M:%S")
-        );
-        self.get_self_metrics(data, &topology, &hostname);
-        info!(
-            "{}: Get host metrics",
-            Utc::now().format("%Y-%m-%dT%H:%M:%S")
-        );
-        self.get_host_metrics(data, &topology, &hostname);
-        info!(
-            "{}: Get socket metrics",
-            Utc::now().format("%Y-%m-%dT%H:%M:%S")
-        );
-        self.get_socket_metrics(data, &topology, &hostname);
-        info!(
-            "{}: Get system metrics",
-            Utc::now().format("%Y-%m-%dT%H:%M:%S")
-        );
-        self.get_system_metrics(data, &topology, &hostname);
-        info!(
-            "{}: Get process metrics",
-            Utc::now().format("%Y-%m-%dT%H:%M:%S")
-        );
-        self.get_process_metrics(data, &topology, &hostname, qemu);
-        debug!("self_metrics: {:#?}", data);
-    }
-
+    /// Generate all scaphandre (self) metrics.
     fn gen_self_metrics(&mut self) {
         self.data.push(Metric {
             name: String::from("scaph_self_version"),
@@ -666,6 +219,7 @@ impl<'a> MetricGenerator<'a> {
         });
     }
 
+    /// Generate host metrics.
     fn gen_host_metrics(&mut self) {
         let records = self.topology.get_records_passive();
         for socket in &self.topology.sockets {
@@ -768,6 +322,7 @@ impl<'a> MetricGenerator<'a> {
         }
     }
 
+    /// Generate socket metrics.
     fn gen_socket_metrics(&mut self) {
         let sockets = self.topology.get_sockets_passive();
         for socket in sockets {
@@ -811,6 +366,7 @@ impl<'a> MetricGenerator<'a> {
         }
     }
 
+    /// Generate system metrics.
     fn gen_system_metrics(&mut self) {
         if let Some(metric_value) = self.topology.read_nb_process_total_count() {
             self.data.push(Metric {
@@ -869,6 +425,7 @@ impl<'a> MetricGenerator<'a> {
         }
     }
 
+    /// Generate process metrics.
     fn gen_process_metrics(&mut self, qemu: bool) {
         let processes_tracker = &self.topology.proc_tracker;
 
@@ -913,6 +470,7 @@ impl<'a> MetricGenerator<'a> {
         }
     }
 
+    /// Generate all metrics provided by Scaphandre agent.
     fn gen_all_metrics(&mut self, qemu: bool) {
         info!(
             "{}: Get self metrics",
@@ -942,6 +500,11 @@ impl<'a> MetricGenerator<'a> {
         debug!("self_metrics: {:#?}", self.data);
     }
 
+    /// Retrieve the current metrics stored into [MetricGenerator].
+    ///
+    /// [MetricGenerator] is loaded using the gen_*_metrics() methods
+    /// Most of the time gen_all_metrics() is used to extract the full
+    /// set of data.
     fn get_metrics(&self) -> &Vec<Metric> {
         &self.data
     }
