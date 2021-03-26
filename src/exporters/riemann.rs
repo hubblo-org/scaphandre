@@ -1,3 +1,7 @@
+//! # RiemannExporter
+//!
+//! `RiemannExporter` implementation, sends metrics to a [Riemann](https://riemann.io/)
+//! server.
 use crate::exporters::utils::get_hostname;
 use crate::exporters::*;
 use crate::sensors::Sensor;
@@ -16,19 +20,24 @@ const DEFAULT_IP_ADDRESS: &str = "localhost";
 /// Riemann server default port
 const DEFAULT_PORT: &str = "5555";
 
-/// Riemann client
-struct Riemann {
+/// RiemannClient is a simple client implementation on top of the
+/// [rust-riemann_client](https://github.com/borntyping/rust-riemann_client) library.
+///
+/// It allows to connect to a Riemann server and send metrics.
+struct RiemannClient {
     client: Client,
 }
 
-impl Riemann {
-    fn new(address: &str, port: &str) -> Riemann {
+impl RiemannClient {
+    /// Instanciate the Riemann client.
+    fn new(address: &str, port: &str) -> RiemannClient {
         let address = String::from(address);
         let port = port.parse::<u16>().expect("Fail parsing port number");
         let client = Client::connect(&(address, port)).expect("Fail to connect to Riemann server");
-        Riemann { client }
+        RiemannClient { client }
     }
 
+    /// Send metrics to the server.
     fn send_metric(&mut self, msg: &Metric) {
         let mut event = Event::new();
 
@@ -81,7 +90,7 @@ impl Riemann {
     }
 }
 
-/// Exporter sends metrics to a Riemann server
+/// Exporter sends metrics to a Riemann server.
 pub struct RiemannExporter {
     /// Sensor instance that is used to generate the Topology and
     /// thus get power consumption metrics.
@@ -105,7 +114,7 @@ impl Exporter for RiemannExporter {
 
         let hostname = get_hostname();
 
-        let mut rclient = Riemann::new(
+        let mut rclient = RiemannClient::new(
             parameters.value_of("address").unwrap(),
             parameters.value_of("port").unwrap(),
         );
