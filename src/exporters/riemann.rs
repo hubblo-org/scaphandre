@@ -118,7 +118,6 @@ impl Exporter for RiemannExporter {
         println!("Measurement step is: {}s", dispatch_duration);
 
         let mut topology = self.sensor.get_topology().unwrap();
-        let metric_generator = MetricGenerator;
         loop {
             info!(
                 "{}: Beginning of measure loop",
@@ -136,6 +135,7 @@ impl Exporter for RiemannExporter {
             topology.refresh();
 
             info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
+            let metric_generator = MetricGenerator::new(&topology, &hostname);
             let mut outputdata: Vec<Metric> = Vec::new();
 
             metric_generator.get_all_metrics(

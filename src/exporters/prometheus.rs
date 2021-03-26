@@ -193,16 +193,15 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
 
     *last_request = now;
     let topo = data.topology.lock().unwrap();
-    let metric_generator = MetricGenerator;
+    let mut metric_generator = MetricGenerator::new(&*topo, &data.hostname);
 
     info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-    let mut outputdata: Vec<Metric> = Vec::new();
     let mut body = String::from(""); // initialize empty body
 
-    metric_generator.get_all_metrics(&mut outputdata, &*topo, &data.hostname, data.qemu);
+    metric_generator.gen_all_metrics(data.qemu);
 
     // Send all data
-    for msg in &outputdata {
+    for msg in metric_generator.get_metrics() {
         let mut attributes: Option<&HashMap<String, String>> = None;
         if !msg.attributes.is_empty() {
             attributes = Some(&msg.attributes);
