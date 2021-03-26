@@ -1,3 +1,4 @@
+use crate::exporters::utils::get_hostname;
 use crate::exporters::*;
 use crate::sensors::{RecordGenerator, Sensor};
 use chrono::Utc;
@@ -102,12 +103,7 @@ impl Exporter for RiemannExporter {
             .parse()
             .expect("Wrong dispatch_duration value, should be a number of seconds");
 
-        let hostname = String::from(
-            hostname::get()
-                .expect("Fail to get system hostname")
-                .to_str()
-                .unwrap(),
-        );
+        let hostname = get_hostname();
 
         let mut rclient = Riemann::new(
             parameters.value_of("address").unwrap(),
@@ -140,44 +136,20 @@ impl Exporter for RiemannExporter {
             topology.refresh();
 
             info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-            let mut data: Vec<Metric> = Vec::new();
+            let mut outputdata: Vec<Metric> = Vec::new();
             let records = topology.get_records_passive();
 
-            info!(
-                "{}: Get self metrics",
-                Utc::now().format("%Y-%m-%dT%H:%M:%S")
-            );
-            metric_generator.get_self_metrics(&topology, &mut data, &hostname);
-            info!(
-                "{}: Get host metrics",
-                Utc::now().format("%Y-%m-%dT%H:%M:%S")
-            );
-            metric_generator.get_host_metrics(&topology, &mut data, &hostname, &records);
-            info!(
-                "{}: Get socket metrics",
-                Utc::now().format("%Y-%m-%dT%H:%M:%S")
-            );
-            metric_generator.get_socket_metrics(&topology, &mut data, &hostname);
-            info!(
-                "{}: Get system metrics",
-                Utc::now().format("%Y-%m-%dT%H:%M:%S")
-            );
-            metric_generator.get_system_metrics(&topology, &mut data, &hostname);
-            info!(
-                "{}: Get process metrics",
-                Utc::now().format("%Y-%m-%dT%H:%M:%S")
-            );
-            metric_generator.get_process_metrics(
+            metric_generator.get_all_metrics(
+                &mut outputdata,
                 &topology,
-                &mut data,
+                &records,
                 &hostname,
-                parameters.clone(),
+                parameters.is_present("qemu"),
             );
-            debug!("self_metrics: {:#?}", data);
 
             // Send all data
             info!("{}: Send data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-            for msg in &data {
+            for msg in &outputdata {
                 rclient.send_metric(msg);
             }
 

@@ -6,15 +6,15 @@ pub mod stdout;
 pub mod utils;
 pub mod warpten;
 use crate::sensors::{Record, RecordGenerator, Topology};
+use chrono::Utc;
 use clap::ArgMatches;
 use std::collections::HashMap;
 use std::fmt;
 use utils::get_scaphandre_version;
 
+/// General metric definition
 #[derive(Debug)]
 pub struct Metric {
-    // timestamp: TBD is the timestamp must be in the struct here ?
-    // Or computed just before sending the metric
     name: String, // Will be used as service for Riemann
     metric_type: String,
     ttl: f32,
@@ -55,7 +55,9 @@ impl fmt::Debug for MetricValueType {
 /// the metrics are generated/refreshed by calling the refresh* methods available
 /// with the structs provided by the sensor.
 pub trait Exporter {
+    /// Entry point for all Exporters
     fn run(&mut self, parameters: ArgMatches);
+    /// Get the options passed via the command line
     fn get_options() -> HashMap<String, ExporterOption>;
 }
 
@@ -74,13 +76,24 @@ pub struct ExporterOption {
     pub help: String,
 }
 
-struct MetricGenerator;
+/// MetricGenerator is an exporter helper structure to collect Scaphandre metrics.
+/// The goal is to provide a standard Vec\<Metric\> that can be used by exporters
+/// to avoid code duplication.
+pub struct MetricGenerator;
 
+/// This is not mandatory to use MetricGenerator methods. Exporter can use dedicated
+/// code into the [Exporter] run() method to collect metrics. However it is advised
+/// to use the following methods to avoid discrepencies beetween exporters.
 impl MetricGenerator {
-    // Due to the fact that we collect all metric then send at the end,
-    // client does not need to be passed. It is definitively a simpler approach
-    /// Retrieve all scaphandre self metrics
-    fn get_self_metrics(&self, topology: &Topology, data: &mut Vec<Metric>, hostname: &str) {
+    /// Retrieve all scaphandre (self) metrics.
+    ///
+    /// `data` will be used to store the metrics retrieved.
+    ///
+    /// `topology` is the system physical layout retrieve via the sensors crate with
+    /// associated metrics.
+    ///
+    /// `hostname` is the system name where the metrics belongs.
+    pub fn get_self_metrics(&self, data: &mut Vec<Metric>, topology: &Topology, hostname: &str) {
         data.push(Metric {
             name: String::from("scaph_self_version"),
             metric_type: String::from("gauge"),
@@ -193,10 +206,20 @@ impl MetricGenerator {
         });
     }
 
+    /// Retrieve host metrics.
+    ///
+    /// `data` will be used to store the metrics retrieved.
+    ///
+    /// `topology` is the system physical layout retrieve via the sensors crate with
+    /// associated metrics.
+    ///
+    /// `hostname` is the system name where the metrics belongs.
+    ///
+    /// `records`
     fn get_host_metrics(
         &self,
-        topology: &Topology,
         data: &mut Vec<Metric>,
+        topology: &Topology,
         hostname: &str,
         records: &[Record],
     ) {
@@ -300,7 +323,7 @@ impl MetricGenerator {
         }
     }
 
-    fn get_socket_metrics(&self, topology: &Topology, data: &mut Vec<Metric>, hostname: &str) {
+    fn get_socket_metrics(&self, data: &mut Vec<Metric>, topology: &Topology, hostname: &str) {
         let sockets = topology.get_sockets_passive();
         for socket in sockets {
             let records = socket.get_records_passive();
@@ -343,7 +366,7 @@ impl MetricGenerator {
         }
     }
 
-    fn get_system_metrics(&self, topology: &Topology, data: &mut Vec<Metric>, hostname: &str) {
+    fn get_system_metrics(&self, data: &mut Vec<Metric>, topology: &Topology, hostname: &str) {
         if let Some(metric_value) = topology.read_nb_process_total_count() {
             data.push(Metric {
                 name: String::from("scaph_forks_since_boot_total"),
@@ -403,10 +426,10 @@ impl MetricGenerator {
 
     fn get_process_metrics(
         &self,
-        topology: &Topology,
         data: &mut Vec<Metric>,
+        topology: &Topology,
         hostname: &str,
-        parameters: ArgMatches,
+        qemu: bool,
     ) {
         let processes_tracker = &topology.proc_tracker;
 
@@ -422,7 +445,7 @@ impl MetricGenerator {
             if let Some(cmdline_str) = cmdline {
                 attributes.insert("cmdline".to_string(), cmdline_str.replace("\"", "\\\""));
 
-                if parameters.is_present("qemu") {
+                if qemu {
                     if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
                         attributes.insert("vmname".to_string(), vmname);
                     }
@@ -449,6 +472,42 @@ impl MetricGenerator {
                 });
             }
         }
+    }
+
+    fn get_all_metrics(
+        &self,
+        data: &mut Vec<Metric>,
+        topology: &Topology,
+        records: &[Record],
+        hostname: &str,
+        qemu: bool,
+    ) {
+        info!(
+            "{}: Get self metrics",
+            Utc::now().format("%Y-%m-%dT%H:%M:%S")
+        );
+        self.get_self_metrics(data, &topology, &hostname);
+        info!(
+            "{}: Get host metrics",
+            Utc::now().format("%Y-%m-%dT%H:%M:%S")
+        );
+        self.get_host_metrics(data, &topology, &hostname, &records);
+        info!(
+            "{}: Get socket metrics",
+            Utc::now().format("%Y-%m-%dT%H:%M:%S")
+        );
+        self.get_socket_metrics(data, &topology, &hostname);
+        info!(
+            "{}: Get system metrics",
+            Utc::now().format("%Y-%m-%dT%H:%M:%S")
+        );
+        self.get_system_metrics(data, &topology, &hostname);
+        info!(
+            "{}: Get process metrics",
+            Utc::now().format("%Y-%m-%dT%H:%M:%S")
+        );
+        self.get_process_metrics(data, &topology, &hostname, qemu);
+        debug!("self_metrics: {:#?}", data);
     }
 }
 

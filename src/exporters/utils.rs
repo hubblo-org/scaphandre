@@ -24,6 +24,15 @@ pub fn get_scaphandre_version() -> String {
     format!("{}.{}{}", major_version, patch_version, minor_version)
 }
 
+pub fn get_hostname() -> String {
+    String::from(
+        hostname::get()
+            .expect("Fail to get system hostname")
+            .to_str()
+            .unwrap(),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
