@@ -1,6 +1,6 @@
 use crate::exporters::utils::get_hostname;
 use crate::exporters::*;
-use crate::sensors::{RecordGenerator, Sensor};
+use crate::sensors::Sensor;
 use chrono::Utc;
 use riemann_client::proto::Attribute;
 use riemann_client::proto::Event;
@@ -137,12 +137,10 @@ impl Exporter for RiemannExporter {
 
             info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
             let mut outputdata: Vec<Metric> = Vec::new();
-            let records = topology.get_records_passive();
 
             metric_generator.get_all_metrics(
                 &mut outputdata,
                 &topology,
-                &records,
                 &hostname,
                 parameters.is_present("qemu"),
             );

@@ -5,7 +5,7 @@ pub mod riemann;
 pub mod stdout;
 pub mod utils;
 pub mod warpten;
-use crate::sensors::{Record, RecordGenerator, Topology};
+use crate::sensors::{RecordGenerator, Topology};
 use chrono::Utc;
 use clap::ArgMatches;
 use std::collections::HashMap;
@@ -214,15 +214,8 @@ impl MetricGenerator {
     /// associated metrics.
     ///
     /// `hostname` is the system name where the metrics belongs.
-    ///
-    /// `records`
-    fn get_host_metrics(
-        &self,
-        data: &mut Vec<Metric>,
-        topology: &Topology,
-        hostname: &str,
-        records: &[Record],
-    ) {
+    pub fn get_host_metrics(&self, data: &mut Vec<Metric>, topology: &Topology, hostname: &str) {
+        let records = topology.get_records_passive();
         for socket in &topology.sockets {
             let mut attributes = HashMap::new();
             attributes.insert("socket_id".to_string(), socket.id.to_string());
@@ -323,7 +316,15 @@ impl MetricGenerator {
         }
     }
 
-    fn get_socket_metrics(&self, data: &mut Vec<Metric>, topology: &Topology, hostname: &str) {
+    /// Retrieve socket metrics.
+    ///
+    /// `data` will be used to store the metrics retrieved.
+    ///
+    /// `topology` is the system physical layout retrieve via the sensors crate with
+    /// associated metrics.
+    ///
+    /// `hostname` is the system name where the metrics belongs.
+    pub fn get_socket_metrics(&self, data: &mut Vec<Metric>, topology: &Topology, hostname: &str) {
         let sockets = topology.get_sockets_passive();
         for socket in sockets {
             let records = socket.get_records_passive();
@@ -366,7 +367,15 @@ impl MetricGenerator {
         }
     }
 
-    fn get_system_metrics(&self, data: &mut Vec<Metric>, topology: &Topology, hostname: &str) {
+    /// Retrieve system metrics.
+    ///
+    /// `data` will be used to store the metrics retrieved.
+    ///
+    /// `topology` is the system physical layout retrieve via the sensors crate with
+    /// associated metrics.
+    ///
+    /// `hostname` is the system name where the metrics belongs.
+    pub fn get_system_metrics(&self, data: &mut Vec<Metric>, topology: &Topology, hostname: &str) {
         if let Some(metric_value) = topology.read_nb_process_total_count() {
             data.push(Metric {
                 name: String::from("scaph_forks_since_boot_total"),
@@ -424,7 +433,18 @@ impl MetricGenerator {
         }
     }
 
-    fn get_process_metrics(
+    /// Retrieve process metrics.
+    ///
+    /// `data` will be used to store the metrics retrieved.
+    ///
+    /// `topology` is the system physical layout retrieve via the sensors crate with
+    /// associated metrics.
+    ///
+    /// `hostname` is the system name where the metrics belongs.
+    ///
+    /// `qemu` is a switch to instruct Scaphandre that it runs on a hypervisor. So it will
+    /// add attributes to map the qemu process consumption to the VM name.
+    pub fn get_process_metrics(
         &self,
         data: &mut Vec<Metric>,
         topology: &Topology,
@@ -474,11 +494,21 @@ impl MetricGenerator {
         }
     }
 
-    fn get_all_metrics(
+    /// Retrieve all metrics provided by Scaphandre agent.
+    ///
+    /// `data` will be used to store the metrics retrieved.
+    ///
+    /// `topology` is the system physical layout retrieve via the sensors crate with
+    /// associated metrics.
+    ///
+    /// `hostname` is the system name where the metrics belongs.
+    ///
+    /// `qemu` is a switch to instruct Scaphandre that it runs on a hypervisor. So it will
+    /// add attributes to map the qemu process consumption to the VM name.
+    pub fn get_all_metrics(
         &self,
         data: &mut Vec<Metric>,
         topology: &Topology,
-        records: &[Record],
         hostname: &str,
         qemu: bool,
     ) {
@@ -491,7 +521,7 @@ impl MetricGenerator {
             "{}: Get host metrics",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
         );
-        self.get_host_metrics(data, &topology, &hostname, &records);
+        self.get_host_metrics(data, &topology, &hostname);
         info!(
             "{}: Get socket metrics",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")

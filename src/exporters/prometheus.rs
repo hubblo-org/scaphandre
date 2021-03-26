@@ -1,6 +1,6 @@
 use crate::current_system_time_since_epoch;
 use crate::exporters::*;
-use crate::sensors::{RecordGenerator, Sensor, Topology};
+use crate::sensors::{Sensor, Topology};
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use chrono::Utc;
 use std::collections::HashMap;
@@ -193,14 +193,13 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
 
     *last_request = now;
     let topo = data.topology.lock().unwrap();
-    let records = (*topo).get_records_passive();
     let metric_generator = MetricGenerator;
 
     info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
     let mut outputdata: Vec<Metric> = Vec::new();
     let mut body = String::from(""); // initialize empty body
 
-    metric_generator.get_all_metrics(&mut outputdata, &*topo, &records, &data.hostname, data.qemu);
+    metric_generator.get_all_metrics(&mut outputdata, &*topo, &data.hostname, data.qemu);
 
     // Send all data
     for msg in &outputdata {
