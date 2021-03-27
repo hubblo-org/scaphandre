@@ -38,11 +38,11 @@ impl RiemannClient {
     }
 
     /// Send metrics to the server.
-    fn send_metric(&mut self, msg: &Metric) {
+    fn send_metric(&mut self, metric: &Metric) {
         let mut event = Event::new();
 
         let mut attributes: Vec<Attribute> = vec![];
-        for (key, value) in &msg.attributes {
+        for (key, value) in &metric.attributes {
             let mut attribute = Attribute::new();
             attribute.set_key(key.clone());
             attribute.set_value(value.clone());
@@ -55,17 +55,17 @@ impl RiemannClient {
                 .unwrap()
                 .as_secs() as i64,
         );
-        event.set_ttl(msg.ttl);
-        event.set_host(msg.hostname.to_string());
-        event.set_service(msg.name.to_string());
-        event.set_state(msg.state.to_string());
-        event.set_tags(protobuf::RepeatedField::from_vec(msg.tags.clone()));
+        event.set_ttl(metric.ttl);
+        event.set_host(metric.hostname.to_string());
+        event.set_service(metric.name.to_string());
+        event.set_state(metric.state.to_string());
+        event.set_tags(protobuf::RepeatedField::from_vec(metric.tags.clone()));
         if !attributes.is_empty() {
             event.set_attributes(protobuf::RepeatedField::from_vec(attributes));
         }
-        event.set_description(msg.description.to_string());
+        event.set_description(metric.description.to_string());
 
-        match msg.metric_value {
+        match metric.metric_value {
             // MetricValueType::IntSigned(value) => event.set_metric_sint64(value),
             // MetricValueType::Float(value) => event.set_metric_f(value),
             MetricValueType::FloatDouble(value) => event.set_metric_d(value),
@@ -98,13 +98,14 @@ pub struct RiemannExporter {
 }
 
 impl RiemannExporter {
-    /// Instantiates RiemannExporter and returns the instance.
+    /// Returns a RiemannExporter instance.
     pub fn new(sensor: Box<dyn Sensor>) -> RiemannExporter {
         RiemannExporter { sensor }
     }
 }
 
 impl Exporter for RiemannExporter {
+    /// Entry point of the RiemannExporter.
     fn run(&mut self, parameters: ArgMatches) {
         let dispatch_duration: u64 = parameters
             .value_of("dispatch_duration")
@@ -149,8 +150,8 @@ impl Exporter for RiemannExporter {
 
             // Send all data
             info!("{}: Send data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-            for msg in metric_generator.get_metrics() {
-                rclient.send_metric(msg);
+            for metric in metric_generator.get_metrics() {
+                rclient.send_metric(metric);
             }
 
             thread::sleep(Duration::new(dispatch_duration, 0));

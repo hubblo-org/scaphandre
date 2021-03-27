@@ -1,3 +1,7 @@
+//! # PrometheusExporter
+//!
+//! `PrometheusExporter` implementation, expose metrics to
+//! a [Prometheus](https://prometheus.io/) server.
 use crate::current_system_time_since_epoch;
 use crate::exporters::*;
 use crate::sensors::{Sensor, Topology};
@@ -28,6 +32,8 @@ impl PrometheusExporter {
 }
 
 impl Exporter for PrometheusExporter {
+    /// Entry point ot the PrometheusExporter.
+    ///
     /// Runs HTTP server and metrics exposure through the runner function.
     fn run(&mut self, parameters: ArgMatches) {
         info!(
@@ -172,7 +178,7 @@ fn push_metric(
     body
 }
 
-/// Handles requests and returns data.
+/// Handles requests and returns data formated for Prometheus.
 async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     let now = current_system_time_since_epoch();
     let mut last_request = data.last_request.lock().unwrap();

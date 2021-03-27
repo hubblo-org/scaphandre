@@ -17,37 +17,28 @@ use std::fmt;
 use utils::get_scaphandre_version;
 
 /// General metric definition.
-///
-/// `name` is the metric name, it will be used as service field for Riemann.
-///
-/// `metric_type` mostly used by Prometheus, define is it is a gauge, counter...
-///
-/// `ttl` time to live for this metric used by Riemann.
-///
-/// `hostname` host that provides the metric.
-///
-/// `state` used by Riemann, define a state like Ok or Ko regarding this metric.
-///
-/// `tags` used by Riemann, tags attached to the metric.
-///
-/// `attributes` used by exporters to better qualify the metric. In Prometheus context
-/// this is used as a metric tag (socket_id) : `scaph_self_socket_stats_nb{socket_id="0"} 2`.
-///
-/// `description` metric description and units used.
-///
-/// `metric_value` the value of the metric. This is possible to pass different types using
-/// [MetricValueType] enum. It allows to do specific exporter processing based on types
-/// allowing flexibility.
 #[derive(Debug)]
-pub struct Metric {
+struct Metric {
+    /// `name` is the metric name, it will be used as service field for Riemann.
     name: String, // Will be used as service for Riemann
+    /// `metric_type` mostly used by Prometheus, define is it is a gauge, counter...
     metric_type: String,
+    /// `ttl` time to live for this metric used by Riemann.
     ttl: f32,
+    /// `hostname` host that provides the metric.
     hostname: String,
+    /// `state` used by Riemann, define a state like Ok or Ko regarding this metric.
     state: String,
+    /// `tags` used by Riemann, tags attached to the metric.
     tags: Vec<String>,
+    /// `attributes` used by exporters to better qualify the metric. In Prometheus context
+    /// this is used as a metric tag (socket_id) : `scaph_self_socket_stats_nb{socket_id="0"} 2`.
     attributes: HashMap<String, String>,
+    /// `description` metric description and units used.
     description: String,
+    /// `metric_value` the value of the metric. This is possible to pass different types using
+    /// [MetricValueType] enum. It allows to do specific exporter processing based on types
+    /// allowing flexibility.
     metric_value: MetricValueType,
 }
 
@@ -104,16 +95,13 @@ pub struct ExporterOption {
 /// MetricGenerator is an exporter helper structure to collect Scaphandre metrics.
 /// The goal is to provide a standard Vec\<Metric\> that can be used by exporters
 /// to avoid code duplication.
-///
-/// `data` will be used to store the metrics retrieved.
-///
-/// `topology` is the system physical layout retrieve via the sensors crate with
-/// associated metrics.
-///
-/// `hostname` is the system name where the metrics belongs.
 struct MetricGenerator<'a> {
+    /// `data` will be used to store the metrics retrieved.
     data: Vec<Metric>,
+    /// `topology` is the system physical layout retrieve via the sensors crate with
+    /// associated metrics.
     topology: &'a Topology,
+    /// `hostname` is the system name where the metrics belongs.
     hostname: &'a str,
 }
 
@@ -121,6 +109,7 @@ struct MetricGenerator<'a> {
 /// code into the [Exporter] run() method to collect metrics. However it is advised
 /// to use the following methods to avoid discrepancies between exporters.
 impl<'a> MetricGenerator<'a> {
+    /// Returns a MetricGenerator instance that will host metrics.
     fn new(topology: &'a Topology, hostname: &'a str) -> MetricGenerator<'a> {
         let data = Vec::new();
         MetricGenerator {
