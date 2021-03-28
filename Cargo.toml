@@ -28,4 +28,3 @@ time = "0.2.25"
 
 [profile.release]
 lto = true
-debug = true
