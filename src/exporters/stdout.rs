@@ -72,6 +72,8 @@ impl StdoutExporter {
                 .parse()
                 .expect("Wrong step_duration value, should be a number of seconds");
 
+            utils::scaphandre_header("stdout");
+
             println!("Measurement step is: {}s", step_duration);
 
             while now.elapsed().as_secs() <= timeout_secs {
