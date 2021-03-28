@@ -26,5 +26,5 @@ serde_json = "1.0"
 warp10 = "1.0.0"
 time = "0.2.25"
 
-[profile.release]
-lto = true
+#[profile.release]
+#lto = true
