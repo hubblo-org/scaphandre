@@ -117,8 +117,6 @@ async fn runner(
         panic!("Not a valid TCP port numer: {}", error);
     }
 
-    utils::scaphandre_header("prometheus");
-
     HttpServer::new(move || {
         App::new()
             .data(PowerMetrics {

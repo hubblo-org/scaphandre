@@ -173,7 +173,6 @@ impl Exporter for RiemannExporter {
         );
 
         info!("Starting Riemann exporter");
-        utils::scaphandre_header("riemann");
         println!("Press CTRL-C to stop scaphandre");
         println!("Measurement step is: {}s", dispatch_duration);
 

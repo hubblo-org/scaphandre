@@ -23,6 +23,14 @@ fn main() {
                 .help("Sets the level of verbosity.")
         )
         .arg(
+            Arg::with_name("no-color")
+                .value_name("no-color")
+                .help("Avoids any color in the terminal output.")
+                .required(false)
+                .takes_value(false)
+                .long("no-color")
+        )
+        .arg(
             Arg::with_name("sensor")
                 .value_name("sensor")
                 .help("Sensor module to apply on the host to get energy consumption metrics.")
