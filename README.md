@@ -15,9 +15,9 @@ Scaphandre *[skafɑ̃dʁ]* is a metrology agent dedicated to electrical [power](
 
 **Scaphandre** means *heavy* **diving suit** in [:fr:](https://fr.wikipedia.org/wiki/Scaphandre_%C3%A0_casque). It comes from the idea that tech related services often don't track their power consumption and thus don't expose it to their clients. Most of the time the reason is a presumed bad [ROI](https://en.wikipedia.org/wiki/Return_on_investment). Scaphandre makes, for tech providers and tech users, easier and cheaper to go under the surface to bring back the desired power consumption metrics, take better sustainability focused decisions, and then show the metrics to their clients to allow them to do the same.
 
-This project was born from a deep sense of duty from tech workers. Please refer to the [why](https://hubblo-org.github.io/scaphandre-documentation-documentation/why.html) section for know more about its goals.
+This project was born from a deep sense of duty from tech workers. Please refer to the [why](https://hubblo-org.github.io/scaphandre-documentation/why.html) section for know more about its goals.
 
-**Warning**: this is still a very early stage project. Any feedback or contribution will be highly appreciated. Please refer to the [contribution](https://hubblo-org.github.io/scaphandre-documentation-documentation/contributing.html) section.
+**Warning**: this is still a very early stage project. Any feedback or contribution will be highly appreciated. Please refer to the [contribution](https://hubblo-org.github.io/scaphandre-documentation/contributing.html) section.
 
 ![Fmt+Clippy](https://github.com/hubblo-org/scaphandre/workflows/Rust/badge.svg?branch=main)
 [![](https://img.shields.io/crates/v/scaphandre.svg?maxAge=25920)](https://crates.io/crates/scaphandre)
@@ -42,13 +42,13 @@ You can see some samples of metrics that scaphandre allows you to gather [here](
 
 ## 📄 How to ... ?
 
-You'll find everything you may want to know about scaphandre in the [documentation](https://hubblo-org.github.io/scaphandre-documentation-documentation), like:
+You'll find everything you may want to know about scaphandre in the [documentation](https://hubblo-org.github.io/scaphandre-documentation), like:
 
-- 🏁 [Getting started](https://hubblo-org.github.io/scaphandre-documentation-documentation/tutorials/quickstart.html)
-- 💻 [Installation & compilation](https://hubblo-org.github.io/scaphandre-documentation-documentation/tutorials/installation.html)
-- 👁️ [Give a virtual machine access to its power consumption metrics, and break the opacity of being on the computer of someone else](https://hubblo-org.github.io/scaphandre-documentation-documentation/how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html)
-- 🎉 [Contributing guide](https://hubblo-org.github.io/scaphandre-documentation-documentation/contributing.html)
-- [And much more](https://hubblo-org.github.io/scaphandre-documentation-documentation)
+- 🏁 [Getting started](https://hubblo-org.github.io/scaphandre-documentation/tutorials/quickstart.html)
+- 💻 [Installation & compilation](https://hubblo-org.github.io/scaphandre-documentation/tutorials/installation.html)
+- 👁️ [Give a virtual machine access to its power consumption metrics, and break the opacity of being on the computer of someone else](https://hubblo-org.github.io/scaphandre-documentation/how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html)
+- 🎉 [Contributing guide](https://hubblo-org.github.io/scaphandre-documentation/contributing.html)
+- [And much more](https://hubblo-org.github.io/scaphandre-documentation)
 
 If you are only interested in the code documentation [here it is](https://docs.rs/scaphandre).
 
