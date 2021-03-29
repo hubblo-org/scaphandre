@@ -16,7 +16,7 @@ This may be not up to date, please check main branch.
 - JsonExporter, to get metrics in JSON either in stdout or files: [#68](https://github.com/hubblo-org/scaphandre/pull/68) - thanks @wallet77
 - RiemannExporter, to send metrics to [Riemann](http://riemann.io) monitoring tool: [#58](https://github.com/hubblo-org/scaphandre/pull/58) - thanks @uggla
 - --qemu flag on PrometheusExporter, to add a "vmname" label to metrics related to processes that represent qemu-kvm virtual machines: [#41](https://github.com/hubblo-org/scaphandre/pull/41) - thanks @uggla
-- Better documentation structure (based on [divio's documentation framework](https://documentation.divio.com/) and [mdbook](https://rust-lang.github.io/mdBook/)): [#45](https://github.com/hubblo-org/scaphandre/pull/45), result here:  [https://hubblo-org.github.io/scaphandre/](https://hubblo-org.github.io/scaphandre/)
+- Better documentation structure (based on [divio's documentation framework](https://documentation.divio.com/) and [mdbook](https://rust-lang.github.io/mdBook/)): [#45](https://github.com/hubblo-org/scaphandre/pull/45), result here:  [https://hubblo-org.github.io/scaphandre-documentation-documentation-documentation/](https://hubblo-org.github.io/scaphandre/)
 - Automated CI tests including cargo test --all, running on a (bare metal) machine: [#62](https://github.com/hubblo-org/scaphandre/pull/62)
 
 ### Fixed

@@ -10,7 +10,7 @@ This project adheres to the Rust Code of Conduct, which [can be found here](http
 
 Contributions may take multiple forms:
 - 💻 **code**, of course, but not only (there is a lot more !)
-- 📖 **documentation**
+- 📖 **documentation** : [here](#edit-and-build-the-documentation) a guide to edit and build the documentation
 - 🎤 Any help on **communication**: writing blog posts, speaking about scaphandre in conferences, speaking and writing about the responsibility of tech to be sustainable as well !
 - 🧬 **structuring the project** and the **community** is also a very important topic. Feel free to propose help, or start [discussions](https://github.com/hubblo-org/scaphandre/discussions) about that.
 
@@ -24,3 +24,23 @@ This project intends to use [conventionnal commit messages](https://conventional
 
 Scaphandre is a not only a tool, but a framework. Modules dedicated to collect energy comsumption data from the host are called [**Sensors**](docs/sensors).
 Modules that are dedicated to send this data to a given channel or remote system are called [**Exporters**](docs/exporters). New Sensors and Exporters are going to be created and all contributions are welcome. For more on the internal structure please jump [here](explanations/internal-structure.md).
+
+### Edit and build the documentation
+
+Documentation source files are in `docs_src`, edit the content there and propose pull-requests on the scaphandre repository as if it was a code pull-request.
+
+Here is how to build and publish the documentation after a change. First download [mdbook](https://github.com/rust-lang/mdBook), the static site generator we use for the [documentation website](https://hubblo-org.github.io/scaphandre-documentation-documentation-documentation-documentation):
+
+    cargo install mdbook
+
+Then fork the [scaphandre-documentation](https://github.com/hubblo-org/scaphandre-documentation) repository and clone the resulting repository locally.
+
+Place the resulting documentation folder next to scaphandre's folder. Then run the build:
+
+    cd scaphandre && mdbook build
+
+You should then have the result in `scaphandre-documentation/docs`. Commit, push and propose a PR to publish the changes.
+
+You can also serve the current content locally to see your changes before commit:
+
+    mdbook serve
