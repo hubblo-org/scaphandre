@@ -29,7 +29,7 @@ Modules that are dedicated to send this data to a given channel or remote system
 
 Documentation source files are in `docs_src`, edit the content there and propose pull-requests on the scaphandre repository as if it was a code pull-request.
 
-Here is how to build and publish the documentation after a change. First download [mdbook](https://github.com/rust-lang/mdBook), the static site generator we use for the [documentation website](https://hubblo-org.github.io/scaphandre-documentation-documentation-documentation):
+Here is how to build and publish the documentation after a change. First download [mdbook](https://github.com/rust-lang/mdBook), the static site generator we use for the [documentation website](https://hubblo-org.github.io/scaphandre-documentation):
 
     cargo install mdbook
 
