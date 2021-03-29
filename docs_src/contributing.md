@@ -10,7 +10,7 @@ This project adheres to the Rust Code of Conduct, which [can be found here](http
 
 Contributions may take multiple forms:
 - 💻 **code**, of course, but not only (there is a lot more !)
-- 📖 **documentation** : [here](#edit-and-build-the-documentation) a guide to edit and build the documentation
+- 📖 **documentation** : [here](#edit-and-build-the-documentation) is a guide to edit and build the documentation
 - 🎤 Any help on **communication**: writing blog posts, speaking about scaphandre in conferences, speaking and writing about the responsibility of tech to be sustainable as well !
 - 🧬 **structuring the project** and the **community** is also a very important topic. Feel free to propose help, or start [discussions](https://github.com/hubblo-org/scaphandre/discussions) about that.
 
