@@ -84,7 +84,7 @@
                      "label": null,
                      "logBase": 1,
                      "max": null,
-                     "min": null,
+                     "min": 0,
                      "show": true
                   },
                   {
@@ -92,7 +92,7 @@
                      "label": null,
                      "logBase": 1,
                      "max": null,
-                     "min": null,
+                     "min": 0,
                      "show": true
                   }
                ]
@@ -262,7 +262,7 @@
                      "label": null,
                      "logBase": 1,
                      "max": null,
-                     "min": null,
+                     "min": 0,
                      "show": true
                   },
                   {
@@ -270,7 +270,7 @@
                      "label": null,
                      "logBase": 1,
                      "max": null,
-                     "min": null,
+                     "min": 0,
                      "show": true
                   }
                ]
@@ -347,7 +347,7 @@
                   "current": false,
                   "max": false,
                   "min": false,
-                  "rightSide": true,
+                  "rightSide": false,
                   "show": true,
                   "sideWidth": "30%",
                   "total": false,
@@ -399,7 +399,7 @@
                      "label": null,
                      "logBase": 1,
                      "max": null,
-                     "min": null,
+                     "min": 0,
                      "show": true
                   },
                   {
@@ -407,7 +407,7 @@
                      "label": null,
                      "logBase": 1,
                      "max": null,
-                     "min": null,
+                     "min": 0,
                      "show": true
                   }
                ]

@@ -33,6 +33,7 @@ dashboard.new(
           datasource='${PROMETHEUS_DS}',
           format='W',
           span=6,
+          min=0
       )
       .addTarget(
           grafana.prometheus.target(
@@ -41,7 +42,6 @@ dashboard.new(
           )
       )
   )
-
   .addPanel(
       grafana.graphPanel.new(
           title='Hosts power consumption total (dynamic time range)',
@@ -71,6 +71,7 @@ dashboard.new(
             datasource='${PROMETHEUS_DS}',
             format='W',
             span=6,
+            min=0
         )
         .addTarget(
             grafana.prometheus.target(
@@ -102,10 +103,11 @@ dashboard.new(
             datasource='${PROMETHEUS_DS}',
             span=8,
             format='W',
-            legend_rightSide=true,
+            legend_rightSide=false,
             legend_alignAsTable=true,
             legend_sideWidth='30%',
-            stack=true
+            stack=true,
+            min=0
         )
         .addTarget(
             grafana.prometheus.target(
