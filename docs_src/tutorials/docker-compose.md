@@ -12,3 +12,7 @@ Grafana will be available at `http://localhost:3000`, the default username is `a
 Refresh the dashboard after 30s or enable auto-refresh and you should see the data filling the graphs.
 
 The `process_filter` textbox on the top of the graph allows you to look at the power consumption of a single application or service. Type the name of the program you want to look at and press enter. In the `Filtered process (process_filter) power, by exe` graph, on the 3rd line, you should now see the power cosumption of the given program.
+
+To remove the stack just run this command in the same folder:
+
+    docker-compose down
