@@ -12,6 +12,7 @@ use exporters::{
 use sensors::{powercap_rapl::PowercapRAPLSensor, Sensor};
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
+use colored::*;
 
 /// Helper function to get an argument from ArgMatches
 fn get_argument(matches: &ArgMatches, arg: &'static str) -> String {
@@ -56,27 +57,38 @@ pub fn run(matches: ArgMatches) {
     let sensor_boxed = get_sensor(&matches);
     let exporter_parameters;
 
+    let mut header = true;
+    if matches.is_present("no-header") {
+        header = false;
+    }
+
     if let Some(stdout_exporter_parameters) = matches.subcommand_matches("stdout") {
+        if header { scaphandre_header("stdout"); }
         exporter_parameters = stdout_exporter_parameters.clone();
         let mut exporter = StdoutExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else if let Some(json_exporter_parameters) = matches.subcommand_matches("json") {
+        if header { scaphandre_header("json"); }
         exporter_parameters = json_exporter_parameters.clone();
         let mut exporter = JSONExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else if let Some(riemann_exporter_parameters) = matches.subcommand_matches("riemann") {
+        if header { scaphandre_header("riemann"); }
         exporter_parameters = riemann_exporter_parameters.clone();
         let mut exporter = RiemannExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else if let Some(prometheus_exporter_parameters) = matches.subcommand_matches("prometheus") {
+        if header { scaphandre_header("prometheus"); }
         exporter_parameters = prometheus_exporter_parameters.clone();
         let mut exporter = PrometheusExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
+        if header { scaphandre_header("qemu"); }
         exporter_parameters = qemu_exporter_parameters.clone();
         let mut exporter = QemuExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
+        if header { scaphandre_header("warp10"); }
         exporter_parameters = warp10_exporter_parameters.clone();
         let mut exporter = Warp10Exporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
@@ -120,6 +132,12 @@ fn current_system_time_since_epoch() -> Duration {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()
+}
+
+pub fn scaphandre_header(exporter_name: &str) {
+    let title = format!("Scaphandre {} exporter", exporter_name);
+    println!("{}", title.red().bold());
+    println!("Sending ⚡ metrics");
 }
 
 //  Copyright 2020 The scaphandre authors.
