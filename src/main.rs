@@ -23,12 +23,12 @@ fn main() {
                 .help("Sets the level of verbosity.")
         )
         .arg(
-            Arg::with_name("no-color")
-                .value_name("no-color")
-                .help("Avoids any color in the terminal output.")
+            Arg::with_name("no-header")
+                .value_name("no-header")
+                .help("Prevents the header to be displayed in the terminal output.")
                 .required(false)
                 .takes_value(false)
-                .long("no-color")
+                .long("no-header")
         )
         .arg(
             Arg::with_name("sensor")

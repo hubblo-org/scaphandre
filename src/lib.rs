@@ -57,38 +57,38 @@ pub fn run(matches: ArgMatches) {
     let sensor_boxed = get_sensor(&matches);
     let exporter_parameters;
 
-    let mut colored = true;
-    if matches.is_present("no-color") {
-        colored = false;
+    let mut header = true;
+    if matches.is_present("no-header") {
+        header = false;
     }
 
     if let Some(stdout_exporter_parameters) = matches.subcommand_matches("stdout") {
-        if colored { scaphandre_header("stdout"); }
+        if header { scaphandre_header("stdout"); }
         exporter_parameters = stdout_exporter_parameters.clone();
         let mut exporter = StdoutExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else if let Some(json_exporter_parameters) = matches.subcommand_matches("json") {
-        if colored { scaphandre_header("json"); }
+        if header { scaphandre_header("json"); }
         exporter_parameters = json_exporter_parameters.clone();
         let mut exporter = JSONExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else if let Some(riemann_exporter_parameters) = matches.subcommand_matches("riemann") {
-        if colored { scaphandre_header("riemann"); }
+        if header { scaphandre_header("riemann"); }
         exporter_parameters = riemann_exporter_parameters.clone();
         let mut exporter = RiemannExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else if let Some(prometheus_exporter_parameters) = matches.subcommand_matches("prometheus") {
-        if colored { scaphandre_header("prometheus"); }
+        if header { scaphandre_header("prometheus"); }
         exporter_parameters = prometheus_exporter_parameters.clone();
         let mut exporter = PrometheusExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
-        if colored { scaphandre_header("qemu"); }
+        if header { scaphandre_header("qemu"); }
         exporter_parameters = qemu_exporter_parameters.clone();
         let mut exporter = QemuExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
-        if colored { scaphandre_header("warp10"); }
+        if header { scaphandre_header("warp10"); }
         exporter_parameters = warp10_exporter_parameters.clone();
         let mut exporter = Warp10Exporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
