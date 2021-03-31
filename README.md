@@ -36,7 +36,9 @@ This project was born from a deep sense of duty from tech workers. Please refer 
 - storing power consumption metrics in a **JSON** file
 - showing basic power consumption metrics **in the terminal**
 
-You can see some samples of metrics that scaphandre allows you to gather [here](https://metrics.hubblo.org).
+[![asciicast](https://asciinema.org/a/Xe8Hl9keAueBhgBEhpuysXbj2.svg)](https://asciinema.org/a/Xe8Hl9keAueBhgBEhpuysXbj2)
+
+Here is an example dashboard built thanks to scaphandre: [https://metrics.hubblo.org](https://metrics.hubblo.org).
 
 <a href="https://metrics.hubblo.org"><img src="https://github.com/hubblo-org/scaphandre/raw/main/docs_src/grafana-dash-scaphandre.cleaned.png" width="800"></a>
 
