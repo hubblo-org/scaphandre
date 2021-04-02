@@ -93,7 +93,7 @@ impl Sensor for PowercapRAPLSensor {
                     topo.safe_add_domain_to_socket(
                         socket_id,
                         domain_id,
-                        domain_name,
+                        domain_name.trim(),
                         &format!(
                             "{}/intel-rapl:{}:{}/energy_uj",
                             self.base_path, socket_id, domain_id
