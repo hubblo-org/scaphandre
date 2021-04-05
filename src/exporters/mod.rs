@@ -232,11 +232,7 @@ impl<'a> MetricGenerator<'a> {
             description: String::from("Number of processes monitored for the host."),
             metric_value: MetricValueType::IntUnsigned(topo_procs_len as u64),
         });
-    }
 
-    /// Generate host metrics.
-    fn gen_host_metrics(&mut self) {
-        let records = self.topology.get_records_passive();
         for socket in &self.topology.sockets {
             let mut attributes = HashMap::new();
             attributes.insert("socket_id".to_string(), socket.id.to_string());
@@ -285,6 +281,12 @@ impl<'a> MetricGenerator<'a> {
                 });
             }
         }
+
+    }
+
+    /// Generate host metrics.
+    fn gen_host_metrics(&mut self) {
+        let records = self.topology.get_records_passive();
 
         // metrics
         if !records.is_empty() {
