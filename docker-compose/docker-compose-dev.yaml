@@ -19,7 +19,7 @@ services:
     
   prometheus:
     build:
-      context: ./prom
+      context: ./prom-dev
     ports: 
       - "9099:9090"
     volumes: 
