@@ -281,7 +281,6 @@ impl<'a> MetricGenerator<'a> {
                 });
             }
         }
-
     }
 
     /// Generate host metrics.

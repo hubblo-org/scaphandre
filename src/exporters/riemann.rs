@@ -151,7 +151,7 @@ impl Exporter for RiemannExporter {
             metric_generator.gen_self_metrics();
             metric_generator.gen_host_metrics();
             metric_generator.gen_socket_metrics();
-            
+
             let mut data = vec![];
             let processes_tracker = &metric_generator.topology.proc_tracker;
 
