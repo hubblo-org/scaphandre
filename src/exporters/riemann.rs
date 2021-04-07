@@ -146,12 +146,56 @@ impl Exporter for RiemannExporter {
 
             info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
             let mut metric_generator = MetricGenerator::new(&topology, &hostname);
-            metric_generator.gen_all_metrics(parameters.is_present("qemu"));
+            // Here we need a specific behavior for process metrics, so we call each gen function
+            // and then implement that specific behavior (we don't use gen_all_metrics).
+            metric_generator.gen_self_metrics();
+            metric_generator.gen_host_metrics();
+            metric_generator.gen_socket_metrics();
+            
+            let mut data = vec![];
+            let processes_tracker = &metric_generator.topology.proc_tracker;
 
+            for pid in processes_tracker.get_alive_pids() {
+                let exe = processes_tracker.get_process_name(pid);
+                let cmdline = processes_tracker.get_process_cmdline(pid);
+
+                let mut attributes = HashMap::new();
+                attributes.insert("pid".to_string(), pid.to_string());
+
+                attributes.insert("exe".to_string(), exe.clone());
+
+                if let Some(cmdline_str) = cmdline {
+                    attributes.insert("cmdline".to_string(), cmdline_str.replace("\"", "\\\""));
+
+                    if parameters.is_present("qemu") {
+                        if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
+                            attributes.insert("vmname".to_string(), vmname);
+                        }
+                    }
+                }
+
+                let metric_name = String::from("scaph_process_power_consumption_microwatts");
+                if let Some(power) = topology.get_process_power_consumption_microwatts(pid) {
+                    data.push(Metric {
+                        name: metric_name,
+                        metric_type: String::from("gauge"),
+                        ttl: 60.0,
+                        hostname: String::from(get_hostname()),
+                        state: String::from("ok"),
+                        tags: vec!["scaphandre".to_string()],
+                        attributes,
+                        description: String::from("Power consumption due to the process, measured on at the topology level, in microwatts"),
+                        metric_value: MetricValueType::Text(power.to_string()),
+                    });
+                }
+            }
             // Send all data
             info!("{}: Send data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
             for metric in metric_generator.get_metrics() {
                 rclient.send_metric(metric);
+            }
+            for metric in data {
+                rclient.send_metric(&metric);
             }
 
             thread::sleep(Duration::new(dispatch_duration, 0));
