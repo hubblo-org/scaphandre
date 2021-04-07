@@ -185,7 +185,7 @@ impl Exporter for RiemannExporter {
                         name: metric_name,
                         metric_type: String::from("gauge"),
                         ttl: 60.0,
-                        hostname: String::from(get_hostname()),
+                        hostname: get_hostname(),
                         state: String::from("ok"),
                         tags: vec!["scaphandre".to_string()],
                         attributes,
