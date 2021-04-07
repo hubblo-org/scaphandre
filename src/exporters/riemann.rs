@@ -174,7 +174,12 @@ impl Exporter for RiemannExporter {
                     }
                 }
 
-                let metric_name = String::from("scaph_process_power_consumption_microwatts");
+                let metric_name = format!(
+                    "{}_{}_{}",
+                    "scaph_process_power_consumption_microwatts",
+                    pid.to_string(),
+                    exe
+                );
                 if let Some(power) = topology.get_process_power_consumption_microwatts(pid) {
                     data.push(Metric {
                         name: metric_name,
