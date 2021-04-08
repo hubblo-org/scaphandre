@@ -11,9 +11,6 @@ pub struct StdoutExporter {
 }
 
 impl Exporter for StdoutExporter {
-    // fn manage_metric<T>(&self, client: T, data: &Vec<Metric>) {
-    //     unimplemented!()
-    // }
     /// Lanches runner()
     fn run(&mut self, parameters: ArgMatches) {
         self.runner(parameters);
