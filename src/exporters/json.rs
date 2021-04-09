@@ -1,3 +1,4 @@
+use crate::current_system_time_since_epoch;
 use crate::exporters::*;
 use crate::sensors::{Sensor, Topology};
 use serde::{Deserialize, Serialize};
@@ -7,7 +8,6 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::thread;
 use std::time::{Duration, Instant};
-use crate::current_system_time_since_epoch;
 
 /// An Exporter that displays power consumption data of the host
 /// and its processes on the standard output of the terminal.
@@ -77,8 +77,8 @@ impl Exporter for JSONExporter {
                 short: String::from("m"),
                 required: false,
                 takes_value: true,
-                help: String::from("Maximum number of processes to watch.")
-            }
+                help: String::from("Maximum number of processes to watch."),
+            },
         );
         options
     }
@@ -105,7 +105,7 @@ struct Consumer {
 #[derive(Serialize, Deserialize)]
 struct Host {
     consumption: f32,
-    timestamp: f64
+    timestamp: f64,
 }
 #[derive(Serialize, Deserialize)]
 struct Report {
@@ -164,23 +164,26 @@ impl JSONExporter {
     fn retrieve_metrics(&mut self, parameters: &ArgMatches) {
         let mut host_power = 0;
         let host_timestamp: Duration;
-        if let Some(microwatts_record) = self
-            .topology
-            .get_records_diff_power_microwatts() {
+        if let Some(microwatts_record) = self.topology.get_records_diff_power_microwatts() {
             host_timestamp = microwatts_record.timestamp;
-        
-            host_power =
-                microwatts_record.value.parse::<u64>().unwrap();
+
+            host_power = microwatts_record.value.parse::<u64>().unwrap();
         } else {
             host_timestamp = current_system_time_since_epoch();
         }
-        
+
         let host_stat = match self.topology.get_stats_diff() {
             Some(value) => value,
             None => return,
         };
 
-        let consumers = self.topology.proc_tracker.get_top_consumers(parameters.value_of("max_top_consumers").unwrap_or("10").parse::<u16>().unwrap());
+        let consumers = self.topology.proc_tracker.get_top_consumers(
+            parameters
+                .value_of("max_top_consumers")
+                .unwrap_or("10")
+                .parse::<u16>()
+                .unwrap(),
+        );
         let top_consumers = consumers
             .iter()
             .map(|(process, value)| {
@@ -229,10 +232,10 @@ impl JSONExporter {
                 }
             })
             .collect::<Vec<_>>();
-        
+
         let host_report = Host {
             consumption: host_power as f32,
-            timestamp: host_timestamp.as_secs_f64()
+            timestamp: host_timestamp.as_secs_f64(),
         };
 
         let report = Report {
