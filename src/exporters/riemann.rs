@@ -174,6 +174,8 @@ impl Exporter for RiemannExporter {
                     }
                 }
 
+                // Here we define a metric name with pid + exe string suffix as riemann needs
+                // to differentiate services/metrics
                 let metric_name = format!(
                     "{}_{}_{}",
                     "scaph_process_power_consumption_microwatts",
