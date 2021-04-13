@@ -1,13 +1,13 @@
 [package]
 name = "scaphandre"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Benoit Petit <bpetit@hubblo.org>"]
 edition = "2018"
 license = "Apache-2.0"
 description = "Electrical power consumption measurement agent."
 repository = "https://github.com/hubblo-org/scaphandre"
 readme = "README.md"
-#homepage = "https://scaphandre.hubblo.org"
+homepage = "https://hubblo-org.github.io/scaphandre-documentation"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
