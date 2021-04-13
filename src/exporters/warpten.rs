@@ -158,7 +158,7 @@ impl Warp10Exporter {
         write_token: &str,
         //read_token: Option<&str>,
         qemu: bool,
-    ) -> Result<warp10::Warp10Response, warp10::Error> {
+    ) -> Result<Vec<warp10::Warp10Response>, warp10::Error> {
         let client = warp10::Client::new(&format!("{}://{}:{}", scheme, host, port))?;
         let writer = client.get_writer(write_token.to_string());
         self.topology
@@ -180,6 +180,7 @@ impl Warp10Exporter {
             labels.clone(),
             warp10::Value::Double(scaphandre_version.parse::<f64>().unwrap()),
         )];
+
         if let Some(metric_value) = self
             .topology
             .get_process_cpu_consumption_percentage(procfs::process::Process::myself().unwrap().pid)
@@ -341,6 +342,20 @@ impl Warp10Exporter {
             }
         }
 
+        let res = writer.post_sync(data)?;
+
+        let mut results = vec![];
+
+        results.push(res);
+
+        let mut process_data = vec![warp10::Data::new(
+            time::OffsetDateTime::now_utc(),
+            None,
+            String::from("scaph_self_version"),
+            labels.clone(),
+            warp10::Value::Double(scaphandre_version.parse::<f64>().unwrap()),
+        )];
+
         let processes_tracker = &self.topology.proc_tracker;
         for pid in processes_tracker.get_alive_pids() {
             let exe = processes_tracker.get_process_name(pid);
@@ -367,7 +382,7 @@ impl Warp10Exporter {
                 exe
             );
             if let Some(power) = self.topology.get_process_power_consumption_microwatts(pid) {
-                data.push(warp10::Data::new(
+                process_data.push(warp10::Data::new(
                     time::OffsetDateTime::now_utc(),
                     None,
                     metric_name,
@@ -376,7 +391,7 @@ impl Warp10Exporter {
                 ));
             }
         }
-        let res = writer.post_sync(data)?;
+        let process_res = writer.post_sync(process_data)?;
 
         //if let Some(token) = read_token {
         //let reader = client.get_reader(token.to_owned());
@@ -393,8 +408,10 @@ impl Warp10Exporter {
         //Err(err) => panic!("error is: {:?}", err)
         //}
         //}
+                        
+        results.push(process_res);
 
-        Ok(res)
+        Ok(results)
     }
 }
 
