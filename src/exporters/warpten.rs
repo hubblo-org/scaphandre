@@ -344,9 +344,7 @@ impl Warp10Exporter {
 
         let res = writer.post_sync(data)?;
 
-        let mut results = vec![];
-
-        results.push(res);
+        let mut results = vec![res];
 
         let mut process_data = vec![warp10::Data::new(
             time::OffsetDateTime::now_utc(),
@@ -408,7 +406,7 @@ impl Warp10Exporter {
         //Err(err) => panic!("error is: {:?}", err)
         //}
         //}
-                        
+
         results.push(process_res);
 
         Ok(results)
