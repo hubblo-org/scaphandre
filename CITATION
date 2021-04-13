@@ -2,6 +2,6 @@
   author       = {Benoit Petit},
   title        = {scaphandre},
   year         = 2021,
-  version      = {v0.2},
+  version      = {v0.3},
   url          = {https://github.com/hubblo-org/scaphandre}
 }
