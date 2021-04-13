@@ -23,6 +23,8 @@ This project was born from a deep sense of duty from tech workers. Please refer 
 [![](https://img.shields.io/crates/v/scaphandre.svg?maxAge=25920)](https://crates.io/crates/scaphandre)
 <a href="https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg"></a>
 
+Join us on [Gitter](https://gitter.im/hubblo-org/scaphandre) or [Matrix](https://app.element.io/#/room/#hubblo-org_scaphandre:gitter.im) !
+
 ---
 
 ## ✨ Features
