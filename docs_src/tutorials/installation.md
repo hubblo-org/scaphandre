@@ -31,8 +31,8 @@ Depending on your kernel version, you could need to modprobe the module intel_ra
 
 Here are some other ways to install scaphandre depending on your context:
 
-- [run scaphandre in a docker container](/tutorials/quickstart.md)
-- [run scaphandre on kubernetes](/tutorials/kubernetes.md)
+- [run scaphandre in a docker container](quickstart.md)
+- [run scaphandre on kubernetes](kubernetes.md)
 
 Other tutorials should come, as:
 
