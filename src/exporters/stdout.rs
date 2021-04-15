@@ -2,6 +2,7 @@ use clap::Arg;
 
 use crate::exporters::*;
 use crate::sensors::{Record, Sensor, Topology};
+use regex::Regex;
 use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -19,6 +20,7 @@ impl Exporter for StdoutExporter {
     }
 
     /// Returns options needed for that exporter, as a HashMap
+<<<<<<< HEAD
     fn get_options() -> Vec<clap::Arg<'static, 'static>> {
         let mut options = Vec::new();
         let arg = Arg::with_name("timeout")
@@ -39,6 +41,24 @@ impl Exporter for StdoutExporter {
             .takes_value(true);
         options.push(arg);
 
+        let arg = Arg::with_name("process_number")
+            .default_value("5")
+            .help("Number of processes to display.")
+            .long("process")
+            .short("p")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("regex_filter")
+            .default_value(".*")
+            .help("Filter processes based on regular expressions.")
+            .long("regex")
+            .short("r")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
         options
     }
 }
@@ -54,26 +74,48 @@ impl StdoutExporter {
 
     /// Runs iteration() every 'step', during until 'timeout'
     pub fn runner(&mut self, parameters: ArgMatches) {
-        let timeout = parameters.value_of("timeout").unwrap();
-        if timeout.is_empty() {
-            self.iterate();
+        // Parse parameters
+        // All parameters have a default values so it is safe to unwrap them.
+        // Panic if a non numerical value is passed except for regex_filter.
+
+        let timeout_secs: u64 = parameters
+            .value_of("timeout")
+            .unwrap()
+            .parse()
+            .expect("Wrong timeout value, should be a number of seconds");
+
+        let step_duration: u64 = parameters
+            .value_of("step_duration")
+            .unwrap()
+            .parse()
+            .expect("Wrong step_duration value, should be a number of seconds");
+
+        let process_number: u16 = parameters
+            .value_of("process_number")
+            .unwrap()
+            .parse()
+            .expect("Wrong process_number value, should be a number");
+
+        let regex_filter: Option<Regex>;
+        if parameters.value_of("regex_filter").unwrap() == ".*" {
+            regex_filter = None;
+        } else {
+            regex_filter = Some(
+                Regex::new(parameters.value_of("regex_filter").unwrap())
+                    .expect("Wrong regex_filter, regexp is invalid"),
+            );
+        }
+        println!("Measurement step is: {}s", step_duration);
+        if timeout_secs == 0 {
+            loop {
+                self.iterate(&regex_filter, process_number);
+                thread::sleep(Duration::new(step_duration, 0));
+            }
         } else {
             let now = Instant::now();
 
-            let timeout_secs: u64 = timeout.parse().unwrap();
-
-            // We have a default value of 2s so it is safe to unwrap the option
-            // Panic if a non numerical value is passed
-            let step_duration: u64 = parameters
-                .value_of("step_duration")
-                .unwrap()
-                .parse()
-                .expect("Wrong step_duration value, should be a number of seconds");
-
-            println!("Measurement step is: {}s", step_duration);
-
             while now.elapsed().as_secs() <= timeout_secs {
-                self.iterate();
+                self.iterate(&regex_filter, process_number);
                 thread::sleep(Duration::new(step_duration, 0));
             }
         }
@@ -97,12 +139,12 @@ impl StdoutExporter {
         }
     }
 
-    fn iterate(&mut self) {
+    fn iterate(&mut self, regex_filter: &Option<Regex>, process_number: u16) {
         self.topology.refresh();
-        self.show_metrics();
+        self.show_metrics(regex_filter, process_number);
     }
 
-    fn show_metrics(&self) {
+    fn show_metrics(&self, regex_filter: &Option<Regex>, process_number: u16) {
         let host_power = match self.topology.get_records_diff_power_microwatts() {
             Some(record) => record.value.parse::<u64>().unwrap(),
             None => 0,
@@ -136,25 +178,34 @@ impl StdoutExporter {
             }
             println!("{}", to_print);
         }
-        println!("Top 5 consumers:");
-        println!("Power\tPID\tExe");
 
-        let consumers = self.topology.proc_tracker.get_top_consumers(5);
-        for c in consumers.iter() {
-            if let Some(host_stat) = self.topology.get_stats_diff() {
-                let host_time = host_stat.total_time_jiffies();
-                println!(
-                    "{} W\t{}\t{:?}",
-                    ((c.1 as f32 / (host_time * procfs::ticks_per_second().unwrap() as f32))
-                        * host_power as f32)
-                        / 1000000.0,
-                    c.0.pid,
-                    c.0.exe().unwrap_or_default()
-                );
+        if let Some(regex_filter) = regex_filter {
+            let processes = self
+                .topology
+                .proc_tracker
+                .get_filtered_processes(regex_filter);
+            todo!();
+        } else {
+            println!("Top {} consumers:", process_number);
+            println!("Power\tPID\tExe");
+
+            let consumers = self.topology.proc_tracker.get_top_consumers(process_number);
+            for c in consumers.iter() {
+                if let Some(host_stat) = self.topology.get_stats_diff() {
+                    let host_time = host_stat.total_time_jiffies();
+                    println!(
+                        "{} W\t{}\t{:?}",
+                        ((c.1 as f32 / (host_time * procfs::ticks_per_second().unwrap() as f32))
+                            * host_power as f32)
+                            / 1000000.0,
+                        c.0.pid,
+                        c.0.exe().unwrap_or_default()
+                    );
+                }
             }
-        }
 
-        println!("------------------------------------------------------------\n");
+            println!("------------------------------------------------------------\n");
+        }
     }
 }
 

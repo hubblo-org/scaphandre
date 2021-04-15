@@ -1,4 +1,5 @@
 use procfs::process::Process;
+use regex::Regex;
 use std::time::{Duration, SystemTime};
 
 #[derive(Debug, Clone)]
@@ -195,6 +196,7 @@ impl ProcessTracker {
         None
     }
 
+    /// Returns processes sorted by the highest consumers in first
     pub fn get_top_consumers(&self, top: u16) -> Vec<(Process, u64)> {
         let mut consumers: Vec<(Process, u64)> = vec![];
         for p in &self.procs {
@@ -219,6 +221,11 @@ impl ProcessTracker {
             }
         }
         consumers
+    }
+
+    /// Returns processes filtered by a regexp
+    pub fn get_filtered_processes(&self, regex_filter: &Regex) -> Vec<(Process, u64)> {
+        todo!();
     }
 
     /// Drops a vector of ProcessRecord instances from self.procs
