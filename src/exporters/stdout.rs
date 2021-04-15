@@ -97,7 +97,9 @@ impl StdoutExporter {
             .expect("Wrong process_number value, should be a number");
 
         let regex_filter: Option<Regex>;
-        if parameters.value_of("regex_filter").unwrap() == ".*" {
+        if parameters.value_of("regex_filter").unwrap() == ".*"
+            || parameters.value_of("regex_filter").unwrap().is_empty()
+        {
             regex_filter = None;
         } else {
             regex_filter = Some(
@@ -176,20 +178,26 @@ impl StdoutExporter {
                 };
                 to_print.push_str(&format!("{} W\t", domain_power as f32 / 1000000.0));
             }
-            println!("{}", to_print);
+            println!("{}\n", to_print);
         }
 
+        let consumers: Vec<(procfs::process::Process, u64)>;
         if let Some(regex_filter) = regex_filter {
-            let processes = self
+            println!("Processes filter by '{}':", regex_filter.as_str());
+            consumers = self
                 .topology
                 .proc_tracker
                 .get_filtered_processes(regex_filter);
-            todo!();
         } else {
             println!("Top {} consumers:", process_number);
-            println!("Power\tPID\tExe");
 
-            let consumers = self.topology.proc_tracker.get_top_consumers(process_number);
+            consumers = self.topology.proc_tracker.get_top_consumers(process_number);
+        }
+
+        println!("Power\tPID\tExe");
+        if consumers.is_empty() {
+            println!("No processes found yet or filter returns no value.");
+        } else {
             for c in consumers.iter() {
                 if let Some(host_stat) = self.topology.get_stats_diff() {
                     let host_time = host_stat.total_time_jiffies();
@@ -203,9 +211,8 @@ impl StdoutExporter {
                     );
                 }
             }
-
-            println!("------------------------------------------------------------\n");
         }
+        println!("------------------------------------------------------------\n");
     }
 }
 

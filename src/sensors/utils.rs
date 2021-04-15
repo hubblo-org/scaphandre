@@ -225,7 +225,26 @@ impl ProcessTracker {
 
     /// Returns processes filtered by a regexp
     pub fn get_filtered_processes(&self, regex_filter: &Regex) -> Vec<(Process, u64)> {
-        todo!();
+        let mut consumers: Vec<(Process, u64)> = vec![];
+        for p in &self.procs {
+            if p.len() > 1 {
+                let last_time = p.first().unwrap().total_time_jiffies();
+                let previous_time = p.get(1).unwrap().total_time_jiffies();
+                let mut diff = 0;
+                if previous_time <= last_time {
+                    diff = last_time - previous_time;
+                }
+
+                let process_name = p.last().unwrap().process.exe().unwrap_or_default();
+
+                if regex_filter.is_match(process_name.to_str().unwrap_or_default()) {
+                    consumers.push((p.last().unwrap().process.clone(), diff));
+                    consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                }
+            }
+        }
+
+        consumers
     }
 
     /// Drops a vector of ProcessRecord instances from self.procs
