@@ -2,6 +2,7 @@ use clap::Arg;
 
 use crate::exporters::*;
 use crate::sensors::{Record, Sensor, Topology};
+use colored::*;
 use regex::Regex;
 use std::collections::HashMap;
 use std::thread;
@@ -20,12 +21,11 @@ impl Exporter for StdoutExporter {
     }
 
     /// Returns options needed for that exporter, as a HashMap
-<<<<<<< HEAD
     fn get_options() -> Vec<clap::Arg<'static, 'static>> {
         let mut options = Vec::new();
         let arg = Arg::with_name("timeout")
             .default_value("10")
-            .help("Maximum time spent measuring, in seconds.")
+            .help("Maximum time spent measuring, in seconds. 0 means continuous measurement.")
             .long("timeout")
             .short("t")
             .required(false)
@@ -51,8 +51,7 @@ impl Exporter for StdoutExporter {
         options.push(arg);
 
         let arg = Arg::with_name("regex_filter")
-            .default_value(".*")
-            .help("Filter processes based on regular expressions.")
+            .help("Filter processes based on regular expressions (e.g: 'scaph\\w\\wd.e'). This option disable '-p' or '--process' one.")
             .long("regex")
             .short("r")
             .required(false)
@@ -97,7 +96,7 @@ impl StdoutExporter {
             .expect("Wrong process_number value, should be a number");
 
         let regex_filter: Option<Regex>;
-        if parameters.value_of("regex_filter").unwrap() == ".*"
+        if !parameters.is_present("regex_filter")
             || parameters.value_of("regex_filter").unwrap().is_empty()
         {
             regex_filter = None;
@@ -107,6 +106,15 @@ impl StdoutExporter {
                     .expect("Wrong regex_filter, regexp is invalid"),
             );
         }
+
+        if parameters.occurrences_of("regex_filter") == 1
+            && parameters.occurrences_of("process_number") == 1
+        {
+            let warning =
+                format!("Warning: (-p / --process) and (-r / --regex) used at the same time. (-p / --process) disabled");
+            eprintln!("{}", warning.bright_yellow());
+        }
+
         println!("Measurement step is: {}s", step_duration);
         if timeout_secs == 0 {
             loop {
