@@ -111,7 +111,7 @@ impl StdoutExporter {
             && parameters.occurrences_of("process_number") == 1
         {
             let warning =
-                format!("Warning: (-p / --process) and (-r / --regex) used at the same time. (-p / --process) disabled");
+                String::from("Warning: (-p / --process) and (-r / --regex) used at the same time. (-p / --process) disabled");
             eprintln!("{}", warning.bright_yellow());
         }
 
