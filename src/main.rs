@@ -1,15 +1,15 @@
 //! Generic sensor and transmission agent for energy consumption related metrics.
 use clap::{crate_version, App, AppSettings, Arg, SubCommand};
-use scaphandre::{get_exporters_options, run};
-
+use scaphandre::{get_exporters_options, get_exporters_options_new, run};
 fn main() {
     let sensors = ["powercap_rapl"];
     let exporters_options = get_exporters_options();
+    let exporters_options_new = get_exporters_options_new();
+    let exporters_new = exporters_options_new.keys();
+    dbg!(exporters_new);
     let exporters = exporters_options.keys();
-    let mut res = vec![];
-    for i in exporters {
-        res.push(i.as_str());
-    }
+    let exporters: Vec<&str> = exporters.into_iter().map(|x| x.as_str()).collect();
+
     let mut matches = App::new("scaphandre")
         .author("Benoit Petit <bpetit@hubblo.org>")
         .version("0.2.0")
@@ -63,9 +63,9 @@ fn main() {
                 .takes_value(false)
         );
 
-    for exp in res {
-        let mut subcmd = SubCommand::with_name(exp).about(
-            match exp {
+    for exporter in exporters {
+        let mut subcmd = SubCommand::with_name(exporter).about(
+            match exporter {
                 "stdout" => "Stdout exporter allows you to output the power consumption data in the terminal",
                 "json" => "JSON exporter allows you to output the power consumption data in a json file",
                 "prometheus" => "Prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted format",
@@ -76,7 +76,11 @@ fn main() {
             }
         );
 
-        for (key, opt) in exporters_options.get(exp).unwrap().iter() {
+        let myopts = exporters_options_new.get("riemann").unwrap().clone();
+        for opt in myopts {
+            subcmd = subcmd.arg(opt);
+        }
+        for (key, opt) in exporters_options.get(exporter).unwrap().iter() {
             if let Some(default_value) = &opt.default_value {
                 let arg = Arg::with_name(key)
                     .required(opt.required)

@@ -6,6 +6,7 @@ use crate::exporters::utils::get_hostname;
 use crate::exporters::*;
 use crate::sensors::Sensor;
 use chrono::Utc;
+use clap::Arg;
 use riemann_client::proto::Attribute;
 use riemann_client::proto::Event;
 use riemann_client::Client;
@@ -101,6 +102,24 @@ impl RiemannExporter {
     /// Returns a RiemannExporter instance.
     pub fn new(sensor: Box<dyn Sensor>) -> RiemannExporter {
         RiemannExporter { sensor }
+    }
+
+    pub fn get_options_new() -> Vec<clap::Arg<'static, 'static>> {
+        let mut options = Vec::new();
+        let arg = Arg::with_name("truc")
+            .required(true)
+            .default_value("bidule")
+            .short("-b")
+            .long("--bidule")
+            .help("This is bidule help");
+        options.push(arg);
+        let arg = Arg::with_name("machin")
+            .required(true)
+            .default_value("supermachin")
+            .long("--machin")
+            .help("This is machin help");
+        options.push(arg);
+        options
     }
 }
 

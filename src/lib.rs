@@ -140,6 +140,15 @@ pub fn get_exporters_options() -> HashMap<String, HashMap<String, ExporterOption
     options
 }
 
+pub fn get_exporters_options_new() -> HashMap<String, Vec<clap::Arg<'static, 'static>>> {
+    let mut options = HashMap::new();
+    options.insert(
+        String::from("riemann"),
+        exporters::riemann::RiemannExporter::get_options_new(),
+    );
+    options
+}
+
 fn current_system_time_since_epoch() -> Duration {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
