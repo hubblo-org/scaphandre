@@ -1,3 +1,5 @@
+use clap::Arg;
+
 use crate::exporters::*;
 use crate::sensors::{Record, Sensor, Topology};
 use std::collections::HashMap;
@@ -45,7 +47,26 @@ impl Exporter for StdoutExporter {
     }
 
     fn get_options_new() -> Vec<clap::Arg<'static, 'static>> {
-        todo!();
+        let mut options = Vec::new();
+        let arg = Arg::with_name("timeout")
+            .default_value("10")
+            .help("Maximum time spent measuring, in seconds.")
+            .long("timeout")
+            .short("t")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("step_duration")
+            .default_value("2")
+            .help("Set measurement step duration in second.")
+            .long("step")
+            .short("s")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        options
     }
 }
 

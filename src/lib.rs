@@ -142,10 +142,10 @@ pub fn get_exporters_options() -> HashMap<String, HashMap<String, ExporterOption
 
 pub fn get_exporters_options_new() -> HashMap<String, Vec<clap::Arg<'static, 'static>>> {
     let mut options = HashMap::new();
-    // options.insert(
-    //     String::from("stdout"),
-    //     exporters::stdout::StdoutExporter::get_options_new(),
-    // );
+    options.insert(
+        String::from("stdout"),
+        exporters::stdout::StdoutExporter::get_options_new(),
+    );
     // options.insert(
     //     String::from("json"),
     //     exporters::json::JSONExporter::get_options_new(),

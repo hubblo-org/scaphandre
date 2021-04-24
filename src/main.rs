@@ -76,7 +76,7 @@ fn main() {
             }
         );
 
-        if exporter == "riemann" {
+        if exporter == "riemann" || exporter == "stdout" {
             let myopts = exporters_options_new.get(exporter).unwrap();
             for opt in myopts {
                 subcmd = subcmd.arg(opt);
