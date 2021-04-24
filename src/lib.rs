@@ -162,10 +162,10 @@ pub fn get_exporters_options_new() -> HashMap<String, Vec<clap::Arg<'static, 'st
         String::from("qemu"),
         exporters::qemu::QemuExporter::get_options_new(),
     );
-    // options.insert(
-    //     String::from("warp10"),
-    //     exporters::warpten::Warp10Exporter::get_options_new(),
-    // );
+    options.insert(
+        String::from("warp10"),
+        exporters::warpten::Warp10Exporter::get_options_new(),
+    );
     options
 }
 

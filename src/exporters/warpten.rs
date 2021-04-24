@@ -1,5 +1,6 @@
 use crate::exporters::*;
 use crate::sensors::{RecordGenerator, Sensor, Topology};
+use clap::Arg;
 use std::collections::HashMap;
 use std::time::Duration;
 use std::{env, thread};
@@ -136,7 +137,60 @@ impl Exporter for Warp10Exporter {
     }
 
     fn get_options_new() -> Vec<clap::Arg<'static, 'static>> {
-        todo!();
+        let mut options = Vec::new();
+        let arg = Arg::with_name("host")
+            .default_value("localhost")
+            .help("Warp10 host's FQDN or IP address to send data to")
+            .long("host")
+            .short("H")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("scheme")
+            .default_value("http")
+            .help("Either 'http' or 'https'")
+            .long("scheme")
+            .short("s")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("port")
+            .default_value("8080")
+            .help("TCP port to join Warp10 on the host")
+            .long("port")
+            .short("p")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("write-token")
+            .help("Auth. token to write on Warp10")
+            .long("write-token")
+            .short("t")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("step")
+            .default_value("30")
+            .help("Time step between measurements, in seconds.")
+            .long("step")
+            .short("S")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("qemu")
+            .help("Tells scaphandre it is running on a Qemu hypervisor.")
+            .long("qemu")
+            .short("q")
+            .required(false)
+            .takes_value(false);
+        options.push(arg);
+
+        options
     }
 }
 

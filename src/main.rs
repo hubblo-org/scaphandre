@@ -81,6 +81,7 @@ fn main() {
             || exporter == "json"
             || exporter == "prometheus"
             || exporter == "qemu"
+            || exporter == "warp10"
         {
             let myopts = exporters_options_new.get(exporter).unwrap();
             for opt in myopts {
