@@ -80,6 +80,7 @@ fn main() {
             || exporter == "stdout"
             || exporter == "json"
             || exporter == "prometheus"
+            || exporter == "qemu"
         {
             let myopts = exporters_options_new.get(exporter).unwrap();
             for opt in myopts {
