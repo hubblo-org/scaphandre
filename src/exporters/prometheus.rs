@@ -7,6 +7,7 @@ use crate::exporters::*;
 use crate::sensors::{Sensor, Topology};
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use chrono::Utc;
+use clap::Arg;
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::Mutex;
@@ -107,7 +108,43 @@ impl Exporter for PrometheusExporter {
     }
 
     fn get_options_new() -> Vec<clap::Arg<'static, 'static>> {
-        todo!();
+        let mut options = Vec::new();
+        let arg = Arg::with_name("address")
+            .default_value(DEFAULT_IP_ADDRESS)
+            .help("ipv6 or ipv4 address to expose the service to")
+            .long("address")
+            .short("a")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("port")
+            .default_value("8080")
+            .help("TCP port number to expose the service")
+            .long("port")
+            .short("p")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("suffix")
+            .default_value("metrics")
+            .help("url suffix to access metrics")
+            .long("suffix")
+            .short("s")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("qemu")
+            .help("Instruct that scaphandre is running on an hypervisor")
+            .long("qemu")
+            .short("q")
+            .required(false)
+            .takes_value(false);
+        options.push(arg);
+
+        options
     }
 }
 

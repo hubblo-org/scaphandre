@@ -150,10 +150,10 @@ pub fn get_exporters_options_new() -> HashMap<String, Vec<clap::Arg<'static, 'st
         String::from("json"),
         exporters::json::JSONExporter::get_options_new(),
     );
-    // options.insert(
-    //     String::from("prometheus"),
-    //     exporters::prometheus::PrometheusExporter::get_options_new(),
-    // );
+    options.insert(
+        String::from("prometheus"),
+        exporters::prometheus::PrometheusExporter::get_options_new(),
+    );
     options.insert(
         String::from("riemann"),
         exporters::riemann::RiemannExporter::get_options_new(),

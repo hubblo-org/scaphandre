@@ -76,7 +76,11 @@ fn main() {
             }
         );
 
-        if exporter == "riemann" || exporter == "stdout" || exporter == "json" {
+        if exporter == "riemann"
+            || exporter == "stdout"
+            || exporter == "json"
+            || exporter == "prometheus"
+        {
             let myopts = exporters_options_new.get(exporter).unwrap();
             for opt in myopts {
                 subcmd = subcmd.arg(opt);
