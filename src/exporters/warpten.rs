@@ -1,7 +1,6 @@
 use crate::exporters::*;
 use crate::sensors::{RecordGenerator, Sensor, Topology};
 use clap::Arg;
-use std::collections::HashMap;
 use std::time::Duration;
 use std::{env, thread};
 use utils::get_scaphandre_version;
@@ -52,91 +51,7 @@ impl Exporter for Warp10Exporter {
     }
 
     /// Options for configuring the exporter.
-    fn get_options() -> HashMap<String, super::ExporterOption> {
-        let mut options = HashMap::new();
-
-        options.insert(
-            String::from("host"),
-            ExporterOption {
-                default_value: Some(String::from("localhost")),
-                help: String::from("Warp10 host's FQDN or IP address to send data to"),
-                long: String::from("host"),
-                short: String::from("H"),
-                required: false,
-                takes_value: true,
-            },
-        );
-        options.insert(
-            String::from("scheme"),
-            ExporterOption {
-                default_value: Some(String::from("http")),
-                help: String::from("Either 'http' or 'https'"),
-                long: String::from("scheme"),
-                short: String::from("s"),
-                required: false,
-                takes_value: true,
-            },
-        );
-        options.insert(
-            String::from("port"),
-            ExporterOption {
-                default_value: Some(String::from("8080")),
-                help: String::from("TCP port to join Warp10 on the host"),
-                long: String::from("port"),
-                short: String::from("p"),
-                required: false,
-                takes_value: true,
-            },
-        );
-        options.insert(
-            String::from("write-token"),
-            ExporterOption {
-                default_value: None,
-                help: String::from("Auth. token to write on Warp10"),
-                long: String::from("write-token"),
-                short: String::from("t"),
-                required: false,
-                takes_value: true,
-            },
-        );
-        //options.insert(
-        //    String::from("read-token"),
-        //    ExporterOption {
-        //        default_value: None,
-        //        help: String::from("Auth. token to read on Warp10"),
-        //        long: String::from("read-token"),
-        //        short: String::from("r"),
-        //        required: false,
-        //        takes_value: true,
-        //    },
-        //);
-        options.insert(
-            String::from("step"),
-            ExporterOption {
-                default_value: Some(String::from("30")),
-                help: String::from("Time step between measurements, in seconds."),
-                long: String::from("step"),
-                short: String::from("S"),
-                required: false,
-                takes_value: true,
-            },
-        );
-        options.insert(
-            String::from("qemu"),
-            ExporterOption {
-                default_value: None,
-                help: String::from("Tells scaphandre it is running on a Qemu hypervisor."),
-                long: String::from("qemu"),
-                short: String::from("q"),
-                required: false,
-                takes_value: false,
-            },
-        );
-
-        options
-    }
-
-    fn get_options_new() -> Vec<clap::Arg<'static, 'static>> {
+    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
         let mut options = Vec::new();
         let arg = Arg::with_name("host")
             .default_value("localhost")

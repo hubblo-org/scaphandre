@@ -1,6 +1,5 @@
 use crate::exporters::Exporter;
 use crate::sensors::{utils::ProcessRecord, Sensor, Topology};
-use std::collections::HashMap;
 use std::{fs, io, thread, time};
 
 /// An Exporter that extracts power consumption data of running
@@ -35,11 +34,7 @@ impl Exporter for QemuExporter {
         }
     }
 
-    fn get_options() -> HashMap<String, super::ExporterOption> {
-        HashMap::new()
-    }
-
-    fn get_options_new() -> Vec<clap::Arg<'static, 'static>> {
+    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
         Vec::new()
     }
 }
