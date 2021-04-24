@@ -134,6 +134,10 @@ impl Exporter for Warp10Exporter {
 
         options
     }
+
+    fn get_options_new() -> Vec<clap::Arg<'static, 'static>> {
+        todo!();
+    }
 }
 
 impl Warp10Exporter {

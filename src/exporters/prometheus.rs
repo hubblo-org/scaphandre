@@ -105,6 +105,10 @@ impl Exporter for PrometheusExporter {
 
         options
     }
+
+    fn get_options_new() -> Vec<clap::Arg<'static, 'static>> {
+        todo!();
+    }
 }
 
 /// Contains a mutex holding a Topology object.

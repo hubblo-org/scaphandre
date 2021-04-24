@@ -38,6 +38,10 @@ impl Exporter for QemuExporter {
     fn get_options() -> HashMap<String, super::ExporterOption> {
         HashMap::new()
     }
+
+    fn get_options_new() -> Vec<clap::Arg<'static, 'static>> {
+        Vec::new()
+    }
 }
 
 impl QemuExporter {

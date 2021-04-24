@@ -75,6 +75,7 @@ pub trait Exporter {
     fn run(&mut self, parameters: ArgMatches);
     /// Get the options passed via the command line
     fn get_options() -> HashMap<String, ExporterOption>;
+    fn get_options_new() -> Vec<clap::Arg<'static, 'static>>;
 }
 
 pub struct ExporterOption {

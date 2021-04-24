@@ -70,6 +70,10 @@ impl Exporter for JSONExporter {
         );
         options
     }
+
+    fn get_options_new() -> Vec<clap::Arg<'static, 'static>> {
+        todo!();
+    }
 }
 
 #[derive(Serialize, Deserialize)]

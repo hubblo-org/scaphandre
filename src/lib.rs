@@ -142,10 +142,30 @@ pub fn get_exporters_options() -> HashMap<String, HashMap<String, ExporterOption
 
 pub fn get_exporters_options_new() -> HashMap<String, Vec<clap::Arg<'static, 'static>>> {
     let mut options = HashMap::new();
+    // options.insert(
+    //     String::from("stdout"),
+    //     exporters::stdout::StdoutExporter::get_options_new(),
+    // );
+    // options.insert(
+    //     String::from("json"),
+    //     exporters::json::JSONExporter::get_options_new(),
+    // );
+    // options.insert(
+    //     String::from("prometheus"),
+    //     exporters::prometheus::PrometheusExporter::get_options_new(),
+    // );
     options.insert(
         String::from("riemann"),
         exporters::riemann::RiemannExporter::get_options_new(),
     );
+    // options.insert(
+    //     String::from("qemu"),
+    //     exporters::qemu::QemuExporter::get_options_new(),
+    // );
+    // options.insert(
+    //     String::from("warp10"),
+    //     exporters::warpten::Warp10Exporter::get_options_new(),
+    // );
     options
 }
 

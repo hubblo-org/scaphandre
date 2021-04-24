@@ -43,6 +43,10 @@ impl Exporter for StdoutExporter {
         );
         options
     }
+
+    fn get_options_new() -> Vec<clap::Arg<'static, 'static>> {
+        todo!();
+    }
 }
 
 impl StdoutExporter {

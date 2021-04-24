@@ -103,24 +103,6 @@ impl RiemannExporter {
     pub fn new(sensor: Box<dyn Sensor>) -> RiemannExporter {
         RiemannExporter { sensor }
     }
-
-    pub fn get_options_new() -> Vec<clap::Arg<'static, 'static>> {
-        let mut options = Vec::new();
-        let arg = Arg::with_name("truc")
-            .required(true)
-            .default_value("bidule")
-            .short("-b")
-            .long("--bidule")
-            .help("This is bidule help");
-        options.push(arg);
-        let arg = Arg::with_name("machin")
-            .required(true)
-            .default_value("supermachin")
-            .long("--machin")
-            .help("This is machin help");
-        options.push(arg);
-        options
-    }
 }
 
 impl Exporter for RiemannExporter {
@@ -276,6 +258,46 @@ impl Exporter for RiemannExporter {
                 takes_value: false,
             },
         );
+
+        options
+    }
+
+    fn get_options_new() -> Vec<clap::Arg<'static, 'static>> {
+        let mut options = Vec::new();
+        let arg = Arg::with_name("address")
+            .default_value(DEFAULT_IP_ADDRESS)
+            .help("Riemann ipv6 or ipv4 address")
+            .long("address")
+            .short("a")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("port")
+            .default_value(DEFAULT_PORT)
+            .help("Riemann TCP port number")
+            .long("port")
+            .short("p")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("dispatch_duration")
+            .default_value("5")
+            .help("Duration between metrics dispatch")
+            .long("dispatch")
+            .short("d")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("qemu")
+            .help("Instruct that scaphandre is running on an hypervisor")
+            .long("qemu")
+            .short("q")
+            .required(false)
+            .takes_value(false);
+        options.push(arg);
 
         options
     }

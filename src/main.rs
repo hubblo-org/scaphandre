@@ -4,11 +4,11 @@ use scaphandre::{get_exporters_options, get_exporters_options_new, run};
 fn main() {
     let sensors = ["powercap_rapl"];
     let exporters_options = get_exporters_options();
+    let exporters = exporters_options.keys();
+    let exporters: Vec<&str> = exporters.into_iter().map(|x| x.as_str()).collect();
     let exporters_options_new = get_exporters_options_new();
     let exporters_new = exporters_options_new.keys();
     dbg!(exporters_new);
-    let exporters = exporters_options.keys();
-    let exporters: Vec<&str> = exporters.into_iter().map(|x| x.as_str()).collect();
 
     let mut matches = App::new("scaphandre")
         .author("Benoit Petit <bpetit@hubblo.org>")
@@ -76,28 +76,31 @@ fn main() {
             }
         );
 
-        let myopts = exporters_options_new.get("riemann").unwrap().clone();
-        for opt in myopts {
-            subcmd = subcmd.arg(opt);
-        }
-        for (key, opt) in exporters_options.get(exporter).unwrap().iter() {
-            if let Some(default_value) = &opt.default_value {
-                let arg = Arg::with_name(key)
-                    .required(opt.required)
-                    .takes_value(opt.takes_value)
-                    .default_value(default_value)
-                    .short(&opt.short)
-                    .long(&opt.long)
-                    .help(&opt.help);
-                subcmd = subcmd.arg(arg);
-            } else {
-                let arg = Arg::with_name(key)
-                    .required(opt.required)
-                    .takes_value(opt.takes_value)
-                    .short(&opt.short)
-                    .long(&opt.long)
-                    .help(&opt.help);
-                subcmd = subcmd.arg(arg);
+        if exporter == "riemann" {
+            let myopts = exporters_options_new.get(exporter).unwrap();
+            for opt in myopts {
+                subcmd = subcmd.arg(opt);
+            }
+        } else {
+            for (key, opt) in exporters_options.get(exporter).unwrap().iter() {
+                if let Some(default_value) = &opt.default_value {
+                    let arg = Arg::with_name(key)
+                        .required(opt.required)
+                        .takes_value(opt.takes_value)
+                        .default_value(default_value)
+                        .short(&opt.short)
+                        .long(&opt.long)
+                        .help(&opt.help);
+                    subcmd = subcmd.arg(arg);
+                } else {
+                    let arg = Arg::with_name(key)
+                        .required(opt.required)
+                        .takes_value(opt.takes_value)
+                        .short(&opt.short)
+                        .long(&opt.long)
+                        .help(&opt.help);
+                    subcmd = subcmd.arg(arg);
+                }
             }
         }
         matches = matches.subcommand(subcmd);
