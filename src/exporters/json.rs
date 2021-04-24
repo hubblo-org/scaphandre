@@ -1,5 +1,6 @@
 use crate::exporters::*;
 use crate::sensors::{Sensor, Topology};
+use clap::Arg;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -72,7 +73,44 @@ impl Exporter for JSONExporter {
     }
 
     fn get_options_new() -> Vec<clap::Arg<'static, 'static>> {
-        todo!();
+        let mut options = Vec::new();
+        let arg = Arg::with_name("timeout")
+            .default_value("10")
+            .help("Maximum time spent measuring, in seconds.")
+            .long("timeout")
+            .short("t")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("step_duration")
+            .default_value("2")
+            .help("Set measurement step duration in second.")
+            .long("step")
+            .short("s")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("step_duration_nano")
+            .default_value("0")
+            .help("Set measurement step duration in nano second.")
+            .long("step_nano")
+            .short("n")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("file_path")
+            .default_value("")
+            .help("Destination file for the report.")
+            .long("file")
+            .short("f")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        options
     }
 }
 
