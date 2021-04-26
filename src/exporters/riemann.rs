@@ -248,6 +248,41 @@ impl Exporter for RiemannExporter {
             .takes_value(false);
         options.push(arg);
 
+        let arg = Arg::with_name("mtls")
+            .help("Connect to a Riemann server using mTLS. Parameters ca, cert and key must be defined.")
+            .long("mtls")
+            .required(false)
+            .takes_value(false)
+            .requires_all(&["cafile", "certfile", "keyfile"]);
+        options.push(arg);
+
+        let arg = Arg::with_name("cafile")
+            .help("")
+            .long("ca")
+            .required(false)
+            .takes_value(true)
+            .display_order(1000)
+            .requires("mtls");
+        options.push(arg);
+
+        let arg = Arg::with_name("certfile")
+            .help("")
+            .long("cert")
+            .required(false)
+            .takes_value(true)
+            .display_order(1001)
+            .requires("mtls");
+        options.push(arg);
+
+        let arg = Arg::with_name("keyfile")
+            .help("")
+            .long("key")
+            .required(false)
+            .takes_value(true)
+            .display_order(1001)
+            .requires("mtls");
+        options.push(arg);
+
         options
     }
 }
