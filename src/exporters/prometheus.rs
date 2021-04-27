@@ -7,6 +7,7 @@ use crate::exporters::*;
 use crate::sensors::{Sensor, Topology};
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use chrono::Utc;
+use clap::Arg;
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::Mutex;
@@ -55,53 +56,42 @@ impl Exporter for PrometheusExporter {
         }
     }
     /// Returns options understood by the exporter.
-    fn get_options() -> HashMap<String, ExporterOption> {
-        let mut options = HashMap::new();
+    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
+        let mut options = Vec::new();
+        let arg = Arg::with_name("address")
+            .default_value(DEFAULT_IP_ADDRESS)
+            .help("ipv6 or ipv4 address to expose the service to")
+            .long("address")
+            .short("a")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
 
-        options.insert(
-            String::from("address"),
-            ExporterOption {
-                default_value: Some(String::from(DEFAULT_IP_ADDRESS)),
-                help: String::from("ipv6 or ipv4 address to expose the service to"),
-                long: String::from("address"),
-                short: String::from("a"),
-                required: false,
-                takes_value: true,
-            },
-        );
-        options.insert(
-            String::from("port"),
-            ExporterOption {
-                default_value: Some(String::from("8080")),
-                help: String::from("TCP port number to expose the service"),
-                long: String::from("port"),
-                short: String::from("p"),
-                required: false,
-                takes_value: true,
-            },
-        );
-        options.insert(
-            String::from("suffix"),
-            ExporterOption {
-                default_value: Some(String::from("metrics")),
-                help: String::from("url suffix to access metrics"),
-                long: String::from("suffix"),
-                short: String::from("s"),
-                required: false,
-                takes_value: true,
-            },
-        );
-        options.insert(
-            String::from("qemu"),
-            ExporterOption {
-                default_value: None,
-                help: String::from("Instruct that scaphandre is running on an hypervisor"),
-                long: String::from("qemu"),
-                short: String::from("q"),
-                required: false,
-                takes_value: false,
-            },
-        );
+        let arg = Arg::with_name("port")
+            .default_value("8080")
+            .help("TCP port number to expose the service")
+            .long("port")
+            .short("p")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("suffix")
+            .default_value("metrics")
+            .help("url suffix to access metrics")
+            .long("suffix")
+            .short("s")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("qemu")
+            .help("Instruct that scaphandre is running on an hypervisor")
+            .long("qemu")
+            .short("q")
+            .required(false)
+            .takes_value(false);
+        options.push(arg);
 
         options
     }

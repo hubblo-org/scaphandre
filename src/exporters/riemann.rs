@@ -6,6 +6,7 @@ use crate::exporters::utils::get_hostname;
 use crate::exporters::*;
 use crate::sensors::Sensor;
 use chrono::Utc;
+use clap::Arg;
 use riemann_client::proto::Attribute;
 use riemann_client::proto::Event;
 use riemann_client::Client;
@@ -210,53 +211,42 @@ impl Exporter for RiemannExporter {
     }
 
     /// Returns options understood by the exporter.
-    fn get_options() -> HashMap<String, ExporterOption> {
-        let mut options = HashMap::new();
+    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
+        let mut options = Vec::new();
+        let arg = Arg::with_name("address")
+            .default_value(DEFAULT_IP_ADDRESS)
+            .help("Riemann ipv6 or ipv4 address")
+            .long("address")
+            .short("a")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
 
-        options.insert(
-            String::from("address"),
-            ExporterOption {
-                default_value: Some(String::from(DEFAULT_IP_ADDRESS)),
-                help: String::from("Riemann ipv6 or ipv4 address"),
-                long: String::from("address"),
-                short: String::from("a"),
-                required: false,
-                takes_value: true,
-            },
-        );
-        options.insert(
-            String::from("port"),
-            ExporterOption {
-                default_value: Some(String::from(DEFAULT_PORT)),
-                help: String::from("Riemann TCP port number"),
-                long: String::from("port"),
-                short: String::from("p"),
-                required: false,
-                takes_value: true,
-            },
-        );
-        options.insert(
-            String::from("dispatch_duration"),
-            ExporterOption {
-                default_value: Some(String::from("5")),
-                help: String::from("Duration between metrics dispatch"),
-                long: String::from("dispatch"),
-                short: String::from("d"),
-                required: false,
-                takes_value: true,
-            },
-        );
-        options.insert(
-            String::from("qemu"),
-            ExporterOption {
-                default_value: None,
-                help: String::from("Instruct that scaphandre is running on an hypervisor"),
-                long: String::from("qemu"),
-                short: String::from("q"),
-                required: false,
-                takes_value: false,
-            },
-        );
+        let arg = Arg::with_name("port")
+            .default_value(DEFAULT_PORT)
+            .help("Riemann TCP port number")
+            .long("port")
+            .short("p")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("dispatch_duration")
+            .default_value("5")
+            .help("Duration between metrics dispatch")
+            .long("dispatch")
+            .short("d")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("qemu")
+            .help("Instruct that scaphandre is running on an hypervisor")
+            .long("qemu")
+            .short("q")
+            .required(false)
+            .takes_value(false);
+        options.push(arg);
 
         options
     }

@@ -1,15 +1,12 @@
 //! Generic sensor and transmission agent for energy consumption related metrics.
 use clap::{crate_version, App, AppSettings, Arg, SubCommand};
 use scaphandre::{get_exporters_options, run};
-
 fn main() {
     let sensors = ["powercap_rapl"];
     let exporters_options = get_exporters_options();
     let exporters = exporters_options.keys();
-    let mut res = vec![];
-    for i in exporters {
-        res.push(i.as_str());
-    }
+    let exporters: Vec<&str> = exporters.into_iter().map(|x| x.as_str()).collect();
+
     let mut matches = App::new("scaphandre")
         .author("Benoit Petit <bpetit@hubblo.org>")
         .version("0.3.0")
@@ -63,9 +60,9 @@ fn main() {
                 .takes_value(false)
         );
 
-    for exp in res {
-        let mut subcmd = SubCommand::with_name(exp).about(
-            match exp {
+    for exporter in exporters {
+        let mut subcmd = SubCommand::with_name(exporter).about(
+            match exporter {
                 "stdout" => "Stdout exporter allows you to output the power consumption data in the terminal",
                 "json" => "JSON exporter allows you to output the power consumption data in a json file",
                 "prometheus" => "Prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted format",
@@ -76,25 +73,9 @@ fn main() {
             }
         );
 
-        for (key, opt) in exporters_options.get(exp).unwrap().iter() {
-            if let Some(default_value) = &opt.default_value {
-                let arg = Arg::with_name(key)
-                    .required(opt.required)
-                    .takes_value(opt.takes_value)
-                    .default_value(default_value)
-                    .short(&opt.short)
-                    .long(&opt.long)
-                    .help(&opt.help);
-                subcmd = subcmd.arg(arg);
-            } else {
-                let arg = Arg::with_name(key)
-                    .required(opt.required)
-                    .takes_value(opt.takes_value)
-                    .short(&opt.short)
-                    .long(&opt.long)
-                    .help(&opt.help);
-                subcmd = subcmd.arg(arg);
-            }
+        let myopts = exporters_options.get(exporter).unwrap();
+        for opt in myopts {
+            subcmd = subcmd.arg(opt);
         }
         matches = matches.subcommand(subcmd);
     }

@@ -74,22 +74,7 @@ pub trait Exporter {
     /// Entry point for all Exporters
     fn run(&mut self, parameters: ArgMatches);
     /// Get the options passed via the command line
-    fn get_options() -> HashMap<String, ExporterOption>;
-}
-
-pub struct ExporterOption {
-    /// States whether the option is mandatory or not
-    pub required: bool,
-    /// Does the option need a value to be specified ?
-    pub takes_value: bool,
-    /// The default value, if needed
-    pub default_value: Option<String>,
-    /// One letter to identify the option (useful for the CLI)
-    pub short: String,
-    /// A word to identify the option
-    pub long: String,
-    /// A brief description to explain what the option does
-    pub help: String,
+    fn get_options() -> Vec<clap::Arg<'static, 'static>>;
 }
 
 /// MetricGenerator is an exporter helper structure to collect Scaphandre metrics.

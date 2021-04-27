@@ -1,7 +1,7 @@
 use crate::exporters::*;
 use crate::sensors::{Sensor, Topology};
+use clap::Arg;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::path::PathBuf;
@@ -22,52 +22,44 @@ impl Exporter for JSONExporter {
     }
 
     /// Returns options needed for that exporter, as a HashMap
-    fn get_options() -> HashMap<String, ExporterOption> {
-        let mut options = HashMap::new();
-        options.insert(
-            String::from("timeout"),
-            ExporterOption {
-                default_value: Some(String::from("10")),
-                long: String::from("timeout"),
-                short: String::from("t"),
-                required: false,
-                takes_value: true,
-                help: String::from("Maximum time spent measuring, in seconds."),
-            },
-        );
-        options.insert(
-            String::from("step_duration"),
-            ExporterOption {
-                default_value: Some(String::from("2")),
-                long: String::from("step"),
-                short: String::from("s"),
-                required: false,
-                takes_value: true,
-                help: String::from("Set measurement step duration in second."),
-            },
-        );
-        options.insert(
-            String::from("step_duration_nano"),
-            ExporterOption {
-                default_value: Some(String::from("0")),
-                long: String::from("step_nano"),
-                short: String::from("n"),
-                required: false,
-                takes_value: true,
-                help: String::from("Set measurement step duration in nano second."),
-            },
-        );
-        options.insert(
-            String::from("file_path"),
-            ExporterOption {
-                default_value: Some(String::from("")),
-                long: String::from("file"),
-                short: String::from("f"),
-                required: false,
-                takes_value: true,
-                help: String::from("Destination file for the report."),
-            },
-        );
+    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
+        let mut options = Vec::new();
+        let arg = Arg::with_name("timeout")
+            .default_value("10")
+            .help("Maximum time spent measuring, in seconds.")
+            .long("timeout")
+            .short("t")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("step_duration")
+            .default_value("2")
+            .help("Set measurement step duration in second.")
+            .long("step")
+            .short("s")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("step_duration_nano")
+            .default_value("0")
+            .help("Set measurement step duration in nano second.")
+            .long("step_nano")
+            .short("n")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("file_path")
+            .default_value("")
+            .help("Destination file for the report.")
+            .long("file")
+            .short("f")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
         options
     }
 }

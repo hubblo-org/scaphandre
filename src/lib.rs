@@ -8,7 +8,6 @@ use colored::*;
 use exporters::{
     json::JSONExporter, prometheus::PrometheusExporter, qemu::QemuExporter,
     riemann::RiemannExporter, stdout::StdoutExporter, warpten::Warp10Exporter, Exporter,
-    ExporterOption,
 };
 use sensors::{powercap_rapl::PowercapRAPLSensor, Sensor};
 use std::collections::HashMap;
@@ -111,7 +110,7 @@ pub fn run(matches: ArgMatches) {
 
 /// Returns options needed for each exporter as a HashMap.
 /// This function has to be updated to enable a new exporter.
-pub fn get_exporters_options() -> HashMap<String, HashMap<String, ExporterOption>> {
+pub fn get_exporters_options() -> HashMap<String, Vec<clap::Arg<'static, 'static>>> {
     let mut options = HashMap::new();
     options.insert(
         String::from("stdout"),
