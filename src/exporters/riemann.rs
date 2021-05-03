@@ -30,11 +30,25 @@ struct RiemannClient {
 }
 
 impl RiemannClient {
-    /// Instanciate the Riemann client.
-    fn new(address: &str, port: &str) -> RiemannClient {
-        let address = String::from(address);
-        let port = port.parse::<u16>().expect("Fail parsing port number");
-        let client = Client::connect(&(address, port)).expect("Fail to connect to Riemann server");
+    /// Instanciate the Riemann client either with mTLS or using raw TCP.
+    fn new(parameters: &ArgMatches) -> RiemannClient {
+        let address = String::from(parameters.value_of("address").unwrap());
+        let port = parameters
+            .value_of("port")
+            .unwrap()
+            .parse::<u16>()
+            .expect("Fail parsing port number");
+        let client: Client;
+        if parameters.is_present("mtls") {
+            let cafile = parameters.value_of("cafile").unwrap();
+            let certfile = parameters.value_of("certfile").unwrap();
+            let keyfile = parameters.value_of("keyfile").unwrap();
+            client = Client::connect_tls(&address, port, cafile, certfile, keyfile)
+                .expect("Fail to connect to Riemann server using mTLS");
+        } else {
+            client = Client::connect(&(address, port))
+                .expect("Fail to connect to Riemann server using raw TCP");
+        }
         RiemannClient { client }
     }
 
@@ -116,10 +130,7 @@ impl Exporter for RiemannExporter {
 
         let hostname = get_hostname();
 
-        let mut rclient = RiemannClient::new(
-            parameters.value_of("address").unwrap(),
-            parameters.value_of("port").unwrap(),
-        );
+        let mut rclient = RiemannClient::new(&parameters);
 
         info!(
             "{}: Starting Riemann exporter",
@@ -215,7 +226,7 @@ impl Exporter for RiemannExporter {
         let mut options = Vec::new();
         let arg = Arg::with_name("address")
             .default_value(DEFAULT_IP_ADDRESS)
-            .help("Riemann ipv6 or ipv4 address")
+            .help("Riemann ipv6 or ipv4 address. If mTLS is used then server fqdn must be provided")
             .long("address")
             .short("a")
             .required(false)
@@ -249,15 +260,15 @@ impl Exporter for RiemannExporter {
         options.push(arg);
 
         let arg = Arg::with_name("mtls")
-            .help("Connect to a Riemann server using mTLS. Parameters ca, cert and key must be defined.")
+            .help("Connect to a Riemann server using mTLS. Parameters address, ca, cert and key must be defined.")
             .long("mtls")
             .required(false)
             .takes_value(false)
-            .requires_all(&["cafile", "certfile", "keyfile"]);
+            .requires_all(&["address","cafile", "certfile", "keyfile"]);
         options.push(arg);
 
         let arg = Arg::with_name("cafile")
-            .help("")
+            .help("CA certificate file (.pem format)")
             .long("ca")
             .required(false)
             .takes_value(true)
@@ -266,7 +277,7 @@ impl Exporter for RiemannExporter {
         options.push(arg);
 
         let arg = Arg::with_name("certfile")
-            .help("")
+            .help("Client certificate file (.pem format)")
             .long("cert")
             .required(false)
             .takes_value(true)
@@ -275,7 +286,7 @@ impl Exporter for RiemannExporter {
         options.push(arg);
 
         let arg = Arg::with_name("keyfile")
-            .help("")
+            .help("Client RSA key")
             .long("key")
             .required(false)
             .takes_value(true)
