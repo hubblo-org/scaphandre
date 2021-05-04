@@ -8,7 +8,7 @@ use colored::*;
 use exporters::{
     datadog::DatadogExporter, json::JSONExporter, prometheus::PrometheusExporter,
     qemu::QemuExporter, riemann::RiemannExporter, stdout::StdoutExporter, warpten::Warp10Exporter,
-    Exporter
+    Exporter,
 };
 use sensors::{powercap_rapl::PowercapRAPLSensor, Sensor};
 use std::collections::HashMap;
@@ -62,6 +62,13 @@ pub fn run(matches: ArgMatches) {
         header = false;
     }
 
+    #[cfg(feature = "datadog")]
+    if let Some(datadog_exporter_parameters) = matches.subcommand_matches("datadog") {
+        let exporter_parameters = datadog_exporter_parameters.clone();
+        let mut exporter = DatadogExporter::new(get_sensor(&matches));
+        exporter.run(exporter_parameters);
+    }
+
     if let Some(stdout_exporter_parameters) = matches.subcommand_matches("stdout") {
         if header {
             scaphandre_header("stdout");
@@ -105,13 +112,7 @@ pub fn run(matches: ArgMatches) {
         let mut exporter = Warp10Exporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     }
-  
-    #[cfg(feature = "datadog")]
-    if let Some(datadog_exporter_parameters) = matches.subcommand_matches("datadog") {
-        let exporter_parameters = datadog_exporter_parameters.clone();
-        let mut exporter = DatadogExporter::new(sensor_boxed);
-        exporter.run(exporter_parameters);
-    }
+
     error!("Couldn't determine which exporter has been chosen.");
 }
 

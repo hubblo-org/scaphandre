@@ -1,8 +1,8 @@
 use crate::exporters::*;
 use crate::sensors::{Sensor, Topology};
+use clap::Arg;
 use serde::ser::SerializeSeq;
 use serde::{Serialize, Serializer};
-use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -190,30 +190,25 @@ impl Exporter for DatadogExporter {
     }
 
     /// Returns options needed for that exporter, as a HashMap
-    fn get_options() -> HashMap<String, ExporterOption> {
-        let mut options = HashMap::new();
-        options.insert(
-            String::from("host"),
-            ExporterOption {
-                default_value: Some(String::from("https://api.datadoghq.eu")),
-                long: String::from("host"),
-                short: String::from("h"),
-                required: true,
-                takes_value: true,
-                help: String::from("The domain of the datadog instance."),
-            },
-        );
-        options.insert(
-            String::from("api_key"),
-            ExporterOption {
-                default_value: None,
-                long: String::from("api_key"),
-                short: String::from("k"),
-                required: true,
-                takes_value: true,
-                help: String::from("Api key to authenticate with datadog."),
-            },
-        );
+    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
+        let mut options = Vec::new();
+        let arg = Arg::with_name("host")
+            .default_value("https://api.datadoghq.eu")
+            .help("The domain of the datadog instance.")
+            .long("host")
+            .short("h")
+            .required(true)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("api_key")
+            .long("api_key")
+            .short("k")
+            .required(true)
+            .takes_value(true)
+            .help("Api key to authenticate with datadog.");
+        options.push(arg);
+
         options
     }
 }
