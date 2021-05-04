@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This may be not up to date, please check main branch.
 
+## [0.3.0](https://github.com/hubblo-org/scaphandre/releases/tag/v0.3.0)
+
+### Added
+
+- New MetricGenerator and Metric structs and helper functions to make writing exporters easier. Riemann and Prometheus exporters now share the same code pattern: [#79](https://github.com/hubblo-org/scaphandre/pull/79) thanks @uggla !
+- New [Warp10](https://warp10.io/) exporter ! [#76](https://github.com/hubblo-org/scaphandre/pull/76)
+- Updated riemann_client and protobuf crates dependencies [#70](https://github.com/hubblo-org/scaphandre/pull/70/files) thanks @uggla !
+- Successfully tested on AMD CPUs (AMD Ryzen 5 2600X): [#55](https://github.com/hubblo-org/scaphandre/issues/55) (requires a kernel 5.11 or later) thanks @barnumbirr and @kamaradclimber !
+- Scaphandre can now be tested locally thanks to a docker-compose stack ! [#61](https://github.com/hubblo-org/scaphandre/pull/61) thanks @PierreRust !
+- Added a CITATION file for references: [#95](https://github.com/hubblo-org/scaphandre/issues/95) thanks @tstrempel !
+
+### Fixed
+
+- Allowing scaphandre to run even if intel_rapl modules are not found: [#65](https://github.com/hubblo-org/scaphandre/pull/65) (needed to run scaphandre on AMD CPUs)
+- Fixed typos and lacks in the documentation: [#81](https://github.com/hubblo-org/scaphandre/pull/81), [#77](https://github.com/hubblo-org/scaphandre/pull/77), [#80](https://github.com/hubblo-org/scaphandre/issues/80) thanks @pierreozoux, @LudovicRousseau, @maethor, @wallet77
+- Moved documentation output to another [repository](https://github.com/hubblo-org/scaphandre-documentation): [#94](https://github.com/hubblo-org/scaphandre/pull/94) (documentation is now available here: [https://hubblo-org.github.io/scaphandre-documentation](https://hubblo-org.github.io/scaphandre-documentation))
+- Json exporter has been refactored: [#87](https://github.com/hubblo-org/scaphandre/pull/87) thanks @jdrouet !
+
 ## [0.2.0](https://github.com/hubblo-org/scaphandre/releases/tag/v0.2.0)
 
 ### Added
@@ -16,7 +34,7 @@ This may be not up to date, please check main branch.
 - JsonExporter, to get metrics in JSON either in stdout or files: [#68](https://github.com/hubblo-org/scaphandre/pull/68) - thanks @wallet77
 - RiemannExporter, to send metrics to [Riemann](http://riemann.io) monitoring tool: [#58](https://github.com/hubblo-org/scaphandre/pull/58) - thanks @uggla
 - --qemu flag on PrometheusExporter, to add a "vmname" label to metrics related to processes that represent qemu-kvm virtual machines: [#41](https://github.com/hubblo-org/scaphandre/pull/41) - thanks @uggla
-- Better documentation structure (based on [divio's documentation framework](https://documentation.divio.com/) and [mdbook](https://rust-lang.github.io/mdBook/)): [#45](https://github.com/hubblo-org/scaphandre/pull/45), result here:  [https://hubblo-org.github.io/scaphandre/](https://hubblo-org.github.io/scaphandre/)
+- Better documentation structure (based on [divio's documentation framework](https://documentation.divio.com/) and [mdbook](https://rust-lang.github.io/mdBook/)): [#45](https://github.com/hubblo-org/scaphandre/pull/45), result here:  [https://hubblo-org.github.io/scaphandre-documentation/](https://hubblo-org.github.io/scaphandre/)
 - Automated CI tests including cargo test --all, running on a (bare metal) machine: [#62](https://github.com/hubblo-org/scaphandre/pull/62)
 
 ### Fixed

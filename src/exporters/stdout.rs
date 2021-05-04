@@ -1,3 +1,5 @@
+use clap::Arg;
+
 use crate::exporters::*;
 use crate::sensors::{Record, Sensor, Topology};
 use std::collections::HashMap;
@@ -17,30 +19,26 @@ impl Exporter for StdoutExporter {
     }
 
     /// Returns options needed for that exporter, as a HashMap
-    fn get_options() -> HashMap<String, ExporterOption> {
-        let mut options = HashMap::new();
-        options.insert(
-            String::from("timeout"),
-            ExporterOption {
-                default_value: Some(String::from("10")),
-                long: String::from("timeout"),
-                short: String::from("t"),
-                required: false,
-                takes_value: true,
-                help: String::from("Maximum time spent measuring, in seconds."),
-            },
-        );
-        options.insert(
-            String::from("step_duration"),
-            ExporterOption {
-                default_value: Some(String::from("2")),
-                long: String::from("step"),
-                short: String::from("s"),
-                required: false,
-                takes_value: true,
-                help: String::from("Set measurement step duration in second."),
-            },
-        );
+    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
+        let mut options = Vec::new();
+        let arg = Arg::with_name("timeout")
+            .default_value("10")
+            .help("Maximum time spent measuring, in seconds.")
+            .long("timeout")
+            .short("t")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("step_duration")
+            .default_value("2")
+            .help("Set measurement step duration in second.")
+            .long("step")
+            .short("s")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
         options
     }
 }

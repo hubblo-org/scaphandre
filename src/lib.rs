@@ -4,10 +4,11 @@ extern crate log;
 pub mod exporters;
 pub mod sensors;
 use clap::ArgMatches;
+use colored::*;
 use exporters::{
     datadog::DatadogExporter, json::JSONExporter, prometheus::PrometheusExporter,
     qemu::QemuExporter, riemann::RiemannExporter, stdout::StdoutExporter, warpten::Warp10Exporter,
-    Exporter, ExporterOption,
+    Exporter
 };
 use sensors::{powercap_rapl::PowercapRAPLSensor, Sensor};
 use std::collections::HashMap;
@@ -53,55 +54,70 @@ fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
 pub fn run(matches: ArgMatches) {
     loggerv::init_with_verbosity(matches.occurrences_of("v")).unwrap();
 
+    let sensor_boxed = get_sensor(&matches);
+    let exporter_parameters;
+
+    let mut header = true;
+    if matches.is_present("no-header") {
+        header = false;
+    }
+
     if let Some(stdout_exporter_parameters) = matches.subcommand_matches("stdout") {
-        let exporter_parameters = stdout_exporter_parameters.clone();
-        let mut exporter = StdoutExporter::new(get_sensor(&matches));
+        if header {
+            scaphandre_header("stdout");
+        }
+        exporter_parameters = stdout_exporter_parameters.clone();
+        let mut exporter = StdoutExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
-        return;
-    }
-    if let Some(json_exporter_parameters) = matches.subcommand_matches("json") {
-        let exporter_parameters = json_exporter_parameters.clone();
-        let mut exporter = JSONExporter::new(get_sensor(&matches));
+    } else if let Some(json_exporter_parameters) = matches.subcommand_matches("json") {
+        if header {
+            scaphandre_header("json");
+        }
+        exporter_parameters = json_exporter_parameters.clone();
+        let mut exporter = JSONExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
-        return;
-    }
-    if let Some(riemann_exporter_parameters) = matches.subcommand_matches("riemann") {
-        let exporter_parameters = riemann_exporter_parameters.clone();
-        let mut exporter = RiemannExporter::new(get_sensor(&matches));
+    } else if let Some(riemann_exporter_parameters) = matches.subcommand_matches("riemann") {
+        if header {
+            scaphandre_header("riemann");
+        }
+        exporter_parameters = riemann_exporter_parameters.clone();
+        let mut exporter = RiemannExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
-        return;
-    }
-    if let Some(prometheus_exporter_parameters) = matches.subcommand_matches("prometheus") {
-        let exporter_parameters = prometheus_exporter_parameters.clone();
-        let mut exporter = PrometheusExporter::new(get_sensor(&matches));
+    } else if let Some(prometheus_exporter_parameters) = matches.subcommand_matches("prometheus") {
+        if header {
+            scaphandre_header("prometheus");
+        }
+        exporter_parameters = prometheus_exporter_parameters.clone();
+        let mut exporter = PrometheusExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
-        return;
-    }
-    if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
-        let exporter_parameters = qemu_exporter_parameters.clone();
-        let mut exporter = QemuExporter::new(get_sensor(&matches));
+    } else if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
+        if header {
+            scaphandre_header("qemu");
+        }
+        exporter_parameters = qemu_exporter_parameters.clone();
+        let mut exporter = QemuExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
-        return;
-    }
-    if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
-        let exporter_parameters = warp10_exporter_parameters.clone();
-        let mut exporter = Warp10Exporter::new(get_sensor(&matches));
+    } else if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
+        if header {
+            scaphandre_header("warp10");
+        }
+        exporter_parameters = warp10_exporter_parameters.clone();
+        let mut exporter = Warp10Exporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
-        return;
     }
+  
     #[cfg(feature = "datadog")]
     if let Some(datadog_exporter_parameters) = matches.subcommand_matches("datadog") {
         let exporter_parameters = datadog_exporter_parameters.clone();
-        let mut exporter = DatadogExporter::new(get_sensor(&matches));
+        let mut exporter = DatadogExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
-        return;
     }
     error!("Couldn't determine which exporter has been chosen.");
 }
 
 /// Returns options needed for each exporter as a HashMap.
 /// This function has to be updated to enable a new exporter.
-pub fn get_exporters_options() -> HashMap<String, HashMap<String, ExporterOption>> {
+pub fn get_exporters_options() -> HashMap<String, Vec<clap::Arg<'static, 'static>>> {
     let mut options = HashMap::new();
     options.insert(
         String::from("stdout"),
@@ -139,6 +155,12 @@ fn current_system_time_since_epoch() -> Duration {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()
+}
+
+pub fn scaphandre_header(exporter_name: &str) {
+    let title = format!("Scaphandre {} exporter", exporter_name);
+    println!("{}", title.red().bold());
+    println!("Sending ⚡ metrics");
 }
 
 //  Copyright 2020 The scaphandre authors.

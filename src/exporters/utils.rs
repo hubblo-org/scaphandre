@@ -1,5 +1,11 @@
+//! # utils
+//!
+//! The utils create provides common functions used by the exporters.
 use clap::crate_version;
 
+/// Returns an Option containing the VM name of a qemu process.
+///
+/// Then VM name is extracted from the command line.
 pub fn filter_qemu_cmdline(cmdline: &str) -> Option<String> {
     if cmdline.contains("qemu-system") && cmdline.contains("guest=") {
         let vmname: Vec<Vec<&str>> = cmdline
@@ -16,12 +22,23 @@ pub fn filter_qemu_cmdline(cmdline: &str) -> Option<String> {
     None
 }
 
+/// Returns scaphandre version.
 pub fn get_scaphandre_version() -> String {
     let mut version_parts = crate_version!().split('.');
     let major_version = version_parts.next().unwrap();
     let patch_version = version_parts.next().unwrap();
     let minor_version = version_parts.next().unwrap();
     format!("{}.{}{}", major_version, patch_version, minor_version)
+}
+
+/// Returns the hostname of the system running Scaphandre.
+pub fn get_hostname() -> String {
+    String::from(
+        hostname::get()
+            .expect("Fail to get system hostname")
+            .to_str()
+            .unwrap(),
+    )
 }
 
 #[cfg(test)]

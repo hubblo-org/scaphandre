@@ -1,7 +1,7 @@
 use crate::exporters::*;
-use crate::sensors::{Record, Sensor, Topology};
+use crate::sensors::{Sensor, Topology};
+use clap::Arg;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::path::PathBuf;
@@ -22,52 +22,44 @@ impl Exporter for JSONExporter {
     }
 
     /// Returns options needed for that exporter, as a HashMap
-    fn get_options() -> HashMap<String, ExporterOption> {
-        let mut options = HashMap::new();
-        options.insert(
-            String::from("timeout"),
-            ExporterOption {
-                default_value: Some(String::from("10")),
-                long: String::from("timeout"),
-                short: String::from("t"),
-                required: false,
-                takes_value: true,
-                help: String::from("Maximum time spent measuring, in seconds."),
-            },
-        );
-        options.insert(
-            String::from("step_duration"),
-            ExporterOption {
-                default_value: Some(String::from("2")),
-                long: String::from("step"),
-                short: String::from("s"),
-                required: false,
-                takes_value: true,
-                help: String::from("Set measurement step duration in second."),
-            },
-        );
-        options.insert(
-            String::from("step_duration_nano"),
-            ExporterOption {
-                default_value: Some(String::from("0")),
-                long: String::from("step_nano"),
-                short: String::from("n"),
-                required: false,
-                takes_value: true,
-                help: String::from("Set measurement step duration in nano second."),
-            },
-        );
-        options.insert(
-            String::from("file_path"),
-            ExporterOption {
-                default_value: Some(String::from("")),
-                long: String::from("file"),
-                short: String::from("f"),
-                required: false,
-                takes_value: true,
-                help: String::from("Destination file for the report."),
-            },
-        );
+    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
+        let mut options = Vec::new();
+        let arg = Arg::with_name("timeout")
+            .default_value("10")
+            .help("Maximum time spent measuring, in seconds.")
+            .long("timeout")
+            .short("t")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("step_duration")
+            .default_value("2")
+            .help("Set measurement step duration in second.")
+            .long("step")
+            .short("s")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("step_duration_nano")
+            .default_value("0")
+            .help("Set measurement step duration in nano second.")
+            .long("step_nano")
+            .short("n")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("file_path")
+            .default_value("")
+            .help("Destination file for the report.")
+            .long("file")
+            .short("f")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
         options
     }
 }
@@ -139,83 +131,72 @@ impl JSONExporter {
         }
     }
 
-    fn get_domains_power(&self, socket_id: u16) -> Vec<Option<Record>> {
-        let socket_present = self
-            .topology
-            .get_sockets_passive()
-            .iter()
-            .find(move |x| x.id == socket_id);
-
-        if let Some(socket) = socket_present {
-            let mut domains_power: Vec<Option<Record>> = vec![];
-            for d in socket.get_domains_passive() {
-                domains_power.push(d.get_records_diff_power_microwatts());
-            }
-            domains_power
-        } else {
-            vec![None, None, None]
-        }
-    }
-
     fn iterate(&mut self, parameters: &ArgMatches) {
         self.topology.refresh();
         self.retrieve_metrics(&parameters);
     }
 
     fn retrieve_metrics(&mut self, parameters: &ArgMatches) {
-        let host_power = match self.topology.get_records_diff_power_microwatts() {
-            Some(record) => record.value.parse::<u64>().unwrap(),
-            None => 0,
+        let host_power = self
+            .topology
+            .get_records_diff_power_microwatts()
+            .map(|record| record.value.parse::<u64>().unwrap())
+            .unwrap_or(0);
+
+        let host_stat = match self.topology.get_stats_diff() {
+            Some(value) => value,
+            None => return,
         };
 
         let consumers = self.topology.proc_tracker.get_top_consumers(10);
-        let mut top_consumers = Vec::new();
-        for c in consumers.iter() {
-            if let Some(host_stat) = self.topology.get_stats_diff() {
+        let top_consumers = consumers
+            .iter()
+            .map(|(process, value)| {
                 let host_time = host_stat.total_time_jiffies();
-                let consumer = Consumer {
-                    exe: c.0.exe().unwrap_or_default(),
-                    pid: c.0.pid,
-                    consumption: ((c.1 as f32
+                Consumer {
+                    exe: process.exe().unwrap_or_default(),
+                    pid: process.pid,
+                    consumption: ((*value as f32
                         / (host_time * procfs::ticks_per_second().unwrap() as f32))
                         * host_power as f32),
-                };
-                top_consumers.push(consumer)
-            }
-        }
+                }
+            })
+            .collect::<Vec<_>>();
 
-        let mut index = 0;
         let names = ["core", "uncore", "dram"];
-        let mut all_sockets = Vec::new();
-        let sockets = self.topology.get_sockets_passive();
-        for s in sockets {
-            let socket_power = match s.get_records_diff_power_microwatts() {
-                Some(record) => record.value.parse::<u64>().unwrap(),
-                None => 0,
-            };
+        let all_sockets = self
+            .topology
+            .get_sockets_passive()
+            .iter()
+            .map(|socket| {
+                let socket_power = socket
+                    .get_records_diff_power_microwatts()
+                    .map(|record| record.value.parse::<u64>().unwrap())
+                    .unwrap_or(0);
 
-            let v = (socket_power, self.get_domains_power(s.id));
-            let mut domains = Vec::new();
+                let domains = socket
+                    .get_domains_passive()
+                    .iter()
+                    .map(|d| d.get_records_diff_power_microwatts())
+                    .map(|record| record.map(|d| d.value))
+                    .enumerate()
+                    .map(|(index, d)| {
+                        let domain_power =
+                            d.map(|value| value.parse::<u64>().unwrap()).unwrap_or(0);
+                        Domain {
+                            name: names[index].to_string(),
+                            consumption: domain_power as f32,
+                        }
+                    })
+                    .collect::<Vec<_>>();
 
-            for d in v.1.iter() {
-                let domain_power = match d {
-                    Some(record) => record.value.parse::<u64>().unwrap(),
-                    None => 0,
-                };
-
-                domains.push(Domain {
-                    name: names[index].to_string(),
-                    consumption: domain_power as f32,
-                });
-                index += 1
-            }
-
-            all_sockets.push(Socket {
-                id: s.id,
-                consumption: (v.0 as f32),
-                domains,
-            });
-        }
+                Socket {
+                    id: socket.id,
+                    consumption: (socket_power as f32),
+                    domains,
+                }
+            })
+            .collect::<Vec<_>>();
 
         let report = Report {
             host: host_power as f32,

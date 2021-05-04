@@ -6,7 +6,7 @@ language = "en"
 src = "docs_src"
 
 [build]
-build-dir = "docs"
+build-dir = "../scaphandre-documentation/docs"
 
 [rust]
 edition = "2018"
