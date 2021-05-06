@@ -270,13 +270,15 @@ impl DatadogExporter {
             .parse::<u32>()
             .expect("Wrong step_duration_nano value, should be a number of nano seconds");
 
-        info!("Measurement step is: {}s{}ns", step_duration, step_duration_nano);
+        info!(
+            "Measurement step is: {}s{}ns",
+            step_duration, step_duration_nano
+        );
         if let Some(timeout) = parameters.value_of("timeout") {
             let now = Instant::now();
             let timeout = timeout
                 .parse::<u64>()
                 .expect("Wrong timeout value, should be a number of seconds");
-
 
             while now.elapsed().as_secs() <= timeout {
                 warn!("iterate");
