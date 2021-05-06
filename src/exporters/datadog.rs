@@ -209,6 +209,32 @@ impl Exporter for DatadogExporter {
             .help("Api key to authenticate with datadog.");
         options.push(arg);
 
+        let arg = Arg::with_name("timeout")
+            .long("timeout")
+            .short("t")
+            .required(false)
+            .takes_value(true)
+            .help("Maximum time to collect and ship the metrics.");
+        options.push(arg);
+
+        let arg = Arg::with_name("step_duration")
+            .long("step-duration")
+            .default_value("20")
+            .short("s")
+            .required(false)
+            .takes_value(true)
+            .help("Time step duration between two measurements, in seconds.");
+        options.push(arg);
+
+        let arg = Arg::with_name("step_duration_nano")
+            .long("step-duration-nano")
+            .default_value("0")
+            .short("n")
+            .required(false)
+            .takes_value(true)
+            .help("Time step duration between two measurments, in nano seconds. This is cumulative to step-duration.");
+        options.push(arg);
+
         options
     }
 }
@@ -230,33 +256,38 @@ impl DatadogExporter {
 
     fn runner(&mut self, parameters: &ArgMatches<'_>) {
         let client = Client::new(parameters);
+        warn!("runner");
+        // We have a default value of 2s so it is safe to unwrap the option
+        // Panic if a non numerical value is passed
+        let step_duration: u64 = parameters
+            .value_of("step_duration")
+            .unwrap()
+            .parse::<u64>()
+            .expect("Wrong step_duration value, should be a number of seconds");
+        let step_duration_nano: u32 = parameters
+            .value_of("step_duration_nano")
+            .unwrap()
+            .parse::<u32>()
+            .expect("Wrong step_duration_nano value, should be a number of nano seconds");
+
+        info!("Measurement step is: {}s{}ns", step_duration, step_duration_nano);
         if let Some(timeout) = parameters.value_of("timeout") {
             let now = Instant::now();
             let timeout = timeout
                 .parse::<u64>()
                 .expect("Wrong timeout value, should be a number of seconds");
 
-            // We have a default value of 2s so it is safe to unwrap the option
-            // Panic if a non numerical value is passed
-            let step_duration: u64 = parameters
-                .value_of("step_duration")
-                .unwrap()
-                .parse::<u64>()
-                .expect("Wrong step_duration value, should be a number of seconds");
-            let step_duration_nano: u32 = parameters
-                .value_of("step_duration_nano")
-                .unwrap()
-                .parse::<u32>()
-                .expect("Wrong step_duration_nano value, should be a number of nano seconds");
-
-            info!("Measurement step is: {}s", step_duration);
 
             while now.elapsed().as_secs() <= timeout {
+                warn!("iterate");
                 self.iterate(&client);
                 thread::sleep(Duration::new(step_duration, step_duration_nano));
             }
         } else {
-            self.iterate(&client);
+            loop {
+                self.iterate(&client);
+                thread::sleep(Duration::new(step_duration, step_duration_nano));
+            }
         }
     }
 

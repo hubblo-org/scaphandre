@@ -64,6 +64,7 @@ pub fn run(matches: ArgMatches) {
 
     #[cfg(feature = "datadog")]
     if let Some(datadog_exporter_parameters) = matches.subcommand_matches("datadog") {
+        warn!("datadog !");
         let exporter_parameters = datadog_exporter_parameters.clone();
         let mut exporter = DatadogExporter::new(get_sensor(&matches));
         exporter.run(exporter_parameters);
