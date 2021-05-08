@@ -70,7 +70,7 @@ impl Exporter for JSONExporter {
             .required(false)
             .takes_value(true);
         options.push(arg);
-      
+
         options
     }
 }
