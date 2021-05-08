@@ -50,3 +50,17 @@ On ubuntu 20.01 and 20.10, try to install `linux-modules-extra-$(uname-r)` with 
     note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
 
 We verified that scaphandre (and especially the powercap_rapl sensor) works on AMD Zen processors with a Linux kernel **5.11 or later**. Before that kernel version, it won't probably work as the [drivers](https://www.phoronix.com/scan.php?page=news_item&px=AMD-Zen-PowerCap-RAPL-5.11) needed to feed powercap with rapl data are not present.
+
+### Trying to build the project I get this error
+
+    error: linker `cc` not found
+      |
+      = note: No such file or directory (os error 2)
+
+    error: aborting due to previous error
+
+    error: could not compile `log`
+
+You need compiling tooling. On Ubuntu/Debian, run:
+
+     sudo apt install build-essential

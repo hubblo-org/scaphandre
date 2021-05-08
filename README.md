@@ -23,6 +23,8 @@ This project was born from a deep sense of duty from tech workers. Please refer 
 [![](https://img.shields.io/crates/v/scaphandre.svg?maxAge=25920)](https://crates.io/crates/scaphandre)
 <a href="https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg"></a>
 
+Join us on [Gitter](https://gitter.im/hubblo-org/scaphandre) or [Matrix](https://app.element.io/#/room/#hubblo-org_scaphandre:gitter.im) !
+
 ---
 
 ## ✨ Features
@@ -32,6 +34,7 @@ This project was born from a deep sense of duty from tech workers. Please refer 
 - **exposing** power consumption metrics of a virtual machine, to allow **manipulating those metrics in the VM** as if it was a bare metal machine (relies on hypervisor features)
 - exposing power consumption metrics as a **[prometheus](https://prometheus.io) (HTTP) exporter**
 - sending power consumption metrics to **[riemann](http://riemann.io/)**
+- sending power consumption metrics to **[Warp10](http://warp10.io/)**
 - works on **[kubernetes](https://kubernetes.io/)**
 - storing power consumption metrics in a **JSON** file
 - showing basic power consumption metrics **in the terminal**

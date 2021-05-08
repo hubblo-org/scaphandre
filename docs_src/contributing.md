@@ -20,9 +20,9 @@ This project intends to unite a lot of people to have a lot of positive impact. 
 Discussions and questions about the project are welcome on [gitter](https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) or by [email](mailto://bpetit@hubblo.org?Subject=About%20Scaphandre).
 ### Contribution guidelines
 
-This project intends to use [conventionnal commit messages](https://conventionalcommits.org/) and the [gitflow](https://nvie.com/posts/a-successful-git-branching-model/) workflow.
+This project intends to use [conventional commit messages](https://conventionalcommits.org/) and the [gitflow](https://nvie.com/posts/a-successful-git-branching-model/) workflow.
 
-Scaphandre is a not only a tool, but a framework. Modules dedicated to collect energy comsumption data from the host are called [**Sensors**](docs/sensors).
+Scaphandre is a not only a tool, but a framework. Modules dedicated to collect energy consumption data from the host are called [**Sensors**](docs/sensors).
 Modules that are dedicated to send this data to a given channel or remote system are called [**Exporters**](docs/exporters). New Sensors and Exporters are going to be created and all contributions are welcome. For more on the internal structure please jump [here](explanations/internal-structure.md).
 
 ### Edit and build the documentation

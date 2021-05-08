@@ -15,7 +15,7 @@ This is easy to understand, and it matches how we might be billed for a share of
 
 #### Timesharing of work
 
-However, if the reality was _exactly_ like this diagram, our computers would only ever be able to do sonething at a time. It's more accurate and helpful to think of computers working on lots of different jobs at the same time - they work on one job for short interval of time, then another, and another and so one. You'll often see these [small intervals of time referred to as _[jiffies][]_.
+However, if the reality was _exactly_ like this diagram, our computers would only ever be able to do something at a time. It's more accurate and helpful to think of computers working on lots of different jobs at the same time - they work on one job for short interval of time, then another, and another and so one. You'll often see these [small intervals of time referred to as _[jiffies][]_.
 
 [jiffies]: https://www.anshulpatel.in/post/linux_cpu_percentage/
 
@@ -65,7 +65,7 @@ However, if a guest virtual machine or guest container _does_ have access to rea
 As you can see with the [prometheus exporter reference](../references/exporter-prometheus.md), scaphandre exporters can provide process level power consumption metrics. This section will explain how it is done and how it may be improved in the future.
 ## Some details about RAPL
 
-We'll talk here about the case where scaphandre is able to effectively measure the power consumption of the host (see [compatibility](../compatibility.md) section for more on sensors and their prerequesites) and specifically about the [PowercapRAPL](../references/sensor-powercap_rapl.md) sensor.
+We'll talk here about the case where scaphandre is able to effectively measure the power consumption of the host (see [compatibility](../compatibility.md) section for more on sensors and their prerequisites) and specifically about the [PowercapRAPL](../references/sensor-powercap_rapl.md) sensor.
 
 Let's clarify what's happening when you collect metrics with scaphandre and this sensor.
 RAPL stands for [Running Average Power Limit](https://01.org/blogs/2014/running-average-power-limit-%E2%80%93-rapl). It's a technnology embedded in most Intel and AMD x86 CPUs produced after 2012.
@@ -86,6 +86,6 @@ With those data it is possible to compute the ratio of CPU time actively spent f
 
 ### How to get the consumption of an application/a service ?
 
-Services and programs are often not running only one PID. It's needed to aggregate the consumption of all related PIDs to know what this service is actually consuming. 
+Services and programs are often not running only one PID. It's needed to aggregate the consumption of all related PIDs to know what this service is actually consuming.
 
 To do that, in the current state of scaphandre development, you can use the Prometheus exporter, and then use Prometheus TSDB and query language capabilities. You'll find examples looking at the graphs and queries [here](https://metrics.hubblo.org). In a near future, more advanced features may be implemented in scaphandre to allow such classification even if you don't have access to a proper TSDB.
