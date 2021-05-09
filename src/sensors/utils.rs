@@ -220,7 +220,7 @@ impl ProcessTracker {
                     if self.regex_cgroup_docker.is_match(&cg.pathname) {
                         description
                             .insert(String::from("container_scheduler"), String::from("docker"));
-                        let container_id = cg.pathname.split("/").last().unwrap();
+                        let container_id = cg.pathname.split('/').last().unwrap();
                         description
                             .insert(String::from("container_id"), String::from(container_id));
                     } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
@@ -228,7 +228,7 @@ impl ProcessTracker {
                             String::from("container_scheduler"),
                             String::from("kubernetes"),
                         );
-                        let container_id = cg.pathname.split("/").last().unwrap();
+                        let container_id = cg.pathname.split('/').last().unwrap();
                         description
                             .insert(String::from("container_id"), String::from(container_id));
                     } else if self.regex_cgroup_containerd.is_match(&cg.pathname) {
