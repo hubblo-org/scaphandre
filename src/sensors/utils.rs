@@ -1,7 +1,7 @@
 use procfs::process::Process;
-use std::time::{Duration, SystemTime};
-use std::collections::HashMap;
 use regex::Regex;
+use std::collections::HashMap;
+use std::time::{Duration, SystemTime};
 
 #[derive(Debug, Clone)]
 /// Manages ProcessRecord instances.
@@ -13,7 +13,7 @@ pub struct ProcessTracker {
     pub max_records_per_process: u16,
     pub regex_cgroup_docker: Regex,
     pub regex_cgroup_kubernetes: Regex,
-    pub regex_cgroup_containerd: Regex
+    pub regex_cgroup_containerd: Regex,
 }
 
 impl ProcessTracker {
@@ -28,14 +28,14 @@ impl ProcessTracker {
     /// ```
     pub fn new(max_records_per_process: u16) -> ProcessTracker {
         let regex_cgroup_docker = Regex::new(r"^/docker/.*$").unwrap();
-        let regex_cgroup_kubernetes= Regex::new(r"^/kubepods/\D+/.*$").unwrap();
+        let regex_cgroup_kubernetes = Regex::new(r"^/kubepods/\D+/.*$").unwrap();
         let regex_cgroup_containerd = Regex::new("/system.slice/containerd.service").unwrap();
         ProcessTracker {
             procs: vec![],
             max_records_per_process,
             regex_cgroup_docker,
-            regex_cgroup_kubernetes, 
-            regex_cgroup_containerd
+            regex_cgroup_kubernetes,
+            regex_cgroup_containerd,
         }
     }
 
@@ -218,15 +218,24 @@ impl ProcessTracker {
                 for cg in cgroups {
                     // docker
                     if self.regex_cgroup_docker.is_match(&cg.pathname) {
-                        description.insert(String::from("container_scheduler"), String::from("docker")); 
+                        description
+                            .insert(String::from("container_scheduler"), String::from("docker"));
                         let container_id = cg.pathname.split("/").last().unwrap();
-                        description.insert(String::from("container_id"), String::from(container_id));
+                        description
+                            .insert(String::from("container_id"), String::from(container_id));
                     } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
-                        description.insert(String::from("container_scheduler"), String::from("kubernetes"));
+                        description.insert(
+                            String::from("container_scheduler"),
+                            String::from("kubernetes"),
+                        );
                         let container_id = cg.pathname.split("/").last().unwrap();
-                        description.insert(String::from("container_id"), String::from(container_id));
+                        description
+                            .insert(String::from("container_id"), String::from(container_id));
                     } else if self.regex_cgroup_containerd.is_match(&cg.pathname) {
-                        description.insert(String::from("container_runtime"), String::from("containerd"));
+                        description.insert(
+                            String::from("container_runtime"),
+                            String::from("containerd"),
+                        );
                     }
                 }
             }

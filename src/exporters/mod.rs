@@ -437,7 +437,7 @@ impl<'a> MetricGenerator<'a> {
 
             if containers {
                 let container_data = processes_tracker.get_process_container_description(pid);
-                
+
                 if !container_data.is_empty() {
                     for (k, v) in container_data.iter() {
                         attributes.insert(String::from(k), String::from(v));
@@ -448,7 +448,6 @@ impl<'a> MetricGenerator<'a> {
             attributes.insert("pid".to_string(), pid.to_string());
 
             attributes.insert("exe".to_string(), exe.clone());
-
 
             if let Some(cmdline_str) = cmdline {
                 attributes.insert("cmdline".to_string(), cmdline_str.replace("\"", "\\\""));

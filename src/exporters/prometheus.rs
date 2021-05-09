@@ -138,7 +138,8 @@ async fn runner(
             .data(PowerMetrics {
                 topology: Mutex::new(topology.clone()),
                 last_request: Mutex::new(Duration::new(0, 0)),
-                qemu, containers,
+                qemu,
+                containers,
                 hostname: hostname.clone(),
             })
             .service(web::resource(&suffix).route(web::get().to(show_metrics)))
