@@ -49,6 +49,7 @@ impl Exporter for PrometheusExporter {
             parameters.value_of("port").unwrap().to_string(),
             parameters.value_of("suffix").unwrap().to_string(),
             parameters.is_present("qemu"),
+            parameters.is_present("containers"),
             get_hostname(),
         ) {
             Ok(()) => warn!("Prometheus exporter shut down gracefully."),
@@ -93,6 +94,13 @@ impl Exporter for PrometheusExporter {
             .takes_value(false);
         options.push(arg);
 
+        let arg = Arg::with_name("containers")
+            .help("Monitor and apply labels for processes running as containers")
+            .long("containers")
+            .required(false)
+            .takes_value(false);
+        options.push(arg);
+
         options
     }
 }
@@ -103,6 +111,7 @@ struct PowerMetrics {
     topology: Mutex<Topology>,
     last_request: Mutex<Duration>,
     qemu: bool,
+    containers: bool,
     hostname: String,
 }
 
@@ -114,6 +123,7 @@ async fn runner(
     port: String,
     suffix: String,
     qemu: bool,
+    containers: bool,
     hostname: String,
 ) -> std::io::Result<()> {
     if let Err(error) = address.parse::<IpAddr>() {
@@ -128,7 +138,7 @@ async fn runner(
             .data(PowerMetrics {
                 topology: Mutex::new(topology.clone()),
                 last_request: Mutex::new(Duration::new(0, 0)),
-                qemu,
+                qemu, containers,
                 hostname: hostname.clone(),
             })
             .service(web::resource(&suffix).route(web::get().to(show_metrics)))
@@ -195,7 +205,7 @@ async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
     info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
     let mut body = String::from(""); // initialize empty body
 
-    metric_generator.gen_all_metrics(data.qemu);
+    metric_generator.gen_all_metrics(data.qemu, data.containers);
 
     // Send all data
     for msg in metric_generator.get_metrics() {

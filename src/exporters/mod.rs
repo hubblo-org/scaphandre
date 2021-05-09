@@ -426,7 +426,7 @@ impl<'a> MetricGenerator<'a> {
     }
 
     /// Generate process metrics.
-    fn gen_process_metrics(&mut self, qemu: bool) {
+    fn gen_process_metrics(&mut self, qemu: bool, containers: bool) {
         let processes_tracker = &self.topology.proc_tracker;
 
         for pid in processes_tracker.get_alive_pids() {
@@ -434,9 +434,21 @@ impl<'a> MetricGenerator<'a> {
             let cmdline = processes_tracker.get_process_cmdline(pid);
 
             let mut attributes = HashMap::new();
+
+            if containers {
+                let container_data = processes_tracker.get_process_container_description(pid);
+                
+                if !container_data.is_empty() {
+                    for (k, v) in container_data.iter() {
+                        attributes.insert(String::from(k), String::from(v));
+                    }
+                }
+            }
+
             attributes.insert("pid".to_string(), pid.to_string());
 
             attributes.insert("exe".to_string(), exe.clone());
+
 
             if let Some(cmdline_str) = cmdline {
                 attributes.insert("cmdline".to_string(), cmdline_str.replace("\"", "\\\""));
@@ -466,7 +478,7 @@ impl<'a> MetricGenerator<'a> {
     }
 
     /// Generate all metrics provided by Scaphandre agent.
-    fn gen_all_metrics(&mut self, qemu: bool) {
+    fn gen_all_metrics(&mut self, qemu: bool, containers: bool) {
         info!(
             "{}: Get self metrics",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
@@ -491,7 +503,7 @@ impl<'a> MetricGenerator<'a> {
             "{}: Get process metrics",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
         );
-        self.gen_process_metrics(qemu);
+        self.gen_process_metrics(qemu, containers);
         debug!("self_metrics: {:#?}", self.data);
     }
 
