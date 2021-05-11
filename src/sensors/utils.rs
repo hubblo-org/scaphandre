@@ -2,6 +2,7 @@ use procfs::process::Process;
 use regex::Regex;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
+use rs_docker::Docker;
 
 #[derive(Debug, Clone)]
 /// Manages ProcessRecord instances.
@@ -223,6 +224,29 @@ impl ProcessTracker {
                         let container_id = cg.pathname.split('/').last().unwrap();
                         description
                             .insert(String::from("container_id"), String::from(container_id));
+                        //if let Ok(client) = DockerClient::new("unix:///var/run/docker.sock") {
+                        //    if let Ok(inspect) = client.inspect_container(container_id) {
+                        //        description.insert(String::from("container_name"), inspect.Name);
+                        //    } else {
+                        //        warn!("failed to get container name");
+                        //    }
+                        //};
+                        let mut docker = match Docker::connect("unix:///var/run/docker.sock") {
+                            Ok(docker) => docker,
+                            Err(err) => panic!("{}", err),
+                        };
+                        if let Ok(containers) = docker.get_containers(false) {
+                            if let Some(container) = containers.iter().filter(
+                                |x| x.Id == container_id
+                            ).next() {
+                                let mut names = String::from("");
+                                for n in &container.Names {
+                                    names.push_str(&n.trim().replace("/", ""));
+                                }
+                                description.insert(String::from("container_names"), names);
+                            }
+                        }
+
                     } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
                         description.insert(
                             String::from("container_scheduler"),

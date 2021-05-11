@@ -27,3 +27,5 @@ warp10 = "1.0.0"
 time = "0.2.25"
 colored = "2.0.0"
 chrono = "0.4.19"
+rs-docker = "0.0.58"
+#rs-docker = { path = "../rust-docker" }
