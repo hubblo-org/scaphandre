@@ -224,13 +224,6 @@ impl ProcessTracker {
                         let container_id = cg.pathname.split('/').last().unwrap();
                         description
                             .insert(String::from("container_id"), String::from(container_id));
-                        //if let Ok(client) = DockerClient::new("unix:///var/run/docker.sock") {
-                        //    if let Ok(inspect) = client.inspect_container(container_id) {
-                        //        description.insert(String::from("container_name"), inspect.Name);
-                        //    } else {
-                        //        warn!("failed to get container name");
-                        //    }
-                        //};
                         let mut docker = match Docker::connect("unix:///var/run/docker.sock") {
                             Ok(docker) => docker,
                             Err(err) => panic!("{}", err),
