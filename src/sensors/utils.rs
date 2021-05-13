@@ -230,7 +230,7 @@ impl ProcessTracker {
                         };
                         if let Ok(containers) = docker.get_containers(false) {
                             if let Some(container) =
-                                containers.iter().filter(|x| x.Id == container_id).next()
+                                containers.iter().find(|x| x.Id == container_id)
                             {
                                 let mut names = String::from("");
                                 for n in &container.Names {
