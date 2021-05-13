@@ -1,8 +1,8 @@
 use procfs::process::Process;
 use regex::Regex;
+use rs_docker::Docker;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
-use rs_docker::Docker;
 
 #[derive(Debug, Clone)]
 /// Manages ProcessRecord instances.
@@ -229,9 +229,9 @@ impl ProcessTracker {
                             Err(err) => panic!("{}", err),
                         };
                         if let Ok(containers) = docker.get_containers(false) {
-                            if let Some(container) = containers.iter().filter(
-                                |x| x.Id == container_id
-                            ).next() {
+                            if let Some(container) =
+                                containers.iter().filter(|x| x.Id == container_id).next()
+                            {
                                 let mut names = String::from("");
                                 for n in &container.Names {
                                     names.push_str(&n.trim().replace("/", ""));
@@ -239,7 +239,6 @@ impl ProcessTracker {
                                 description.insert(String::from("container_names"), names);
                             }
                         }
-
                     } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
                         description.insert(
                             String::from("container_scheduler"),
