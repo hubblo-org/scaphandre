@@ -9,7 +9,7 @@ pub mod riemann;
 pub mod stdout;
 pub mod utils;
 pub mod warpten;
-use crate::sensors::{RecordGenerator, Topology, utils::current_system_time_since_epoch};
+use crate::sensors::{utils::current_system_time_since_epoch, RecordGenerator, Topology};
 use chrono::Utc;
 use clap::ArgMatches;
 use std::collections::HashMap;
@@ -42,7 +42,7 @@ struct Metric {
     /// allowing flexibility.
     metric_value: MetricValueType,
     /// `timestamp` is the timestamp of the moment of the data measurement, stored as a Duration
-    timestamp: Duration
+    timestamp: Duration,
 }
 
 enum MetricValueType {
@@ -137,7 +137,9 @@ impl<'a> MetricGenerator<'a> {
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
                 description: String::from("CPU % consumed by scaphandre."),
-                metric_value: MetricValueType::FloatDouble(metric_value.value.parse::<f64>().unwrap()),
+                metric_value: MetricValueType::FloatDouble(
+                    metric_value.value.parse::<f64>().unwrap(),
+                ),
             });
         }
 
@@ -327,7 +329,6 @@ impl<'a> MetricGenerator<'a> {
     /// Generate socket metrics.
     fn gen_socket_metrics(&mut self) {
         let sockets = self.topology.get_sockets_passive();
-        let default_timestamp = current_system_time_since_epoch();
         for socket in sockets {
             let records = socket.get_records_passive();
             if !records.is_empty() {

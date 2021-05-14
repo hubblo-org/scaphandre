@@ -469,13 +469,11 @@ impl Topology {
                         //trace!("val f64: {}", val_f64);
                         let result = (val_f64 * usage_percent) as u64;
                         //trace!("result: {}", result);
-                        return Some(
-                            Record::new(
-                                last.timestamp,
-                                result.to_string(),
-                                units::Unit::MicroWatt
-                            )
-                        );
+                        return Some(Record::new(
+                            last.timestamp,
+                            result.to_string(),
+                            units::Unit::MicroWatt,
+                        ));
                     }
                 }
             }
@@ -500,13 +498,11 @@ impl Topology {
 
                     let usage = process_total_time as f64 / topo_total_time as f64;
 
-                    return Some(
-                        Record::new( 
-                            current_system_time_since_epoch(),
-                            (usage * 100.0).to_string(),
-                            units::Unit::Percentage
-                        )
-                    );
+                    return Some(Record::new(
+                        current_system_time_since_epoch(),
+                        (usage * 100.0).to_string(),
+                        units::Unit::Percentage,
+                    ));
                 }
             }
         }
@@ -541,7 +537,7 @@ impl RecordGenerator for CPUSocket {
     /// Generates a new record of the socket energy consumption and stores it in the record_buffer.
     /// Returns a clone of this Record instance.
     fn refresh_record(&mut self) {
-        if let Ok(record) = self.read_record_uj(){
+        if let Ok(record) = self.read_record_uj() {
             self.record_buffer.push(record);
         }
 
@@ -636,15 +632,11 @@ impl CPUSocket {
     }
     pub fn read_record_uj(&self) -> Result<Record, Box<dyn Error>> {
         match fs::read_to_string(&self.counter_uj_path) {
-            Ok(result) => {
-                Ok(
-                    Record::new(
-                        current_system_time_since_epoch(),
-                        result,
-                        units::Unit::MicroJoule,
-                    )
-                )
-            },
+            Ok(result) => Ok(Record::new(
+                current_system_time_since_epoch(),
+                result,
+                units::Unit::MicroJoule,
+            )),
             Err(error) => Err(Box::new(error)),
         }
     }
@@ -889,7 +881,7 @@ impl RecordGenerator for Domain {
     /// Computes a measurement of energy comsumption for this CPU domain,
     /// stores a copy in self.record_buffer and returns it.
     fn refresh_record(&mut self) {
-        if let Ok(record) = self.read_record_uj(){
+        if let Ok(record) = self.read_record_uj() {
             self.record_buffer.push(record);
         }
 
@@ -954,7 +946,7 @@ impl Domain {
             Ok(result) => Ok(Record {
                 timestamp: current_system_time_since_epoch(),
                 unit: units::Unit::MicroJoule,
-                value: result
+                value: result,
             }),
             Err(error) => Err(Box::new(error)),
         }
@@ -1006,7 +998,7 @@ pub struct Record {
     pub unit: units::Unit,
 }
 
-impl Record{
+impl Record {
     /// Instances Record and returns the instance
     pub fn new(timestamp: Duration, value: String, unit: units::Unit) -> Record {
         Record {
