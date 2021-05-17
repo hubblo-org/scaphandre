@@ -41,6 +41,8 @@ pub struct Topology {
     pub record_buffer: Vec<Record>,
     /// Maximum size in memory for the recor_buffer
     pub buffer_max_kbytes: u16,
+    /// Sorted list of all domains names
+    pub domains_names: Option<Vec<String>>,
 }
 
 impl RecordGenerator for Topology {
@@ -128,6 +130,7 @@ impl Topology {
             stat_buffer: vec![],
             record_buffer: vec![],
             buffer_max_kbytes: 1,
+            domains_names: None,
         }
     }
 
@@ -196,8 +199,8 @@ impl Topology {
         &self.sockets
     }
 
-    // Returns a sorted list of all domains names from all sockets.
-    pub fn get_domains_names(&self) -> Vec<String> {
+    // Build a sorted list of all domains names from all sockets.
+    fn build_domains_names(&mut self) {
         let mut names: HashMap<String, ()> = HashMap::new();
         for s in self.sockets.iter() {
             for d in s.get_domains_passive() {
@@ -206,7 +209,7 @@ impl Topology {
         }
         let mut domain_names = names.keys().cloned().collect::<Vec<String>>();
         domain_names.sort();
-        domain_names
+        self.domains_names = Some(domain_names);
     }
 
     /// Adds a Domain instance to a given socket, if and only if the domain
@@ -230,6 +233,7 @@ impl Topology {
                 ));
             }
         }
+        self.build_domains_names();
     }
 
     /// Generates CPUCore instances for the host and adds them
