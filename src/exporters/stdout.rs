@@ -121,11 +121,7 @@ impl StdoutExporter {
         }
         let domain_names = self.topology.domains_names.as_ref().unwrap();
 
-        println!(
-            "Host:\t{} W",
-            (host_power as f32 / 1000000.0)
-            
-        );
+        println!("Host:\t{} W", (host_power as f32 / 1000000.0));
         println!("\tpackage \t{}", domain_names.join("\t\t"));
 
         for (s_id, v) in sockets_power.iter() {
