@@ -189,7 +189,7 @@ impl JSONExporter {
             })
             .collect::<Vec<_>>();
 
-        let names = ["core", "uncore", "dram"];
+        // let names = ["core", "uncore", "dram"];
         let all_sockets = self
             .topology
             .get_sockets_passive()
@@ -203,14 +203,13 @@ impl JSONExporter {
                 let domains = socket
                     .get_domains_passive()
                     .iter()
-                    .map(|d| d.get_records_diff_power_microwatts())
-                    .map(|record| record.map(|d| d.value))
-                    .enumerate()
-                    .map(|(index, d)| {
+                    .map(|d| (d.name.clone(), d.get_records_diff_power_microwatts()))
+                    .map(|(n, record)| (n, record.map(|d| d.value)))
+                    .map(|(name, d)| {
                         let domain_power =
                             d.map(|value| value.parse::<u64>().unwrap()).unwrap_or(0);
                         Domain {
-                            name: names[index].to_string(),
+                            name: name,
                             consumption: domain_power as f32,
                         }
                     })
