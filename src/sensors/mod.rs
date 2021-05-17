@@ -196,6 +196,19 @@ impl Topology {
         &self.sockets
     }
 
+    // Returns a sorted list of all domains names from all sockets.
+    pub fn get_domains_names(&self) -> Vec<String> {
+        let mut names: HashMap<String, ()> = HashMap::new();
+        for s in self.sockets.iter() {
+            for d in s.get_domains_passive() {
+                names.insert(d.name.clone(), ());
+            }
+        }
+        let mut domain_names = names.keys().cloned().collect::<Vec<String>>();
+        domain_names.sort();
+        domain_names
+    }
+
     /// Adds a Domain instance to a given socket, if and only if the domain
     /// id doesn't exist already for the socket.
     pub fn safe_add_domain_to_socket(
