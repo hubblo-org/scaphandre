@@ -209,7 +209,7 @@ impl JSONExporter {
                         let domain_power =
                             d.map(|value| value.parse::<u64>().unwrap()).unwrap_or(0);
                         Domain {
-                            name: name,
+                            name,
                             consumption: domain_power as f32,
                         }
                     })
