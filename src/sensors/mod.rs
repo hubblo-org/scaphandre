@@ -643,7 +643,7 @@ impl CPUSocket {
         &mut self.domains
     }
 
-    /// Returns a mutable reference to the domains vector.
+    /// Returns a immutable reference to the domains vector.
     pub fn get_domains_passive(&self) -> &Vec<Domain> {
         &self.domains
     }
