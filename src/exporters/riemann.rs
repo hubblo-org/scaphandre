@@ -10,7 +10,6 @@ use clap::Arg;
 use riemann_client::proto::Attribute;
 use riemann_client::proto::Event;
 use riemann_client::Client;
-use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -158,63 +157,31 @@ impl Exporter for RiemannExporter {
 
             info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
             let mut metric_generator = MetricGenerator::new(&topology, &hostname);
-            // Here we need a specific behavior for process metrics, so we call each gen function
-            // and then implement that specific behavior (we don't use gen_all_metrics).
-            metric_generator.gen_self_metrics();
-            metric_generator.gen_host_metrics();
-            metric_generator.gen_socket_metrics();
+            metric_generator.gen_all_metrics(parameters.is_present("qemu"));
 
-            let mut data = vec![];
-            let processes_tracker = &metric_generator.topology.proc_tracker;
-
-            for pid in processes_tracker.get_alive_pids() {
-                let exe = processes_tracker.get_process_name(pid);
-                let cmdline = processes_tracker.get_process_cmdline(pid);
-
-                let mut attributes = HashMap::new();
-                attributes.insert("pid".to_string(), pid.to_string());
-
-                attributes.insert("exe".to_string(), exe.clone());
-
-                if let Some(cmdline_str) = cmdline {
-                    attributes.insert("cmdline".to_string(), cmdline_str.replace("\"", "\\\""));
-
-                    if parameters.is_present("qemu") {
-                        if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
-                            attributes.insert("vmname".to_string(), vmname);
-                        }
+            // Here we define a metric name with pid + exe string suffix as riemann needs
+            // to differentiate services/metrics
+            let messages: Vec<Metric> = metric_generator
+                .get_metrics()
+                .to_vec()
+                .into_iter()
+                .map(|mut x| {
+                    if x.name == "scaph_process_power_consumption_microwatts" {
+                        x.name = format!(
+                            "{}_{}_{}",
+                            "scaph_process_power_consumption_microwatts",
+                            x.attributes.get("pid").unwrap(),
+                            x.attributes.get("exe").unwrap()
+                        )
                     }
-                }
+                    x
+                })
+                .collect();
 
-                // Here we define a metric name with pid + exe string suffix as riemann needs
-                // to differentiate services/metrics
-                let metric_name = format!(
-                    "{}_{}_{}",
-                    "scaph_process_power_consumption_microwatts",
-                    pid.to_string(),
-                    exe
-                );
-                if let Some(power) = topology.get_process_power_consumption_microwatts(pid) {
-                    data.push(Metric {
-                        name: metric_name,
-                        metric_type: String::from("gauge"),
-                        ttl: 60.0,
-                        hostname: get_hostname(),
-                        state: String::from("ok"),
-                        tags: vec!["scaphandre".to_string()],
-                        attributes,
-                        description: String::from("Power consumption due to the process, measured on at the topology level, in microwatts"),
-                        metric_value: MetricValueType::Text(power.to_string()),
-                    });
-                }
-            }
             // Send all data
             info!("{}: Send data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-            for metric in metric_generator.get_metrics() {
+            for metric in &messages {
                 rclient.send_metric(metric);
-            }
-            for metric in data {
-                rclient.send_metric(&metric);
             }
 
             thread::sleep(Duration::new(dispatch_duration, 0));

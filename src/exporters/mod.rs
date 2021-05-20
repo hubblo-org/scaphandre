@@ -42,6 +42,22 @@ struct Metric {
     metric_value: MetricValueType,
 }
 
+impl Clone for Metric {
+    fn clone(&self) -> Self {
+        Self {
+            name: self.name.clone(),
+            metric_type: self.metric_type.clone(),
+            ttl: self.ttl,
+            hostname: self.hostname.clone(),
+            state: self.state.clone(),
+            tags: self.tags.clone(),
+            attributes: self.attributes.clone(),
+            description: self.description.clone(),
+            metric_value: self.metric_value.clone(),
+        }
+    }
+}
+
 enum MetricValueType {
     // IntSigned(i64),
     // Float(f32),
@@ -58,6 +74,16 @@ impl fmt::Debug for MetricValueType {
             MetricValueType::Text(text) => write!(f, "{}", text),
             MetricValueType::FloatDouble(value) => write!(f, "{}", value),
             MetricValueType::IntUnsigned(value) => write!(f, "{}", value),
+        }
+    }
+}
+
+impl Clone for MetricValueType {
+    fn clone(&self) -> Self {
+        match &self {
+            MetricValueType::Text(text) => MetricValueType::Text(text.to_string()),
+            MetricValueType::FloatDouble(value) => MetricValueType::FloatDouble(*value),
+            MetricValueType::IntUnsigned(value) => MetricValueType::IntUnsigned(*value),
         }
     }
 }
