@@ -159,30 +159,26 @@ impl Exporter for RiemannExporter {
             let mut metric_generator = MetricGenerator::new(&topology, &hostname);
             metric_generator.gen_all_metrics(parameters.is_present("qemu"));
 
-            // Here we define a metric name with pid + exe string suffix as riemann needs
-            // to differentiate services/metrics
-            let messages: Vec<Metric> = metric_generator
-                .get_metrics()
-                .to_vec()
-                .into_iter()
-                .map(|mut x| {
-                    if x.name == "scaph_process_power_consumption_microwatts" {
-                        x.name = format!(
-                            "{}_{}_{}",
-                            "scaph_process_power_consumption_microwatts",
-                            x.attributes.get("pid").unwrap(),
-                            x.attributes.get("exe").unwrap()
-                        )
-                    }
-                    x
-                })
-                .collect();
-
             // Send all data
             info!("{}: Send data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-            for metric in &messages {
-                rclient.send_metric(metric);
-            }
+            metric_generator
+                .get_metrics()
+                .to_vec() // This is doing a clone of the Metric
+                .into_iter()
+                .map(|mut metric| {
+                    // Here we define a metric name with pid + exe string suffix as riemann needs
+                    // to differentiate services/metrics
+                    if metric.name == "scaph_process_power_consumption_microwatts" {
+                        metric.name = format!(
+                            "{}_{}_{}",
+                            "scaph_process_power_consumption_microwatts",
+                            metric.attributes.get("pid").unwrap(),
+                            metric.attributes.get("exe").unwrap()
+                        )
+                    }
+                    metric
+                })
+                .for_each(|metric| rclient.send_metric(&metric));
 
             thread::sleep(Duration::new(dispatch_duration, 0));
         }
