@@ -2,6 +2,10 @@
 //!
 //! `Exporter` is the root for all exporters. It defines the [Exporter] trait
 //! needed to implement an exporter.
+
+#[cfg(feature = "datadog")]
+pub mod datadog;
+
 pub mod json;
 pub mod prometheus;
 pub mod qemu;

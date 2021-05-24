@@ -6,8 +6,9 @@ pub mod sensors;
 use clap::ArgMatches;
 use colored::*;
 use exporters::{
-    json::JSONExporter, prometheus::PrometheusExporter, qemu::QemuExporter,
-    riemann::RiemannExporter, stdout::StdoutExporter, warpten::Warp10Exporter, Exporter,
+    datadog::DatadogExporter, json::JSONExporter, prometheus::PrometheusExporter,
+    qemu::QemuExporter, riemann::RiemannExporter, stdout::StdoutExporter, warpten::Warp10Exporter,
+    Exporter
 };
 use sensors::{powercap_rapl::PowercapRAPLSensor, Sensor};
 use std::collections::HashMap;
@@ -103,9 +104,15 @@ pub fn run(matches: ArgMatches) {
         exporter_parameters = warp10_exporter_parameters.clone();
         let mut exporter = Warp10Exporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
-    } else {
-        error!("Couldn't determine which exporter has been chosen.");
     }
+  
+    #[cfg(feature = "datadog")]
+    if let Some(datadog_exporter_parameters) = matches.subcommand_matches("datadog") {
+        let exporter_parameters = datadog_exporter_parameters.clone();
+        let mut exporter = DatadogExporter::new(sensor_boxed);
+        exporter.run(exporter_parameters);
+    }
+    error!("Couldn't determine which exporter has been chosen.");
 }
 
 /// Returns options needed for each exporter as a HashMap.
@@ -135,6 +142,11 @@ pub fn get_exporters_options() -> HashMap<String, Vec<clap::Arg<'static, 'static
     options.insert(
         String::from("warp10"),
         exporters::warpten::Warp10Exporter::get_options(),
+    );
+    #[cfg(feature = "datadog")]
+    options.insert(
+        String::from("datadog"),
+        exporters::datadog::DatadogExporter::get_options(),
     );
     options
 }
