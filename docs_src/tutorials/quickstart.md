@@ -6,7 +6,7 @@ Depending on your kernel version, you could need to modprobe the module intel_ra
 
 To quickly run scaphandre in your terminal you may use [docker](https://www.docker.com/):
 
-    docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -ti hubblo/scaphandre stdout -t 15
+    docker run -v /sys/class/powercap:/sys/class/powercap:ro -v /proc:/proc:ro -ti hubblo/scaphandre stdout -t 15
 
 Or if you downloaded or built a binary, you'd run:
 
@@ -38,7 +38,7 @@ At that point, you're ready to use scaphandre. The Stdout exporter is very basic
 
 The [prometheus exporter](references/exporter-prometheus.md), for example, allows you to expose power consumption metrics as an HTTP endpoint that can be scrapped by a [prometheus](https://prometheus.io) instance:
 
-    docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -p 8080:8080 -ti hubblo/scaphandre prometheus
+    docker run -v /sys/class/powercap:/sys/class/powercap:ro -v /proc:/proc:ro -p 8080:8080 -ti hubblo/scaphandre prometheus
 
 Here is the same command with a simple binary:
 
