@@ -11,6 +11,7 @@ pub enum Unit {
     Watt,
     MilliWatt,
     MicroWatt,
+    Percentage,
 }
 
 impl Unit {
@@ -61,6 +62,7 @@ impl fmt::Display for Unit {
             Unit::Watt => write!(f, "Watts"),
             Unit::KiloWatt => write!(f, "KiloWatts"),
             Unit::MegaWatt => write!(f, "MegaWatts"),
+            Unit::Percentage => write!(f, "Percentage"),
         }
     }
 }
