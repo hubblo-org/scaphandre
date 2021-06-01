@@ -3,16 +3,15 @@
 //! `PrometheusExporter` implementation, expose metrics to
 //! a [Prometheus](https://prometheus.io/) server.
 use crate::current_system_time_since_epoch;
-use crate::exporters::*;
 use crate::sensors::{Sensor, Topology};
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use crate::exporters::Exporter;
 use chrono::Utc;
-use clap::Arg;
-use std::collections::HashMap;
-use std::net::IpAddr;
-use std::sync::Mutex;
-use std::time::Duration;
-use utils::get_hostname;
+use clap::{Arg, ArgMatches};
+use std::{collections::HashMap, net::SocketAddr, time::Duration, sync::Mutex};
+use super::utils::get_hostname;
+use std::convert::Infallible;
+use hyper::{Body, Request, Response, Server};
+use hyper::service::{make_service_fn, service_fn};
 
 /// Default ipv4/ipv6 address to expose the service is any
 const DEFAULT_IP_ADDRESS: &str = "::";
@@ -43,18 +42,18 @@ impl Exporter for PrometheusExporter {
         );
         println!("Press CTRL-C to stop scaphandre");
 
-        match runner(
-            (*self.sensor.get_topology()).unwrap(),
-            parameters.value_of("address").unwrap().to_string(),
-            parameters.value_of("port").unwrap().to_string(),
-            parameters.value_of("suffix").unwrap().to_string(),
-            parameters.is_present("qemu"),
-            parameters.is_present("containers"),
-            get_hostname(),
-        ) {
-            Ok(()) => warn!("Prometheus exporter shut down gracefully."),
-            Err(error) => panic!("Something failed in the prometheus exporter: {}", error),
-        }
+        //match runner(
+        //    (*self.sensor.get_topology()).unwrap(),
+        //    parameters.value_of("address").unwrap().to_string(),
+        //    parameters.value_of("port").unwrap().to_string(),
+        //    parameters.value_of("suffix").unwrap().to_string(),
+        //    parameters.is_present("qemu"),
+        //    parameters.is_present("containers"),
+        //    get_hostname(),
+        //) {
+        //    Ok(()) => warn!("Prometheus exporter shut down gracefully."),
+        //    Err(error) => panic!("Something failed in the prometheus exporter: {}", error),
+        //}
     }
     /// Returns options understood by the exporter.
     fn get_options() -> Vec<clap::Arg<'static, 'static>> {
@@ -115,137 +114,137 @@ struct PowerMetrics {
     hostname: String,
 }
 
-#[actix_web::main]
-/// Main function running the HTTP server.
-async fn runner(
-    topology: Topology,
-    address: String,
-    port: String,
-    suffix: String,
-    qemu: bool,
-    containers: bool,
-    hostname: String,
-) -> std::io::Result<()> {
-    if let Err(error) = address.parse::<IpAddr>() {
-        panic!("{} is not a valid ip address: {}", address, error);
-    }
-    if let Err(error) = port.parse::<u64>() {
-        panic!("Not a valid TCP port numer: {}", error);
-    }
-
-    HttpServer::new(move || {
-        App::new()
-            .data(PowerMetrics {
-                topology: Mutex::new(topology.clone()),
-                last_request: Mutex::new(Duration::new(0, 0)),
-                qemu,
-                containers,
-                hostname: hostname.clone(),
-            })
-            .service(web::resource(&suffix).route(web::get().to(show_metrics)))
-            .default_service(web::route().to(landing_page))
-    })
-    .workers(1)
-    .bind(format!("{}:{}", address, port))?
-    .run()
-    .await
-}
-
-/// Returns a well formatted Prometheus metric string.
-fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>>) -> String {
-    let mut result = key.to_string();
-    if let Some(labels) = labels {
-        result.push('{');
-        for (k, v) in labels.iter() {
-            result.push_str(&format!("{}=\"{}\",", k, v));
-        }
-        result.remove(result.len() - 1);
-        result.push('}');
-    }
-    result.push_str(&format!(" {}\n", value));
-    result
-}
-
-/// Adds lines related to a metric in the body (String) of response.
-fn push_metric(
-    mut body: String,
-    help: String,
-    metric_type: String,
-    metric_name: String,
-    metric_line: String,
-) -> String {
-    body.push_str(&format!("# HELP {} {}", metric_name, help));
-    body.push_str(&format!("\n# TYPE {} {}\n", metric_name, metric_type));
-    body.push_str(&metric_line);
-    body
-}
-
-/// Handles requests and returns data formated for Prometheus.
-async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
-    let now = current_system_time_since_epoch();
-    let mut last_request = data.last_request.lock().unwrap();
-
-    if now - (*last_request) > Duration::from_secs(5) {
-        {
-            info!(
-                "{}: Refresh topology",
-                Utc::now().format("%Y-%m-%dT%H:%M:%S")
-            );
-            let mut topology = data.topology.lock().unwrap();
-            (*topology)
-                .proc_tracker
-                .clean_terminated_process_records_vectors();
-            (*topology).refresh();
-        }
-    }
-
-    *last_request = now;
-    let topo = data.topology.lock().unwrap();
-    let mut metric_generator = MetricGenerator::new(&*topo, &data.hostname);
-
-    info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-    let mut body = String::from(""); // initialize empty body
-
-    metric_generator.gen_all_metrics(data.qemu, data.containers);
-
-    // Send all data
-    for msg in metric_generator.get_metrics() {
-        let mut attributes: Option<&HashMap<String, String>> = None;
-        if !msg.attributes.is_empty() {
-            attributes = Some(&msg.attributes);
-        }
-
-        let value = match msg.metric_value {
-            // MetricValueType::IntSigned(value) => event.set_metric_sint64(value),
-            // MetricValueType::Float(value) => event.set_metric_f(value),
-            MetricValueType::FloatDouble(value) => value.to_string(),
-            MetricValueType::IntUnsigned(value) => value.to_string(),
-            MetricValueType::Text(ref value) => value.to_string(),
-        };
-        body = push_metric(
-            body,
-            msg.description.clone(),
-            msg.metric_type.clone(),
-            msg.name.clone(),
-            format_metric(&msg.name, &value, attributes),
-        );
-    }
-
-    HttpResponse::Ok()
-        //.set_header("X-TEST", "value")
-        .body(body)
-}
-
-/// Handles requests that are not asking for /metrics and returns the appropriate path in the body of the response.
-async fn landing_page() -> impl Responder {
-    let body = String::from(
-        "<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/metrics\">/metrics</a>"
-    );
-    HttpResponse::Ok()
-        //.set_header("X-TEST", "value")
-        .body(body)
-}
-
+//#[actix_web::main]
+///// Main function running the HTTP server.
+//async fn runner(
+//    topology: Topology,
+//    address: String,
+//    port: String,
+//    suffix: String,
+//    qemu: bool,
+//    containers: bool,
+//    hostname: String,
+//) -> std::io::Result<()> {
+//    if let Err(error) = address.parse::<IpAddr>() {
+//        panic!("{} is not a valid ip address: {}", address, error);
+//    }
+//    if let Err(error) = port.parse::<u64>() {
+//        panic!("Not a valid TCP port numer: {}", error);
+//    }
+//
+//    HttpServer::new(move || {
+//        App::new()
+//            .data(PowerMetrics {
+//                topology: Mutex::new(topology.clone()),
+//                last_request: Mutex::new(Duration::new(0, 0)),
+//                qemu,
+//                containers,
+//                hostname: hostname.clone(),
+//            })
+//            .service(web::resource(&suffix).route(web::get().to(show_metrics)))
+//            .default_service(web::route().to(landing_page))
+//    })
+//    .workers(1)
+//    .bind(format!("{}:{}", address, port))?
+//    .run()
+//    .await
+//}
+//
+///// Returns a well formatted Prometheus metric string.
+//fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>>) -> String {
+//    let mut result = key.to_string();
+//    if let Some(labels) = labels {
+//        result.push('{');
+//        for (k, v) in labels.iter() {
+//            result.push_str(&format!("{}=\"{}\",", k, v));
+//        }
+//        result.remove(result.len() - 1);
+//        result.push('}');
+//    }
+//    result.push_str(&format!(" {}\n", value));
+//    result
+//}
+//
+///// Adds lines related to a metric in the body (String) of response.
+//fn push_metric(
+//    mut body: String,
+//    help: String,
+//    metric_type: String,
+//    metric_name: String,
+//    metric_line: String,
+//) -> String {
+//    body.push_str(&format!("# HELP {} {}", metric_name, help));
+//    body.push_str(&format!("\n# TYPE {} {}\n", metric_name, metric_type));
+//    body.push_str(&metric_line);
+//    body
+//}
+//
+///// Handles requests and returns data formated for Prometheus.
+//async fn show_metrics(data: web::Data<PowerMetrics>) -> impl Responder {
+//    let now = current_system_time_since_epoch();
+//    let mut last_request = data.last_request.lock().unwrap();
+//
+//    if now - (*last_request) > Duration::from_secs(5) {
+//        {
+//            info!(
+//                "{}: Refresh topology",
+//                Utc::now().format("%Y-%m-%dT%H:%M:%S")
+//            );
+//            let mut topology = data.topology.lock().unwrap();
+//            (*topology)
+//                .proc_tracker
+//                .clean_terminated_process_records_vectors();
+//            (*topology).refresh();
+//        }
+//    }
+//
+//    *last_request = now;
+//    let topo = data.topology.lock().unwrap();
+//    let mut metric_generator = MetricGenerator::new(&*topo, &data.hostname);
+//
+//    info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
+//    let mut body = String::from(""); // initialize empty body
+//
+//    metric_generator.gen_all_metrics(data.qemu, data.containers);
+//
+//    // Send all data
+//    for msg in metric_generator.get_metrics() {
+//        let mut attributes: Option<&HashMap<String, String>> = None;
+//        if !msg.attributes.is_empty() {
+//            attributes = Some(&msg.attributes);
+//        }
+//
+//        let value = match msg.metric_value {
+//            // MetricValueType::IntSigned(value) => event.set_metric_sint64(value),
+//            // MetricValueType::Float(value) => event.set_metric_f(value),
+//            MetricValueType::FloatDouble(value) => value.to_string(),
+//            MetricValueType::IntUnsigned(value) => value.to_string(),
+//            MetricValueType::Text(ref value) => value.to_string(),
+//        };
+//        body = push_metric(
+//            body,
+//            msg.description.clone(),
+//            msg.metric_type.clone(),
+//            msg.name.clone(),
+//            format_metric(&msg.name, &value, attributes),
+//        );
+//    }
+//
+//    HttpResponse::Ok()
+//        //.set_header("X-TEST", "value")
+//        .body(body)
+//}
+//
+///// Handles requests that are not asking for /metrics and returns the appropriate path in the body of the response.
+//async fn landing_page() -> impl Responder {
+//    let body = String::from(
+//        "<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/metrics\">/metrics</a>"
+//    );
+//    HttpResponse::Ok()
+//        //.set_header("X-TEST", "value")
+//        .body(body)
+//}
+//
 //  Copyright 2020 The scaphandre authors.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
