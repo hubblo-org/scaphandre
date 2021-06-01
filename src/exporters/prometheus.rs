@@ -2,17 +2,21 @@
 //!
 //! `PrometheusExporter` implementation, expose metrics to
 //! a [Prometheus](https://prometheus.io/) server.
+use super::utils::get_hostname;
 use crate::current_system_time_since_epoch;
+use crate::exporters::{Exporter, MetricGenerator, MetricValueType};
 use crate::sensors::{Sensor, Topology};
-use crate::exporters::Exporter;
 use chrono::Utc;
 use clap::{Arg, ArgMatches};
-use std::{collections::HashMap, net::{IpAddr, SocketAddr}, str::FromStr, sync::Arc, time::Duration};
-use super::utils::get_hostname;
-use std::convert::Infallible;
-use hyper::{Body, Request, Response, Server};
 use hyper::service::{make_service_fn, service_fn};
-use hyper::server::conn::AddrStream;
+use hyper::{Body, Request, Response, Server};
+use std::convert::Infallible;
+use std::{
+    collections::HashMap,
+    net::{IpAddr, SocketAddr},
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 /// Default ipv4/ipv6 address to expose the service is any
 const DEFAULT_IP_ADDRESS: &str = "::";
@@ -105,8 +109,8 @@ impl Exporter for PrometheusExporter {
 /// Contains a mutex holding a Topology object.
 /// Used to pass the topology data from one http worker to another.
 struct PowerMetrics {
-    topology: Topology,
-    last_request: Duration,
+    topology: Mutex<Topology>,
+    last_request: Mutex<Duration>,
     qemu: bool,
     containers: bool,
     hostname: String,
@@ -114,26 +118,32 @@ struct PowerMetrics {
 
 #[tokio::main]
 async fn runner(
-    topology: Topology, address: String, port: String, suffix: String, qemu: bool, containers: bool, hostname: String,
-){
+    topology: Topology,
+    address: String,
+    port: String,
+    suffix: String,
+    qemu: bool,
+    containers: bool,
+    hostname: String,
+) {
     if let Ok(addr) = address.parse::<IpAddr>() {
         if let Ok(port) = port.parse::<u16>() {
             let socket_addr = SocketAddr::new(addr, port);
-            let context = Arc::new(PowerMetrics {
-                topology: topology.clone(),
-                last_request: Duration::new(0, 0),
+            let power_metrics = PowerMetrics {
+                topology: Mutex::new(topology),
+                last_request: Mutex::new(Duration::new(0, 0)),
                 qemu,
                 containers,
                 hostname: hostname.clone(),
-            });
+            };
+            let context = Arc::new(power_metrics);
             let make_svc = make_service_fn(move |_| {
+                let ctx = context.clone();
+                let sfx = suffix.clone();
                 async {
-                    Ok::<_, Infallible>(
-                            service_fn( move |req| {
-                                show_metrics(req)
-                            }
-                        )
-                    )
+                    Ok::<_, Infallible>(service_fn(move |req| {
+                        show_metrics(req, ctx.clone(), sfx.clone())
+                    }))
                 }
             });
             let server = Server::bind(&socket_addr);
@@ -215,23 +225,66 @@ fn push_metric(
     body
 }
 
-//#[derive(Clone, Copy)]
-//struct Router {
-//
-//}
-
-//impl Router {
-    /// Handles requests and returns data formated for Prometheus.
-    async fn show_metrics(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-        warn!("{}", req.uri());
-        let mut body = String::new();
-        if req.uri().path() == "/metrics" {
-            body.push_str("Here come tha metriczzz !!!");
-        } else {
-            body.push_str("go to /metrics !!");
+/// Handles requests and returns data formated for Prometheus.
+async fn show_metrics(
+    req: Request<Body>,
+    context: Arc<PowerMetrics>,
+    suffix: String,
+) -> Result<Response<Body>, Infallible> {
+    warn!("{}", req.uri());
+    let mut body = String::new();
+    if req.uri().path() == format!("/{}", &suffix) {
+        warn!("in metrics !");
+        let now = current_system_time_since_epoch();
+        let mut last_request = context.last_request.lock().unwrap();
+        if now - (*last_request) > Duration::from_secs(5) {
+            {
+                info!(
+                    "{}: Refresh topology",
+                    Utc::now().format("%Y-%m-%dT%H:%M:%S")
+                );
+                let mut topology = context.topology.lock().unwrap();
+                (*topology)
+                    .proc_tracker
+                    .clean_terminated_process_records_vectors();
+                (*topology).refresh();
+            }
         }
-        Ok(Response::new(body.into()))
+        *last_request = now;
+        let topo = context.topology.lock().unwrap();
+        let mut metric_generator = MetricGenerator::new(&topo, &context.hostname);
+
+        info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
+
+        metric_generator.gen_all_metrics(context.qemu, context.containers);
+
+        // Send all data
+        for msg in metric_generator.get_metrics() {
+            let mut attributes: Option<&HashMap<String, String>> = None;
+            if !msg.attributes.is_empty() {
+                attributes = Some(&msg.attributes);
+            }
+
+            let value = match msg.metric_value {
+                // MetricValueType::IntSigned(value) => event.set_metric_sint64(value),
+                // MetricValueType::Float(value) => event.set_metric_f(value),
+                MetricValueType::FloatDouble(value) => value.to_string(),
+                MetricValueType::IntUnsigned(value) => value.to_string(),
+                MetricValueType::Text(ref value) => value.to_string(),
+            };
+            body = push_metric(
+                body,
+                msg.description.clone(),
+                msg.metric_type.clone(),
+                msg.name.clone(),
+                format_metric(&msg.name, &value, attributes),
+            );
+        }
+    } else {
+        body.push_str(&format!("<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{}\">/{}</a>", suffix, suffix));
     }
+    Ok(Response::new(body.into()))
+}
 
 //}
 //async fn show_metrics(context: Arc<PowerMetrics>, req: Request<Body>) -> Result<Response<Body>, Infallible> {
