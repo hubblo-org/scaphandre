@@ -228,6 +228,7 @@ impl ProcessTracker {
                             Ok(docker) => docker,
                             Err(err) => panic!("{}", err),
                         };
+                        //TODO optimize this by calling get_containers only once outside of this function
                         if let Ok(containers) = docker.get_containers(false) {
                             if let Some(container) =
                                 containers.iter().find(|x| x.Id == container_id)
@@ -237,6 +238,12 @@ impl ProcessTracker {
                                     names.push_str(&n.trim().replace("/", ""));
                                 }
                                 description.insert(String::from("container_names"), names);
+                                if let Some(labels) = &container.Labels {
+                                    for (k, v) in labels {
+                                       let key = k.replace(".", "_").replace("-", "_");
+                                       description.insert(format!("container_label_{}", key), v.to_string()); 
+                                    }
+                                }
                             }
                         }
                     } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {

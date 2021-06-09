@@ -148,10 +148,15 @@ async fn runner(
             });
             let server = Server::bind(&socket_addr);
             let res = server.serve(make_svc);
+            let (tx, rx) = tokio::sync::oneshot::channel::<()>();
+            let graceful = res.with_graceful_shutdown(async {
+                rx.await.ok();
+            });
 
-            if let Err(e) = res.await {
+            if let Err(e) = graceful.await {
                 error!("server error: {}", e);
             }
+            let _ = tx.send(());
         } else {
             panic!("{} is not a valid TCP port number", port);
         }
@@ -160,42 +165,6 @@ async fn runner(
     }
 }
 
-//#[actix_web::main]
-///// Main function running the HTTP server.
-//async fn runner(
-//    topology: Topology,
-//    address: String,
-//    port: String,
-//    suffix: String,
-//    qemu: bool,
-//    containers: bool,
-//    hostname: String,
-//) -> std::io::Result<()> {
-//    if let Err(error) = address.parse::<IpAddr>() {
-//        panic!("{} is not a valid ip address: {}", address, error);
-//    }
-//    if let Err(error) = port.parse::<u64>() {
-//        panic!("Not a valid TCP port numer: {}", error);
-//    }
-//
-//    HttpServer::new(move || {
-//        App::new()
-//            .data(PowerMetrics {
-//                topology: Mutex::new(topology.clone()),
-//                last_request: Mutex::new(Duration::new(0, 0)),
-//                qemu,
-//                containers,
-//                hostname: hostname.clone(),
-//            })
-//            .service(web::resource(&suffix).route(web::get().to(show_metrics)))
-//            .default_service(web::route().to(landing_page))
-//    })
-//    .workers(1)
-//    .bind(format!("{}:{}", address, port))?
-//    .run()
-//    .await
-//}
-//
 /// Returns a well formatted Prometheus metric string.
 fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>>) -> String {
     let mut result = key.to_string();
@@ -231,10 +200,10 @@ async fn show_metrics(
     context: Arc<PowerMetrics>,
     suffix: String,
 ) -> Result<Response<Body>, Infallible> {
-    warn!("{}", req.uri());
+    trace!("{}", req.uri());
     let mut body = String::new();
     if req.uri().path() == format!("/{}", &suffix) {
-        warn!("in metrics !");
+        trace!("in metrics !");
         let now = current_system_time_since_epoch();
         let mut last_request = context.last_request.lock().unwrap();
         if now - (*last_request) > Duration::from_secs(5) {
