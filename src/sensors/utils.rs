@@ -240,8 +240,11 @@ impl ProcessTracker {
                                 description.insert(String::from("container_names"), names);
                                 if let Some(labels) = &container.Labels {
                                     for (k, v) in labels {
-                                       let key = k.replace(".", "_").replace("-", "_");
-                                       description.insert(format!("container_label_{}", key), v.to_string()); 
+                                        let key = k.replace(".", "_").replace("-", "_");
+                                        description.insert(
+                                            format!("container_label_{}", key),
+                                            v.to_string(),
+                                        );
                                     }
                                 }
                             }
