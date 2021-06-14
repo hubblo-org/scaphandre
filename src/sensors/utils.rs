@@ -1,6 +1,6 @@
 use procfs::process::Process;
 use regex::Regex;
-use rs_docker::Docker;
+use docker_sync::Docker;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 
@@ -155,6 +155,72 @@ impl ProcessTracker {
         res
     }
 
+    pub fn get_process_container_description(&self, pid: i32) -> HashMap<String, String> {
+        let mut result = self
+            .procs
+            .iter()
+            .filter(|x| !x.is_empty() && x.get(0).unwrap().process.pid == pid);
+        let process = result.next().unwrap();
+        let mut description = HashMap::new();
+        if let Some(p) = process.get(0) {
+            if let Ok(cgroups) = p.process.cgroups() {
+                for cg in cgroups {
+                    // docker
+                    if self.regex_cgroup_docker.is_match(&cg.pathname) {
+                        description
+                            .insert(String::from("container_scheduler"), String::from("docker"));
+                        let container_id = cg.pathname.split('/').last().unwrap();
+                        description
+                            .insert(String::from("container_id"), String::from(container_id));
+                        let mut docker = match Docker::connect() {
+                            Ok(docker) => docker,
+                            Err(err) => panic!("{}", err),
+                        };
+                        ////TODO optimize this by calling get_containers only once outside of this function
+                        if let Ok(containers) = docker.get_containers(false) {
+                            if let Some(container) =
+                                containers.iter().find(|x| x.Id == container_id)
+                            {
+                                let mut names = String::from("");
+                                for n in &container.Names {
+                                    names.push_str(&n.trim().replace("/", ""));
+                                }
+                                description.insert(String::from("container_names"), names);
+                                if let Some(labels) = &container.Labels {
+                                    for (k, v) in labels {
+                                        let escape_list = ["-", ".", ":", " "];
+                                        let mut key = k.clone();
+                                        for e in escape_list.iter() {
+                                           key = key.replace(e, "_");
+                                        }
+                                        description.insert(
+                                            format!("container_label_{}", key),
+                                            v.to_string(),
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
+                        description.insert(
+                            String::from("container_scheduler"),
+                            String::from("kubernetes"),
+                        );
+                        let container_id = cg.pathname.split('/').last().unwrap();
+                        description
+                            .insert(String::from("container_id"), String::from(container_id));
+                    } else if self.regex_cgroup_containerd.is_match(&cg.pathname) {
+                        description.insert(
+                            String::from("container_runtime"),
+                            String::from("containerd"),
+                        );
+                    }
+                }
+            }
+        }
+        description
+    }
+
     /// Returns a vector containing pids of all running, sleeping or waiting current processes.
     pub fn get_alive_pids(&self) -> Vec<i32> {
         self.get_alive_processes()
@@ -206,69 +272,6 @@ impl ProcessTracker {
         }
         None
     }
-
-    pub fn get_process_container_description(&self, pid: i32) -> HashMap<String, String> {
-        let mut result = self
-            .procs
-            .iter()
-            .filter(|x| !x.is_empty() && x.get(0).unwrap().process.pid == pid);
-        let process = result.next().unwrap();
-        let mut description = HashMap::new();
-        if let Some(p) = process.get(0) {
-            if let Ok(cgroups) = p.process.cgroups() {
-                for cg in cgroups {
-                    // docker
-                    if self.regex_cgroup_docker.is_match(&cg.pathname) {
-                        description
-                            .insert(String::from("container_scheduler"), String::from("docker"));
-                        let container_id = cg.pathname.split('/').last().unwrap();
-                        description
-                            .insert(String::from("container_id"), String::from(container_id));
-                        let mut docker = match Docker::connect("unix:///var/run/docker.sock") {
-                            Ok(docker) => docker,
-                            Err(err) => panic!("{}", err),
-                        };
-                        //TODO optimize this by calling get_containers only once outside of this function
-                        if let Ok(containers) = docker.get_containers(false) {
-                            if let Some(container) =
-                                containers.iter().find(|x| x.Id == container_id)
-                            {
-                                let mut names = String::from("");
-                                for n in &container.Names {
-                                    names.push_str(&n.trim().replace("/", ""));
-                                }
-                                description.insert(String::from("container_names"), names);
-                                if let Some(labels) = &container.Labels {
-                                    for (k, v) in labels {
-                                        let key = k.replace(".", "_").replace("-", "_");
-                                        description.insert(
-                                            format!("container_label_{}", key),
-                                            v.to_string(),
-                                        );
-                                    }
-                                }
-                            }
-                        }
-                    } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
-                        description.insert(
-                            String::from("container_scheduler"),
-                            String::from("kubernetes"),
-                        );
-                        let container_id = cg.pathname.split('/').last().unwrap();
-                        description
-                            .insert(String::from("container_id"), String::from(container_id));
-                    } else if self.regex_cgroup_containerd.is_match(&cg.pathname) {
-                        description.insert(
-                            String::from("container_runtime"),
-                            String::from("containerd"),
-                        );
-                    }
-                }
-            }
-        }
-        description
-    }
-
     pub fn get_top_consumers(&self, top: u16) -> Vec<(Process, u64)> {
         let mut consumers: Vec<(Process, u64)> = vec![];
         for p in &self.procs {

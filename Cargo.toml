@@ -26,14 +26,13 @@ warp10 = { version = "1.0.0", optional = true }
 time = "0.2.25"
 colored = "2.0.0"
 chrono = "0.4.19"
-rs-docker = { version = "0.0.58", optional = true }
+docker-sync = { version = "0.1.0", optional = true }
 hyper = { version = "0.14", features = ["full"], optional = true }
 tokio = { version = "1", features = ["full"]}
-#rs-docker = { path = "../rust-docker" }
 
 [features]
 default = ["prometheus", "riemann", "warp10", "containers", "json"]
 prometheus = ["hyper"]
 riemann = ["riemann_client"]
 json = ["serde", "serde_json"]
-containers = ["rs-docker"]
+containers = ["docker-sync"]
