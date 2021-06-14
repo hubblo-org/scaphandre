@@ -1,6 +1,6 @@
+use docker_sync::Docker;
 use procfs::process::Process;
 use regex::Regex;
-use docker_sync::Docker;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 
@@ -191,7 +191,7 @@ impl ProcessTracker {
                                         let escape_list = ["-", ".", ":", " "];
                                         let mut key = k.clone();
                                         for e in escape_list.iter() {
-                                           key = key.replace(e, "_");
+                                            key = key.replace(e, "_");
                                         }
                                         description.insert(
                                             format!("container_label_{}", key),

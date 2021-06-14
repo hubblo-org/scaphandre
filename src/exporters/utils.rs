@@ -41,7 +41,6 @@ pub fn get_hostname() -> String {
     )
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
