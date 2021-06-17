@@ -9,10 +9,10 @@ pub mod riemann;
 pub mod stdout;
 pub mod utils;
 pub mod warpten;
-use docker_sync::Docker;
 use crate::sensors::{RecordGenerator, Topology};
 use chrono::Utc;
 use clap::ArgMatches;
+use docker_sync::Docker;
 use std::collections::HashMap;
 use std::fmt;
 use utils::get_scaphandre_version;
@@ -438,8 +438,8 @@ impl<'a> MetricGenerator<'a> {
                 Err(err) => panic!("{}", err),
             };
             warn!("connected to docker socket");
-            if let Ok(containers_result) = docker.get_containers(false){
-                containers_found = containers_result.clone();
+            if let Ok(containers_result) = docker.get_containers(false) {
+                containers_found = containers_result;
             }
         }
 
@@ -451,16 +451,15 @@ impl<'a> MetricGenerator<'a> {
 
             if containers {
                 if !containers_found.is_empty() {
-                    let container_data = processes_tracker.get_process_container_description(pid, &containers_found);
+                    let container_data =
+                        processes_tracker.get_process_container_description(pid, &containers_found);
                     warn!("got result");
 
                     if !container_data.is_empty() {
                         for (k, v) in container_data.iter() {
                             attributes.insert(String::from(k), String::from(v));
                         }
-
                     }
-
                 }
                 warn!("description inserted");
             }

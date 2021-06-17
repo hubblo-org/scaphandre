@@ -155,7 +155,11 @@ impl ProcessTracker {
         res
     }
 
-    pub fn get_process_container_description(&self, pid: i32, containers: &Vec<Container>) -> HashMap<String, String> {
+    pub fn get_process_container_description(
+        &self,
+        pid: i32,
+        containers: &[Container],
+    ) -> HashMap<String, String> {
         let mut result = self
             .procs
             .iter()
@@ -178,9 +182,7 @@ impl ProcessTracker {
                             .insert(String::from("container_id"), String::from(container_id));
                         ////TODO optimize this by calling get_containers only once outside of this function
                         warn!("sending request to docker socket");
-                        if let Some(container) =
-                            containers.iter().find(|x| x.Id == container_id)
-                        {
+                        if let Some(container) = containers.iter().find(|x| x.Id == container_id) {
                             warn!("searching for pid");
                             let mut names = String::from("");
                             for n in &container.Names {
@@ -195,10 +197,8 @@ impl ProcessTracker {
                                     for e in escape_list.iter() {
                                         key = key.replace(e, "_");
                                     }
-                                    description.insert(
-                                        format!("container_label_{}", key),
-                                        v.to_string(),
-                                    );
+                                    description
+                                        .insert(format!("container_label_{}", key), v.to_string());
                                 }
                                 warn!("added labels");
                             }
