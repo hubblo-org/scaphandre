@@ -1,4 +1,4 @@
-use docker_sync::Docker;
+use docker_sync::container::Container;
 use procfs::process::Process;
 use regex::Regex;
 use std::collections::HashMap;
@@ -155,7 +155,7 @@ impl ProcessTracker {
         res
     }
 
-    pub fn get_process_container_description(&self, pid: i32) -> HashMap<String, String> {
+    pub fn get_process_container_description(&self, pid: i32, containers: &Vec<Container>) -> HashMap<String, String> {
         let mut result = self
             .procs
             .iter()
@@ -172,35 +172,34 @@ impl ProcessTracker {
                         let container_id = cg.pathname.split('/').last().unwrap();
                         description
                             .insert(String::from("container_id"), String::from(container_id));
-                        let mut docker = match Docker::connect() {
-                            Ok(docker) => docker,
-                            Err(err) => panic!("{}", err),
-                        };
                         ////TODO optimize this by calling get_containers only once outside of this function
-                        if let Ok(containers) = docker.get_containers(false) {
-                            if let Some(container) =
-                                containers.iter().find(|x| x.Id == container_id)
-                            {
-                                let mut names = String::from("");
-                                for n in &container.Names {
-                                    names.push_str(&n.trim().replace("/", ""));
-                                }
-                                description.insert(String::from("container_names"), names);
-                                if let Some(labels) = &container.Labels {
-                                    for (k, v) in labels {
-                                        let escape_list = ["-", ".", ":", " "];
-                                        let mut key = k.clone();
-                                        for e in escape_list.iter() {
-                                            key = key.replace(e, "_");
-                                        }
-                                        description.insert(
-                                            format!("container_label_{}", key),
-                                            v.to_string(),
-                                        );
+                        warn!("sending request to docker socket");
+                        if let Some(container) =
+                            containers.iter().find(|x| x.Id == container_id)
+                        {
+                            warn!("searching for pid");
+                            let mut names = String::from("");
+                            for n in &container.Names {
+                                names.push_str(&n.trim().replace("/", ""));
+                            }
+                            warn!("added names");
+                            description.insert(String::from("container_names"), names);
+                            if let Some(labels) = &container.Labels {
+                                for (k, v) in labels {
+                                    let escape_list = ["-", ".", ":", " "];
+                                    let mut key = k.clone();
+                                    for e in escape_list.iter() {
+                                        key = key.replace(e, "_");
                                     }
+                                    description.insert(
+                                        format!("container_label_{}", key),
+                                        v.to_string(),
+                                    );
                                 }
+                                warn!("added labels");
                             }
                         }
+                        warn!("job is done here");
                     } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
                         description.insert(
                             String::from("container_scheduler"),
@@ -217,7 +216,9 @@ impl ProcessTracker {
                     }
                 }
             }
+            warn!("it's over");
         }
+        warn!("returning description");
         description
     }
 

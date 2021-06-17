@@ -9,6 +9,7 @@ pub mod riemann;
 pub mod stdout;
 pub mod utils;
 pub mod warpten;
+use docker_sync::Docker;
 use crate::sensors::{RecordGenerator, Topology};
 use chrono::Utc;
 use clap::ArgMatches;
@@ -429,6 +430,19 @@ impl<'a> MetricGenerator<'a> {
     fn gen_process_metrics(&mut self, qemu: bool, containers: bool) {
         let processes_tracker = &self.topology.proc_tracker;
 
+        let mut containers_found = vec![];
+        if containers {
+            warn!("connecting to docker socket");
+            let mut docker = match Docker::connect() {
+                Ok(docker) => docker,
+                Err(err) => panic!("{}", err),
+            };
+            warn!("connected to docker socket");
+            if let Ok(containers_result) = docker.get_containers(false){
+                containers_found = containers_result.clone();
+            }
+        }
+
         for pid in processes_tracker.get_alive_pids() {
             let exe = processes_tracker.get_process_name(pid);
             let cmdline = processes_tracker.get_process_cmdline(pid);
@@ -436,13 +450,19 @@ impl<'a> MetricGenerator<'a> {
             let mut attributes = HashMap::new();
 
             if containers {
-                let container_data = processes_tracker.get_process_container_description(pid);
+                if !containers_found.is_empty() {
+                    let container_data = processes_tracker.get_process_container_description(pid, &containers_found);
+                    warn!("got result");
 
-                if !container_data.is_empty() {
-                    for (k, v) in container_data.iter() {
-                        attributes.insert(String::from(k), String::from(v));
+                    if !container_data.is_empty() {
+                        for (k, v) in container_data.iter() {
+                            attributes.insert(String::from(k), String::from(v));
+                        }
+
                     }
+
                 }
+                warn!("description inserted");
             }
 
             attributes.insert("pid".to_string(), pid.to_string());
@@ -474,6 +494,7 @@ impl<'a> MetricGenerator<'a> {
                 });
             }
         }
+        warn!("process data pushed");
     }
 
     /// Generate all metrics provided by Scaphandre agent.
@@ -504,6 +525,7 @@ impl<'a> MetricGenerator<'a> {
         );
         self.gen_process_metrics(qemu, containers);
         debug!("self_metrics: {:#?}", self.data);
+        warn!("process metrics happened !");
     }
 
     /// Retrieve the current metrics stored into [MetricGenerator].

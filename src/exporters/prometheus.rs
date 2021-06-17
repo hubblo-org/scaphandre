@@ -226,6 +226,7 @@ async fn show_metrics(
         info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
 
         metric_generator.gen_all_metrics(context.qemu, context.containers);
+        warn!("metrics generated");
 
         // Send all data
         for msg in metric_generator.get_metrics() {
@@ -248,6 +249,7 @@ async fn show_metrics(
                 msg.name.clone(),
                 format_metric(&msg.name, &value, attributes),
             );
+            warn!("metrics pushed");
         }
     } else {
         body.push_str(&format!("<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{}\">/{}</a>", suffix, suffix));
