@@ -164,7 +164,11 @@ impl ProcessTracker {
         let mut description = HashMap::new();
         if let Some(p) = process.get(0) {
             if let Ok(cgroups) = p.process.cgroups() {
+                let mut found = false;
                 for cg in cgroups {
+                    if found {
+                        break;
+                    }
                     // docker
                     if self.regex_cgroup_docker.is_match(&cg.pathname) {
                         description
@@ -200,6 +204,7 @@ impl ProcessTracker {
                             }
                         }
                         warn!("job is done here");
+                        found = true;
                     } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
                         description.insert(
                             String::from("container_scheduler"),
@@ -208,11 +213,13 @@ impl ProcessTracker {
                         let container_id = cg.pathname.split('/').last().unwrap();
                         description
                             .insert(String::from("container_id"), String::from(container_id));
+                        found = true;
                     } else if self.regex_cgroup_containerd.is_match(&cg.pathname) {
                         description.insert(
                             String::from("container_runtime"),
                             String::from("containerd"),
                         );
+                        found = true;
                     }
                 }
             }
