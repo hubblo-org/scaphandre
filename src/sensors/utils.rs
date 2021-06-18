@@ -159,7 +159,7 @@ impl ProcessTracker {
         &self,
         pid: i32,
         containers: &[Container],
-        docker_version: String
+        docker_version: String,
     ) -> HashMap<String, String> {
         let mut result = self
             .procs
@@ -189,7 +189,10 @@ impl ProcessTracker {
                             }
                             warn!("added names");
                             description.insert(String::from("container_names"), names);
-                            description.insert(String::from("container_docker_version"), docker_version.clone());
+                            description.insert(
+                                String::from("container_docker_version"),
+                                docker_version.clone(),
+                            );
                             if let Some(labels) = &container.Labels {
                                 for (k, v) in labels {
                                     let escape_list = ["-", ".", ":", " "];

@@ -453,8 +453,11 @@ impl<'a> MetricGenerator<'a> {
 
             if containers {
                 if !containers_found.is_empty() {
-                    let container_data =
-                        processes_tracker.get_process_container_description(pid, &containers_found, docker_version.clone());
+                    let container_data = processes_tracker.get_process_container_description(
+                        pid,
+                        &containers_found,
+                        docker_version.clone(),
+                    );
                     warn!("got result");
 
                     if !container_data.is_empty() {
