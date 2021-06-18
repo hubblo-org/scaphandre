@@ -431,6 +431,7 @@ impl<'a> MetricGenerator<'a> {
         let processes_tracker = &self.topology.proc_tracker;
 
         let mut containers_found = vec![];
+        let mut docker_version = String::from("");
         if containers {
             warn!("connecting to docker socket");
             let mut docker = match Docker::connect() {
@@ -440,6 +441,7 @@ impl<'a> MetricGenerator<'a> {
             warn!("connected to docker socket");
             if let Ok(containers_result) = docker.get_containers(false) {
                 containers_found = containers_result;
+                docker_version = String::from(docker.get_version().unwrap().Version.as_str());
             }
         }
 
@@ -452,7 +454,7 @@ impl<'a> MetricGenerator<'a> {
             if containers {
                 if !containers_found.is_empty() {
                     let container_data =
-                        processes_tracker.get_process_container_description(pid, &containers_found);
+                        processes_tracker.get_process_container_description(pid, &containers_found, docker_version.clone());
                     warn!("got result");
 
                     if !container_data.is_empty() {

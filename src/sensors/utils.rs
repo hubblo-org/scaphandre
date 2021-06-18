@@ -159,6 +159,7 @@ impl ProcessTracker {
         &self,
         pid: i32,
         containers: &[Container],
+        docker_version: String
     ) -> HashMap<String, String> {
         let mut result = self
             .procs
@@ -180,8 +181,6 @@ impl ProcessTracker {
                         let container_id = cg.pathname.split('/').last().unwrap();
                         description
                             .insert(String::from("container_id"), String::from(container_id));
-                        ////TODO optimize this by calling get_containers only once outside of this function
-                        warn!("sending request to docker socket");
                         if let Some(container) = containers.iter().find(|x| x.Id == container_id) {
                             warn!("searching for pid");
                             let mut names = String::from("");
@@ -190,6 +189,7 @@ impl ProcessTracker {
                             }
                             warn!("added names");
                             description.insert(String::from("container_names"), names);
+                            description.insert(String::from("container_docker_version"), docker_version.clone());
                             if let Some(labels) = &container.Labels {
                                 for (k, v) in labels {
                                     let escape_list = ["-", ".", ":", " "];
