@@ -182,12 +182,10 @@ impl ProcessTracker {
                         description
                             .insert(String::from("container_id"), String::from(container_id));
                         if let Some(container) = containers.iter().find(|x| x.Id == container_id) {
-                            warn!("searching for pid");
                             let mut names = String::from("");
                             for n in &container.Names {
                                 names.push_str(&n.trim().replace("/", ""));
                             }
-                            warn!("added names");
                             description.insert(String::from("container_names"), names);
                             description.insert(
                                 String::from("container_docker_version"),
@@ -203,10 +201,8 @@ impl ProcessTracker {
                                     description
                                         .insert(format!("container_label_{}", key), v.to_string());
                                 }
-                                warn!("added labels");
                             }
                         }
-                        warn!("job is done here");
                         found = true;
                     } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
                         description.insert(
@@ -226,9 +222,7 @@ impl ProcessTracker {
                     }
                 }
             }
-            warn!("it's over");
         }
-        warn!("returning description");
         description
     }
 

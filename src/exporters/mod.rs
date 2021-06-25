@@ -9,13 +9,14 @@ pub mod riemann;
 pub mod stdout;
 pub mod utils;
 pub mod warpten;
+use crate::current_system_time_since_epoch;
 use crate::sensors::{RecordGenerator, Topology};
 use chrono::Utc;
 use clap::ArgMatches;
-use docker_sync::Docker;
+use docker_sync::{container::Container, Docker};
 use std::collections::HashMap;
 use std::fmt;
-use utils::get_scaphandre_version;
+use utils::{get_scaphandre_version, open_docker_socket};
 
 /// General metric definition.
 #[derive(Debug)]
@@ -89,6 +90,18 @@ struct MetricGenerator<'a> {
     topology: &'a Topology,
     /// `hostname` is the system name where the metrics belongs.
     hostname: &'a str,
+    /// Tells MetricGenerator if it has to watch for qemu virtual machines.
+    qemu: bool,
+    /// Tells MetricGenerator if it has to watch for containers.
+    watch_containers: bool,
+    ///
+    containers_last_check: String,
+    /// `containers` contains the containers descriptions when --containers is true
+    containers: Vec<Container>,
+    /// docker_version contains the version number of local docker daemon
+    docker_version: String,
+    /// docker_socket holds the opened docker socket
+    docker_socket: Docker,
 }
 
 /// This is not mandatory to use MetricGenerator methods. Exporter can use dedicated
@@ -96,12 +109,26 @@ struct MetricGenerator<'a> {
 /// to use the following methods to avoid discrepancies between exporters.
 impl<'a> MetricGenerator<'a> {
     /// Returns a MetricGenerator instance that will host metrics.
-    fn new(topology: &'a Topology, hostname: &'a str) -> MetricGenerator<'a> {
+    fn new(
+        topology: &'a Topology,
+        hostname: &'a str,
+        qemu: bool,
+        watch_containers: bool,
+    ) -> MetricGenerator<'a> {
         let data = Vec::new();
+        let containers = vec![];
+        let docker_version = String::from("");
+        let docker_socket = open_docker_socket().unwrap();
         MetricGenerator {
             data,
             topology,
             hostname,
+            containers,
+            qemu,
+            containers_last_check: String::from(""),
+            docker_version,
+            docker_socket,
+            watch_containers,
         }
     }
 
@@ -426,22 +453,32 @@ impl<'a> MetricGenerator<'a> {
         }
     }
 
+    fn gen_containers_basic_metadata(&mut self) {
+        if let Ok(containers_result) = self.docker_socket.get_containers(false) {
+            self.containers = containers_result;
+            self.containers_last_check = current_system_time_since_epoch().as_secs().to_string();
+        }
+    }
+
     /// Generate process metrics.
-    fn gen_process_metrics(&mut self, qemu: bool, containers: bool) {
+    fn gen_process_metrics(&mut self) {
         let processes_tracker = &self.topology.proc_tracker;
 
-        let mut containers_found = vec![];
-        let mut docker_version = String::from("");
-        if containers {
-            warn!("connecting to docker socket");
-            let mut docker = match Docker::connect() {
-                Ok(docker) => docker,
-                Err(err) => panic!("{}", err),
-            };
-            warn!("connected to docker socket");
-            if let Ok(containers_result) = docker.get_containers(false) {
-                containers_found = containers_result;
-                docker_version = String::from(docker.get_version().unwrap().Version.as_str());
+        if self.watch_containers {
+            let last_check = self.containers_last_check.clone();
+            let now = current_system_time_since_epoch().as_secs().to_string();
+
+            if last_check.is_empty() {
+                self.containers_last_check =
+                    current_system_time_since_epoch().as_secs().to_string();
+                self.gen_containers_basic_metadata();
+                self.docker_version =
+                    String::from(self.docker_socket.get_version().unwrap().Version.as_str());
+            } else if let Ok(events) = self.docker_socket.get_events(Some(last_check), Some(now)) {
+                if !events.is_empty() {
+                    self.gen_containers_basic_metadata();
+                    debug!("{:?}", events);
+                }
             }
         }
 
@@ -451,22 +488,18 @@ impl<'a> MetricGenerator<'a> {
 
             let mut attributes = HashMap::new();
 
-            if containers {
-                if !containers_found.is_empty() {
-                    let container_data = processes_tracker.get_process_container_description(
-                        pid,
-                        &containers_found,
-                        docker_version.clone(),
-                    );
-                    warn!("got result");
+            if self.watch_containers && !self.containers.is_empty() {
+                let container_data = processes_tracker.get_process_container_description(
+                    pid,
+                    &self.containers,
+                    self.docker_version.clone(),
+                );
 
-                    if !container_data.is_empty() {
-                        for (k, v) in container_data.iter() {
-                            attributes.insert(String::from(k), String::from(v));
-                        }
+                if !container_data.is_empty() {
+                    for (k, v) in container_data.iter() {
+                        attributes.insert(String::from(k), String::from(v));
                     }
                 }
-                warn!("description inserted");
             }
 
             attributes.insert("pid".to_string(), pid.to_string());
@@ -476,7 +509,7 @@ impl<'a> MetricGenerator<'a> {
             if let Some(cmdline_str) = cmdline {
                 attributes.insert("cmdline".to_string(), cmdline_str.replace("\"", "\\\""));
 
-                if qemu {
+                if self.qemu {
                     if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
                         attributes.insert("vmname".to_string(), vmname);
                     }
@@ -498,11 +531,10 @@ impl<'a> MetricGenerator<'a> {
                 });
             }
         }
-        warn!("process data pushed");
     }
 
     /// Generate all metrics provided by Scaphandre agent.
-    fn gen_all_metrics(&mut self, qemu: bool, containers: bool) {
+    fn gen_all_metrics(&mut self) {
         info!(
             "{}: Get self metrics",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
@@ -527,9 +559,8 @@ impl<'a> MetricGenerator<'a> {
             "{}: Get process metrics",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
         );
-        self.gen_process_metrics(qemu, containers);
+        self.gen_process_metrics();
         debug!("self_metrics: {:#?}", self.data);
-        warn!("process metrics happened !");
     }
 
     /// Retrieve the current metrics stored into [MetricGenerator].

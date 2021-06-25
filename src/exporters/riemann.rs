@@ -157,7 +157,12 @@ impl Exporter for RiemannExporter {
             topology.refresh();
 
             info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-            let mut metric_generator = MetricGenerator::new(&topology, &hostname);
+            let mut metric_generator = MetricGenerator::new(
+                &topology,
+                &hostname,
+                parameters.is_present("qemu"),
+                parameters.is_present("containers"),
+            );
             // Here we need a specific behavior for process metrics, so we call each gen function
             // and then implement that specific behavior (we don't use gen_all_metrics).
             metric_generator.gen_self_metrics();

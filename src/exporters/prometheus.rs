@@ -112,7 +112,7 @@ struct PowerMetrics {
     topology: Mutex<Topology>,
     last_request: Mutex<Duration>,
     qemu: bool,
-    containers: bool,
+    watch_containers: bool,
     hostname: String,
 }
 
@@ -123,7 +123,7 @@ async fn runner(
     port: String,
     suffix: String,
     qemu: bool,
-    containers: bool,
+    watch_containers: bool,
     hostname: String,
 ) {
     if let Ok(addr) = address.parse::<IpAddr>() {
@@ -133,7 +133,7 @@ async fn runner(
                 topology: Mutex::new(topology),
                 last_request: Mutex::new(Duration::new(0, 0)),
                 qemu,
-                containers,
+                watch_containers,
                 hostname: hostname.clone(),
             };
             let context = Arc::new(power_metrics);
@@ -221,12 +221,16 @@ async fn show_metrics(
         }
         *last_request = now;
         let topo = context.topology.lock().unwrap();
-        let mut metric_generator = MetricGenerator::new(&topo, &context.hostname);
+        let mut metric_generator = MetricGenerator::new(
+            &topo,
+            &context.hostname,
+            context.qemu,
+            context.watch_containers,
+        );
 
         info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
 
-        metric_generator.gen_all_metrics(context.qemu, context.containers);
-        warn!("metrics generated");
+        metric_generator.gen_all_metrics();
 
         // Send all data
         for msg in metric_generator.get_metrics() {
@@ -249,7 +253,6 @@ async fn show_metrics(
                 msg.name.clone(),
                 format_metric(&msg.name, &value, attributes),
             );
-            warn!("metrics pushed");
         }
     } else {
         body.push_str(&format!("<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{}\">/{}</a>", suffix, suffix));
