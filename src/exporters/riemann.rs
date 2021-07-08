@@ -201,7 +201,10 @@ impl Exporter for RiemannExporter {
                     pid.to_string(),
                     exe
                 );
-                if let Some(power) = metric_generator.topology.get_process_power_consumption_microwatts(pid) {
+                if let Some(power) = metric_generator
+                    .topology
+                    .get_process_power_consumption_microwatts(pid)
+                {
                     data.push(Metric {
                         name: metric_name,
                         metric_type: String::from("gauge"),

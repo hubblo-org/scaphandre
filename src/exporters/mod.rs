@@ -462,7 +462,6 @@ impl MetricGenerator {
 
     /// Generate process metrics.
     fn gen_process_metrics(&mut self) {
-
         if self.watch_containers {
             let last_check = self.containers_last_check.clone();
             let now = current_system_time_since_epoch().as_secs().to_string();
@@ -475,10 +474,12 @@ impl MetricGenerator {
                     String::from(self.docker_socket.get_version().unwrap().Version.as_str());
             } else {
                 match self.docker_socket.get_events(Some(last_check), Some(now)) {
-                    Ok(events) => if !events.is_empty() {
-                        self.gen_containers_basic_metadata();
-                    } else {
-                    },
+                    Ok(events) => {
+                        if !events.is_empty() {
+                            self.gen_containers_basic_metadata();
+                        } else {
+                        }
+                    }
                     Err(err) => debug!("couldn't get events - {:?} - {}", err, err),
                 }
             }
@@ -491,11 +492,14 @@ impl MetricGenerator {
             let mut attributes = HashMap::new();
 
             if self.watch_containers && !self.containers.is_empty() {
-                let container_data = self.topology.proc_tracker.get_process_container_description(
-                    pid,
-                    &self.containers,
-                    self.docker_version.clone(),
-                );
+                let container_data = self
+                    .topology
+                    .proc_tracker
+                    .get_process_container_description(
+                        pid,
+                        &self.containers,
+                        self.docker_version.clone(),
+                    );
 
                 if !container_data.is_empty() {
                     for (k, v) in container_data.iter() {

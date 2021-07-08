@@ -108,9 +108,9 @@ impl Exporter for PrometheusExporter {
 
 /// Contains a mutex holding a Topology object.
 /// Used to pass the topology data from one http worker to another.
-struct PowerMetrics{
+struct PowerMetrics {
     last_request: Mutex<Duration>,
-    metric_generator: Mutex<MetricGenerator>
+    metric_generator: Mutex<MetricGenerator>,
 }
 
 #[tokio::main]
@@ -129,14 +129,12 @@ async fn runner(
 
             let power_metrics = PowerMetrics {
                 last_request: Mutex::new(Duration::new(0, 0)),
-                metric_generator: Mutex::new(
-                    MetricGenerator::new(
-                        topology,
-                        hostname.clone(),
-                        qemu,
-                        watch_containers,
-                    )
-                )
+                metric_generator: Mutex::new(MetricGenerator::new(
+                    topology,
+                    hostname.clone(),
+                    qemu,
+                    watch_containers,
+                )),
             };
             let context = Arc::new(power_metrics);
             let make_svc = make_service_fn(move |_| {
@@ -215,7 +213,8 @@ async fn show_metrics(
                     "{}: Refresh topology",
                     Utc::now().format("%Y-%m-%dT%H:%M:%S")
                 );
-                metric_generator.topology
+                metric_generator
+                    .topology
                     .proc_tracker
                     .clean_terminated_process_records_vectors();
                 metric_generator.topology.refresh();
