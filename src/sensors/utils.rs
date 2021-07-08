@@ -1,4 +1,7 @@
+use docker_sync::container::Container;
 use procfs::process::Process;
+use regex::Regex;
+use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 
 #[derive(Debug, Clone)]
@@ -9,6 +12,9 @@ pub struct ProcessTracker {
     /// Maximum number of ProcessRecord instances that scaphandre is allowed to
     /// store, per PID (thus, for each subvector).
     pub max_records_per_process: u16,
+    pub regex_cgroup_docker: Regex,
+    pub regex_cgroup_kubernetes: Regex,
+    pub regex_cgroup_containerd: Regex,
 }
 
 impl ProcessTracker {
@@ -22,9 +28,15 @@ impl ProcessTracker {
     /// let tracker = ProcessTracker::new(5);
     /// ```
     pub fn new(max_records_per_process: u16) -> ProcessTracker {
+        let regex_cgroup_docker = Regex::new(r"^/docker/.*$").unwrap();
+        let regex_cgroup_kubernetes = Regex::new(r"^/kubepods/\D+/.*$").unwrap();
+        let regex_cgroup_containerd = Regex::new("/system.slice/containerd.service").unwrap();
         ProcessTracker {
             procs: vec![],
             max_records_per_process,
+            regex_cgroup_docker,
+            regex_cgroup_kubernetes,
+            regex_cgroup_containerd,
         }
     }
 
@@ -143,6 +155,77 @@ impl ProcessTracker {
         res
     }
 
+    pub fn get_process_container_description(
+        &self,
+        pid: i32,
+        containers: &[Container],
+        docker_version: String,
+    ) -> HashMap<String, String> {
+        let mut result = self
+            .procs
+            .iter()
+            .filter(|x| !x.is_empty() && x.get(0).unwrap().process.pid == pid);
+        let process = result.next().unwrap();
+        let mut description = HashMap::new();
+        if let Some(p) = process.get(0) {
+            if let Ok(cgroups) = p.process.cgroups() {
+                let mut found = false;
+                for cg in cgroups {
+                    if found {
+                        break;
+                    }
+                    // docker
+                    if self.regex_cgroup_docker.is_match(&cg.pathname) {
+                        description
+                            .insert(String::from("container_scheduler"), String::from("docker"));
+                        let container_id = cg.pathname.split('/').last().unwrap();
+                        description
+                            .insert(String::from("container_id"), String::from(container_id));
+                        if let Some(container) = containers.iter().find(|x| x.Id == container_id) {
+                            let mut names = String::from("");
+                            for n in &container.Names {
+                                names.push_str(&n.trim().replace("/", ""));
+                            }
+                            description.insert(String::from("container_names"), names);
+                            description.insert(
+                                String::from("container_docker_version"),
+                                docker_version.clone(),
+                            );
+                            if let Some(labels) = &container.Labels {
+                                for (k, v) in labels {
+                                    let escape_list = ["-", ".", ":", " "];
+                                    let mut key = k.clone();
+                                    for e in escape_list.iter() {
+                                        key = key.replace(e, "_");
+                                    }
+                                    description
+                                        .insert(format!("container_label_{}", key), v.to_string());
+                                }
+                            }
+                        }
+                        found = true;
+                    } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
+                        description.insert(
+                            String::from("container_scheduler"),
+                            String::from("kubernetes"),
+                        );
+                        let container_id = cg.pathname.split('/').last().unwrap();
+                        description
+                            .insert(String::from("container_id"), String::from(container_id));
+                        found = true;
+                    } else if self.regex_cgroup_containerd.is_match(&cg.pathname) {
+                        description.insert(
+                            String::from("container_runtime"),
+                            String::from("containerd"),
+                        );
+                        found = true;
+                    }
+                }
+            }
+        }
+        description
+    }
+
     /// Returns a vector containing pids of all running, sleeping or waiting current processes.
     pub fn get_alive_pids(&self) -> Vec<i32> {
         self.get_alive_processes()
@@ -194,7 +277,6 @@ impl ProcessTracker {
         }
         None
     }
-
     pub fn get_top_consumers(&self, top: u16) -> Vec<(Process, u64)> {
         let mut consumers: Vec<(Process, u64)> = vec![];
         for p in &self.procs {

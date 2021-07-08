@@ -2,6 +2,7 @@
 //!
 //! The utils create provides common functions used by the exporters.
 use clap::crate_version;
+use docker_sync::Docker;
 
 /// Returns an Option containing the VM name of a qemu process.
 ///
@@ -79,6 +80,14 @@ mod tests {
         let cmdline = "qemu-system-x86_64,file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sguest=";
         assert_eq!(filter_qemu_cmdline(cmdline), None);
     }
+}
+
+pub fn open_docker_socket() -> Result<Docker, std::io::Error> {
+    let docker = match Docker::connect() {
+        Ok(docker) => docker,
+        Err(err) => return Err(err),
+    };
+    Ok(docker)
 }
 
 //  Copyright 2020 The scaphandre authors.
