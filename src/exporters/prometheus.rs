@@ -108,12 +108,9 @@ impl Exporter for PrometheusExporter {
 
 /// Contains a mutex holding a Topology object.
 /// Used to pass the topology data from one http worker to another.
-struct PowerMetrics {
-    topology: Mutex<Topology>,
+struct PowerMetrics{
     last_request: Mutex<Duration>,
-    qemu: bool,
-    watch_containers: bool,
-    hostname: String,
+    metric_generator: Mutex<MetricGenerator>
 }
 
 #[tokio::main]
@@ -129,12 +126,17 @@ async fn runner(
     if let Ok(addr) = address.parse::<IpAddr>() {
         if let Ok(port) = port.parse::<u16>() {
             let socket_addr = SocketAddr::new(addr, port);
+
             let power_metrics = PowerMetrics {
-                topology: Mutex::new(topology),
                 last_request: Mutex::new(Duration::new(0, 0)),
-                qemu,
-                watch_containers,
-                hostname: hostname.clone(),
+                metric_generator: Mutex::new(
+                    MetricGenerator::new(
+                        topology,
+                        hostname.clone(),
+                        qemu,
+                        watch_containers,
+                    )
+                )
             };
             let context = Arc::new(power_metrics);
             let make_svc = make_service_fn(move |_| {
@@ -206,27 +208,20 @@ async fn show_metrics(
         trace!("in metrics !");
         let now = current_system_time_since_epoch();
         let mut last_request = context.last_request.lock().unwrap();
-        if now - (*last_request) > Duration::from_secs(5) {
+        let mut metric_generator = context.metric_generator.lock().unwrap();
+        if now - (*last_request) > Duration::from_secs(2) {
             {
                 info!(
                     "{}: Refresh topology",
                     Utc::now().format("%Y-%m-%dT%H:%M:%S")
                 );
-                let mut topology = context.topology.lock().unwrap();
-                (*topology)
+                metric_generator.topology
                     .proc_tracker
                     .clean_terminated_process_records_vectors();
-                (*topology).refresh();
+                metric_generator.topology.refresh();
             }
         }
         *last_request = now;
-        let topo = context.topology.lock().unwrap();
-        let mut metric_generator = MetricGenerator::new(
-            &topo,
-            &context.hostname,
-            context.qemu,
-            context.watch_containers,
-        );
 
         info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
 

@@ -82,14 +82,14 @@ pub trait Exporter {
 /// MetricGenerator is an exporter helper structure to collect Scaphandre metrics.
 /// The goal is to provide a standard Vec\<Metric\> that can be used by exporters
 /// to avoid code duplication.
-struct MetricGenerator<'a> {
+struct MetricGenerator {
     /// `data` will be used to store the metrics retrieved.
     data: Vec<Metric>,
     /// `topology` is the system physical layout retrieve via the sensors crate with
     /// associated metrics.
-    topology: &'a Topology,
+    topology: Topology,
     /// `hostname` is the system name where the metrics belongs.
-    hostname: &'a str,
+    hostname: String,
     /// Tells MetricGenerator if it has to watch for qemu virtual machines.
     qemu: bool,
     /// Tells MetricGenerator if it has to watch for containers.
@@ -107,14 +107,14 @@ struct MetricGenerator<'a> {
 /// This is not mandatory to use MetricGenerator methods. Exporter can use dedicated
 /// code into the [Exporter] run() method to collect metrics. However it is advised
 /// to use the following methods to avoid discrepancies between exporters.
-impl<'a> MetricGenerator<'a> {
+impl MetricGenerator {
     /// Returns a MetricGenerator instance that will host metrics.
     fn new(
-        topology: &'a Topology,
-        hostname: &'a str,
+        topology: Topology,
+        hostname: String,
         qemu: bool,
         watch_containers: bool,
-    ) -> MetricGenerator<'a> {
+    ) -> MetricGenerator {
         let data = Vec::new();
         let containers = vec![];
         let docker_version = String::from("");
@@ -138,7 +138,7 @@ impl<'a> MetricGenerator<'a> {
             name: String::from("scaph_self_version"),
             metric_type: String::from("gauge"),
             ttl: 60.0,
-            hostname: String::from(self.hostname),
+            hostname: self.hostname.clone(),
             state: String::from("ok"),
             tags: vec!["scaphandre".to_string()],
             attributes: HashMap::new(),
@@ -154,7 +154,7 @@ impl<'a> MetricGenerator<'a> {
                 name: String::from("scaph_self_cpu_usage_percent"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
-                hostname: String::from(self.hostname),
+                hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
@@ -169,7 +169,7 @@ impl<'a> MetricGenerator<'a> {
                 name: String::from("scaph_self_mem_total_program_size"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
-                hostname: String::from(self.hostname),
+                hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
@@ -182,7 +182,7 @@ impl<'a> MetricGenerator<'a> {
                 name: String::from("scaph_self_mem_resident_set_size"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
-                hostname: String::from(self.hostname),
+                hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
@@ -195,7 +195,7 @@ impl<'a> MetricGenerator<'a> {
                 name: String::from("scaph_self_mem_shared_resident_size"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
-                hostname: String::from(self.hostname),
+                hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
@@ -214,7 +214,7 @@ impl<'a> MetricGenerator<'a> {
             name: String::from("scaph_self_topo_stats_nb"),
             metric_type: String::from("gauge"),
             ttl: 60.0,
-            hostname: String::from(self.hostname),
+            hostname: self.hostname.clone(),
             state: String::from("ok"),
             tags: vec!["scaphandre".to_string()],
             attributes: HashMap::new(),
@@ -226,7 +226,7 @@ impl<'a> MetricGenerator<'a> {
             name: String::from("scaph_self_topo_records_nb"),
             metric_type: String::from("gauge"),
             ttl: 60.0,
-            hostname: String::from(self.hostname),
+            hostname: self.hostname.clone(),
             state: String::from("ok"),
             tags: vec!["scaphandre".to_string()],
             attributes: HashMap::new(),
@@ -238,7 +238,7 @@ impl<'a> MetricGenerator<'a> {
             name: String::from("scaph_self_topo_procs_nb"),
             metric_type: String::from("gauge"),
             ttl: 60.0,
-            hostname: String::from(self.hostname),
+            hostname: self.hostname.clone(),
             state: String::from("ok"),
             tags: vec!["scaphandre".to_string()],
             attributes: HashMap::new(),
@@ -254,7 +254,7 @@ impl<'a> MetricGenerator<'a> {
                 name: String::from("scaph_self_socket_stats_nb"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
-                hostname: String::from(self.hostname),
+                hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: attributes.clone(),
@@ -266,7 +266,7 @@ impl<'a> MetricGenerator<'a> {
                 name: String::from("scaph_self_socket_records_nb"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
-                hostname: String::from(self.hostname),
+                hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: attributes.clone(),
@@ -283,7 +283,7 @@ impl<'a> MetricGenerator<'a> {
                     name: String::from("scaph_self_domain_records_nb"),
                     metric_type: String::from("gauge"),
                     ttl: 60.0,
-                    hostname: String::from(self.hostname),
+                    hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
                     attributes: attributes.clone(),
@@ -310,7 +310,7 @@ impl<'a> MetricGenerator<'a> {
                     name: String::from("scaph_host_energy_microjoules"),
                     metric_type: String::from("counter"),
                     ttl: 60.0,
-                    hostname: String::from(self.hostname),
+                    hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
                     attributes: HashMap::new(),
@@ -324,7 +324,7 @@ impl<'a> MetricGenerator<'a> {
                 name: String::from("scaph_host_energy_timestamp_seconds"),
                 metric_type: String::from("counter"),
                 ttl: 60.0,
-                hostname: String::from(self.hostname),
+                hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
@@ -339,7 +339,7 @@ impl<'a> MetricGenerator<'a> {
                     name: String::from("scaph_host_power_microwatts"),
                     metric_type: String::from("gauge"),
                     ttl: 60.0,
-                    hostname: String::from(self.hostname),
+                    hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
                     attributes: HashMap::new(),
@@ -365,7 +365,7 @@ impl<'a> MetricGenerator<'a> {
                     name: String::from("scaph_socket_energy_microjoules"),
                     metric_type: String::from("counter"),
                     ttl: 60.0,
-                    hostname: String::from(self.hostname),
+                    hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
                     attributes: attributes.clone(),
@@ -380,7 +380,7 @@ impl<'a> MetricGenerator<'a> {
                         name: String::from("scaph_socket_power_microwatts"),
                         metric_type: String::from("gauge"),
                         ttl: 60.0,
-                        hostname: String::from(self.hostname),
+                        hostname: self.hostname.clone(),
                         state: String::from("ok"),
                         tags: vec!["scaphandre".to_string()],
                         attributes: attributes.clone(),
@@ -401,7 +401,7 @@ impl<'a> MetricGenerator<'a> {
                 name: String::from("scaph_forks_since_boot_total"),
                 metric_type: String::from("counter"),
                 ttl: 60.0,
-                hostname: String::from(self.hostname),
+                hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
@@ -415,7 +415,7 @@ impl<'a> MetricGenerator<'a> {
                 name: String::from("scaph_processes_running_current"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
-                hostname: String::from(self.hostname),
+                hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
@@ -429,7 +429,7 @@ impl<'a> MetricGenerator<'a> {
                 name: String::from("scaph_processes_blocked_current"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
-                hostname: String::from(self.hostname),
+                hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
@@ -443,7 +443,7 @@ impl<'a> MetricGenerator<'a> {
                 name: String::from("scaph_context_switches_total"),
                 metric_type: String::from("counter"),
                 ttl: 60.0,
-                hostname: String::from(self.hostname),
+                hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
@@ -462,7 +462,6 @@ impl<'a> MetricGenerator<'a> {
 
     /// Generate process metrics.
     fn gen_process_metrics(&mut self) {
-        let processes_tracker = &self.topology.proc_tracker;
 
         if self.watch_containers {
             let last_check = self.containers_last_check.clone();
@@ -474,22 +473,25 @@ impl<'a> MetricGenerator<'a> {
                 self.gen_containers_basic_metadata();
                 self.docker_version =
                     String::from(self.docker_socket.get_version().unwrap().Version.as_str());
-            } else if let Ok(events) = self.docker_socket.get_events(Some(last_check), Some(now)) {
-                if !events.is_empty() {
-                    self.gen_containers_basic_metadata();
-                    debug!("{:?}", events);
+            } else {
+                match self.docker_socket.get_events(Some(last_check), Some(now)) {
+                    Ok(events) => if !events.is_empty() {
+                        self.gen_containers_basic_metadata();
+                    } else {
+                    },
+                    Err(err) => debug!("couldn't get events - {:?} - {}", err, err),
                 }
             }
         }
 
-        for pid in processes_tracker.get_alive_pids() {
-            let exe = processes_tracker.get_process_name(pid);
-            let cmdline = processes_tracker.get_process_cmdline(pid);
+        for pid in self.topology.proc_tracker.get_alive_pids() {
+            let exe = self.topology.proc_tracker.get_process_name(pid);
+            let cmdline = self.topology.proc_tracker.get_process_cmdline(pid);
 
             let mut attributes = HashMap::new();
 
             if self.watch_containers && !self.containers.is_empty() {
-                let container_data = processes_tracker.get_process_container_description(
+                let container_data = self.topology.proc_tracker.get_process_container_description(
                     pid,
                     &self.containers,
                     self.docker_version.clone(),
@@ -522,7 +524,7 @@ impl<'a> MetricGenerator<'a> {
                     name: metric_name,
                     metric_type: String::from("gauge"),
                     ttl: 60.0,
-                    hostname: String::from(self.hostname),
+                    hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
                     attributes,
