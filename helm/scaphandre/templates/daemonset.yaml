@@ -21,6 +21,7 @@ spec:
         image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"
         args:
             - {{ .Values.scaphandre.command }}
+            - --kubernetes-node=${K8S_NODE_NAME}
             {{- range $key, $value := .Values.scaphandre.extraArgs }}
             {{- if $value }}
             - --{{ $key }}={{ $value }}
@@ -28,6 +29,11 @@ spec:
             - --{{ $key }}
             {{- end }}
             {{- end }}
+        env:
+        - name: K8S_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         ports:
         - name: metrics
           containerPort: {{ .Values.port }}

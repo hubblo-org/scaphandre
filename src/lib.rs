@@ -61,6 +61,9 @@ pub fn run(matches: ArgMatches) {
         header = false;
     }
 
+    let  k8s_node = get_argument(matches, "kubernetes-node");
+    println!("Running on k8s node {}", k8s_node);
+
     if let Some(stdout_exporter_parameters) = matches.subcommand_matches("stdout") {
         if header {
             scaphandre_header("stdout");
