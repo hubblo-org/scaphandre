@@ -20,6 +20,12 @@ fn main() {
                 .help("Sets the level of verbosity.")
         )
         .arg(
+            Arg::with_name("kubernetes-node")
+                .help("Name of the kubernetes node and enables the kubernetes integration.")
+                .required(false)
+                .takes_value(true)
+        )
+        .arg(
             Arg::with_name("no-header")
                 .value_name("no-header")
                 .help("Prevents the header to be displayed in the terminal output.")
