@@ -227,7 +227,7 @@ async fn show_metrics(
         metric_generator.gen_all_metrics();
 
         // Send all data
-        for msg in metric_generator.get_metrics() {
+        for msg in metric_generator.pop_metrics() {
             let mut attributes: Option<&HashMap<String, String>> = None;
             if !msg.attributes.is_empty() {
                 attributes = Some(&msg.attributes);

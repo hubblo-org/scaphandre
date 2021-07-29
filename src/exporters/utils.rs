@@ -100,14 +100,14 @@ pub fn get_docker_client() -> Result<Docker, std::io::Error> {
 //        }
 //    }
 
-    //let kubeconfig = match config::load_kube_config() {
-    //    Ok(config) => config,
-    //    Err(err) => {
-    //        warn!("Couldn't read kube config: {}", err);
-    //        return Err(std::io::Error::new(std::io::ErrorKind::Other, "Couldn't read kube config"))
-    //    },
-    //};
-    //let kubernetes = APIClient::new(kubeconfig);
+//let kubeconfig = match config::load_kube_config() {
+//    Ok(config) => config,
+//    Err(err) => {
+//        warn!("Couldn't read kube config: {}", err);
+//        return Err(std::io::Error::new(std::io::ErrorKind::Other, "Couldn't read kube config"))
+//    },
+//};
+//let kubernetes = APIClient::new(kubeconfig);
 //}
 
 //  Copyright 2020 The scaphandre authors.

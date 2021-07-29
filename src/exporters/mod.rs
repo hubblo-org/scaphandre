@@ -18,7 +18,7 @@ use docker_sync::{container::Container, Docker};
 //use k8s_sync::kubernetes::Kubernetes;
 use std::collections::HashMap;
 use std::fmt;
-use utils::{get_scaphandre_version, get_docker_client};
+use utils::{get_docker_client, get_scaphandre_version};
 
 /// General metric definition.
 #[derive(Debug)]
@@ -644,7 +644,7 @@ impl MetricGenerator {
     pub fn pop_metrics(&mut self) -> Vec<Metric> {
         let mut res = vec![];
         while !&self.data.is_empty() {
-           res.push(self.data.pop().unwrap()) 
+            res.push(self.data.pop().unwrap())
         }
         res
     }
