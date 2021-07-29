@@ -10,13 +10,15 @@ pub mod stdout;
 pub mod utils;
 pub mod warpten;
 use crate::current_system_time_since_epoch;
+//use crate::exporters::utils::get_kubernetes_client;
 use crate::sensors::{RecordGenerator, Topology};
 use chrono::Utc;
 use clap::ArgMatches;
 use docker_sync::{container::Container, Docker};
+//use k8s_sync::kubernetes::Kubernetes;
 use std::collections::HashMap;
 use std::fmt;
-use utils::{get_scaphandre_version, open_docker_socket};
+use utils::{get_scaphandre_version, get_docker_client};
 
 /// General metric definition.
 #[derive(Debug)]
@@ -100,8 +102,18 @@ struct MetricGenerator {
     containers: Vec<Container>,
     /// docker_version contains the version number of local docker daemon
     docker_version: String,
-    /// docker_socket holds the opened docker socket
-    docker_socket: Docker,
+    /// docker_client holds the opened docker socket
+    docker_client: Option<Docker>,
+    /// watch Docker
+    watch_docker: bool,
+    /// watch Kubernetes
+    watch_kubernetes: bool,
+    /// kubernetes socket
+    //kubernetes_client: Option<Kubernetes>,
+    /// Kubernetes pods
+    pods: Vec<String>,
+    ///
+    pods_last_check: String,
 }
 
 /// This is not mandatory to use MetricGenerator methods. Exporter can use dedicated
@@ -117,8 +129,22 @@ impl MetricGenerator {
     ) -> MetricGenerator {
         let data = Vec::new();
         let containers = vec![];
+        let pods = vec![];
         let docker_version = String::from("");
-        let docker_socket = open_docker_socket().unwrap();
+        let mut docker_client = None;
+        //let mut kubernetes_client = None;
+        if watch_containers {
+            if let Ok(docker) = get_docker_client() {
+                docker_client = Some(docker);
+            } else {
+                warn!("Couldn't connect to docker socket.");
+            }
+            //if let Ok(kubernetes) = get_kubernetes_client() {
+            //    kubernetes_client = Some(kubernetes);
+            //} else {
+            //    warn!("Couldn't connect to kubernetes API.");
+            //}
+        }
         MetricGenerator {
             data,
             topology,
@@ -127,8 +153,13 @@ impl MetricGenerator {
             qemu,
             containers_last_check: String::from(""),
             docker_version,
-            docker_socket,
+            docker_client,
             watch_containers,
+            watch_docker: true,
+            //kubernetes_client,
+            watch_kubernetes: true,
+            pods,
+            pods_last_check: String::from(""),
         }
     }
 
@@ -453,34 +484,75 @@ impl MetricGenerator {
         }
     }
 
-    fn gen_containers_basic_metadata(&mut self) {
-        if let Ok(containers_result) = self.docker_socket.get_containers(false) {
-            self.containers = containers_result;
-            self.containers_last_check = current_system_time_since_epoch().as_secs().to_string();
+    fn gen_docker_containers_basic_metadata(&mut self) {
+        if self.watch_docker && self.docker_client.is_some() {
+            if let Some(docker) = self.docker_client.as_mut() {
+                if let Ok(containers_result) = docker.get_containers(false) {
+                    self.containers = containers_result;
+                    self.containers_last_check =
+                        current_system_time_since_epoch().as_secs().to_string();
+                }
+            } else {
+                info!("Docker socket is not some.");
+            }
         }
     }
+
+    //fn gen_kubernetes_pods_basic_metadata(&mut self) {
+    //    if self.watch_kubernetes {
+    //        if let Some(kubernetes) = self.kubernetes_client.as_mut() {
+    //            if let Ok(pods_result) = kubernetes.list_pods("kube-system".to_string()) {
+    //                self.pods = pods_result;
+    //                for pod in &self.pods {
+    //                    warn!("{:?}", pod);
+    //                }
+    //                self.pods_last_check = current_system_time_since_epoch().as_secs().to_string();
+    //            }
+    //        } else {
+    //            info!("Kubernetes socket is not some.");
+    //        }
+    //    }
+    //}
 
     /// Generate process metrics.
     fn gen_process_metrics(&mut self) {
         if self.watch_containers {
             let last_check = self.containers_last_check.clone();
             let now = current_system_time_since_epoch().as_secs().to_string();
-
             if last_check.is_empty() {
                 self.containers_last_check =
                     current_system_time_since_epoch().as_secs().to_string();
-                self.gen_containers_basic_metadata();
-                self.docker_version =
-                    String::from(self.docker_socket.get_version().unwrap().Version.as_str());
-            } else {
-                match self.docker_socket.get_events(Some(last_check), Some(now)) {
-                    Ok(events) => {
-                        if !events.is_empty() {
-                            self.gen_containers_basic_metadata();
-                        } else {
+                if self.watch_docker && self.docker_client.is_some() {
+                    match self.docker_client.as_mut().unwrap().get_version() {
+                        Ok(version_response) => {
+                            self.docker_version = String::from(version_response.Version.as_str())
+                        }
+                        Err(error) => {
+                            info!("Couldn't query the docker socket: {}", error);
+                            self.watch_docker = false;
                         }
                     }
-                    Err(err) => debug!("couldn't get events - {:?} - {}", err, err),
+                    self.gen_docker_containers_basic_metadata();
+                }
+                //if self.watch_kubernetes {
+                //    self.gen_kubernetes_pods_basic_metadata();
+                //}
+            } else {
+                if self.watch_docker && self.docker_client.is_some() {
+                    match self
+                        .docker_client
+                        .as_mut()
+                        .unwrap()
+                        .get_events(Some(last_check), Some(now))
+                    {
+                        Ok(events) => {
+                            if !events.is_empty() {
+                                self.gen_docker_containers_basic_metadata();
+                            } else {
+                            }
+                        }
+                        Err(err) => debug!("couldn't get docker events - {:?} - {}", err, err),
+                    }
                 }
             }
         }
@@ -567,6 +639,14 @@ impl MetricGenerator {
         );
         self.gen_process_metrics();
         debug!("self_metrics: {:#?}", self.data);
+    }
+
+    pub fn pop_metrics(&mut self) -> Vec<Metric> {
+        let mut res = vec![];
+        while !&self.data.is_empty() {
+           res.push(self.data.pop().unwrap()) 
+        }
+        res
     }
 
     /// Retrieve the current metrics stored into [MetricGenerator].

@@ -1,8 +1,9 @@
 //! # utils
 //!
-//! The utils create provides common functions used by the exporters.
+//! The utils module provides common functions used by the exporters.
 use clap::crate_version;
 use docker_sync::Docker;
+//use k8s_sync::{kubernetes::Kubernetes, errors::KubernetesError};
 
 /// Returns an Option containing the VM name of a qemu process.
 ///
@@ -82,13 +83,32 @@ mod tests {
     }
 }
 
-pub fn open_docker_socket() -> Result<Docker, std::io::Error> {
+pub fn get_docker_client() -> Result<Docker, std::io::Error> {
     let docker = match Docker::connect() {
         Ok(docker) => docker,
         Err(err) => return Err(err),
     };
     Ok(docker)
 }
+
+//pub fn get_kubernetes_client() -> Result<Kubernetes, KubernetesError> {
+//    match Kubernetes::connect() {
+//        Ok(kubernetes) => Ok(kubernetes),
+//        Err(err) => {
+//            eprintln!("Got Kubernetes error: {} | {:?}", err, err);
+//            Err(err)
+//        }
+//    }
+
+    //let kubeconfig = match config::load_kube_config() {
+    //    Ok(config) => config,
+    //    Err(err) => {
+    //        warn!("Couldn't read kube config: {}", err);
+    //        return Err(std::io::Error::new(std::io::ErrorKind::Other, "Couldn't read kube config"))
+    //    },
+    //};
+    //let kubernetes = APIClient::new(kubeconfig);
+//}
 
 //  Copyright 2020 The scaphandre authors.
 //
