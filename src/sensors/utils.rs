@@ -1,4 +1,5 @@
 use docker_sync::container::Container;
+use k8s_sync::Pod;
 use procfs::process::Process;
 use regex::Regex;
 use std::collections::HashMap;
@@ -29,7 +30,7 @@ impl ProcessTracker {
     /// ```
     pub fn new(max_records_per_process: u16) -> ProcessTracker {
         let regex_cgroup_docker = Regex::new(r"^/docker/.*$").unwrap();
-        let regex_cgroup_kubernetes = Regex::new(r"^/kubepods/\D+/.*$").unwrap();
+        let regex_cgroup_kubernetes = Regex::new(r"^/kubepods.slice/.*$").unwrap();
         let regex_cgroup_containerd = Regex::new("/system.slice/containerd.service").unwrap();
         ProcessTracker {
             procs: vec![],
@@ -160,6 +161,8 @@ impl ProcessTracker {
         pid: i32,
         containers: &[Container],
         docker_version: String,
+        pods: &[Pod],
+        kubernetes_version: String
     ) -> HashMap<String, String> {
         let mut result = self
             .procs
@@ -205,15 +208,52 @@ impl ProcessTracker {
                         }
                         found = true;
                     } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
+                        // kubernetes
                         description.insert(
                             String::from("container_scheduler"),
                             String::from("kubernetes"),
                         );
-                        let container_id = cg.pathname.split('/').last().unwrap();
+                        let container_id = cg.pathname.split('/').last().unwrap().strip_prefix("docker-").unwrap().strip_suffix(".scope").unwrap();
                         description
                             .insert(String::from("container_id"), String::from(container_id));
+                        // find pod in pods that has pod_status > container_status.container
+                        if let Some(pod) = pods.iter().find(
+                            |x| match &x.status {
+                                Some(status) => {
+                                    return status.container_statuses.iter().find(
+                                        |y| {
+                                            match &y.container_id {
+                                                Some(id) => {
+                                                    if let Some(final_id) = id.strip_prefix("docker://") {
+                                                        return final_id == container_id
+                                                    } else {
+                                                        return false
+                                                    }
+                                                }
+                                                None => return false
+                                            }
+                                        }
+                                    ).is_some()
+                                },
+                                None => return false
+                            }
+                        ) {
+                            trace!("Found container in a pod: {}", container_id);
+                            if let Some(pod_name) = &pod.metadata.name {
+                                description.insert(String::from("kubernetes_pod_name"), pod_name.clone());  
+                            }
+                            if let Some(pod_status) = &pod.status {
+
+                            }
+                            if let Some(pod_spec) = &pod.spec {                                    
+                                if let Some(node_name) = &pod_spec.node_name {
+                                    description.insert(String::from("kubernetes_node_name"), node_name.clone());
+                                }
+                            }
+                        }
                         found = true;
                     } else if self.regex_cgroup_containerd.is_match(&cg.pathname) {
+                        // containerd
                         description.insert(
                             String::from("container_runtime"),
                             String::from("containerd"),
