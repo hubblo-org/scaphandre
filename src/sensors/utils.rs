@@ -220,20 +220,22 @@ impl ProcessTracker {
                         if let Some(pod) = pods.iter().find(
                             |x| match &x.status {
                                 Some(status) => {
-                                    return status.container_statuses.iter().find(
-                                        |y| {
-                                            match &y.container_id {
-                                                Some(id) => {
-                                                    if let Some(final_id) = id.strip_prefix("docker://") {
-                                                        return final_id == container_id
-                                                    } else {
-                                                        return false
+                                    if let Some(container_statuses) = &status.container_statuses {
+                                        return container_statuses.iter().find(
+                                            |y| {
+                                                match &y.container_id {
+                                                    Some(id) => {
+                                                        if let Some(final_id) = id.strip_prefix("docker://") {
+                                                            return final_id == container_id
+                                                        } else {
+                                                            return false
+                                                        }
                                                     }
+                                                    None => return false
                                                 }
-                                                None => return false
                                             }
-                                        }
-                                    ).is_some()
+                                        ).is_some()
+                                    } else { return false }
                                 },
                                 None => return false
                             }

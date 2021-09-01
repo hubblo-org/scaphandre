@@ -28,6 +28,7 @@ colored = "2.0.0"
 chrono = "0.4.19"
 docker-sync = { version = "0.1.1", optional = true }
 #docker-sync = { path = "../rs-docker-sync", optional = true }
+k8s-sync = { version = "0.1.1", optional = true }
 #k8s-sync = { path = "../rs-k8s-sync", optional = true }
 hyper = { version = "0.14", features = ["full"], optional = true }
 tokio = { version = "1", features = ["full"], optional = true}
@@ -37,4 +38,4 @@ default = ["prometheus", "riemann", "warp10", "containers", "json"]
 prometheus = ["hyper", "tokio"]
 riemann = ["riemann_client"]
 json = ["serde", "serde_json"]
-containers = ["docker-sync"]#, "k8s-sync"]
+containers = ["docker-sync", "k8s-sync"]
