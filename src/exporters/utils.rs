@@ -3,7 +3,7 @@
 //! The utils module provides common functions used by the exporters.
 use clap::crate_version;
 use docker_sync::Docker;
-use k8s_sync::{kubernetes::Kubernetes, errors::KubernetesError};
+use k8s_sync::{errors::KubernetesError, kubernetes::Kubernetes};
 
 /// Returns an Option containing the VM name of a qemu process.
 ///

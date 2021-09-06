@@ -162,7 +162,7 @@ impl ProcessTracker {
         containers: &[Container],
         docker_version: String,
         pods: &[Pod],
-        kubernetes_version: String
+        //kubernetes_version: String,
     ) -> HashMap<String, String> {
         let mut result = self
             .procs
@@ -213,43 +213,49 @@ impl ProcessTracker {
                             String::from("container_scheduler"),
                             String::from("kubernetes"),
                         );
-                        let container_id = cg.pathname.split('/').last().unwrap().strip_prefix("docker-").unwrap().strip_suffix(".scope").unwrap();
+                        let container_id = cg
+                            .pathname
+                            .split('/')
+                            .last()
+                            .unwrap()
+                            .strip_prefix("docker-")
+                            .unwrap()
+                            .strip_suffix(".scope")
+                            .unwrap();
                         description
                             .insert(String::from("container_id"), String::from(container_id));
                         // find pod in pods that has pod_status > container_status.container
-                        if let Some(pod) = pods.iter().find(
-                            |x| match &x.status {
-                                Some(status) => {
-                                    if let Some(container_statuses) = &status.container_statuses {
-                                        return container_statuses.iter().find(
-                                            |y| {
-                                                match &y.container_id {
-                                                    Some(id) => {
-                                                        if let Some(final_id) = id.strip_prefix("docker://") {
-                                                            return final_id == container_id
-                                                        } else {
-                                                            return false
-                                                        }
-                                                    }
-                                                    None => return false
-                                                }
+                        if let Some(pod) = pods.iter().find(|x| match &x.status {
+                            Some(status) => {
+                                if let Some(container_statuses) = &status.container_statuses {
+                                    container_statuses.iter().any(|y| match &y.container_id {
+                                        Some(id) => {
+                                            if let Some(final_id) = id.strip_prefix("docker://") {
+                                                final_id == container_id
+                                            } else {
+                                                false
                                             }
-                                        ).is_some()
-                                    } else { return false }
-                                },
-                                None => return false
+                                        }
+                                        None => false,
+                                    })
+                                } else {
+                                    false
+                                }
                             }
-                        ) {
+                            None => false,
+                        }) {
                             trace!("Found container in a pod: {}", container_id);
                             if let Some(pod_name) = &pod.metadata.name {
-                                description.insert(String::from("kubernetes_pod_name"), pod_name.clone());  
+                                description
+                                    .insert(String::from("kubernetes_pod_name"), pod_name.clone());
                             }
-                            if let Some(pod_status) = &pod.status {
-
-                            }
-                            if let Some(pod_spec) = &pod.spec {                                    
+                            //if let Some(pod_status) = &pod.status {}
+                            if let Some(pod_spec) = &pod.spec {
                                 if let Some(node_name) = &pod_spec.node_name {
-                                    description.insert(String::from("kubernetes_node_name"), node_name.clone());
+                                    description.insert(
+                                        String::from("kubernetes_node_name"),
+                                        node_name.clone(),
+                                    );
                                 }
                             }
                         }
@@ -329,11 +335,10 @@ impl ProcessTracker {
                 if previous_time <= last_time {
                     diff = last_time - previous_time;
                 }
-                let higher: Vec<&(Process, u64)> = consumers
+                let higher = consumers
                     .iter()
-                    .filter(|x| ProcessRecord::new(x.0.to_owned()).total_time_jiffies() > diff)
-                    .collect();
-                if higher.len() < top as usize {
+                    .filter(|x| ProcessRecord::new(x.0.to_owned()).total_time_jiffies() > diff);
+                if higher.count() < top as usize {
                     consumers.push((p.last().unwrap().process.clone(), diff));
                     consumers.sort_by(|x, y| y.1.cmp(&x.1));
                     if consumers.len() > top as usize {

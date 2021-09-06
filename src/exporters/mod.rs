@@ -14,11 +14,11 @@ use crate::sensors::{RecordGenerator, Topology};
 use chrono::Utc;
 use clap::ArgMatches;
 use docker_sync::{container::Container, Docker};
-use k8s_sync::Pod;
 use k8s_sync::kubernetes::Kubernetes;
+use k8s_sync::Pod;
 use std::collections::HashMap;
 use std::fmt;
-use utils::{get_docker_client, get_scaphandre_version, get_kubernetes_client};
+use utils::{get_docker_client, get_kubernetes_client, get_scaphandre_version};
 
 /// General metric definition.
 #[derive(Debug)]
@@ -114,8 +114,8 @@ struct MetricGenerator {
     pods: Vec<Pod>,
     ///
     pods_last_check: String,
-    /// kubernetes cluster version
-    kubernetes_version: String
+    // kubernetes cluster version
+    //kubernetes_version: String,
 }
 
 /// This is not mandatory to use MetricGenerator methods. Exporter can use dedicated
@@ -134,7 +134,7 @@ impl MetricGenerator {
         let pods = vec![];
         let docker_version = String::from("");
         let mut docker_client = None;
-        let kubernetes_version = String::from("");
+        //let kubernetes_version = String::from("");
         let mut kubernetes_client = None;
         if watch_containers {
             let mut container_runtime = false;
@@ -169,7 +169,7 @@ impl MetricGenerator {
             watch_kubernetes: true,
             pods,
             pods_last_check: String::from(""),
-            kubernetes_version
+            //kubernetes_version,
         }
     }
 
@@ -527,12 +527,10 @@ impl MetricGenerator {
     /// Generate process metrics.
     fn gen_process_metrics(&mut self) {
         if self.watch_containers {
-            let last_check = self.containers_last_check.clone();
             let now = current_system_time_since_epoch().as_secs().to_string();
-            if last_check.is_empty() {
-                self.containers_last_check =
-                    current_system_time_since_epoch().as_secs().to_string();
-                if self.watch_docker && self.docker_client.is_some() {
+            if self.watch_docker && self.docker_client.is_some() {
+                let last_check = self.containers_last_check.clone();
+                if last_check.is_empty() {
                     match self.docker_client.as_mut().unwrap().get_version() {
                         Ok(version_response) => {
                             self.docker_version = String::from(version_response.Version.as_str())
@@ -543,17 +541,12 @@ impl MetricGenerator {
                         }
                     }
                     self.gen_docker_containers_basic_metadata();
-                }
-                if self.watch_kubernetes {
-                    self.gen_kubernetes_pods_basic_metadata();
-                }
-            } else {
-                if self.watch_docker && self.docker_client.is_some() {
+                } else {
                     match self
                         .docker_client
                         .as_mut()
                         .unwrap()
-                        .get_events(Some(last_check), Some(now))
+                        .get_events(Some(last_check), Some(now.clone()))
                     {
                         Ok(events) => {
                             if !events.is_empty() {
@@ -564,10 +557,36 @@ impl MetricGenerator {
                         Err(err) => debug!("couldn't get docker events - {:?} - {}", err, err),
                     }
                 }
-                //if self.watch_kubernetes && self.kubernetes_client.is_some() {
-                //    match self.kubernetes_client.as_mut().unwrap()
-                //    //TODO get events to know if we need to collect data from pods once again
+                self.containers_last_check =
+                    current_system_time_since_epoch().as_secs().to_string();
+            }
+            if self.watch_kubernetes && self.kubernetes_client.is_some() {
+                if self.pods_last_check.is_empty() {
+                    self.pods_last_check = current_system_time_since_epoch().as_secs().to_string();
+                }
+                let last_check = self.pods_last_check.clone();
+                //match self.kubernetes_client.as_mut().unwrap().get_events() {
+                //    Ok(events) => {
+                //        if !events.is_empty() {
+                //            for e in events {
+                //                warn!("event : {:?}", e);
+                //            }
+                if (now.parse::<i32>().unwrap() - last_check.parse::<i32>().unwrap()) > 20 {
+                    warn!(
+                        "Just refreshed pod list ! last: {} now: {}, diff: {}",
+                        last_check,
+                        now,
+                        (now.parse::<i32>().unwrap() - last_check.parse::<i32>().unwrap())
+                    );
+                    self.gen_kubernetes_pods_basic_metadata();
+                }
+                //        } else {
+                //        }
+                //    }
+                //    Err(err) => debug!("couldn't get kubernetes events - {:?} - {}", err, err),
                 //}
+                //TODO get events to know if we need to collect data from pods once again
+                self.pods_last_check = current_system_time_since_epoch().as_secs().to_string();
             }
         }
 
@@ -586,7 +605,7 @@ impl MetricGenerator {
                         &self.containers,
                         self.docker_version.clone(),
                         &self.pods,
-                        self.kubernetes_version.clone()
+                        //self.kubernetes_version.clone(),
                     );
 
                 if !container_data.is_empty() {
