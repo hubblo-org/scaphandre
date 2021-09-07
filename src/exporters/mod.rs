@@ -171,8 +171,8 @@ impl MetricGenerator {
             pods,
             pods_last_check: String::from(""),
             //kubernetes_version,
+        }
     }
-}
 
     /// Generate all scaphandre internal metrics.
     fn gen_self_metrics(&mut self) {
@@ -495,6 +495,11 @@ impl MetricGenerator {
         }
     }
 
+    /// If *self.watch_docker* is true and *self.docker_client* is Some
+    /// gets the list of docker containers running on the machine, thanks
+    /// to *self.docker_client*. Stores the resulting vector as *self.containers*.
+    /// Updates *self.containers_last_check* to the current timestamp, if the
+    /// operation is successful.
     fn gen_docker_containers_basic_metadata(&mut self) {
         if self.watch_docker && self.docker_client.is_some() {
             if let Some(docker) = self.docker_client.as_mut() {
@@ -504,12 +509,16 @@ impl MetricGenerator {
                         current_system_time_since_epoch().as_secs().to_string();
                 }
             } else {
-                info!("Docker socket is not some.");
+                info!("Docker socket is None.");
             }
         }
     }
 
-    fn gen_kubernetes_pods_basic_metadata(&mut self) {
+    /// If *self.watch_kubernetes* is true,
+    /// queries the local kubernetes API (if this is a kubernetes cluster node)
+    /// and retrieves the list of pods running on this node, thanks to *self.kubernetes_client*.
+    /// Stores the result as *self.pods* and updates *self.pods_last_check* if the operation is successfull.
+    fn gen_kubernetes_pods_basic_metadata(&mut self) { 
         if self.watch_kubernetes {
             if let Some(kubernetes) = self.kubernetes_client.as_mut() {
                 if let Ok(pods_result) = kubernetes.list_pods("".to_string()) {

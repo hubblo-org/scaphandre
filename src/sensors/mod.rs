@@ -50,7 +50,8 @@ pub struct Topology {
 
 impl RecordGenerator for Topology {
     /// Computes a new Record, stores it in the record_buffer
-    /// and returns a clone of this record
+    /// and returns a clone of this record.
+    ///
     fn refresh_record(&mut self) -> Record {
         let mut value: u64 = 0;
         for s in self.get_sockets() {
