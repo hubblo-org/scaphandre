@@ -1,4 +1,8 @@
-//! Extensible sensor and transmission agent of electrical power consumption metrics.
+//! Scaphandre is an extensible monitoring agent for energy consumption metrics.
+//!
+//! It gathers energy consumption data from the system or other data sources thanks to components called *sensors*.
+//!
+//! Final monitoring data is sent to or exposed for monitoring tools thanks to *exporters*.
 #[macro_use]
 extern crate log;
 pub mod exporters;

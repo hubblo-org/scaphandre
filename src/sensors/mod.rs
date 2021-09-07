@@ -1,3 +1,8 @@
+//! # Sensors: to get data related to energy consumption
+//!
+//! `Sensor` is the root for all sensors. It defines the [Sensor] trait
+//! needed to implement a sensor.
+
 pub mod powercap_rapl;
 pub mod units;
 pub mod utils;

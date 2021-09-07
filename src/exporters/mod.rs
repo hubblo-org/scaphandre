@@ -1,4 +1,4 @@
-//! # Exporter
+//! # Exporters: to make data accessible to monitoring toolchains
 //!
 //! `Exporter` is the root for all exporters. It defines the [Exporter] trait
 //! needed to implement an exporter.
@@ -123,6 +123,7 @@ struct MetricGenerator {
 /// to use the following methods to avoid discrepancies between exporters.
 impl MetricGenerator {
     /// Returns a MetricGenerator instance that will host metrics.
+
     fn new(
         topology: Topology,
         hostname: String,
@@ -170,10 +171,10 @@ impl MetricGenerator {
             pods,
             pods_last_check: String::from(""),
             //kubernetes_version,
-        }
     }
+}
 
-    /// Generate all scaphandre (self) metrics.
+    /// Generate all scaphandre internal metrics.
     fn gen_self_metrics(&mut self) {
         self.data.push(Metric {
             name: String::from("scaph_self_version"),
