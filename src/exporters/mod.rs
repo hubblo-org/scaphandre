@@ -518,7 +518,7 @@ impl MetricGenerator {
     /// queries the local kubernetes API (if this is a kubernetes cluster node)
     /// and retrieves the list of pods running on this node, thanks to *self.kubernetes_client*.
     /// Stores the result as *self.pods* and updates *self.pods_last_check* if the operation is successfull.
-    fn gen_kubernetes_pods_basic_metadata(&mut self) { 
+    fn gen_kubernetes_pods_basic_metadata(&mut self) {
         if self.watch_kubernetes {
             if let Some(kubernetes) = self.kubernetes_client.as_mut() {
                 if let Ok(pods_result) = kubernetes.list_pods("".to_string()) {
