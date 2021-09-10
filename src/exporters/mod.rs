@@ -584,7 +584,7 @@ impl MetricGenerator {
                 //                warn!("event : {:?}", e);
                 //            }
                 if (now.parse::<i32>().unwrap() - last_check.parse::<i32>().unwrap()) > 20 {
-                    warn!(
+                    debug!(
                         "Just refreshed pod list ! last: {} now: {}, diff: {}",
                         last_check,
                         now,
