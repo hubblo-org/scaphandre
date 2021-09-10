@@ -250,7 +250,6 @@ impl ProcessTracker {
                             }
                             None => false,
                         }) {
-                            trace!("Found container in a pod: {}", container_id);
                             if let Some(pod_name) = &pod.metadata.name {
                                 description
                                     .insert(String::from("kubernetes_pod_name"), pod_name.clone());

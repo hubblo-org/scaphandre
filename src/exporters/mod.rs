@@ -572,7 +572,9 @@ impl MetricGenerator {
             }
             if self.watch_kubernetes && self.kubernetes_client.is_some() {
                 if self.pods_last_check.is_empty() {
+                    self.gen_kubernetes_pods_basic_metadata();
                     self.pods_last_check = current_system_time_since_epoch().as_secs().to_string();
+                    //warn!("Initialized last check");
                 }
                 let last_check = self.pods_last_check.clone();
                 //match self.kubernetes_client.as_mut().unwrap().get_events() {
@@ -589,14 +591,16 @@ impl MetricGenerator {
                         (now.parse::<i32>().unwrap() - last_check.parse::<i32>().unwrap())
                     );
                     self.gen_kubernetes_pods_basic_metadata();
-                }
+                    self.pods_last_check = current_system_time_since_epoch().as_secs().to_string();
+                } //else {
+                    //warn!("Too soon ! ");
+                //}
                 //        } else {
                 //        }
                 //    }
                 //    Err(err) => debug!("couldn't get kubernetes events - {:?} - {}", err, err),
                 //}
                 //TODO get events to know if we need to collect data from pods once again
-                self.pods_last_check = current_system_time_since_epoch().as_secs().to_string();
             }
         }
 
