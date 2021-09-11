@@ -57,7 +57,13 @@ impl RecordGenerator for Topology {
         for s in self.get_sockets() {
             let records = s.get_records_passive();
             if !records.is_empty() {
-                value += records.last().unwrap().value.trim().parse::<u64>().unwrap();
+                let last = records.last();
+                let res = last.unwrap().value.trim();
+                if let Ok(val) = res.parse::<u64>() {
+                    value += val;
+                } else {
+                    warn!("couldn't parse value : {}", res);
+                }
             }
         }
         let timestamp = current_system_time_since_epoch();
