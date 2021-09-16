@@ -102,6 +102,29 @@ impl Exporter for PrometheusExporter {
             .takes_value(false);
         options.push(arg);
 
+        let arg = Arg::with_name("kubernetes_host")
+            .help("FQDN of the kubernetes API server")
+            .long("kubernetes-host")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("kubernetes_scheme")
+            .help("Protocol used to access kubernetes API server")
+            .long("kubernetes-scheme")
+            .default_value("http")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("kubernetes_port")
+            .help("Kubernetes API server port number")
+            .long("kubernetes-port")
+            .default_value("6443")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
         options
     }
 }

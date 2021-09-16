@@ -86,13 +86,15 @@ mod tests {
 pub fn get_docker_client() -> Result<Docker, std::io::Error> {
     let docker = match Docker::connect() {
         Ok(docker) => docker,
-        Err(err) => return Err(err),
+        Err(err) => {
+            return Err(err)
+        },
     };
     Ok(docker)
 }
 
 pub fn get_kubernetes_client() -> Result<Kubernetes, KubernetesError> {
-    match Kubernetes::connect(Some(String::from("/root/.kube/config"))) {
+    match Kubernetes::connect(Some(String::from("/root/.kube/config")), None, None, None, true) {
         Ok(kubernetes) => Ok(kubernetes),
         Err(err) => {
             eprintln!("Got Kubernetes error: {} | {:?}", err, err);

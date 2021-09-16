@@ -170,6 +170,7 @@ impl ProcessTracker {
         pods: &[Pod],
         //kubernetes_version: String,
     ) -> HashMap<String, String> {
+        warn!("In get_process_container_description");
         let mut result = self
             .procs
             .iter()
@@ -179,7 +180,7 @@ impl ProcessTracker {
         if let Some(p) = process.get(0) {
             if let Ok(cgroups) = p.process.cgroups() {
                 let mut found = false;
-                for cg in cgroups {
+                for cg in &cgroups {
                     if found {
                         break;
                     }
@@ -214,6 +215,7 @@ impl ProcessTracker {
                         }
                         found = true;
                     } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
+                        warn!("Kubernetes context !");
                         // kubernetes
                         description.insert(
                             String::from("container_scheduler"),
@@ -254,7 +256,6 @@ impl ProcessTracker {
                                 description
                                     .insert(String::from("kubernetes_pod_name"), pod_name.clone());
                             }
-                            //if let Some(pod_status) = &pod.status {}
                             if let Some(pod_spec) = &pod.spec {
                                 if let Some(node_name) = &pod_spec.node_name {
                                     description.insert(
@@ -272,7 +273,9 @@ impl ProcessTracker {
                             String::from("containerd"),
                         );
                         found = true;
-                    }
+                    } //else {
+                    //    debug!("Cgroup not identified as related to a container technology : {}", &cg.pathname);
+                    //}
                 }
             }
         }

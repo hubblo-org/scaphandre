@@ -523,13 +523,13 @@ impl MetricGenerator {
             if let Some(kubernetes) = self.kubernetes_client.as_mut() {
                 if let Ok(pods_result) = kubernetes.list_pods("".to_string()) {
                     self.pods = pods_result;
-                    //for pod in &self.pods {
-                    //    warn!("{:?}", pod);
-                    //}
+                    debug!("Found {} pods", &self.pods.len());
                     self.pods_last_check = current_system_time_since_epoch().as_secs().to_string();
+                } else {
+                    info!("Failed getting pods list, despite client seems ok.");
                 }
             } else {
-                info!("Kubernetes socket is not some.");
+                debug!("Kubernetes socket is not some.");
             }
         }
     }
@@ -543,14 +543,14 @@ impl MetricGenerator {
                 if last_check.is_empty() {
                     match self.docker_client.as_mut().unwrap().get_version() {
                         Ok(version_response) => {
-                            self.docker_version = String::from(version_response.Version.as_str())
+                            self.docker_version = String::from(version_response.Version.as_str());
+                            self.gen_docker_containers_basic_metadata();
                         }
                         Err(error) => {
                             info!("Couldn't query the docker socket: {}", error);
                             self.watch_docker = false;
                         }
                     }
-                    self.gen_docker_containers_basic_metadata();
                 } else {
                     match self
                         .docker_client
@@ -573,34 +573,18 @@ impl MetricGenerator {
             if self.watch_kubernetes && self.kubernetes_client.is_some() {
                 if self.pods_last_check.is_empty() {
                     self.gen_kubernetes_pods_basic_metadata();
-                    self.pods_last_check = current_system_time_since_epoch().as_secs().to_string();
-                    //warn!("Initialized last check");
+                    info!("First check done on pods.");
                 }
                 let last_check = self.pods_last_check.clone();
-                //match self.kubernetes_client.as_mut().unwrap().get_events() {
-                //    Ok(events) => {
-                //        if !events.is_empty() {
-                //            for e in events {
-                //                warn!("event : {:?}", e);
-                //            }
                 if (now.parse::<i32>().unwrap() - last_check.parse::<i32>().unwrap()) > 20 {
-                    debug!(
+                    info!(
                         "Just refreshed pod list ! last: {} now: {}, diff: {}",
                         last_check,
                         now,
                         (now.parse::<i32>().unwrap() - last_check.parse::<i32>().unwrap())
                     );
                     self.gen_kubernetes_pods_basic_metadata();
-                    self.pods_last_check = current_system_time_since_epoch().as_secs().to_string();
-                } //else {
-                    //warn!("Too soon ! ");
-                //}
-                //        } else {
-                //        }
-                //    }
-                //    Err(err) => debug!("couldn't get kubernetes events - {:?} - {}", err, err),
-                //}
-                //TODO get events to know if we need to collect data from pods once again
+                }
             }
         }
 
@@ -610,7 +594,7 @@ impl MetricGenerator {
 
             let mut attributes = HashMap::new();
 
-            if self.watch_containers && !self.containers.is_empty() {
+            if self.watch_containers && (!self.containers.is_empty() || !self.pods.is_empty()) {
                 let container_data = self
                     .topology
                     .proc_tracker
@@ -621,6 +605,10 @@ impl MetricGenerator {
                         &self.pods,
                         //self.kubernetes_version.clone(),
                     );
+                let matching =  &container_data.iter().filter(|&(k, v)| k == "kubernetes_pod_name");
+                if matching.clone().count() > 0 {
+                    info!("Found a pod label !")
+                }
 
                 if !container_data.is_empty() {
                     for (k, v) in container_data.iter() {
