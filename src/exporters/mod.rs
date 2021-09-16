@@ -605,12 +605,6 @@ impl MetricGenerator {
                         &self.pods,
                         //self.kubernetes_version.clone(),
                     );
-                let matching = &container_data
-                    .iter()
-                    .filter(|&(k, v)| k == "kubernetes_pod_name");
-                if matching.clone().count() > 0 {
-                    info!("Found a pod label !")
-                }
 
                 if !container_data.is_empty() {
                     for (k, v) in container_data.iter() {
