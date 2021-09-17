@@ -170,7 +170,6 @@ impl ProcessTracker {
         pods: &[Pod],
         //kubernetes_version: String,
     ) -> HashMap<String, String> {
-        warn!("In get_process_container_description");
         let mut result = self
             .procs
             .iter()

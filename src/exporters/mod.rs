@@ -139,11 +139,14 @@ impl MetricGenerator {
         let mut kubernetes_client = None;
         if watch_containers {
             let mut container_runtime = false;
-            if let Ok(docker) = get_docker_client() {
-                docker_client = Some(docker);
-                container_runtime = true;
-            } else {
-                info!("Couldn't connect to docker socket.");
+            match get_docker_client() {
+                Ok(docker) => {
+                    docker_client = Some(docker);
+                    container_runtime = true;
+                },
+                Err(err) => {
+                    info!("Couldn't connect to docker socket. Error: {}", err);
+                }
             }
             if let Ok(kubernetes) = get_kubernetes_client() {
                 kubernetes_client = Some(kubernetes);
