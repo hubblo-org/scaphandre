@@ -143,7 +143,7 @@ impl MetricGenerator {
                 Ok(docker) => {
                     docker_client = Some(docker);
                     container_runtime = true;
-                },
+                }
                 Err(err) => {
                     info!("Couldn't connect to docker socket. Error: {}", err);
                 }
