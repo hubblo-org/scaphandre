@@ -158,9 +158,9 @@ impl ProcessTracker {
 
     /// Returns a HashMap containing labels (key + value) to be attached to
     /// the metrics of the process referenced by its pid.
-    /// The *containers* slice shall contain the [Container] items referencing
+    /// The *containers* slice contains the [Container] items referencing
     /// currently running docker containers on the machine.
-    /// The *pods* slice shall contain the [Pod] items referencing currently
+    /// The *pods* slice contains the [Pod] items referencing currently
     /// running pods on the machine if it is a kubernetes cluster node.
     pub fn get_process_container_description(
         &self,
