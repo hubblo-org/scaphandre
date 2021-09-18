@@ -332,20 +332,31 @@ impl ProcessTracker {
         }
         None
     }
+
+
+    /// Returns the CPU time consumed between two measure iteration
+    fn get_cpu_time_consumed(&self, p: &[ProcessRecord]) -> u64 {
+        let last_time = p.first().unwrap().total_time_jiffies();
+        let previous_time = p.get(1).unwrap().total_time_jiffies();
+        let mut diff = 0;
+        if previous_time <= last_time {
+            diff = last_time - previous_time;
+        }
+        diff
+    }
+
+    /// Returns processes sorted by the highest consumers in first
     pub fn get_top_consumers(&self, top: u16) -> Vec<(Process, u64)> {
         let mut consumers: Vec<(Process, u64)> = vec![];
         for p in &self.procs {
             if p.len() > 1 {
-                let last_time = p.first().unwrap().total_time_jiffies();
-                let previous_time = p.get(1).unwrap().total_time_jiffies();
-                let mut diff = 0;
-                if previous_time <= last_time {
-                    diff = last_time - previous_time;
-                }
-                let higher = consumers
+                let diff = self.get_cpu_time_consumed(p);
+                if consumers
                     .iter()
-                    .filter(|x| ProcessRecord::new(x.0.to_owned()).total_time_jiffies() > diff);
-                if higher.count() < top as usize {
+                    .filter(|x| ProcessRecord::new(x.0.to_owned()).total_time_jiffies() > diff)
+                    .count()
+                    < top as usize
+                {
                     consumers.push((p.last().unwrap().process.clone(), diff));
                     consumers.sort_by(|x, y| y.1.cmp(&x.1));
                     if consumers.len() > top as usize {
@@ -354,6 +365,23 @@ impl ProcessTracker {
                 }
             }
         }
+        consumers
+    }
+
+    /// Returns processes filtered by a regexp
+    pub fn get_filtered_processes(&self, regex_filter: &Regex) -> Vec<(Process, u64)> {
+        let mut consumers: Vec<(Process, u64)> = vec![];
+        for p in &self.procs {
+            if p.len() > 1 {
+                let diff = self.get_cpu_time_consumed(p);
+                let process_name = p.last().unwrap().process.exe().unwrap_or_default();
+                if regex_filter.is_match(process_name.to_str().unwrap_or_default()) {
+                    consumers.push((p.last().unwrap().process.clone(), diff));
+                    consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                }
+            }
+        }
+
         consumers
     }
 
