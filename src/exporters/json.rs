@@ -149,7 +149,7 @@ impl JSONExporter {
 
     fn iterate(&mut self, parameters: &ArgMatches) {
         self.topology.refresh();
-        self.retrieve_metrics(&parameters);
+        self.retrieve_metrics(parameters);
     }
 
     fn retrieve_metrics(&mut self, parameters: &ArgMatches) {

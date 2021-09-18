@@ -171,8 +171,7 @@ impl Topology {
         counter_uj_path: String,
         buffer_max_kbytes: u16,
     ) {
-        let result: Vec<&CPUSocket> = self.sockets.iter().filter(|s| s.id == socket_id).collect();
-        if result.is_empty() {
+        if !self.sockets.iter().any(|s| s.id == socket_id) {
             let socket = CPUSocket::new(
                 socket_id,
                 domains,
@@ -640,8 +639,7 @@ impl CPUSocket {
 
     /// Adds a new Domain instance to the domains vector if and only if it doesn't exist in the vector already.
     fn safe_add_domain(&mut self, domain: Domain) {
-        let result: Vec<&Domain> = self.domains.iter().filter(|d| d.id == domain.id).collect();
-        if result.is_empty() {
+        if !self.domains.iter().any(|d| d.id == domain.id) {
             self.domains.push(domain);
         }
     }

@@ -213,11 +213,12 @@ impl ProcessTracker {
         for p in &self.procs {
             if p.len() > 1 {
                 let diff = self.get_cpu_time_consumed(p);
-                let higher: Vec<&(Process, u64)> = consumers
+                if consumers
                     .iter()
                     .filter(|x| ProcessRecord::new(x.0.to_owned()).total_time_jiffies() > diff)
-                    .collect();
-                if higher.len() < top as usize {
+                    .count()
+                    < top as usize
+                {
                     consumers.push((p.last().unwrap().process.clone(), diff));
                     consumers.sort_by(|x, y| y.1.cmp(&x.1));
                     if consumers.len() > top as usize {
