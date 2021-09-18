@@ -79,7 +79,8 @@ impl StdoutExporter {
         }
     }
 
-    fn get_domains_power(&self, socket_id: u16) -> Vec<Option<Record>> {
+    // Retuns the power for each domain in a socket.
+    fn get_domains_power(&self, socket_id: u16) -> HashMap<String, Option<Record>> {
         let socket_present = self
             .topology
             .get_sockets_passive()
@@ -87,13 +88,14 @@ impl StdoutExporter {
             .find(move |x| x.id == socket_id);
 
         if let Some(socket) = socket_present {
-            let mut domains_power: Vec<Option<Record>> = vec![];
+            // let mut domains_power: Vec<Option<Record>> = vec![];
+            let mut domains_power: HashMap<String, Option<Record>> = HashMap::new();
             for d in socket.get_domains_passive() {
-                domains_power.push(d.get_records_diff_power_microwatts());
+                domains_power.insert(d.name.clone(), d.get_records_diff_power_microwatts());
             }
             domains_power
         } else {
-            vec![None, None, None]
+            HashMap::new()
         }
     }
 
@@ -107,7 +109,8 @@ impl StdoutExporter {
             Some(record) => record.value.parse::<u64>().unwrap(),
             None => 0,
         };
-        let mut sockets_power: HashMap<u16, (u64, Vec<Option<Record>>)> = HashMap::new();
+        let mut sockets_power: HashMap<u16, (u64, HashMap<String, Option<Record>>)> =
+            HashMap::new();
         let sockets = self.topology.get_sockets_passive();
         for s in sockets {
             let socket_power = match s.get_records_diff_power_microwatts() {
@@ -116,26 +119,35 @@ impl StdoutExporter {
             };
             sockets_power.insert(s.id, (socket_power, self.get_domains_power(s.id)));
         }
-        println!(
-            "Host:\t{} W\tCore\t\tUncore\t\tDRAM",
-            (host_power as f32 / 1000000.0)
-        );
+        let domain_names = self.topology.domains_names.as_ref().unwrap();
+
+        println!("Host:\t{} W", (host_power as f32 / 1000000.0));
+        println!("\tpackage \t{}", domain_names.join("\t\t"));
+
         for (s_id, v) in sockets_power.iter() {
             let power = (v.0 as f32) / 1000000.0;
-            let mut power_str = String::from('?');
+            let mut power_str = String::from("----");
             if power > 0.0 {
                 power_str = power.to_string();
             }
+
             let mut to_print = format!("Socket{}\t{} W\t", s_id, power_str);
-            for d in v.1.iter() {
-                let domain_power = match d {
-                    Some(record) => record.value.parse::<u64>().unwrap(),
-                    None => 0,
-                };
-                to_print.push_str(&format!("{} W\t", domain_power as f32 / 1000000.0));
+
+            for domain in domain_names.iter() {
+                if let Some(Some(record)) = v.1.get(domain) {
+                    to_print.push_str(&format!(
+                        "{} W\t",
+                        record.value.parse::<u64>().unwrap() as f32 / 1000000.0
+                    ));
+                } else {
+                    // This should only happen when we don't have yet enough records,
+                    // as in a multi-sockets system, all sockets have the same domains.
+                    to_print.push_str("---- \t\t");
+                }
             }
             println!("{}", to_print);
         }
+
         println!("Top 5 consumers:");
         println!("Power\tPID\tExe");
 
