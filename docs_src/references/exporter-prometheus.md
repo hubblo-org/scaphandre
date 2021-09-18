@@ -99,7 +99,7 @@ For Docker containers (if `container_scheduler` is set), available labels are :
 - `container_docker_version`: version of the docker daemon
 - `container_label_maintainer`: content of the maintainer field for this container
 
-For containers coming from a docker-compose file, there is a bunch of labels related to data coming from the docker daemon:
+For containers coming from a docker-compose file, there are a bunch of labels related to data coming from the docker daemon:
 
 - `container_label_com_docker_compose_project_working_dir`
 - `container_label_com_docker_compose_container_number`
