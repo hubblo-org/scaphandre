@@ -209,11 +209,9 @@ impl StdoutExporter {
                 .get_filtered_processes(regex_filter);
         } else {
             println!("Top {} consumers:", process_number);
-
             consumers = self.topology.proc_tracker.get_top_consumers(process_number);
         }
 
-        println!("Top {} consumers:", consumers.len());
         println!("Power\tPID\tExe");
         if consumers.is_empty() {
             println!("No processes found yet or filter returns no value.");
