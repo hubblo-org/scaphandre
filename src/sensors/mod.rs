@@ -183,7 +183,6 @@ impl Topology {
         counter_uj_path: String,
         buffer_max_kbytes: u16,
     ) {
-
         if !self.sockets.iter().any(|s| s.id == socket_id) {
             let socket = CPUSocket::new(
                 socket_id,

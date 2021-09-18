@@ -333,7 +333,6 @@ impl ProcessTracker {
         None
     }
 
-
     /// Returns the CPU time consumed between two measure iteration
     fn get_cpu_time_consumed(&self, p: &[ProcessRecord]) -> u64 {
         let last_time = p.first().unwrap().total_time_jiffies();
