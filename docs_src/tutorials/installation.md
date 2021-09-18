@@ -34,6 +34,11 @@ Here are some other ways to install scaphandre depending on your context:
 - [run scaphandre in a docker container](quickstart.md)
 - [run scaphandre on kubernetes](kubernetes.md)
 
+Brave contributors work on system packages, please have a try and/or contribute to:
+
+- [Debian package](https://github.com/barnumbirr/scaphandre-debian), maintainer: @barnumbirr
+- [NixOS package](https://github.com/mmai/scaphandre-flake), maintainer: @mmai
+
 Other tutorials should come, as:
 
 - install scaphandre as a proper systemd service
