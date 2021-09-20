@@ -112,3 +112,4 @@ For Kubernetes pods (if `container_scheduler` is set), available labels are :
 
 - `kubernetes_node_name`: identifies the name of the kubernetes node scaphandre is running on
 - `kubernetes_pod_name`: the name of the pod the container belongs to
+- `kubernetes_pod_namespace`: the namespace of the pod the container belongs to
