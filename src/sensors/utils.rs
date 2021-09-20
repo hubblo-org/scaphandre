@@ -156,6 +156,7 @@ impl ProcessTracker {
         res
     }
 
+    /// Extracts the container_id from a cgroup path containing it.
     fn extract_pod_id_from_cgroup_path(&self, pathname: String) -> Result<String, std::io::Error> {
         let mut container_id = String::from(pathname.split('/').last().unwrap());
         if container_id.starts_with("docker-") {
@@ -273,8 +274,10 @@ impl ProcessTracker {
                                     .insert(String::from("kubernetes_pod_name"), pod_name.clone());
                             }
                             if let Some(pod_namespace) = &pod.metadata.namespace {
-                                description
-                                    .insert(String::from("kubernetes_pod_namespace"), pod_namespace.clone());
+                                description.insert(
+                                    String::from("kubernetes_pod_namespace"),
+                                    pod_namespace.clone(),
+                                );
                             }
                             if let Some(pod_spec) = &pod.spec {
                                 if let Some(node_name) = &pod_spec.node_name {
