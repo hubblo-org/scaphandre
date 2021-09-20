@@ -156,6 +156,17 @@ impl ProcessTracker {
         res
     }
 
+    fn extract_pod_id_from_cgroup_path(&self, pathname: String) -> Result<String, std::io::Error> {
+        let mut container_id = String::from(pathname.split('/').last().unwrap());
+        if container_id.starts_with("docker-") {
+            container_id = container_id.strip_prefix("docker-").unwrap().to_string();
+        }
+        if container_id.ends_with(".scope") {
+            container_id = container_id.strip_suffix(".scope").unwrap().to_string();
+        }
+        Ok(container_id)
+    }
+
     /// Returns a HashMap containing labels (key + value) to be attached to
     /// the metrics of the process referenced by its pid.
     /// The *containers* slice contains the [Container] items referencing
@@ -220,17 +231,24 @@ impl ProcessTracker {
                             String::from("container_scheduler"),
                             String::from("kubernetes"),
                         );
-                        let container_id = cg
-                            .pathname
-                            .split('/')
-                            .last()
-                            .unwrap()
-                            .strip_prefix("docker-")
-                            .unwrap()
-                            .strip_suffix(".scope")
-                            .unwrap();
-                        description
-                            .insert(String::from("container_id"), String::from(container_id));
+                        let container_id =
+                            match self.extract_pod_id_from_cgroup_path(cg.pathname.clone()) {
+                                Ok(id) => id,
+                                Err(err) => {
+                                    info!("Couldn't get container id : {}", err);
+                                    "ERROR Couldn't get container id".to_string()
+                                }
+                            };
+                        description.insert(String::from("container_id"), container_id.clone());
+                        //let container_id = cg
+                        //    .pathname
+                        //    .split('/')
+                        //    .last()
+                        //    .unwrap()
+                        //    .strip_prefix("docker-")
+                        //    .unwrap()
+                        //    .strip_suffix(".scope")
+                        //    .unwrap();
                         // find pod in pods that has pod_status > container_status.container
                         if let Some(pod) = pods.iter().find(|x| match &x.status {
                             Some(status) => {
