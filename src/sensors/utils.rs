@@ -225,7 +225,6 @@ impl ProcessTracker {
                         }
                         found = true;
                     } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
-                        warn!("Kubernetes context !");
                         // kubernetes
                         description.insert(
                             String::from("container_scheduler"),
