@@ -273,6 +273,10 @@ impl ProcessTracker {
                                 description
                                     .insert(String::from("kubernetes_pod_name"), pod_name.clone());
                             }
+                            if let Some(pod_namespace) = &pod.metadata.namespace {
+                                description
+                                    .insert(String::from("kubernetes_pod_namespace"), pod_namespace.clone());
+                            }
                             if let Some(pod_spec) = &pod.spec {
                                 if let Some(node_name) = &pod_spec.node_name {
                                     description.insert(
