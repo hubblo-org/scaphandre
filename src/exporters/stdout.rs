@@ -2,6 +2,8 @@ use clap::Arg;
 
 use crate::exporters::*;
 use crate::sensors::{Record, Sensor, Topology};
+use colored::*;
+use regex::Regex;
 use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -23,7 +25,7 @@ impl Exporter for StdoutExporter {
         let mut options = Vec::new();
         let arg = Arg::with_name("timeout")
             .default_value("10")
-            .help("Maximum time spent measuring, in seconds.")
+            .help("Maximum time spent measuring, in seconds. 0 means continuous measurement.")
             .long("timeout")
             .short("t")
             .required(false)
@@ -35,6 +37,23 @@ impl Exporter for StdoutExporter {
             .help("Set measurement step duration in second.")
             .long("step")
             .short("s")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("process_number")
+            .default_value("5")
+            .help("Number of processes to display.")
+            .long("process")
+            .short("p")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
+        let arg = Arg::with_name("regex_filter")
+            .help("Filter processes based on regular expressions (e.g: 'scaph\\w\\wd.e'). This option disable '-p' or '--process' one.")
+            .long("regex")
+            .short("r")
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -54,32 +73,66 @@ impl StdoutExporter {
 
     /// Runs iteration() every 'step', during until 'timeout'
     pub fn runner(&mut self, parameters: ArgMatches) {
-        let timeout = parameters.value_of("timeout").unwrap();
-        if timeout.is_empty() {
-            self.iterate();
+        // Parse parameters
+        // All parameters have a default values so it is safe to unwrap them.
+        // Panic if a non numerical value is passed except for regex_filter.
+
+        let timeout_secs: u64 = parameters
+            .value_of("timeout")
+            .unwrap()
+            .parse()
+            .expect("Wrong timeout value, should be a number of seconds");
+
+        let step_duration: u64 = parameters
+            .value_of("step_duration")
+            .unwrap()
+            .parse()
+            .expect("Wrong step_duration value, should be a number of seconds");
+
+        let process_number: u16 = parameters
+            .value_of("process_number")
+            .unwrap()
+            .parse()
+            .expect("Wrong process_number value, should be a number");
+
+        let regex_filter: Option<Regex>;
+        if !parameters.is_present("regex_filter")
+            || parameters.value_of("regex_filter").unwrap().is_empty()
+        {
+            regex_filter = None;
+        } else {
+            regex_filter = Some(
+                Regex::new(parameters.value_of("regex_filter").unwrap())
+                    .expect("Wrong regex_filter, regexp is invalid"),
+            );
+        }
+
+        if parameters.occurrences_of("regex_filter") == 1
+            && parameters.occurrences_of("process_number") == 1
+        {
+            let warning =
+                String::from("Warning: (-p / --process) and (-r / --regex) used at the same time. (-p / --process) disabled");
+            eprintln!("{}", warning.bright_yellow());
+        }
+
+        println!("Measurement step is: {}s", step_duration);
+        if timeout_secs == 0 {
+            loop {
+                self.iterate(&regex_filter, process_number);
+                thread::sleep(Duration::new(step_duration, 0));
+            }
         } else {
             let now = Instant::now();
 
-            let timeout_secs: u64 = timeout.parse().unwrap();
-
-            // We have a default value of 2s so it is safe to unwrap the option
-            // Panic if a non numerical value is passed
-            let step_duration: u64 = parameters
-                .value_of("step_duration")
-                .unwrap()
-                .parse()
-                .expect("Wrong step_duration value, should be a number of seconds");
-
-            println!("Measurement step is: {}s", step_duration);
-
             while now.elapsed().as_secs() <= timeout_secs {
-                self.iterate();
+                self.iterate(&regex_filter, process_number);
                 thread::sleep(Duration::new(step_duration, 0));
             }
         }
     }
 
-    fn get_domains_power(&self, socket_id: u16) -> Vec<Option<Record>> {
+    // Retuns the power for each domain in a socket.
+    fn get_domains_power(&self, socket_id: u16) -> HashMap<String, Option<Record>> {
         let socket_present = self
             .topology
             .get_sockets_passive()
@@ -87,27 +140,29 @@ impl StdoutExporter {
             .find(move |x| x.id == socket_id);
 
         if let Some(socket) = socket_present {
-            let mut domains_power: Vec<Option<Record>> = vec![];
+            // let mut domains_power: Vec<Option<Record>> = vec![];
+            let mut domains_power: HashMap<String, Option<Record>> = HashMap::new();
             for d in socket.get_domains_passive() {
-                domains_power.push(d.get_records_diff_power_microwatts());
+                domains_power.insert(d.name.clone(), d.get_records_diff_power_microwatts());
             }
             domains_power
         } else {
-            vec![None, None, None]
+            HashMap::new()
         }
     }
 
-    fn iterate(&mut self) {
+    fn iterate(&mut self, regex_filter: &Option<Regex>, process_number: u16) {
         self.topology.refresh();
-        self.show_metrics();
+        self.show_metrics(regex_filter, process_number);
     }
 
-    fn show_metrics(&self) {
+    fn show_metrics(&self, regex_filter: &Option<Regex>, process_number: u16) {
         let host_power = match self.topology.get_records_diff_power_microwatts() {
             Some(record) => record.value.parse::<u64>().unwrap(),
             None => 0,
         };
-        let mut sockets_power: HashMap<u16, (u64, Vec<Option<Record>>)> = HashMap::new();
+        let mut sockets_power: HashMap<u16, (u64, HashMap<String, Option<Record>>)> =
+            HashMap::new();
         let sockets = self.topology.get_sockets_passive();
         for s in sockets {
             let socket_power = match s.get_records_diff_power_microwatts() {
@@ -116,44 +171,65 @@ impl StdoutExporter {
             };
             sockets_power.insert(s.id, (socket_power, self.get_domains_power(s.id)));
         }
-        println!(
-            "Host:\t{} W\tCore\t\tUncore\t\tDRAM",
-            (host_power as f32 / 1000000.0)
-        );
+        let domain_names = self.topology.domains_names.as_ref().unwrap();
+
+        println!("Host:\t{} W", (host_power as f32 / 1000000.0));
+        println!("\tpackage \t{}", domain_names.join("\t\t"));
+
         for (s_id, v) in sockets_power.iter() {
             let power = (v.0 as f32) / 1000000.0;
-            let mut power_str = String::from('?');
+            let mut power_str = String::from("----");
             if power > 0.0 {
                 power_str = power.to_string();
             }
+
             let mut to_print = format!("Socket{}\t{} W\t", s_id, power_str);
-            for d in v.1.iter() {
-                let domain_power = match d {
-                    Some(record) => record.value.parse::<u64>().unwrap(),
-                    None => 0,
-                };
-                to_print.push_str(&format!("{} W\t", domain_power as f32 / 1000000.0));
+
+            for domain in domain_names.iter() {
+                if let Some(Some(record)) = v.1.get(domain) {
+                    to_print.push_str(&format!(
+                        "{} W\t",
+                        record.value.parse::<u64>().unwrap() as f32 / 1000000.0
+                    ));
+                } else {
+                    // This should only happen when we don't have yet enough records,
+                    // as in a multi-sockets system, all sockets have the same domains.
+                    to_print.push_str("---- \t\t");
+                }
             }
-            println!("{}", to_print);
+            println!("{}\n", to_print);
         }
-        println!("Top 5 consumers:");
+
+        let consumers: Vec<(procfs::process::Process, u64)>;
+        if let Some(regex_filter) = regex_filter {
+            println!("Processes filtered by '{}':", regex_filter.as_str());
+            consumers = self
+                .topology
+                .proc_tracker
+                .get_filtered_processes(regex_filter);
+        } else {
+            println!("Top {} consumers:", process_number);
+            consumers = self.topology.proc_tracker.get_top_consumers(process_number);
+        }
+
         println!("Power\tPID\tExe");
-
-        let consumers = self.topology.proc_tracker.get_top_consumers(5);
-        for c in consumers.iter() {
-            if let Some(host_stat) = self.topology.get_stats_diff() {
-                let host_time = host_stat.total_time_jiffies();
-                println!(
-                    "{} W\t{}\t{:?}",
-                    ((c.1 as f32 / (host_time * procfs::ticks_per_second().unwrap() as f32))
-                        * host_power as f32)
-                        / 1000000.0,
-                    c.0.pid,
-                    c.0.exe().unwrap_or_default()
-                );
+        if consumers.is_empty() {
+            println!("No processes found yet or filter returns no value.");
+        } else {
+            for c in consumers.iter() {
+                if let Some(host_stat) = self.topology.get_stats_diff() {
+                    let host_time = host_stat.total_time_jiffies();
+                    println!(
+                        "{} W\t{}\t{:?}",
+                        ((c.1 as f32 / (host_time * procfs::ticks_per_second().unwrap() as f32))
+                            * host_power as f32)
+                            / 1000000.0,
+                        c.0.pid,
+                        c.0.exe().unwrap_or_default()
+                    );
+                }
             }
         }
-
         println!("------------------------------------------------------------\n");
     }
 }
