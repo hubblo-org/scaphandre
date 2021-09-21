@@ -366,7 +366,7 @@ impl<'a> MetricGenerator<'a> {
                     metric_value: MetricValueType::Text(metric_value.clone()),
                 });
 
-                if let Some(power) = self.topology.get_records_diff_power_microwatts() {
+                if let Some(power) = socket.get_records_diff_power_microwatts() {
                     let socket_power_microwatts = &power.value;
 
                     self.data.push(Metric {
@@ -383,6 +383,8 @@ impl<'a> MetricGenerator<'a> {
                         ),
                         metric_value: MetricValueType::Text(socket_power_microwatts.clone()),
                     });
+
+
                 }
             }
         }
