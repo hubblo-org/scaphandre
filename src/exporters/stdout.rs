@@ -58,6 +58,14 @@ impl Exporter for StdoutExporter {
             .takes_value(true);
         options.push(arg);
 
+        let arg = Arg::with_name("qemu")
+            .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
+            .long("qemu")
+            .short("q")
+            .required(false)
+            .takes_value(false);
+        options.push(arg);
+
         options
     }
 }
@@ -118,14 +126,14 @@ impl StdoutExporter {
         println!("Measurement step is: {}s", step_duration);
         if timeout_secs == 0 {
             loop {
-                self.iterate(&regex_filter, process_number);
+                self.iterate(&regex_filter, process_number, parameters.is_present("qemu"));
                 thread::sleep(Duration::new(step_duration, 0));
             }
         } else {
             let now = Instant::now();
 
             while now.elapsed().as_secs() <= timeout_secs {
-                self.iterate(&regex_filter, process_number);
+                self.iterate(&regex_filter, process_number, parameters.is_present("qemu"));
                 thread::sleep(Duration::new(step_duration, 0));
             }
         }
@@ -151,16 +159,27 @@ impl StdoutExporter {
         }
     }
 
-    fn iterate(&mut self, regex_filter: &Option<Regex>, process_number: u16) {
+    fn iterate(&mut self, regex_filter: &Option<Regex>, process_number: u16, qemu: bool) {
         self.topology.refresh();
-        self.show_metrics(regex_filter, process_number);
+        self.show_metrics(regex_filter, process_number, qemu);
     }
 
-    fn show_metrics(&self, regex_filter: &Option<Regex>, process_number: u16) {
-        let host_power = match self.topology.get_records_diff_power_microwatts() {
-            Some(record) => record.value.parse::<u64>().unwrap(),
-            None => 0,
+    fn show_metrics(&self, regex_filter: &Option<Regex>, process_number: u16, qemu: bool) {
+        let hostname = utils::get_hostname();
+        let mut metric_generator = MetricGenerator::new(&self.topology, &hostname);
+        metric_generator.gen_all_metrics(qemu);
+
+        let metrics = metric_generator.get_metrics();
+        let mut metrics_iter = metrics.iter();
+        let host_power =  match metrics_iter.find(|x| x.name == "scaph_host_power_microwatts") {
+            Some(m) => m.metric_value.clone(),
+            None => MetricValueType::Text("0".to_string())
         };
+        //let host_power = match self.topology.get_records_diff_power_microwatts() {
+        //    Some(record) => record.value.parse::<u64>().unwrap(),
+        //    None => 0,
+        //};
+
         let mut sockets_power: HashMap<u16, (u64, HashMap<String, Option<Record>>)> =
             HashMap::new();
         let sockets = self.topology.get_sockets_passive();
@@ -173,7 +192,7 @@ impl StdoutExporter {
         }
         let domain_names = self.topology.domains_names.as_ref().unwrap();
 
-        println!("Host:\t{} W", (host_power as f32 / 1000000.0));
+        println!("Host:\t{} W", (format!("{}", host_power).parse::<f64>().unwrap() / 1000000.0));
         println!("\tpackage \t{}", domain_names.join("\t\t"));
 
         for (s_id, v) in sockets_power.iter() {
@@ -222,7 +241,7 @@ impl StdoutExporter {
                     println!(
                         "{} W\t{}\t{:?}",
                         ((c.1 as f32 / (host_time * procfs::ticks_per_second().unwrap() as f32))
-                            * host_power as f32)
+                            * format!("{}", host_power).parse::<f32>().unwrap())
                             / 1000000.0,
                         c.0.pid,
                         c.0.exe().unwrap_or_default()

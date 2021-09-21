@@ -45,12 +45,25 @@ struct Metric {
     timestamp: Duration,
 }
 
+#[derive(Clone)]
 enum MetricValueType {
     // IntSigned(i64),
     // Float(f32),
     Text(String),
     FloatDouble(f64),
     IntUnsigned(u64),
+}
+
+impl fmt::Display for MetricValueType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self {
+            // MetricValueType::IntSigned(value) => write!(f, "{}", value),
+            // MetricValueType::Float(value) => write!(f, "{}", value),
+            MetricValueType::Text(text) => write!(f, "{}", text),
+            MetricValueType::FloatDouble(value) => write!(f, "{}", value),
+            MetricValueType::IntUnsigned(value) => write!(f, "{}", value),
+        }
+    }
 }
 
 impl fmt::Debug for MetricValueType {
@@ -64,6 +77,7 @@ impl fmt::Debug for MetricValueType {
         }
     }
 }
+
 
 /// An Exporter is what tells scaphandre when to collect metrics and how to export
 /// or expose them.
