@@ -93,6 +93,7 @@ struct Socket {
     id: u16,
     consumption: f32,
     domains: Vec<Domain>,
+    timestamp: f64
 }
 
 #[derive(Serialize, Deserialize)]
@@ -100,7 +101,7 @@ struct Consumer {
     exe: PathBuf,
     pid: i32,
     consumption: f32,
-    timestamp: f32
+    timestamp: f64
 }
 #[derive(Serialize, Deserialize)]
 struct Host {
@@ -184,11 +185,6 @@ impl JSONExporter {
             info!("didn't find host metric");
         };
 
-        //let host_stat = match self.topology.get_stats_diff() {
-        //    Some(value) => value,
-        //    None => return,
-        //};
-
         let consumers = self.topology.proc_tracker.get_top_consumers(
             parameters
                 .value_of("max_top_consumers")
@@ -207,37 +203,28 @@ impl JSONExporter {
                         exe: PathBuf::from(metric.attributes.get("exe").unwrap()),
                         pid: process.pid,
                         consumption: format!("{}", metric.metric_value).parse::<f32>().unwrap(),
-                        timestamp: metric.timestamp.as_secs_f32()
+                        timestamp: metric.timestamp.as_secs_f64()
                     }
                 )
             } else {
                 None
             }
         }).collect::<Vec<_>>();
-        //let top_consumers = consumers
-        //    .iter()
-        //    .map(|(process, value)| {
-        //        let host_time = host_stat.total_time_jiffies();
-        //        Consumer {
-        //            exe: process.exe().unwrap_or_default(),
-        //            pid: process.pid,
-        //            consumption: ((*value as f32
-        //                / (host_time * procfs::ticks_per_second().unwrap() as f32))
-        //                * host_power as f32),
-        //        }
-        //    })
-        //    .collect::<Vec<_>>();
 
-        // let names = ["core", "uncore", "dram"];
         let all_sockets = self
             .topology
             .get_sockets_passive()
             .iter()
             .map(|socket| {
-                let socket_power = socket
-                    .get_records_diff_power_microwatts()
-                    .map(|record| record.value.parse::<u64>().unwrap())
-                    .unwrap_or(0);
+                let mut socket_power: f32 = 0.0;
+                let mut timestamp = 0.0;
+                if let Some(metric) = metrics_iter.find(|x| {
+                    x.name == "scaph_socket_power_microwatts"
+                    && socket.id == x.attributes.get("socket_id").unwrap().parse::<u16>().unwrap()
+                }) {
+                    socket_power = format!("{}", metric.metric_value).parse::<f32>().unwrap();
+                    timestamp = metric.timestamp.as_secs_f64();
+                }
 
                 let domains = socket
                     .get_domains_passive()
@@ -258,9 +245,59 @@ impl JSONExporter {
                     id: socket.id,
                     consumption: (socket_power as f32),
                     domains,
+                    timestamp 
                 }
             })
             .collect::<Vec<_>>();
+
+        
+        //for s in metrics
+        //    .iter()
+        //    .filter(|x| x.name == "scaph_socket_power_microwatts")
+        //{
+        //    let power = format!("{}", s.metric_value).parse::<f32>().unwrap() / 1000000.0;
+        //    let mut power_str = String::from("----");
+        //    if power > 0.0 {
+        //        power_str = power.to_string();
+        //    }
+        //    let socket_id = s.attributes.get("socket_id").unwrap().clone();
+
+        //    let mut to_print = format!("Socket{}\t{} W |\t", socket_id, power_str);
+
+        //    let domains = metrics.iter().filter(|x| {
+        //        x.name == "scaph_domain_power_microwatts"
+        //            && x.attributes.get("socket_id").unwrap() == &socket_id
+        //    });
+
+        //    for d in domain_names {
+        //        info!("current domain : {}", d);
+        //        info!("domains size : {}", &domains.clone().count());
+        //        if let Some(current_domain) = domains.clone().find(|x| {
+        //            info!("looking for domain metrics for d == {}", d);
+        //            info!("current metric analyzed : {:?}", x);
+        //            if let Some(domain_name_result) = x.attributes.get("domain_name") {
+        //                if domain_name_result == d {
+        //                    return true;
+        //                }
+        //            }
+        //            false
+        //        }) {
+        //            to_print.push_str(&format!(
+        //                "{} W\t",
+        //                current_domain
+        //                    .metric_value
+        //                    .to_string()
+        //                    .parse::<f32>()
+        //                    .unwrap()
+        //                    / 1000000.0
+        //            ));
+        //        } else {
+        //            to_print.push_str("---");
+        //        }
+        //    }
+
+        //    println!("{}\n", to_print);
+        //}
 
         if host_report.is_some() {
             let report = Report {
