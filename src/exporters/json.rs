@@ -71,6 +71,14 @@ impl Exporter for JSONExporter {
             .takes_value(true);
         options.push(arg);
 
+        let arg = Arg::with_name("qemu")
+            .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
+            .long("qemu")
+            .short("q")
+            .required(false)
+            .takes_value(false);
+        options.push(arg);
+
         options
     }
 }
@@ -92,6 +100,7 @@ struct Consumer {
     exe: PathBuf,
     pid: i32,
     consumption: f32,
+    timestamp: f32
 }
 #[derive(Serialize, Deserialize)]
 struct Host {
@@ -153,20 +162,32 @@ impl JSONExporter {
     }
 
     fn retrieve_metrics(&mut self, parameters: &ArgMatches) {
-        let mut host_power = 0;
-        let host_timestamp: Duration;
-        if let Some(microwatts_record) = self.topology.get_records_diff_power_microwatts() {
-            host_timestamp = microwatts_record.timestamp;
+        let hostname = utils::get_hostname();
+        let mut metric_generator = MetricGenerator::new(&self.topology, &hostname);
+        metric_generator.gen_all_metrics(parameters.is_present("qemu"));
 
-            host_power = microwatts_record.value.parse::<u64>().unwrap();
+        let metrics = metric_generator.get_metrics();
+        let mut metrics_iter = metrics.iter();
+        let mut host_report: Option<Host> = None;
+        if let Some(host_metric) = metrics_iter.find(|x| x.name == "scaph_host_power_microwatts"){
+            let host_power_string = format!("{}", host_metric.metric_value);
+            let host_power_f32 = host_power_string.parse::<f32>().unwrap();
+            if host_power_f32 > 0.0 {
+                host_report = Some(
+                    Host {
+                        consumption: host_power_f32,
+                        timestamp: host_metric.timestamp.as_secs_f64(),
+                    }
+                );
+            }
         } else {
-            host_timestamp = current_system_time_since_epoch();
-        }
-
-        let host_stat = match self.topology.get_stats_diff() {
-            Some(value) => value,
-            None => return,
+            info!("didn't find host metric");
         };
+
+        //let host_stat = match self.topology.get_stats_diff() {
+        //    Some(value) => value,
+        //    None => return,
+        //};
 
         let consumers = self.topology.proc_tracker.get_top_consumers(
             parameters
@@ -175,19 +196,37 @@ impl JSONExporter {
                 .parse::<u16>()
                 .unwrap(),
         );
-        let top_consumers = consumers
-            .iter()
-            .map(|(process, value)| {
-                let host_time = host_stat.total_time_jiffies();
-                Consumer {
-                    exe: process.exe().unwrap_or_default(),
-                    pid: process.pid,
-                    consumption: ((*value as f32
-                        / (host_time * procfs::ticks_per_second().unwrap() as f32))
-                        * host_power as f32),
-                }
-            })
-            .collect::<Vec<_>>();
+        let top_consumers = consumers.iter().filter_map(|(process, _value)| {
+            if let Some(metric) = metrics.iter().find(
+                |x| {
+                    x.name == "scaph_process_power_consumption_microwatts" &&
+                    process.pid == x.attributes.get("pid").unwrap().parse::<i32>().unwrap()
+                }) {
+                Some(
+                    Consumer {
+                        exe: PathBuf::from(metric.attributes.get("exe").unwrap()),
+                        pid: process.pid,
+                        consumption: format!("{}", metric.metric_value).parse::<f32>().unwrap(),
+                        timestamp: metric.timestamp.as_secs_f32()
+                    }
+                )
+            } else {
+                None
+            }
+        }).collect::<Vec<_>>();
+        //let top_consumers = consumers
+        //    .iter()
+        //    .map(|(process, value)| {
+        //        let host_time = host_stat.total_time_jiffies();
+        //        Consumer {
+        //            exe: process.exe().unwrap_or_default(),
+        //            pid: process.pid,
+        //            consumption: ((*value as f32
+        //                / (host_time * procfs::ticks_per_second().unwrap() as f32))
+        //                * host_power as f32),
+        //        }
+        //    })
+        //    .collect::<Vec<_>>();
 
         // let names = ["core", "uncore", "dram"];
         let all_sockets = self
@@ -223,29 +262,27 @@ impl JSONExporter {
             })
             .collect::<Vec<_>>();
 
-        let host_report = Host {
-            consumption: host_power as f32,
-            timestamp: host_timestamp.as_secs_f64(),
-        };
+        if host_report.is_some() {
+            let report = Report {
+                host: host_report.unwrap(),
+                consumers: top_consumers,
+                sockets: all_sockets,
+            };
 
-        let report = Report {
-            host: host_report,
-            consumers: top_consumers,
-            sockets: all_sockets,
-        };
+            let file_path = parameters.value_of("file_path").unwrap();
+            // Print json
+            if file_path.is_empty() {
+                let json: String = serde_json::to_string(&report).expect("Unable to parse report");
+                println!("{}", &json);
+            } else {
+                self.reports.push(report);
+                // Serialize it to a JSON string.
+                let json: String =
+                    serde_json::to_string(&self.reports).expect("Unable to parse report");
+                let _ = File::create(file_path);
+                fs::write(file_path, &json).expect("Unable to write file");
+            }
 
-        let file_path = parameters.value_of("file_path").unwrap();
-        // Print json
-        if file_path.is_empty() {
-            let json: String = serde_json::to_string(&report).expect("Unable to parse report");
-            println!("{}", &json);
-        } else {
-            self.reports.push(report);
-            // Serialize it to a JSON string.
-            let json: String =
-                serde_json::to_string(&self.reports).expect("Unable to parse report");
-            let _ = File::create(file_path);
-            fs::write(file_path, &json).expect("Unable to write file");
         }
     }
 }
