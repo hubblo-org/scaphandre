@@ -78,7 +78,6 @@ impl fmt::Debug for MetricValueType {
     }
 }
 
-
 /// An Exporter is what tells scaphandre when to collect metrics and how to export
 /// or expose them.
 /// Its basic role is to instanciate a Sensor, get the data the sensor has to offer
@@ -383,8 +382,52 @@ impl<'a> MetricGenerator<'a> {
                         ),
                         metric_value: MetricValueType::Text(socket_power_microwatts.clone()),
                     });
+                }
+            }
+            for domain in socket.get_domains_passive() {
+                let records = domain.get_records_passive();
+                if !records.is_empty() {
+                    let metric = records.last().unwrap();
+                    let metric_value = metric.value.clone();
+                    let metric_timestamp = metric.timestamp;
 
+                    let mut attributes = HashMap::new();
+                    attributes.insert("domain_name".to_string(), domain.name.clone());
+                    attributes.insert("domain_id".to_string(), domain.id.to_string());
+                    attributes.insert("socket_id".to_string(), socket.id.to_string());
 
+                    self.data.push(Metric {
+                        name: String::from("scaph_domain_energy_microjoules"),
+                        metric_type: String::from("counter"),
+                        ttl: 60.0,
+                        hostname: String::from(self.hostname),
+                        timestamp: metric_timestamp,
+                        state: String::from("ok"),
+                        tags: vec!["scaphandre".to_string()],
+                        attributes: attributes.clone(),
+                        description: String::from(
+                            "Domain related energy measurement in microjoules.",
+                        ),
+                        metric_value: MetricValueType::Text(metric_value.clone()),
+                    });
+
+                    if let Some(power) = domain.get_records_diff_power_microwatts() {
+                        let domain_power_microwatts = &power.value;
+                        self.data.push(Metric {
+                            name: String::from("scaph_domain_power_microwatts"),
+                            metric_type: String::from("gauge"),
+                            ttl: 60.0,
+                            hostname: String::from(self.hostname),
+                            timestamp: power.timestamp,
+                            state: String::from("ok"),
+                            tags: vec!["scaphandre".to_string()],
+                            attributes: attributes.clone(),
+                            description: String::from(
+                                "Power measurement relative to a RAPL Domain, in microwatts",
+                            ),
+                            metric_value: MetricValueType::Text(domain_power_microwatts.clone()),
+                        });
+                    }
                 }
             }
         }
