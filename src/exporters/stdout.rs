@@ -229,15 +229,19 @@ impl StdoutExporter {
             println!("No processes found yet or filter returns no value.");
         } else {
             for c in consumers.iter() {
-                if let Some(host_stat) = self.topology.get_stats_diff() {
-                    let host_time = host_stat.total_time_jiffies();
+                if let Some(process) = metrics.iter().find(|x| {
+                    if x.name == "scaph_process_power_consumption_microwatts" {
+                        let pid = x.attributes.get("pid").unwrap();
+                        pid.parse::<i32>().unwrap() == c.0.pid
+                    } else {
+                        false
+                    }
+                }) {
                     println!(
                         "{} W\t{}\t{:?}",
-                        ((c.1 as f32 / (host_time * procfs::ticks_per_second().unwrap() as f32))
-                            * format!("{}", host_power).parse::<f32>().unwrap())
-                            / 1000000.0,
-                        c.0.pid,
-                        c.0.exe().unwrap_or_default()
+                        format!("{}", process.metric_value).parse::<f32>().unwrap() / 1000000.0,
+                        process.attributes.get("pid").unwrap(),
+                        process.attributes.get("exe").unwrap()
                     );
                 }
             }
