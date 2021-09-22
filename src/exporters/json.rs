@@ -1,4 +1,3 @@
-use crate::current_system_time_since_epoch;
 use crate::exporters::*;
 use crate::sensors::{Sensor, Topology};
 use clap::Arg;
@@ -87,13 +86,14 @@ impl Exporter for JSONExporter {
 struct Domain {
     name: String,
     consumption: f32,
+    timestamp: f64,
 }
 #[derive(Serialize, Deserialize)]
 struct Socket {
     id: u16,
     consumption: f32,
     domains: Vec<Domain>,
-    timestamp: f64
+    timestamp: f64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -101,7 +101,7 @@ struct Consumer {
     exe: PathBuf,
     pid: i32,
     consumption: f32,
-    timestamp: f64
+    timestamp: f64,
 }
 #[derive(Serialize, Deserialize)]
 struct Host {
@@ -170,16 +170,14 @@ impl JSONExporter {
         let metrics = metric_generator.get_metrics();
         let mut metrics_iter = metrics.iter();
         let mut host_report: Option<Host> = None;
-        if let Some(host_metric) = metrics_iter.find(|x| x.name == "scaph_host_power_microwatts"){
+        if let Some(host_metric) = metrics_iter.find(|x| x.name == "scaph_host_power_microwatts") {
             let host_power_string = format!("{}", host_metric.metric_value);
             let host_power_f32 = host_power_string.parse::<f32>().unwrap();
             if host_power_f32 > 0.0 {
-                host_report = Some(
-                    Host {
-                        consumption: host_power_f32,
-                        timestamp: host_metric.timestamp.as_secs_f64(),
-                    }
-                );
+                host_report = Some(Host {
+                    consumption: host_power_f32,
+                    timestamp: host_metric.timestamp.as_secs_f64(),
+                });
             }
         } else {
             info!("didn't find host metric");
@@ -192,134 +190,100 @@ impl JSONExporter {
                 .parse::<u16>()
                 .unwrap(),
         );
-        let top_consumers = consumers.iter().filter_map(|(process, _value)| {
-            if let Some(metric) = metrics.iter().find(
-                |x| {
-                    x.name == "scaph_process_power_consumption_microwatts" &&
-                    process.pid == x.attributes.get("pid").unwrap().parse::<i32>().unwrap()
+        let top_consumers = consumers
+            .iter()
+            .filter_map(|(process, _value)| {
+                if let Some(metric) = metrics.iter().find(|x| {
+                    x.name == "scaph_process_power_consumption_microwatts"
+                        && process.pid == x.attributes.get("pid").unwrap().parse::<i32>().unwrap()
                 }) {
-                Some(
-                    Consumer {
+                    Some(Consumer {
                         exe: PathBuf::from(metric.attributes.get("exe").unwrap()),
                         pid: process.pid,
                         consumption: format!("{}", metric.metric_value).parse::<f32>().unwrap(),
-                        timestamp: metric.timestamp.as_secs_f64()
-                    }
-                )
-            } else {
-                None
-            }
-        }).collect::<Vec<_>>();
+                        timestamp: metric.timestamp.as_secs_f64(),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
 
         let all_sockets = self
             .topology
             .get_sockets_passive()
             .iter()
-            .map(|socket| {
-                let mut socket_power: f32 = 0.0;
-                let mut timestamp = 0.0;
+            .filter_map(|socket| {
                 if let Some(metric) = metrics_iter.find(|x| {
-                    x.name == "scaph_socket_power_microwatts"
-                    && socket.id == x.attributes.get("socket_id").unwrap().parse::<u16>().unwrap()
+                    if x.name == "scaph_socket_power_microwatts" {
+                        socket.id
+                            == x.attributes
+                                .get("socket_id")
+                                .unwrap()
+                                .parse::<u16>()
+                                .unwrap()
+                    } else {
+                        info!("socket not found ! ");
+                        false
+                    }
                 }) {
-                    socket_power = format!("{}", metric.metric_value).parse::<f32>().unwrap();
-                    timestamp = metric.timestamp.as_secs_f64();
-                }
+                    let socket_power = format!("{}", metric.metric_value).parse::<f32>().unwrap();
 
-                let domains = socket
-                    .get_domains_passive()
-                    .iter()
-                    .map(|d| (d.name.clone(), d.get_records_diff_power_microwatts()))
-                    .map(|(n, record)| (n, record.map(|d| d.value)))
-                    .map(|(name, d)| {
-                        let domain_power =
-                            d.map(|value| value.parse::<u64>().unwrap()).unwrap_or(0);
-                        Domain {
-                            name,
-                            consumption: domain_power as f32,
-                        }
+                    let domains = metrics
+                        .iter()
+                        .filter(|x| {
+                            x.name == "scaph_domain_power_microwatts"
+                                && x.attributes
+                                    .get("socket_id")
+                                    .unwrap()
+                                    .parse::<u16>()
+                                    .unwrap()
+                                    == socket.id
+                        })
+                        .map(|d| Domain {
+                            name: d.name.clone(),
+                            consumption: format!("{}", d.metric_value).parse::<f32>().unwrap(),
+                            timestamp: d.timestamp.as_secs_f64(),
+                        })
+                        .collect::<Vec<_>>();
+
+                    Some(Socket {
+                        id: socket.id,
+                        consumption: (socket_power as f32),
+                        domains,
+                        timestamp: metric.timestamp.as_secs_f64(),
                     })
-                    .collect::<Vec<_>>();
-
-                Socket {
-                    id: socket.id,
-                    consumption: (socket_power as f32),
-                    domains,
-                    timestamp 
+                } else {
+                    None
                 }
             })
             .collect::<Vec<_>>();
 
-        
-        //for s in metrics
-        //    .iter()
-        //    .filter(|x| x.name == "scaph_socket_power_microwatts")
-        //{
-        //    let power = format!("{}", s.metric_value).parse::<f32>().unwrap() / 1000000.0;
-        //    let mut power_str = String::from("----");
-        //    if power > 0.0 {
-        //        power_str = power.to_string();
-        //    }
-        //    let socket_id = s.attributes.get("socket_id").unwrap().clone();
+        match host_report {
+            Some(host) => {
+                let report = Report {
+                    host,
+                    consumers: top_consumers,
+                    sockets: all_sockets,
+                };
 
-        //    let mut to_print = format!("Socket{}\t{} W |\t", socket_id, power_str);
-
-        //    let domains = metrics.iter().filter(|x| {
-        //        x.name == "scaph_domain_power_microwatts"
-        //            && x.attributes.get("socket_id").unwrap() == &socket_id
-        //    });
-
-        //    for d in domain_names {
-        //        info!("current domain : {}", d);
-        //        info!("domains size : {}", &domains.clone().count());
-        //        if let Some(current_domain) = domains.clone().find(|x| {
-        //            info!("looking for domain metrics for d == {}", d);
-        //            info!("current metric analyzed : {:?}", x);
-        //            if let Some(domain_name_result) = x.attributes.get("domain_name") {
-        //                if domain_name_result == d {
-        //                    return true;
-        //                }
-        //            }
-        //            false
-        //        }) {
-        //            to_print.push_str(&format!(
-        //                "{} W\t",
-        //                current_domain
-        //                    .metric_value
-        //                    .to_string()
-        //                    .parse::<f32>()
-        //                    .unwrap()
-        //                    / 1000000.0
-        //            ));
-        //        } else {
-        //            to_print.push_str("---");
-        //        }
-        //    }
-
-        //    println!("{}\n", to_print);
-        //}
-
-        if host_report.is_some() {
-            let report = Report {
-                host: host_report.unwrap(),
-                consumers: top_consumers,
-                sockets: all_sockets,
-            };
-
-            let file_path = parameters.value_of("file_path").unwrap();
-            // Print json
-            if file_path.is_empty() {
-                let json: String = serde_json::to_string(&report).expect("Unable to parse report");
-                println!("{}", &json);
-            } else {
-                self.reports.push(report);
-                // Serialize it to a JSON string.
-                let json: String =
-                    serde_json::to_string(&self.reports).expect("Unable to parse report");
-                let _ = File::create(file_path);
-                fs::write(file_path, &json).expect("Unable to write file");
+                let file_path = parameters.value_of("file_path").unwrap();
+                // Print json
+                if file_path.is_empty() {
+                    let json: String = serde_json::to_string(&report).expect("Unable to parse report");
+                    println!("{}", &json);
+                } else {
+                    self.reports.push(report);
+                    // Serialize it to a JSON string.
+                    let json: String =
+                        serde_json::to_string(&self.reports).expect("Unable to parse report");
+                    let _ = File::create(file_path);
+                    fs::write(file_path, &json).expect("Unable to write file");
+                }
+            },
+            None => {
+                info!("No data yet, didn't write report.");
             }
-
         }
     }
 }
