@@ -193,19 +193,19 @@ impl JSONExporter {
         let top_consumers = consumers
             .iter()
             .filter_map(|(process, _value)| {
-                if let Some(metric) = metrics.iter().find(|x| {
-                    x.name == "scaph_process_power_consumption_microwatts"
-                        && process.pid == x.attributes.get("pid").unwrap().parse::<i32>().unwrap()
-                }) {
-                    Some(Consumer {
+                metrics
+                    .iter()
+                    .find(|x| {
+                        x.name == "scaph_process_power_consumption_microwatts"
+                            && process.pid
+                                == x.attributes.get("pid").unwrap().parse::<i32>().unwrap()
+                    })
+                    .map(|metric| Consumer {
                         exe: PathBuf::from(metric.attributes.get("exe").unwrap()),
                         pid: process.pid,
                         consumption: format!("{}", metric.metric_value).parse::<f32>().unwrap(),
                         timestamp: metric.timestamp.as_secs_f64(),
                     })
-                } else {
-                    None
-                }
             })
             .collect::<Vec<_>>();
 
