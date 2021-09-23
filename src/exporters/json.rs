@@ -270,7 +270,8 @@ impl JSONExporter {
                 let file_path = parameters.value_of("file_path").unwrap();
                 // Print json
                 if file_path.is_empty() {
-                    let json: String = serde_json::to_string(&report).expect("Unable to parse report");
+                    let json: String =
+                        serde_json::to_string(&report).expect("Unable to parse report");
                     println!("{}", &json);
                 } else {
                     self.reports.push(report);
@@ -280,7 +281,7 @@ impl JSONExporter {
                     let _ = File::create(file_path);
                     fs::write(file_path, &json).expect("Unable to write file");
                 }
-            },
+            }
             None => {
                 info!("No data yet, didn't write report.");
             }
