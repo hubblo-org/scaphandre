@@ -33,6 +33,6 @@ scrape_configs:
          # scheme defaults to 'http'.
 
     static_configs:
-      - targets: ['scaphandre:8089']
+      - targets: ['scaphandre:8080']
 
 

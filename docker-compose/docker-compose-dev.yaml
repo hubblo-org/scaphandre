@@ -13,7 +13,10 @@ services:
       - type: bind
         source: /sys/class/powercap
         target: /sys/class/powercap
-    command: ["prometheus"]                         
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+    command: ["prometheus", "--containers"] 
     networks:
       - scaphandre-network
     

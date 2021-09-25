@@ -1,3 +1,8 @@
+//! # Sensors: to get data related to energy consumption
+//!
+//! `Sensor` is the root for all sensors. It defines the [Sensor] trait
+//! needed to implement a sensor.
+
 pub mod powercap_rapl;
 pub mod units;
 pub mod utils;
@@ -47,13 +52,20 @@ pub struct Topology {
 
 impl RecordGenerator for Topology {
     /// Computes a new Record, stores it in the record_buffer
-    /// and returns a clone of this record
+    /// and returns a clone of this record.
+    ///
     fn refresh_record(&mut self) -> Record {
         let mut value: u64 = 0;
         for s in self.get_sockets() {
             let records = s.get_records_passive();
             if !records.is_empty() {
-                value += records.last().unwrap().value.trim().parse::<u64>().unwrap();
+                let last = records.last();
+                let res = last.unwrap().value.trim();
+                if let Ok(val) = res.parse::<u64>() {
+                    value += val;
+                } else {
+                    warn!("couldn't parse value : {}", res);
+                }
             }
         }
         let timestamp = current_system_time_since_epoch();
