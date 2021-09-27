@@ -139,14 +139,22 @@ impl Exporter for RiemannExporter {
         println!("Press CTRL-C to stop scaphandre");
         println!("Measurement step is: {}s", dispatch_duration);
 
-        let mut topology = self.sensor.get_topology().unwrap();
+        let topology = self.sensor.get_topology().unwrap();
+        let mut metric_generator = MetricGenerator::new(
+            topology,
+            hostname,
+            parameters.is_present("qemu"),
+            parameters.is_present("containers"),
+        );
+
         loop {
             info!(
                 "{}: Beginning of measure loop",
                 Utc::now().format("%Y-%m-%dT%H:%M:%S")
             );
 
-            topology
+            metric_generator
+                .topology
                 .proc_tracker
                 .clean_terminated_process_records_vectors();
 
@@ -154,10 +162,9 @@ impl Exporter for RiemannExporter {
                 "{}: Refresh topology",
                 Utc::now().format("%Y-%m-%dT%H:%M:%S")
             );
-            topology.refresh();
+            metric_generator.topology.refresh();
 
             info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-            let mut metric_generator = MetricGenerator::new(&topology, &hostname);
             // Here we need a specific behavior for process metrics, so we call each gen function
             // and then implement that specific behavior (we don't use gen_all_metrics).
             metric_generator.gen_self_metrics();
@@ -194,7 +201,10 @@ impl Exporter for RiemannExporter {
                     pid.to_string(),
                     exe
                 );
-                if let Some(power) = topology.get_process_power_consumption_microwatts(pid) {
+                if let Some(power) = metric_generator
+                    .topology
+                    .get_process_power_consumption_microwatts(pid)
+                {
                     data.push(Metric {
                         name: metric_name,
                         metric_type: String::from("gauge"),
