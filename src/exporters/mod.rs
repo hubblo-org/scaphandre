@@ -756,15 +756,6 @@ impl MetricGenerator {
         }
         res
     }
-
-    /// Retrieve the current metrics stored into [MetricGenerator].
-    ///
-    /// [MetricGenerator] is loaded using the gen_*_metrics() methods
-    /// Most of the time gen_all_metrics() is used to extract the full
-    /// set of data.
-    fn get_metrics(&self) -> &Vec<Metric> {
-        &self.data
-    }
 }
 
 //  Copyright 2020 The scaphandre authors.

@@ -175,7 +175,7 @@ impl JSONExporter {
     ) {
         metric_generator.gen_all_metrics();
 
-        let metrics = metric_generator.get_metrics();
+        let metrics = metric_generator.pop_metrics();
         let mut metrics_iter = metrics.iter();
         let mut host_report: Option<Host> = None;
         if let Some(host_metric) = metrics_iter.find(|x| x.name == "scaph_host_power_microwatts") {

@@ -149,6 +149,10 @@ impl StdoutExporter {
         process_number: u16,
         metric_generator: &mut MetricGenerator,
     ) {
+        metric_generator
+            .topology
+            .proc_tracker
+            .clean_terminated_process_records_vectors();
         metric_generator.topology.refresh();
         self.show_metrics(regex_filter, process_number, metric_generator);
     }
@@ -161,7 +165,7 @@ impl StdoutExporter {
     ) {
         metric_generator.gen_all_metrics();
 
-        let metrics = metric_generator.get_metrics();
+        let metrics = metric_generator.pop_metrics();
         let mut metrics_iter = metrics.iter();
         let host_power = match metrics_iter.find(|x| x.name == "scaph_host_power_microwatts") {
             Some(m) => m.metric_value.clone(),

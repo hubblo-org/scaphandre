@@ -221,8 +221,8 @@ impl Exporter for RiemannExporter {
             }
             // Send all data
             info!("{}: Send data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-            for metric in metric_generator.get_metrics() {
-                rclient.send_metric(metric);
+            for metric in metric_generator.pop_metrics() {
+                rclient.send_metric(&metric);
             }
             for metric in data {
                 rclient.send_metric(&metric);
