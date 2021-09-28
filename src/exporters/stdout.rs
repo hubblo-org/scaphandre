@@ -1,7 +1,7 @@
 use clap::Arg;
 
 use crate::exporters::*;
-use crate::sensors::{Sensor, Topology};
+use crate::sensors::Sensor;
 use colored::*;
 use regex::Regex;
 use std::thread;
@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 /// An Exporter that displays power consumption data of the host
 /// and its processes on the standard output of the terminal.
 pub struct StdoutExporter {
-    topology: Topology,
+    sensor: Box<dyn Sensor>,
 }
 
 impl Exporter for StdoutExporter {
@@ -71,11 +71,8 @@ impl Exporter for StdoutExporter {
 
 impl StdoutExporter {
     /// Instantiates and returns a new StdoutExporter
-    pub fn new(mut sensor: Box<dyn Sensor>) -> StdoutExporter {
-        let some_topology = *sensor.get_topology();
-        StdoutExporter {
-            topology: some_topology.unwrap(),
-        }
+    pub fn new(sensor: Box<dyn Sensor>) -> StdoutExporter {
+        StdoutExporter { sensor }
     }
 
     /// Runs iteration() every 'step', during until 'timeout'
@@ -122,31 +119,47 @@ impl StdoutExporter {
             eprintln!("{}", warning.bright_yellow());
         }
 
+        let topology = self.sensor.get_topology().unwrap();
+        let mut metric_generator = MetricGenerator::new(
+            topology,
+            utils::get_hostname(),
+            parameters.is_present("qemu"),
+            parameters.is_present("containers"),
+        );
+
         println!("Measurement step is: {}s", step_duration);
         if timeout_secs == 0 {
             loop {
-                self.iterate(&regex_filter, process_number, parameters.is_present("qemu"));
+                self.iterate(&regex_filter, process_number, &mut metric_generator);
                 thread::sleep(Duration::new(step_duration, 0));
             }
         } else {
             let now = Instant::now();
 
             while now.elapsed().as_secs() <= timeout_secs {
-                self.iterate(&regex_filter, process_number, parameters.is_present("qemu"));
+                self.iterate(&regex_filter, process_number, &mut metric_generator);
                 thread::sleep(Duration::new(step_duration, 0));
             }
         }
     }
 
-    fn iterate(&mut self, regex_filter: &Option<Regex>, process_number: u16, qemu: bool) {
-        self.topology.refresh();
-        self.show_metrics(regex_filter, process_number, qemu);
+    fn iterate(
+        &mut self,
+        regex_filter: &Option<Regex>,
+        process_number: u16,
+        metric_generator: &mut MetricGenerator,
+    ) {
+        metric_generator.topology.refresh();
+        self.show_metrics(regex_filter, process_number, metric_generator);
     }
 
-    fn show_metrics(&self, regex_filter: &Option<Regex>, process_number: u16, qemu: bool) {
-        let hostname = utils::get_hostname();
-        let mut metric_generator = MetricGenerator::new(&self.topology, &hostname);
-        metric_generator.gen_all_metrics(qemu);
+    fn show_metrics(
+        &self,
+        regex_filter: &Option<Regex>,
+        process_number: u16,
+        metric_generator: &mut MetricGenerator,
+    ) {
+        metric_generator.gen_all_metrics();
 
         let metrics = metric_generator.get_metrics();
         let mut metrics_iter = metrics.iter();
@@ -155,7 +168,7 @@ impl StdoutExporter {
             None => MetricValueType::Text("0".to_string()),
         };
 
-        let domain_names = self.topology.domains_names.as_ref().unwrap();
+        let domain_names = metric_generator.topology.domains_names.as_ref().unwrap();
         info!("domain_name: {:?}", domain_names);
 
         println!(
@@ -215,13 +228,16 @@ impl StdoutExporter {
         let consumers: Vec<(procfs::process::Process, u64)>;
         if let Some(regex_filter) = regex_filter {
             println!("Processes filtered by '{}':", regex_filter.as_str());
-            consumers = self
+            consumers = metric_generator
                 .topology
                 .proc_tracker
                 .get_filtered_processes(regex_filter);
         } else {
             println!("Top {} consumers:", process_number);
-            consumers = self.topology.proc_tracker.get_top_consumers(process_number);
+            consumers = metric_generator
+                .topology
+                .proc_tracker
+                .get_top_consumers(process_number);
         }
 
         info!("consumers : {:?}", consumers);

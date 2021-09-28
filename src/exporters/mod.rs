@@ -234,7 +234,6 @@ impl MetricGenerator {
                 name: String::from("scaph_self_mem_total_program_size"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
-                hostname: String::from(self.hostname),
                 timestamp: default_timestamp,
                 hostname: self.hostname.clone(),
                 state: String::from("ok"),
@@ -395,7 +394,6 @@ impl MetricGenerator {
                     metric_value: MetricValueType::Text(host_energy_microjoules),
                 });
 
-
             if let Some(power) = self.topology.get_records_diff_power_microwatts() {
                 self.data.push(Metric {
                     name: String::from("scaph_host_power_microwatts"),
@@ -474,7 +472,7 @@ impl MetricGenerator {
                         name: String::from("scaph_domain_energy_microjoules"),
                         metric_type: String::from("counter"),
                         ttl: 60.0,
-                        hostname: String::from(self.hostname),
+                        hostname: self.hostname.clone(),
                         timestamp: metric_timestamp,
                         state: String::from("ok"),
                         tags: vec!["scaphandre".to_string()],
@@ -491,7 +489,7 @@ impl MetricGenerator {
                             name: String::from("scaph_domain_power_microwatts"),
                             metric_type: String::from("gauge"),
                             ttl: 60.0,
-                            hostname: String::from(self.hostname),
+                            hostname: self.hostname.clone(),
                             timestamp: power.timestamp,
                             state: String::from("ok"),
                             tags: vec!["scaphandre".to_string()],

@@ -1,5 +1,5 @@
 use crate::exporters::*;
-use crate::sensors::{Sensor, Topology};
+use crate::sensors::Sensor;
 use clap::Arg;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 /// An Exporter that displays power consumption data of the host
 /// and its processes on the standard output of the terminal.
 pub struct JSONExporter {
-    topology: Topology,
+    sensor: Box<dyn Sensor>,
     reports: Vec<Report>,
 }
 
@@ -117,10 +117,9 @@ struct Report {
 
 impl JSONExporter {
     /// Instantiates and returns a new JSONExporter
-    pub fn new(mut sensor: Box<dyn Sensor>) -> JSONExporter {
-        let some_topology = *sensor.get_topology();
+    pub fn new(sensor: Box<dyn Sensor>) -> JSONExporter {
         JSONExporter {
-            topology: some_topology.unwrap(),
+            sensor,
             reports: Vec::new(),
         }
     }
@@ -128,8 +127,15 @@ impl JSONExporter {
     /// Runs iteration() every 'step', until 'timeout'
     pub fn runner(&mut self, parameters: ArgMatches) {
         let timeout = parameters.value_of("timeout").unwrap();
+        let topology = self.sensor.get_topology().unwrap();
+        let mut metric_generator = MetricGenerator::new(
+            topology,
+            utils::get_hostname(),
+            parameters.is_present("qemu"),
+            parameters.is_present("containers"),
+        );
         if timeout.is_empty() {
-            self.iterate(&parameters);
+            self.iterate(&parameters, &mut metric_generator);
         } else {
             let now = Instant::now();
 
@@ -151,21 +157,23 @@ impl JSONExporter {
             info!("Measurement step is: {}s", step_duration);
 
             while now.elapsed().as_secs() <= timeout_secs {
-                self.iterate(&parameters);
+                self.iterate(&parameters, &mut metric_generator);
                 thread::sleep(Duration::new(step_duration, step_duration_nano));
             }
         }
     }
 
-    fn iterate(&mut self, parameters: &ArgMatches) {
-        self.topology.refresh();
-        self.retrieve_metrics(parameters);
+    fn iterate(&mut self, parameters: &ArgMatches, metric_generator: &mut MetricGenerator) {
+        metric_generator.topology.refresh();
+        self.retrieve_metrics(parameters, metric_generator);
     }
 
-    fn retrieve_metrics(&mut self, parameters: &ArgMatches) {
-        let hostname = utils::get_hostname();
-        let mut metric_generator = MetricGenerator::new(&self.topology, &hostname);
-        metric_generator.gen_all_metrics(parameters.is_present("qemu"));
+    fn retrieve_metrics(
+        &mut self,
+        parameters: &ArgMatches,
+        metric_generator: &mut MetricGenerator,
+    ) {
+        metric_generator.gen_all_metrics();
 
         let metrics = metric_generator.get_metrics();
         let mut metrics_iter = metrics.iter();
@@ -183,7 +191,7 @@ impl JSONExporter {
             info!("didn't find host metric");
         };
 
-        let consumers = self.topology.proc_tracker.get_top_consumers(
+        let consumers = metric_generator.topology.proc_tracker.get_top_consumers(
             parameters
                 .value_of("max_top_consumers")
                 .unwrap_or("10")
@@ -209,7 +217,7 @@ impl JSONExporter {
             })
             .collect::<Vec<_>>();
 
-        let all_sockets = self
+        let all_sockets = metric_generator
             .topology
             .get_sockets_passive()
             .iter()
