@@ -70,13 +70,14 @@ impl Exporter for JSONExporter {
             .takes_value(true);
         options.push(arg);
 
-        let arg = Arg::with_name("qemu")
-            .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
-            .long("qemu")
-            .short("q")
-            .required(false)
-            .takes_value(false);
-        options.push(arg);
+        // the resulting labels of this option are not yet used by this exporter, activate this option once we display something interesting about it
+        //let arg = Arg::with_name("qemu")
+        //    .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
+        //    .long("qemu")
+        //    .short("q")
+        //    .required(false)
+        //    .takes_value(false);
+        //options.push(arg);
 
         options
     }
