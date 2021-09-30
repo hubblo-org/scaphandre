@@ -64,7 +64,7 @@ impl RecordGenerator for Topology {
                 if let Ok(val) = res.parse::<u64>() {
                     value += val;
                 } else {
-                    warn!("couldn't parse value : {}", res);
+                    trace!("couldn't parse value : {}", res);
                 }
             }
         }
