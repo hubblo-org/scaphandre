@@ -48,7 +48,6 @@ For more details on that metric labels, see [this section](#scaph_process_power_
 And some more deep metrics that you may want if you need to make more complex calculations and data processing:
 
 - `scaph_host_energy_microjoules` : Energy measurement for the whole host, as extracted from the sensor, in microjoules. (COUNTER)
-- `scaph_host_energy_timestamp_seconds`: Timestamp in seconds when hose_energy_microjoules has been computed. (COUNTER)
 - `scaph_socket_power_microwatts{socket_id="$SOCKET_ID"}`: Power measurement relative to a CPU socket, in microwatts. SOCKET_ID being the socket numerical id (GAUGE)
 
 If you hack scaph or just want to investigate its behavior, you may be interested in some internal metrics:
