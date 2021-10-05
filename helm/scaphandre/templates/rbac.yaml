@@ -1,5 +1,5 @@
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
   name: {{ template "scaphandre.name" . }}
   labels:
@@ -9,12 +9,12 @@ subjects:
   name: {{ template "scaphandre.name" . }}
   namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: Role
+  kind: ClusterRole
   name: {{ template "scaphandre.name" . }}
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   name: {{ template "scaphandre.name" . }}
   labels:
@@ -28,3 +28,10 @@ rules:
   - {{ .Chart.Name }}
   verbs:
   - "use"
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - list
+  - watch
