@@ -9,8 +9,7 @@ pub mod riemann;
 pub mod stdout;
 pub mod utils;
 pub mod warpten;
-use crate::current_system_time_since_epoch;
-use crate::sensors::{RecordGenerator, Topology};
+use crate::sensors::{utils::current_system_time_since_epoch, RecordGenerator, Topology};
 use chrono::Utc;
 use clap::ArgMatches;
 use docker_sync::{container::Container, Docker};
@@ -18,6 +17,7 @@ use k8s_sync::kubernetes::Kubernetes;
 use k8s_sync::Pod;
 use std::collections::HashMap;
 use std::fmt;
+use std::time::Duration;
 use utils::{get_docker_client, get_kubernetes_client, get_scaphandre_version};
 
 /// General metric definition.
@@ -44,14 +44,29 @@ struct Metric {
     /// [MetricValueType] enum. It allows to do specific exporter processing based on types
     /// allowing flexibility.
     metric_value: MetricValueType,
+    /// `timestamp` is the timestamp of the moment of the data measurement, stored as a Duration
+    timestamp: Duration,
 }
 
+#[derive(Clone)]
 enum MetricValueType {
     // IntSigned(i64),
     // Float(f32),
     Text(String),
     FloatDouble(f64),
     IntUnsigned(u64),
+}
+
+impl fmt::Display for MetricValueType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self {
+            // MetricValueType::IntSigned(value) => write!(f, "{}", value),
+            // MetricValueType::Float(value) => write!(f, "{}", value),
+            MetricValueType::Text(text) => write!(f, "{}", text),
+            MetricValueType::FloatDouble(value) => write!(f, "{}", value),
+            MetricValueType::IntUnsigned(value) => write!(f, "{}", value),
+        }
+    }
 }
 
 impl fmt::Debug for MetricValueType {
@@ -179,12 +194,14 @@ impl MetricGenerator {
 
     /// Generate all scaphandre internal metrics.
     fn gen_self_metrics(&mut self) {
+        let default_timestamp = current_system_time_since_epoch();
         self.data.push(Metric {
             name: String::from("scaph_self_version"),
             metric_type: String::from("gauge"),
             ttl: 60.0,
             hostname: self.hostname.clone(),
             state: String::from("ok"),
+            timestamp: default_timestamp,
             tags: vec!["scaphandre".to_string()],
             attributes: HashMap::new(),
             description: String::from("Version number of scaphandre represented as a float."),
@@ -199,12 +216,15 @@ impl MetricGenerator {
                 name: String::from("scaph_self_cpu_usage_percent"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
+                timestamp: metric_value.timestamp,
                 hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
-                description: String::from("CPU % consumed by this scaphandre exporter."),
-                metric_value: MetricValueType::FloatDouble(metric_value),
+                description: String::from("CPU % consumed by scaphandre."),
+                metric_value: MetricValueType::FloatDouble(
+                    metric_value.value.parse::<f64>().unwrap(),
+                ),
             });
         }
 
@@ -214,6 +234,7 @@ impl MetricGenerator {
                 name: String::from("scaph_self_mem_total_program_size"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
+                timestamp: default_timestamp,
                 hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
@@ -229,6 +250,7 @@ impl MetricGenerator {
                 ttl: 60.0,
                 hostname: self.hostname.clone(),
                 state: String::from("ok"),
+                timestamp: default_timestamp,
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
                 description: String::from("Resident set size, measured in bytes."),
@@ -240,6 +262,7 @@ impl MetricGenerator {
                 name: String::from("scaph_self_mem_shared_resident_size"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
+                timestamp: default_timestamp,
                 hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
@@ -259,6 +282,7 @@ impl MetricGenerator {
             name: String::from("scaph_self_topo_stats_nb"),
             metric_type: String::from("gauge"),
             ttl: 60.0,
+            timestamp: default_timestamp,
             hostname: self.hostname.clone(),
             state: String::from("ok"),
             tags: vec!["scaphandre".to_string()],
@@ -271,6 +295,7 @@ impl MetricGenerator {
             name: String::from("scaph_self_topo_records_nb"),
             metric_type: String::from("gauge"),
             ttl: 60.0,
+            timestamp: default_timestamp,
             hostname: self.hostname.clone(),
             state: String::from("ok"),
             tags: vec!["scaphandre".to_string()],
@@ -283,6 +308,7 @@ impl MetricGenerator {
             name: String::from("scaph_self_topo_procs_nb"),
             metric_type: String::from("gauge"),
             ttl: 60.0,
+            timestamp: default_timestamp,
             hostname: self.hostname.clone(),
             state: String::from("ok"),
             tags: vec!["scaphandre".to_string()],
@@ -299,6 +325,7 @@ impl MetricGenerator {
                 name: String::from("scaph_self_socket_stats_nb"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
+                timestamp: default_timestamp,
                 hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
@@ -311,6 +338,7 @@ impl MetricGenerator {
                 name: String::from("scaph_self_socket_records_nb"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
+                timestamp: default_timestamp,
                 hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
@@ -328,6 +356,7 @@ impl MetricGenerator {
                     name: String::from("scaph_self_domain_records_nb"),
                     metric_type: String::from("gauge"),
                     ttl: 60.0,
+                    timestamp: default_timestamp,
                     hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
@@ -349,12 +378,12 @@ impl MetricGenerator {
         if !records.is_empty() {
             let record = records.last().unwrap();
             let host_energy_microjoules = record.value.clone();
-            let host_energy_timestamp_seconds = record.timestamp.as_secs().to_string();
 
             self.data.push(Metric {
                     name: String::from("scaph_host_energy_microjoules"),
                     metric_type: String::from("counter"),
                     ttl: 60.0,
+                    timestamp: record.timestamp,
                     hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
@@ -365,25 +394,12 @@ impl MetricGenerator {
                     metric_value: MetricValueType::Text(host_energy_microjoules),
                 });
 
-            self.data.push(Metric {
-                name: String::from("scaph_host_energy_timestamp_seconds"),
-                metric_type: String::from("counter"),
-                ttl: 60.0,
-                hostname: self.hostname.clone(),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from(
-                    "Timestamp in seconds when host_energy_microjoules has been computed.",
-                ),
-                metric_value: MetricValueType::Text(host_energy_timestamp_seconds),
-            });
-
             if let Some(power) = self.topology.get_records_diff_power_microwatts() {
                 self.data.push(Metric {
                     name: String::from("scaph_host_power_microwatts"),
                     metric_type: String::from("gauge"),
                     ttl: 60.0,
+                    timestamp: power.timestamp,
                     hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
@@ -401,7 +417,9 @@ impl MetricGenerator {
         for socket in sockets {
             let records = socket.get_records_passive();
             if !records.is_empty() {
-                let socket_energy_microjoules = &records.last().unwrap().value;
+                let metric = records.last().unwrap();
+                let metric_value = metric.value.clone();
+                let metric_timestamp = metric.timestamp;
 
                 let mut attributes = HashMap::new();
                 attributes.insert("socket_id".to_string(), socket.id.to_string());
@@ -410,21 +428,23 @@ impl MetricGenerator {
                     name: String::from("scaph_socket_energy_microjoules"),
                     metric_type: String::from("counter"),
                     ttl: 60.0,
+                    timestamp: metric_timestamp,
                     hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
                     attributes: attributes.clone(),
                     description: String::from("Socket related energy measurement in microjoules."),
-                    metric_value: MetricValueType::Text(socket_energy_microjoules.clone()),
+                    metric_value: MetricValueType::Text(metric_value.clone()),
                 });
 
-                if let Some(power) = self.topology.get_records_diff_power_microwatts() {
+                if let Some(power) = socket.get_records_diff_power_microwatts() {
                     let socket_power_microwatts = &power.value;
 
                     self.data.push(Metric {
                         name: String::from("scaph_socket_power_microwatts"),
                         metric_type: String::from("gauge"),
                         ttl: 60.0,
+                        timestamp: power.timestamp,
                         hostname: self.hostname.clone(),
                         state: String::from("ok"),
                         tags: vec!["scaphandre".to_string()],
@@ -436,16 +456,64 @@ impl MetricGenerator {
                     });
                 }
             }
+            for domain in socket.get_domains_passive() {
+                let records = domain.get_records_passive();
+                if !records.is_empty() {
+                    let metric = records.last().unwrap();
+                    let metric_value = metric.value.clone();
+                    let metric_timestamp = metric.timestamp;
+
+                    let mut attributes = HashMap::new();
+                    attributes.insert("domain_name".to_string(), domain.name.clone());
+                    attributes.insert("domain_id".to_string(), domain.id.to_string());
+                    attributes.insert("socket_id".to_string(), socket.id.to_string());
+
+                    self.data.push(Metric {
+                        name: String::from("scaph_domain_energy_microjoules"),
+                        metric_type: String::from("counter"),
+                        ttl: 60.0,
+                        hostname: self.hostname.clone(),
+                        timestamp: metric_timestamp,
+                        state: String::from("ok"),
+                        tags: vec!["scaphandre".to_string()],
+                        attributes: attributes.clone(),
+                        description: String::from(
+                            "Domain related energy measurement in microjoules.",
+                        ),
+                        metric_value: MetricValueType::Text(metric_value.clone()),
+                    });
+
+                    if let Some(power) = domain.get_records_diff_power_microwatts() {
+                        let domain_power_microwatts = &power.value;
+                        self.data.push(Metric {
+                            name: String::from("scaph_domain_power_microwatts"),
+                            metric_type: String::from("gauge"),
+                            ttl: 60.0,
+                            hostname: self.hostname.clone(),
+                            timestamp: power.timestamp,
+                            state: String::from("ok"),
+                            tags: vec!["scaphandre".to_string()],
+                            attributes: attributes.clone(),
+                            description: String::from(
+                                "Power measurement relative to a RAPL Domain, in microwatts",
+                            ),
+                            metric_value: MetricValueType::Text(domain_power_microwatts.clone()),
+                        });
+                    }
+                }
+            }
         }
     }
 
     /// Generate system metrics.
     fn gen_system_metrics(&mut self) {
+        let default_timestamp = current_system_time_since_epoch();
         if let Some(metric_value) = self.topology.read_nb_process_total_count() {
             self.data.push(Metric {
                 name: String::from("scaph_forks_since_boot_total"),
                 metric_type: String::from("counter"),
                 ttl: 60.0,
+                timestamp:  default_timestamp,
                 hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
@@ -460,6 +528,7 @@ impl MetricGenerator {
                 name: String::from("scaph_processes_running_current"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
+                timestamp: default_timestamp,
                 hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
@@ -474,6 +543,7 @@ impl MetricGenerator {
                 name: String::from("scaph_processes_blocked_current"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
+                timestamp: default_timestamp,
                 hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
@@ -488,6 +558,7 @@ impl MetricGenerator {
                 name: String::from("scaph_context_switches_total"),
                 metric_type: String::from("counter"),
                 ttl: 60.0,
+                timestamp: default_timestamp,
                 hostname: self.hostname.clone(),
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
@@ -636,12 +707,13 @@ impl MetricGenerator {
                     name: metric_name,
                     metric_type: String::from("gauge"),
                     ttl: 60.0,
+                    timestamp: power.timestamp,
                     hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
                     attributes,
                     description: String::from("Power consumption due to the process, measured on at the topology level, in microwatts"),
-                    metric_value: MetricValueType::Text(power.to_string()),
+                    metric_value: MetricValueType::Text(power.value),
                 });
             }
         }
@@ -683,15 +755,6 @@ impl MetricGenerator {
             res.push(self.data.pop().unwrap())
         }
         res
-    }
-
-    /// Retrieve the current metrics stored into [MetricGenerator].
-    ///
-    /// [MetricGenerator] is loaded using the gen_*_metrics() methods
-    /// Most of the time gen_all_metrics() is used to extract the full
-    /// set of data.
-    fn get_metrics(&self) -> &Vec<Metric> {
-        &self.data
     }
 }
 

@@ -163,7 +163,7 @@ impl Warp10Exporter {
                 None,
                 String::from("scaph_self_cpu_usage_percent"),
                 labels.clone(),
-                warp10::Value::Int(metric_value as i32),
+                warp10::Value::Int(metric_value.value.parse::<i32>().unwrap()),
             ));
         }
 
@@ -176,7 +176,7 @@ impl Warp10Exporter {
                 None,
                 String::from("scaph_self_cpu_usage_percent"),
                 labels.clone(),
-                warp10::Value::Int(metric_value as i32),
+                warp10::Value::Int(metric_value.value.parse::<i32>().unwrap()),
             ));
         }
 
@@ -358,7 +358,7 @@ impl Warp10Exporter {
                     None,
                     metric_name,
                     plabels,
-                    warp10::Value::Long(power as i64),
+                    warp10::Value::Long(power.value.parse::<i64>().unwrap()),
                 ));
             }
         }

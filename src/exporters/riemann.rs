@@ -210,18 +210,19 @@ impl Exporter for RiemannExporter {
                         metric_type: String::from("gauge"),
                         ttl: 60.0,
                         hostname: get_hostname(),
+                        timestamp: power.timestamp,
                         state: String::from("ok"),
                         tags: vec!["scaphandre".to_string()],
                         attributes,
                         description: String::from("Power consumption due to the process, measured on at the topology level, in microwatts"),
-                        metric_value: MetricValueType::Text(power.to_string()),
+                        metric_value: MetricValueType::Text(power.value),
                     });
                 }
             }
             // Send all data
             info!("{}: Send data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-            for metric in metric_generator.get_metrics() {
-                rclient.send_metric(metric);
+            for metric in metric_generator.pop_metrics() {
+                rclient.send_metric(&metric);
             }
             for metric in data {
                 rclient.send_metric(&metric);

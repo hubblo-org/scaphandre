@@ -10,7 +10,7 @@ use procfs::{process, CpuInfo, CpuTime, KernelStats};
 use std::collections::HashMap;
 use std::error::Error;
 use std::mem::size_of_val;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 use std::{fmt, fs};
 use utils::{current_system_time_since_epoch, ProcessTracker};
 
@@ -24,7 +24,7 @@ pub trait Sensor {
 /// Defines methods for Record instances creation
 /// and storage.
 pub trait RecordGenerator {
-    fn refresh_record(&mut self) -> Record;
+    fn refresh_record(&mut self);
     fn get_records_passive(&self) -> Vec<Record>;
     fn clean_old_records(&mut self);
 }
@@ -54,33 +54,30 @@ impl RecordGenerator for Topology {
     /// Computes a new Record, stores it in the record_buffer
     /// and returns a clone of this record.
     ///
-    fn refresh_record(&mut self) -> Record {
+    fn refresh_record(&mut self) {
         let mut value: u64 = 0;
+        let mut last_timestamp = current_system_time_since_epoch();
         for s in self.get_sockets() {
             let records = s.get_records_passive();
             if !records.is_empty() {
                 let last = records.last();
-                let res = last.unwrap().value.trim();
+                let last_record = last.unwrap();
+                last_timestamp = last_record.timestamp;
+                let res = last_record.value.trim();
                 if let Ok(val) = res.parse::<u64>() {
                     value += val;
                 } else {
-                    warn!("couldn't parse value : {}", res);
+                    trace!("couldn't parse value : {}", res);
                 }
             }
         }
-        let timestamp = current_system_time_since_epoch();
-        let record = Record::new(timestamp, value.to_string(), units::Unit::MicroJoule);
+        let record = Record::new(last_timestamp, value.to_string(), units::Unit::MicroJoule);
 
-        self.record_buffer.push(Record::new(
-            record.timestamp,
-            record.value.clone(),
-            units::Unit::MicroJoule,
-        ));
+        self.record_buffer.push(record);
 
         if !self.record_buffer.is_empty() {
             self.clean_old_records();
         }
-        record
     }
 
     /// Removes (and thus drops) as many Record instances from the record_buffer
@@ -482,7 +479,7 @@ impl Topology {
     }
 
     /// Returns the power consumed between last and previous measurement for a given process ID, in microwatts
-    pub fn get_process_power_consumption_microwatts(&self, pid: i32) -> Option<u64> {
+    pub fn get_process_power_consumption_microwatts(&self, pid: i32) -> Option<Record> {
         let tracker = self.get_proc_tracker();
         if let Some(recs) = tracker.find_records(pid) {
             if recs.len() > 1 {
@@ -502,7 +499,11 @@ impl Topology {
                         //trace!("val f64: {}", val_f64);
                         let result = (val_f64 * usage_percent) as u64;
                         //trace!("result: {}", result);
-                        return Some(result);
+                        return Some(Record::new(
+                            last.timestamp,
+                            result.to_string(),
+                            units::Unit::MicroWatt,
+                        ));
                     }
                 }
             }
@@ -512,7 +513,7 @@ impl Topology {
         None
     }
 
-    pub fn get_process_cpu_consumption_percentage(&self, pid: i32) -> Option<f64> {
+    pub fn get_process_cpu_consumption_percentage(&self, pid: i32) -> Option<Record> {
         let tracker = self.get_proc_tracker();
         if let Some(recs) = tracker.find_records(pid) {
             if recs.len() > 1 {
@@ -527,7 +528,11 @@ impl Topology {
 
                     let usage = process_total_time as f64 / topo_total_time as f64;
 
-                    return Some(usage * 100.0);
+                    return Some(Record::new(
+                        current_system_time_since_epoch(),
+                        (usage * 100.0).to_string(),
+                        units::Unit::Percentage,
+                    ));
                 }
             }
         }
@@ -561,24 +566,14 @@ pub struct CPUSocket {
 impl RecordGenerator for CPUSocket {
     /// Generates a new record of the socket energy consumption and stores it in the record_buffer.
     /// Returns a clone of this Record instance.
-    fn refresh_record(&mut self) -> Record {
-        let timestamp = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-            Ok(n) => n,
-            Err(_) => panic!("Couldn't generate timestamp"),
-        };
-        let raw_uj = self.read_counter_uj();
-        let record = Record::new(timestamp, raw_uj.unwrap(), units::Unit::MicroJoule);
-
-        self.record_buffer.push(Record::new(
-            record.timestamp,
-            record.value.clone(),
-            units::Unit::MicroJoule,
-        ));
+    fn refresh_record(&mut self) {
+        if let Ok(record) = self.read_record_uj() {
+            self.record_buffer.push(record);
+        }
 
         if !self.record_buffer.is_empty() {
             self.clean_old_records();
         }
-        record
     }
 
     /// Checks the size in memory of record_buffer and deletes as many Record
@@ -661,6 +656,16 @@ impl CPUSocket {
     pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
         match fs::read_to_string(&self.counter_uj_path) {
             Ok(result) => Ok(result),
+            Err(error) => Err(Box::new(error)),
+        }
+    }
+    pub fn read_record_uj(&self) -> Result<Record, Box<dyn Error>> {
+        match fs::read_to_string(&self.counter_uj_path) {
+            Ok(result) => Ok(Record::new(
+                current_system_time_since_epoch(),
+                result,
+                units::Unit::MicroJoule,
+            )),
             Err(error) => Err(Box::new(error)),
         }
     }
@@ -904,27 +909,14 @@ pub struct Domain {
 impl RecordGenerator for Domain {
     /// Computes a measurement of energy comsumption for this CPU domain,
     /// stores a copy in self.record_buffer and returns it.
-    fn refresh_record(&mut self) -> Record {
-        let timestamp = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-            Ok(n) => n,
-            Err(_) => panic!("Couldn't generate timestamp"),
-        };
-        let record = Record::new(
-            timestamp,
-            self.read_counter_uj().unwrap(), //.parse().unwrap(),
-            units::Unit::MicroJoule,
-        );
-
-        self.record_buffer.push(Record::new(
-            record.timestamp,
-            record.value.clone(),
-            units::Unit::MicroJoule,
-        ));
+    fn refresh_record(&mut self) {
+        if let Ok(record) = self.read_record_uj() {
+            self.record_buffer.push(record);
+        }
 
         if !self.record_buffer.is_empty() {
             self.clean_old_records();
         }
-        record
     }
 
     /// Removes as many Record instances from self.record_buffer as needed
@@ -974,6 +966,17 @@ impl Domain {
     pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
         match fs::read_to_string(&self.counter_uj_path) {
             Ok(result) => Ok(result),
+            Err(error) => Err(Box::new(error)),
+        }
+    }
+
+    pub fn read_record_uj(&self) -> Result<Record, Box<dyn Error>> {
+        match fs::read_to_string(&self.counter_uj_path) {
+            Ok(result) => Ok(Record {
+                timestamp: current_system_time_since_epoch(),
+                unit: units::Unit::MicroJoule,
+                value: result,
+            }),
             Err(error) => Err(Box::new(error)),
         }
     }

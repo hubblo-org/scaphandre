@@ -88,7 +88,7 @@ impl Exporter for PrometheusExporter {
         options.push(arg);
 
         let arg = Arg::with_name("qemu")
-            .help("Instruct that scaphandre is running on an hypervisor")
+            .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
             .long("qemu")
             .short("q")
             .required(false)
