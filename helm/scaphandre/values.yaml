@@ -13,7 +13,8 @@ resources:
 
 scaphandre:
   command: prometheus
-  extraArgs: {}
+  extraArgs:
+    containers: true
 
 # Run as root user to get proper permissions
 userID: 0
