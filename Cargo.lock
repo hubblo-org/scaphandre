@@ -607,9 +607,9 @@ dependencies = [
 
 [[package]]
 name = "k8s-sync"
-version = "0.2.1"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c9eb4667c88a7ba61bbd00b1786fdd922e056879560e740804596805e7c1080"
+checksum = "3d3c2f8f5cb2611742f8ceb73f23451690ff0d930149eac45fcb63ca86fbd443"
 dependencies = [
  "base64",
  "chrono",
