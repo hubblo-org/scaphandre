@@ -56,11 +56,14 @@ impl RecordGenerator for Topology {
     ///
     fn refresh_record(&mut self) {
         let mut value: u64 = 0;
+        let mut last_timestamp = current_system_time_since_epoch();
         for s in self.get_sockets() {
             let records = s.get_records_passive();
             if !records.is_empty() {
                 let last = records.last();
-                let res = last.unwrap().value.trim();
+                let last_record = last.unwrap();
+                last_timestamp = last_record.timestamp;
+                let res = last_record.value.trim();
                 if let Ok(val) = res.parse::<u64>() {
                     value += val;
                 } else {
@@ -68,8 +71,7 @@ impl RecordGenerator for Topology {
                 }
             }
         }
-        let timestamp = current_system_time_since_epoch();
-        let record = Record::new(timestamp, value.to_string(), units::Unit::MicroJoule);
+        let record = Record::new(last_timestamp, value.to_string(), units::Unit::MicroJoule);
 
         self.record_buffer.push(record);
 
