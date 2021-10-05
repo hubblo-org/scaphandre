@@ -251,8 +251,9 @@ checksum = "212d0f5754cb6769937f4501cc0e67f4f4483c8d2c3e1e922ee9edbe4ab4c7c0"
 
 [[package]]
 name = "docker-sync"
-version = "0.1.1"
-source = "git+https://github.com/bpetit/rs-docker-sync?tag=hotfix-1#7f8d5f9c48b80eb3bebe6b76642c73f1e38e0488"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c989c4ad66535edd02443e7d7699d3ab530df4523f12f6aeb7888bdc5ab7c32"
 dependencies = [
  "http",
  "isahc",
@@ -606,8 +607,9 @@ dependencies = [
 
 [[package]]
 name = "k8s-sync"
-version = "0.1.1"
-source = "git+https://github.com/bpetit/rs-k8s-sync?tag=v0.2.0#a4883608dce9472afa22ab71f942bbdd637d3341"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c9eb4667c88a7ba61bbd00b1786fdd922e056879560e740804596805e7c1080"
 dependencies = [
  "base64",
  "chrono",
