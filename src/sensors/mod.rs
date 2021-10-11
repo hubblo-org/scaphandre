@@ -464,8 +464,8 @@ impl Topology {
     /// Returns the number of processes currently blocked waiting
     pub fn read_nb_process_blocked_current(&self) -> Option<u32> {
         if let Ok(result) = KernelStats::new() {
-            if let Some(procs_running) = result.procs_running {
-                return Some(procs_running);
+            if let Some(procs_blocked) = result.procs_blocked {
+                return Some(procs_blocked);
             }
         }
         None
