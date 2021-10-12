@@ -141,19 +141,20 @@ impl ProcessTracker {
     /// Returns all vectors of process records linked to a running, sleeping, waiting or zombie process.
     /// (Not terminated)
     pub fn get_alive_processes(&self) -> Vec<&Vec<ProcessRecord>> {
-        let mut res = vec![];
-        for p in self.procs.iter() {
-            if !p.is_empty() {
-                let status = p[0].process.status();
-                if let Ok(status_val) = status {
-                    if !&status_val.state.contains('T') {
-                        // !&status_val.state.contains("Z") &&
-                        res.push(p);
-                    }
-                }
-            }
-        }
-        res
+        self.procs
+            .iter()
+            .filter_map(|p| {
+                p.first()
+                    .and_then(|p| p.process.status().ok())
+                    .and_then(|status| {
+                        if !status.state.contains('T') {
+                            Some(p)
+                        } else {
+                            None
+                        }
+                    })
+            })
+            .collect::<Vec<_>>()
     }
 
     /// Extracts the container_id from a cgroup path containing it.
@@ -343,18 +344,10 @@ impl ProcessTracker {
             .iter()
             .filter(|x| !x.is_empty() && x.get(0).unwrap().process.pid == pid);
         let process = result.next().unwrap();
-        if let Some(vec) = process.get(0) {
-            if let Ok(mut cmdline_vec) = vec.process.cmdline() {
-                let mut cmdline = String::from("");
-                while !cmdline_vec.is_empty() {
-                    if !cmdline_vec.is_empty() {
-                        cmdline.push_str(&cmdline_vec.remove(0));
-                    }
-                }
-                return Some(cmdline);
-            }
-        }
-        None
+        process
+            .get(0)
+            .and_then(|vec| vec.process.cmdline().ok())
+            .map(|vec| vec.join(""))
     }
 
     /// Returns the CPU time consumed between two measure iteration
