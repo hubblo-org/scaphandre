@@ -257,6 +257,8 @@ impl ProcessTracker {
                                         Some(id) => {
                                             if let Some(final_id) = id.strip_prefix("docker://") {
                                                 final_id == container_id
+                                            } else if let Some(final_id) = id.strip_prefix("containerd://") {
+                                                final_id == container_id
                                             } else {
                                                 false
                                             }
