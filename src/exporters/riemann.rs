@@ -138,14 +138,22 @@ impl Exporter for RiemannExporter {
         println!("Press CTRL-C to stop scaphandre");
         println!("Measurement step is: {}s", dispatch_duration);
 
-        let mut topology = self.sensor.get_topology().unwrap();
+        let topology = self.sensor.get_topology().unwrap();
+        let mut metric_generator = MetricGenerator::new(
+            topology,
+            hostname,
+            parameters.is_present("qemu"),
+            parameters.is_present("containers"),
+        );
+
         loop {
             info!(
                 "{}: Beginning of measure loop",
                 Utc::now().format("%Y-%m-%dT%H:%M:%S")
             );
 
-            topology
+            metric_generator
+                .topology
                 .proc_tracker
                 .clean_terminated_process_records_vectors();
 
@@ -153,9 +161,10 @@ impl Exporter for RiemannExporter {
                 "{}: Refresh topology",
                 Utc::now().format("%Y-%m-%dT%H:%M:%S")
             );
-            topology.refresh();
+            metric_generator.topology.refresh();
 
             info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
+
             let mut metric_generator = MetricGenerator::new(&topology, &hostname);
             metric_generator.gen_all_metrics(parameters.is_present("qemu"));
 

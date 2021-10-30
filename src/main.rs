@@ -1,5 +1,5 @@
 //! Generic sensor and transmission agent for energy consumption related metrics.
-use clap::{crate_version, App, AppSettings, Arg, SubCommand};
+use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
 use scaphandre::{get_exporters_options, run};
 fn main() {
     let sensors = ["powercap_rapl"];
@@ -8,9 +8,8 @@ fn main() {
     let exporters: Vec<&str> = exporters.into_iter().map(|x| x.as_str()).collect();
 
     let mut matches = App::new("scaphandre")
-        .author("Benoit Petit <bpetit@hubblo.org>")
-        .version("0.3.0")
-        .long_version(crate_version!())
+        .author(crate_authors!())
+        .version(crate_version!())
         .about("Extensible metrology agent for energy/electricity consumption related metrics")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .arg(

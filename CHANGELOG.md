@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This may be not up to date, please check main branch.
 
+## [0.4.1](https://github.com/hubblo-org/scaphandre/releases/tag/v0.4.0)
+
+### Changed
+
+- Updated k8s-sync crate to 0.2.3 to get authentication by token feature
+
+## [0.4.0](https://github.com/hubblo-org/scaphandre/releases/tag/v0.4.0)
+
+### Added
+
+- Riemann exporter now supports mTLS: [#103](https://github.com/hubblo-org/scaphandre/pull/103) thanks @uggla !
+- `--containers` option, in prometheus exporter, tells scaphandre to add labels to metrics related to a docker container or a kubernetes pod, to make getting metrics of a distributed application easier: [#84](https://github.com/hubblo-org/scaphandre/pull/109) thanks @rossf7 for the tests, feedbacks, helm configuration and thanks @uggla for the reviews !
+- stdout exporter now allows to choose the number of processes to watch, with the --process-number flag and to filter processes watched thanks to a regex, with the --regex-filter option: [#98](https://github.com/hubblo-org/scaphandre/pull/98), thanks @uggla !
+- MetricGenerator includes timestamp in Metrics now : [#113](https://github.com/hubblo-org/scaphandre/pull/113)
+
+### Fixed
+
+- Added Cargo.lock to the repository: [#111](https://github.com/hubblo-org/scaphandre/issues/111)
+- Ensured domains names are feteched properly in any case : [#114](https://github.com/hubblo-org/scaphandre/pull/114) thanks @PierreRust !
+
+### Changed
+
+- Manipulating flags as a Vec of clap::Arg instead of a HashMap of ExporterOption in exporters: [#100](https://github.com/hubblo-org/scaphandre/pull/100), thanks @uggla !
+- Json and Stdout exporters are now using MetricGenerator as an inteface to get metrics properly : [#113](https://github.com/hubblo-org/scaphandre/pull/113)
+
 ## [0.3.0](https://github.com/hubblo-org/scaphandre/releases/tag/v0.3.0)
 
 ### Added
