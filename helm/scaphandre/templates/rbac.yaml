@@ -1,0 +1,37 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "scaphandre.name" . }}
+  labels:
+    {{- include "labels.common" . | nindent 4 }}
+subjects:
+- kind: ServiceAccount
+  name: {{ template "scaphandre.name" . }}
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ template "scaphandre.name" . }}
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "scaphandre.name" . }}
+  labels:
+    {{- include "labels.common" . | nindent 4 }}
+rules:
+- apiGroups:
+  - extensions
+  resources:
+  - podsecuritypolicies
+  resourceNames:
+  - {{ .Chart.Name }}
+  verbs:
+  - "use"
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - list
+  - watch

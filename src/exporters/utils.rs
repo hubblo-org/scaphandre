@@ -1,3 +1,13 @@
+//! # utils
+//!
+//! The utils module provides common functions used by the exporters.
+use clap::crate_version;
+use docker_sync::Docker;
+use k8s_sync::{errors::KubernetesError, kubernetes::Kubernetes};
+
+/// Returns an Option containing the VM name of a qemu process.
+///
+/// Then VM name is extracted from the command line.
 pub fn filter_qemu_cmdline(cmdline: &str) -> Option<String> {
     if cmdline.contains("qemu-system") && cmdline.contains("guest=") {
         let vmname: Vec<Vec<&str>> = cmdline
@@ -12,6 +22,25 @@ pub fn filter_qemu_cmdline(cmdline: &str) -> Option<String> {
         }
     }
     None
+}
+
+/// Returns scaphandre version.
+pub fn get_scaphandre_version() -> String {
+    let mut version_parts = crate_version!().split('.');
+    let major_version = version_parts.next().unwrap();
+    let patch_version = version_parts.next().unwrap();
+    let minor_version = version_parts.next().unwrap();
+    format!("{}.{}{}", major_version, patch_version, minor_version)
+}
+
+/// Returns the hostname of the system running Scaphandre.
+pub fn get_hostname() -> String {
+    String::from(
+        hostname::get()
+            .expect("Fail to get system hostname")
+            .to_str()
+            .unwrap(),
+    )
 }
 
 #[cfg(test)]
@@ -51,6 +80,30 @@ mod tests {
     fn test_filter_qemu_cmdline_ko_empty_guest02() {
         let cmdline = "qemu-system-x86_64,file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sguest=";
         assert_eq!(filter_qemu_cmdline(cmdline), None);
+    }
+}
+
+pub fn get_docker_client() -> Result<Docker, std::io::Error> {
+    let docker = match Docker::connect() {
+        Ok(docker) => docker,
+        Err(err) => return Err(err),
+    };
+    Ok(docker)
+}
+
+pub fn get_kubernetes_client() -> Result<Kubernetes, KubernetesError> {
+    match Kubernetes::connect(
+        Some(String::from("/root/.kube/config")),
+        None,
+        None,
+        None,
+        true,
+    ) {
+        Ok(kubernetes) => Ok(kubernetes),
+        Err(err) => {
+            eprintln!("Got Kubernetes error: {} | {:?}", err, err);
+            Err(err)
+        }
     }
 }
 

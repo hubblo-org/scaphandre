@@ -3,7 +3,10 @@
 # Tutorials
 
 - [Quickstart](tutorials/quickstart.md)
+- [Docker-compose](tutorials/docker-compose.md)
 - [Installation](tutorials/installation.md)
+- [Power consumption of a Kubernetes cluster with scaphandre, prometheus and grafana](tutorials/kubernetes.md)
+
 # How-to guides
 
 - [Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)](how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.md)
@@ -18,10 +21,12 @@
 
 ## Exporters
 
+- [JSON exporter](references/exporter-json.md)
 - [Prometheus exporter](references/exporter-prometheus.md)
 - [Qemu exporter](references/exporter-qemu.md)
 - [Riemann exporter](references/exporter-riemann.md)
 - [Stdout exporter](references/exporter-stdout.md)
+- [Warp10 exporter](references/exporter-warp10.md)
 
 ## Sensors
 
