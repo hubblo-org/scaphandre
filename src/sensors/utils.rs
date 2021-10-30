@@ -527,7 +527,7 @@ impl ProcessRecord {
         // not including cstime and cutime in total as they are reported only when child dies
         // child metrics as already reported as the child processes are in the global process
         // list, found as /proc/PID/stat
-        stime + utime + guest_time + cguest_time + delayacct_blkio_ticks + itrealvalue
+        stime + utime //+ guest_time + cguest_time + delayacct_blkio_ticks + itrealvalue
     }
 }
 
