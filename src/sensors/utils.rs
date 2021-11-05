@@ -520,8 +520,9 @@ impl ProcessRecord {
         //let itrealvalue = self.process.stat.itrealvalue as u64;
 
         trace!(
-            "ProcessRecord: stime {} utime {}",//cutime {} cstime {} guest_time {} cguest_time {} delayacct_blkio_ticks {} itrealvalue {}",
-            stime, utime//, cutime, cstime, guest_time, cguest_time, delayacct_blkio_ticks, itrealvalue
+            "ProcessRecord: stime {} utime {}", //cutime {} cstime {} guest_time {} cguest_time {} delayacct_blkio_ticks {} itrealvalue {}",
+            stime,
+            utime //, cutime, cstime, guest_time, cguest_time, delayacct_blkio_ticks, itrealvalue
         );
 
         // not including cstime and cutime in total as they are reported only when child dies
