@@ -516,22 +516,23 @@ impl ProcessRecord {
     pub fn total_time_jiffies(&self) -> u64 {
         let stime = self.process.stat.stime;
         let utime = self.process.stat.utime;
-        let cutime = self.process.stat.cutime as u64;
-        let cstime = self.process.stat.cstime as u64;
-        let guest_time = self.process.stat.guest_time.unwrap_or_default();
-        let cguest_time = self.process.stat.cguest_time.unwrap_or_default() as u64;
-        let delayacct_blkio_ticks = self.process.stat.delayacct_blkio_ticks.unwrap_or_default();
-        let itrealvalue = self.process.stat.itrealvalue as u64;
+        //let cutime = self.process.stat.cutime as u64;
+        //let cstime = self.process.stat.cstime as u64;
+        //let guest_time = self.process.stat.guest_time.unwrap_or_default();
+        //let cguest_time = self.process.stat.cguest_time.unwrap_or_default() as u64;
+        //let delayacct_blkio_ticks = self.process.stat.delayacct_blkio_ticks.unwrap_or_default();
+        //let itrealvalue = self.process.stat.itrealvalue as u64;
 
         trace!(
-            "ProcessRecord: stime {} utime {} cutime {} cstime {} guest_time {} cguest_time {} delayacct_blkio_ticks {} itrealvalue {}",
-            stime, utime, cutime, cstime, guest_time, cguest_time, delayacct_blkio_ticks, itrealvalue
+            "ProcessRecord: stime {} utime {}", //cutime {} cstime {} guest_time {} cguest_time {} delayacct_blkio_ticks {} itrealvalue {}",
+            stime,
+            utime //, cutime, cstime, guest_time, cguest_time, delayacct_blkio_ticks, itrealvalue
         );
 
         // not including cstime and cutime in total as they are reported only when child dies
         // child metrics as already reported as the child processes are in the global process
         // list, found as /proc/PID/stat
-        stime + utime + guest_time + cguest_time + delayacct_blkio_ticks + itrealvalue
+        stime + utime //+ guest_time + cguest_time + delayacct_blkio_ticks + itrealvalue
     }
 }
 
