@@ -6,8 +6,11 @@ Scaphandre, Prometheus and Grafana.
 ## Install Scaphandre
 
 First we install Scaphandre which runs as a daemon set which creates a pod on
-each node for collecting the metrics.
+each node for collecting the metrics. The helm chart is not in a repo, it needs
+to be installed from the source code.
 
+    git clone https://github.com/hubblo-org/scaphandre
+    cd scaphandre
     helm install scaphandre helm/scaphandre
 
 ## Install Prometheus
