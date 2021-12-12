@@ -31,7 +31,7 @@ impl ProcessTracker {
     pub fn new(max_records_per_process: u16) -> ProcessTracker {
         let regex_cgroup_docker = Regex::new(r"^/docker/.*$").unwrap();
         let regex_cgroup_kubernetes = Regex::new(r"^/kubepods.*$").unwrap();
-        let regex_cgroup_containerd = Regex::new("/system.slice/containerd.service").unwrap();
+        let regex_cgroup_containerd = Regex::new("/system.slice/containerd.service/.*$").unwrap();
         ProcessTracker {
             procs: vec![],
             max_records_per_process,
