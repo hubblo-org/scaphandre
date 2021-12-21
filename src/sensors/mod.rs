@@ -496,10 +496,7 @@ impl Topology {
                     //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
                     let process_total_time =
                         last.total_time_jiffies() - previous.total_time_jiffies();
-                    let ticks_per_second = procfs::ticks_per_second().unwrap();
-                    debug!("l 499 : procfs::tick_per_second() = {} of type i64, then u64", ticks_per_second);
-                    let topo_total_time = topo_stats_diff.total_time_jiffies()
-                        * ticks_per_second as u64;
+                    let topo_total_time = topo_stats_diff.total_time_jiffies();
                     let usage_percent = process_total_time as f64 / topo_total_time as f64;
                     let topo_conso = self.get_records_diff_power_microwatts();
                     if let Some(val) = &topo_conso {
@@ -532,16 +529,13 @@ impl Topology {
                     let process_total_time =
                         last.total_time_jiffies() - previous.total_time_jiffies();
 
-                    let ticks_per_second = procfs::ticks_per_second().unwrap();
-                    debug!("l 536 : procfs::tick_per_second() = {} of type i64, then u64", ticks_per_second);
-                    let topo_total_time = topo_stats_diff.total_time_jiffies()
-                        * ticks_per_second as u64;
+                    let topo_total_time = topo_stats_diff.total_time_jiffies();
 
                     let usage = process_total_time as f64 / topo_total_time as f64;
 
                     return Some(Record::new(
                         current_system_time_since_epoch(),
-                        (usage * 100.0).to_string(),
+                        usage.to_string(),
                         units::Unit::Percentage,
                     ));
                 }
