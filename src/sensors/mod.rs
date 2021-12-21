@@ -496,8 +496,10 @@ impl Topology {
                     //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
                     let process_total_time =
                         last.total_time_jiffies() - previous.total_time_jiffies();
+                    let ticks_per_second = procfs::ticks_per_second().unwrap();
+                    debug!("l 499 : procfs::tick_per_second() = {} of type i64, then u64", ticks_per_second);
                     let topo_total_time = topo_stats_diff.total_time_jiffies()
-                        * procfs::ticks_per_second().unwrap() as u64;
+                        * ticks_per_second as u64;
                     let usage_percent = process_total_time as f64 / topo_total_time as f64;
                     let topo_conso = self.get_records_diff_power_microwatts();
                     if let Some(val) = &topo_conso {
@@ -530,8 +532,10 @@ impl Topology {
                     let process_total_time =
                         last.total_time_jiffies() - previous.total_time_jiffies();
 
+                    let ticks_per_second = procfs::ticks_per_second().unwrap();
+                    debug!("l 536 : procfs::tick_per_second() = {} of type i64, then u64", ticks_per_second);
                     let topo_total_time = topo_stats_diff.total_time_jiffies()
-                        * procfs::ticks_per_second().unwrap() as u64;
+                        * ticks_per_second as u64;
 
                     let usage = process_total_time as f64 / topo_total_time as f64;
 
@@ -843,15 +847,24 @@ impl CPUSocket {
                 "last_record value: {} previous_record value: {}",
                 &last_record.value, &previous_record.value
             );
+            let last_rec_val = last_record.value.trim();
+            debug!("l851 : trying to parse {} as u64", last_rec_val);
+            let prev_rec_val = previous_record.value.trim();
+            debug!("l853 : trying to parse {} as u64", prev_rec_val);
             if let (Ok(last_microjoules), Ok(previous_microjoules)) = (
-                last_record.value.trim().parse::<u64>(),
-                previous_record.value.trim().parse::<u64>(),
+                last_rec_val.parse::<u64>(),
+                prev_rec_val.parse::<u64>(),
             ) {
-                let microjoules = last_microjoules - previous_microjoules;
+                let mut microjoules = 0;
+                if last_microjoules >= previous_microjoules {
+                    microjoules = last_microjoules - previous_microjoules;
+                } else {
+                    debug!("previous_microjoules ({}) > last_microjoules ({})", previous_microjoules, last_microjoules);
+                }
                 let time_diff =
                     last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
                 let microwatts = microjoules as f64 / time_diff;
-                debug!("microwatts: {}", microwatts);
+                debug!("l866: microwatts: {}", microwatts);
                 return Some(Record::new(
                     last_record.timestamp,
                     (microwatts as u64).to_string(),
