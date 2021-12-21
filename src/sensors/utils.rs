@@ -31,7 +31,7 @@ impl ProcessTracker {
     pub fn new(max_records_per_process: u16) -> ProcessTracker {
         let regex_cgroup_docker = Regex::new(r"^/docker/.*$").unwrap();
         let regex_cgroup_kubernetes = Regex::new(r"^/kubepods.*$").unwrap();
-        let regex_cgroup_containerd = Regex::new("/system.slice/containerd.service").unwrap();
+        let regex_cgroup_containerd = Regex::new("/system.slice/containerd.service/.*$").unwrap();
         ProcessTracker {
             procs: vec![],
             max_records_per_process,
@@ -165,6 +165,9 @@ impl ProcessTracker {
         if container_id.ends_with(".scope") {
             container_id = container_id.strip_suffix(".scope").unwrap().to_string();
         }
+        if container_id.contains("cri-containerd") {
+            container_id = container_id.split(':').last().unwrap().to_string();
+        }
         Ok(container_id)
     }
 
@@ -225,12 +228,20 @@ impl ProcessTracker {
                             }
                         }
                         found = true;
-                    } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
-                        // kubernetes
-                        description.insert(
-                            String::from("container_scheduler"),
-                            String::from("kubernetes"),
-                        );
+                    } else {
+                        // containerd
+                        if self.regex_cgroup_containerd.is_match(&cg.pathname) {
+                            description.insert(
+                                String::from("container_runtime"),
+                                String::from("containerd"),
+                            );
+                        } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
+                            // kubernetes not using containerd but we can get the container id
+                        } else {
+                            // cgroup not related to a container technology
+                            continue;
+                        }
+
                         let container_id =
                             match self.extract_pod_id_from_cgroup_path(cg.pathname.clone()) {
                                 Ok(id) => id,
@@ -273,6 +284,10 @@ impl ProcessTracker {
                             }
                             None => false,
                         }) {
+                            description.insert(
+                                String::from("container_scheduler"),
+                                String::from("kubernetes"),
+                            );
                             if let Some(pod_name) = &pod.metadata.name {
                                 description
                                     .insert(String::from("kubernetes_pod_name"), pod_name.clone());
@@ -292,13 +307,6 @@ impl ProcessTracker {
                                 }
                             }
                         }
-                        found = true;
-                    } else if self.regex_cgroup_containerd.is_match(&cg.pathname) {
-                        // containerd
-                        description.insert(
-                            String::from("container_runtime"),
-                            String::from("containerd"),
-                        );
                         found = true;
                     } //else {
                       //    debug!("Cgroup not identified as related to a container technology : {}", &cg.pathname);
