@@ -845,15 +845,17 @@ impl CPUSocket {
             debug!("l851 : trying to parse {} as u64", last_rec_val);
             let prev_rec_val = previous_record.value.trim();
             debug!("l853 : trying to parse {} as u64", prev_rec_val);
-            if let (Ok(last_microjoules), Ok(previous_microjoules)) = (
-                last_rec_val.parse::<u64>(),
-                prev_rec_val.parse::<u64>(),
-            ) {
+            if let (Ok(last_microjoules), Ok(previous_microjoules)) =
+                (last_rec_val.parse::<u64>(), prev_rec_val.parse::<u64>())
+            {
                 let mut microjoules = 0;
                 if last_microjoules >= previous_microjoules {
                     microjoules = last_microjoules - previous_microjoules;
                 } else {
-                    debug!("previous_microjoules ({}) > last_microjoules ({})", previous_microjoules, last_microjoules);
+                    debug!(
+                        "previous_microjoules ({}) > last_microjoules ({})",
+                        previous_microjoules, last_microjoules
+                    );
                 }
                 let time_diff =
                     last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
