@@ -6,13 +6,14 @@
 pub mod powercap_rapl;
 pub mod units;
 pub mod utils;
+#[cfg(target_os="linux")]
 use procfs::{process, CpuInfo, CpuTime, KernelStats};
 use std::collections::HashMap;
 use std::error::Error;
 use std::mem::size_of_val;
 use std::time::Duration;
 use std::{fmt, fs};
-use utils::{current_system_time_since_epoch, ProcessTracker};
+use utils::{current_system_time_since_epoch, ProcessTracker, IProcess};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
 /// Sensor trait, the Sensor API.
@@ -158,14 +159,17 @@ impl Topology {
     /// }
     /// ```
     pub fn generate_cpu_cores() -> Result<Vec<CPUCore>, String> {
-        let cpuinfo = CpuInfo::new().unwrap();
         let mut cores = vec![];
-        for id in 0..(cpuinfo.num_cores() - 1) {
-            let mut info = HashMap::new();
-            for (k, v) in cpuinfo.get_info(id).unwrap().iter() {
-                info.insert(String::from(*k), String::from(*v));
+
+        if cfg!(target_os="linux") {
+            let cpuinfo = CpuInfo::new().unwrap();
+            for id in 0..(cpuinfo.num_cores() - 1) {
+                let mut info = HashMap::new();
+                for (k, v) in cpuinfo.get_info(id).unwrap().iter() {
+                    info.insert(String::from(*k), String::from(*v));
+                }
+                cores.push(CPUCore::new(id as u16, info));
             }
-            cores.push(CPUCore::new(id as u16, info));
         }
         Ok(cores)
     }
@@ -293,16 +297,22 @@ impl Topology {
     /// Gets currently running processes (as procfs::Process instances) and stores
     /// them in self.proc_tracker
     fn refresh_procs(&mut self) {
-        //! current_procs is the up to date list of processus running on the host
-        let current_procs = process::all_processes().unwrap();
+        if cfg!(target_os="linux") {
+            //current_procs is the up to date list of processus running on the host
+            if let Ok(procs) = process::all_processes() {
+                let current_procs = procs.iter().map(|p| IProcess::from_linux_process(p)).collect::<Vec<_>>();
 
-        for p in current_procs {
-            let pid = p.pid;
-            let res = self.proc_tracker.add_process_record(p);
-            match res {
-                Ok(_) => {}
-                Err(msg) => panic!("Failed to track process with pid {} !\nGot: {}", pid, msg),
+                for p in current_procs {
+                    let pid = p.pid;
+                    let res = self.proc_tracker.add_process_record(p);
+                    match res {
+                        Ok(_) => {}
+                        Err(msg) => panic!("Failed to track process with pid {} !\nGot: {}", pid, msg),
+                    }
+                }
             }
+        } else {
+            error!("OS not implemented, could not refresh running processes.");
         }
     }
 
@@ -433,54 +443,64 @@ impl Topology {
 
     /// Reads content from /proc/stat and extracts the stats of the whole CPU topology.
     pub fn read_stats(&self) -> Option<CPUStat> {
-        let kernelstats_or_not = KernelStats::new();
-        if let Ok(res_cputime) = kernelstats_or_not {
-            return Some(CPUStat {
-                user: res_cputime.total.user,
-                guest: res_cputime.total.guest,
-                guest_nice: res_cputime.total.guest_nice,
-                idle: res_cputime.total.idle,
-                iowait: res_cputime.total.iowait,
-                irq: res_cputime.total.irq,
-                nice: res_cputime.total.nice,
-                softirq: res_cputime.total.softirq,
-                steal: res_cputime.total.steal,
-                system: res_cputime.total.system,
-            });
+        if cfg!(target_os="linux"){
+            let kernelstats_or_not = KernelStats::new();
+            if let Ok(res_cputime) = kernelstats_or_not {
+                return Some(CPUStat {
+                    user: res_cputime.total.user,
+                    guest: res_cputime.total.guest,
+                    guest_nice: res_cputime.total.guest_nice,
+                    idle: res_cputime.total.idle,
+                    iowait: res_cputime.total.iowait,
+                    irq: res_cputime.total.irq,
+                    nice: res_cputime.total.nice,
+                    softirq: res_cputime.total.softirq,
+                    steal: res_cputime.total.steal,
+                    system: res_cputime.total.system,
+                });
+            }
         }
         None
     }
 
     /// Returns the number of processes currently available
     pub fn read_nb_process_total_count(&self) -> Option<u64> {
-        if let Ok(result) = KernelStats::new() {
-            return Some(result.processes);
+        if cfg!(target_os="linux") {
+            if let Ok(result) = KernelStats::new() {
+                return Some(result.processes);
+            }
         }
         None
     }
 
     /// Returns the number of processes currently in a running state
     pub fn read_nb_process_running_current(&self) -> Option<u32> {
-        if let Ok(result) = KernelStats::new() {
-            if let Some(procs_running) = result.procs_running {
-                return Some(procs_running);
+        if cfg!(target_os="linux") {
+            if let Ok(result) = KernelStats::new() {
+                if let Some(procs_running) = result.procs_running {
+                    return Some(procs_running);
+                }
             }
         }
         None
     }
     /// Returns the number of processes currently blocked waiting
     pub fn read_nb_process_blocked_current(&self) -> Option<u32> {
-        if let Ok(result) = KernelStats::new() {
-            if let Some(procs_blocked) = result.procs_blocked {
-                return Some(procs_blocked);
+        if cfg!(target_os="linux") {
+            if let Ok(result) = KernelStats::new() {
+                if let Some(procs_blocked) = result.procs_blocked {
+                    return Some(procs_blocked);
+                }
             }
         }
         None
     }
     /// Returns the current number of context switches
     pub fn read_nb_context_switches_total_count(&self) -> Option<u64> {
-        if let Ok(result) = KernelStats::new() {
-            return Some(result.ctxt);
+        if cfg!(target_os="linux") {
+            if let Ok(result) = KernelStats::new() {
+                return Some(result.ctxt);
+            }
         }
         None
     }
@@ -752,7 +772,7 @@ impl CPUSocket {
     }
 
     /// Combines stats from all CPU cores owned byu the socket and returns
-    /// a CpuTime struct containing stats for the whole socket.
+    /// a CpuStat struct containing stats for the whole socket.
     pub fn read_stats(&self) -> Option<CPUStat> {
         let mut stats = CPUStat {
             user: 0,
@@ -892,9 +912,11 @@ impl CPUCore {
     }
 
     /// Reads content from /proc/stat and extracts the stats of the CPU core
-    fn read_stats(&self) -> Option<CpuTime> {
-        if let Ok(mut kernelstats) = KernelStats::new() {
-            return Some(kernelstats.cpu_time.remove(self.id as usize));
+    fn read_stats(&self) -> Option<CPUStat> {
+        if cfg!(target_os="linux") {
+            if let Ok(mut kernelstats) = KernelStats::new() {
+                return Some(CPUStat::from_procfs_cputime(kernelstats.cpu_time.remove(self.id as usize)));
+            }
         }
         None
     }
@@ -1075,6 +1097,23 @@ pub struct CPUStat {
 }
 
 impl CPUStat {
+
+    #[cfg(target_os="linux")]
+    pub fn from_procfs_cputime(cpu_time: CpuTime) -> CPUStat{
+        CPUStat {
+            user: cpu_time.user,
+            nice: cpu_time.nice,
+            system: cpu_time.system,
+            idle: cpu_time.idle,
+            irq: cpu_time.irq,
+            iowait: cpu_time.iowait,
+            softirq: cpu_time.softirq,
+            steal: cpu_time.steal,
+            guest: cpu_time.guest,
+            guest_nice: cpu_time.guest_nice
+        }
+    }
+
     /// Returns the total of active CPU time spent, for this stat measurement
     /// (not iowait, idle, irq or softirq)
     pub fn total_time_jiffies(&self) -> u64 {

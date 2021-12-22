@@ -1,7 +1,9 @@
 use clap::Arg;
 
 use crate::exporters::*;
-use crate::sensors::Sensor;
+use crate::sensors::{
+    Sensor, utils::IProcess
+};
 use colored::*;
 use regex::Regex;
 use std::thread;
@@ -229,7 +231,7 @@ impl StdoutExporter {
             println!("{}\n", to_print);
         }
 
-        let consumers: Vec<(procfs::process::Process, u64)>;
+        let consumers: Vec<(IProcess, u64)>;
         if let Some(regex_filter) = regex_filter {
             println!("Processes filtered by '{}':", regex_filter.as_str());
             consumers = metric_generator

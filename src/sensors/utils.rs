@@ -1,9 +1,33 @@
-use docker_sync::container::Container;
-use k8s_sync::Pod;
-use procfs::process::Process;
+#[cfg(target_os="linux")]
+use {
+    docker_sync::container::Container,
+    k8s_sync::Pod,
+    procfs::process::Process,
+};
 use regex::Regex;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
+
+#[derive(Debug, Clone)]
+pub struct IProcess {
+    pub pid: i32,
+    pub owner: u32,
+    //pub root: Option<String>,
+    #[cfg(target_os="linux")]
+    pub original: Process
+}
+
+impl IProcess {
+    #[cfg(target_os="linux")]
+    pub fn from_linux_process(process: &Process) -> IProcess {
+        //let root = process.root();
+        IProcess {
+            pid: process.pid,
+            owner: process.owner,
+            original: process.clone() 
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 /// Manages ProcessRecord instances.
@@ -44,19 +68,19 @@ impl ProcessTracker {
     /// Properly creates and adds a ProcessRecord to 'procs', the vector of vectors or ProcessRecords
     /// owned by the ProcessTracker instance. This method should be used to keep track of processes
     /// states during all the lifecycle of the exporter.
-    /// # Example:
+    /// # Linux Example:
     /// ```
     /// use procfs::process::Process;
     /// use scaphandre::sensors::utils::ProcessTracker;
     /// let mut tracker = ProcessTracker::new(5);
     /// let pid = 1;
-    /// if let Ok(result) = tracker.add_process_record(
+    /// if let Ok(result) = tracker.add_linux_process_record(
     ///     Process::new(pid).unwrap()
     /// ){
     ///     println!("ProcessRecord stored successfully: {}", result);
     /// }
     /// ```
-    pub fn add_process_record(&mut self, process: Process) -> Result<String, String> {
+    pub fn add_process_record(&mut self, process: IProcess) -> Result<String, String> {
         let iterator = self.procs.iter_mut();
         let pid = process.pid;
         // find the vector containing Process instances with the same pid
@@ -67,12 +91,13 @@ impl ProcessTracker {
             // if a vector of process records has been found
             // check if the previous records in the vector are from the same process
             // (if the process with that pid is not a new one) and if so, drop it for a new one
-            if !vector.is_empty()
-                && process_record.process.stat.comm != vector.get(0).unwrap().process.stat.comm
-            {
-                *vector = vec![];
+            if cfg!(target_os="linux") {
+                if !vector.is_empty()
+                    && process_record.process.original.stat.comm != vector.get(0).unwrap().process.original.stat.comm
+                {
+                    *vector = vec![];
+                }
             }
-
             //ProcessTracker::check_pid_changes(&process_record, vector);
             vector.insert(0, process_record); // we add the process record to the vector
                                               //if filtered.next().is_some() {
@@ -124,7 +149,7 @@ impl ProcessTracker {
     pub fn get_diff_utime(&self, pid: i32) -> Option<u64> {
         let records = self.find_records(pid).unwrap();
         if records.len() > 1 {
-            return Some(records[0].process.stat.utime - records[1].process.stat.utime);
+            return Some(records[0].process.original.stat.utime - records[1].process.original.stat.utime);
         }
         None
     }
@@ -133,7 +158,7 @@ impl ProcessTracker {
     pub fn get_diff_stime(&self, pid: i32) -> Option<u64> {
         let records = self.find_records(pid).unwrap();
         if records.len() > 1 {
-            return Some(records[0].process.stat.stime - records[1].process.stat.stime);
+            return Some(records[0].process.original.stat.stime - records[1].process.original.stat.stime);
         }
         None
     }
@@ -144,11 +169,13 @@ impl ProcessTracker {
         let mut res = vec![];
         for p in self.procs.iter() {
             if !p.is_empty() {
-                let status = p[0].process.status();
-                if let Ok(status_val) = status {
-                    if !&status_val.state.contains('T') {
-                        // !&status_val.state.contains("Z") &&
-                        res.push(p);
+                if cfg!(target_os = "linux") {
+                    let status = p[0].process.original.status();
+                    if let Ok(status_val) = status {
+                        if !&status_val.state.contains('T') {
+                            // !&status_val.state.contains("Z") &&
+                            res.push(p);
+                        }
                     }
                 }
             }
@@ -174,6 +201,7 @@ impl ProcessTracker {
     /// currently running docker containers on the machine.
     /// The *pods* slice contains the [Pod] items referencing currently
     /// running pods on the machine if it is a kubernetes cluster node.
+    #[cfg(target_os="linux")]
     pub fn get_process_container_description(
         &self,
         pid: i32,
@@ -189,7 +217,7 @@ impl ProcessTracker {
         let process = result.next().unwrap();
         let mut description = HashMap::new();
         if let Some(p) = process.get(0) {
-            if let Ok(cgroups) = p.process.cgroups() {
+            if let Ok(cgroups) = p.process.original.cgroups() {
                 let mut found = false;
                 for cg in &cgroups {
                     if found {
@@ -337,7 +365,7 @@ impl ProcessTracker {
         if result.next().is_some() {
             panic!("Found two vectors of processes with the same id, maintainers should fix this.");
         }
-        process.get(0).unwrap().process.stat.comm.clone()
+        process.get(0).unwrap().process.original.stat.comm.clone()
     }
 
     /// Returns the cmdline string associated to a PID
@@ -348,7 +376,7 @@ impl ProcessTracker {
             .filter(|x| !x.is_empty() && x.get(0).unwrap().process.pid == pid);
         let process = result.next().unwrap();
         if let Some(vec) = process.get(0) {
-            if let Ok(mut cmdline_vec) = vec.process.cmdline() {
+            if let Ok(mut cmdline_vec) = vec.process.original.cmdline() {
                 let mut cmdline = String::from("");
                 while !cmdline_vec.is_empty() {
                     if !cmdline_vec.is_empty() {
@@ -373,8 +401,8 @@ impl ProcessTracker {
     }
 
     /// Returns processes sorted by the highest consumers in first
-    pub fn get_top_consumers(&self, top: u16) -> Vec<(Process, u64)> {
-        let mut consumers: Vec<(Process, u64)> = vec![];
+    pub fn get_top_consumers(&self, top: u16) -> Vec<(IProcess, u64)> {
+        let mut consumers: Vec<(IProcess, u64)> = vec![];
         for p in &self.procs {
             if p.len() > 1 {
                 let diff = self.get_cpu_time_consumed(p);
@@ -396,12 +424,12 @@ impl ProcessTracker {
     }
 
     /// Returns processes filtered by a regexp
-    pub fn get_filtered_processes(&self, regex_filter: &Regex) -> Vec<(Process, u64)> {
-        let mut consumers: Vec<(Process, u64)> = vec![];
+    pub fn get_filtered_processes(&self, regex_filter: &Regex) -> Vec<(IProcess, u64)> {
+        let mut consumers: Vec<(IProcess, u64)> = vec![];
         for p in &self.procs {
             if p.len() > 1 {
                 let diff = self.get_cpu_time_consumed(p);
-                let process_name = p.last().unwrap().process.exe().unwrap_or_default();
+                let process_name = p.last().unwrap().process.original.exe().unwrap_or_default();
                 if regex_filter.is_match(process_name.to_str().unwrap_or_default()) {
                     consumers.push((p.last().unwrap().process.clone(), diff));
                     consumers.sort_by(|x, y| y.1.cmp(&x.1));
@@ -430,7 +458,7 @@ impl ProcessTracker {
         for v in &mut self.procs {
             if !v.is_empty() {
                 if let Some(first) = v.first() {
-                    if let Ok(status) = first.process.status() {
+                    if let Ok(status) = first.process.original.status() {
                         if status.state.contains('T') {
                             while !v.is_empty() {
                                 v.pop();
@@ -498,14 +526,15 @@ impl ProcessTracker {
 /// Stores the information of a give process at a given timestamp
 #[derive(Debug, Clone)]
 pub struct ProcessRecord {
-    pub process: Process,
+    //TODO: abstract from Process procfs
+    pub process: IProcess,
     pub timestamp: Duration,
 }
 
 impl ProcessRecord {
     /// Instanciates ProcessRecord and returns the instance, with timestamp set to the current
     /// system time since epoch
-    pub fn new(process: Process) -> ProcessRecord {
+    pub fn new(process: IProcess) -> ProcessRecord {
         ProcessRecord {
             process,
             timestamp: current_system_time_since_epoch(),
@@ -514,8 +543,8 @@ impl ProcessRecord {
 
     // Returns the total CPU time consumed by this process since its creation
     pub fn total_time_jiffies(&self) -> u64 {
-        let stime = self.process.stat.stime;
-        let utime = self.process.stat.utime;
+        let stime = self.process.original.stat.stime;
+        let utime = self.process.original.stat.utime;
         //let cutime = self.process.stat.cutime as u64;
         //let cstime = self.process.stat.cstime as u64;
         //let guest_time = self.process.stat.guest_time.unwrap_or_default();
@@ -543,7 +572,7 @@ pub fn current_system_time_since_epoch() -> Duration {
         .unwrap()
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os="linux"))]
 mod tests {
     use super::*;
     #[test]
@@ -551,7 +580,7 @@ mod tests {
         let proc = Process::myself().unwrap();
         let mut tracker = ProcessTracker::new(3);
         for _ in 0..3 {
-            assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
+            assert_eq!(tracker.add_process_record(IProcess::from_linux_process(&proc)).is_ok(), true);
         }
         assert_eq!(tracker.procs.len(), 1);
         assert_eq!(tracker.procs[0].len(), 3);
@@ -562,12 +591,12 @@ mod tests {
         let proc = Process::myself().unwrap();
         let mut tracker = ProcessTracker::new(3);
         for _ in 0..5 {
-            assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
+            assert_eq!(tracker.add_process_record(IProcess::from_linux_process(&proc)).is_ok(), true);
         }
         assert_eq!(tracker.procs.len(), 1);
         assert_eq!(tracker.procs[0].len(), 3);
         for _ in 0..15 {
-            assert_eq!(tracker.add_process_record(proc.clone()).is_ok(), true);
+            assert_eq!(tracker.add_process_record(IProcess::from_linux_process(&proc)).is_ok(), true);
         }
         assert_eq!(tracker.procs.len(), 1);
         assert_eq!(tracker.procs[0].len(), 3);
