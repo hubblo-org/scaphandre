@@ -51,7 +51,7 @@ jobs:
     #        args: -- -A clippy::upper_case_acronyms -D warnings
   test_linux_x86_64:
     name: Test Scaphandre on GNU/Linux x86_64 (Bare metal worker)
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     #needs: fmt_and_clippy
     steps:
       - name: Install dependencies (awxkit)
