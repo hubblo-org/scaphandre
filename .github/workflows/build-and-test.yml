@@ -26,8 +26,8 @@ env:
   AWX_HOST: "https://cd.hubblo.org"
 
 jobs:
-  rustfmt:
-    name: Rustfmt
+  fmt_and_clippy:
+    name: Cargo Fmt and Clippy
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout repository
@@ -44,19 +44,6 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
-          components: clippy
       - name: Clippy Check
         uses: actions-rs/cargo@v1
         with:
@@ -65,9 +52,7 @@ jobs:
   test_linux_x86_64:
     name: Test Scaphandre on GNU/Linux x86_64 (Bare metal worker)
     runs-on: ubuntu-20.04
-    needs:
-      - rustfmt
-      - clippy
+    needs: fmt_and_clippy
     steps:
       - name: Install dependencies (awxkit)
         uses: actions/setup-python@v2
