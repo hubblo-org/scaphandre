@@ -1,30 +1,26 @@
-#[cfg(target_os="linux")]
-use {
-    docker_sync::container::Container,
-    k8s_sync::Pod,
-    procfs::process::Process,
-};
 use regex::Regex;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
+#[cfg(target_os = "linux")]
+use {docker_sync::container::Container, k8s_sync::Pod, procfs::process::Process};
 
 #[derive(Debug, Clone)]
 pub struct IProcess {
     pub pid: i32,
     pub owner: u32,
     //pub root: Option<String>,
-    #[cfg(target_os="linux")]
-    pub original: Process
+    #[cfg(target_os = "linux")]
+    pub original: Process,
 }
 
 impl IProcess {
-    #[cfg(target_os="linux")]
+    #[cfg(target_os = "linux")]
     pub fn from_linux_process(process: &Process) -> IProcess {
         //let root = process.root();
         IProcess {
             pid: process.pid,
             owner: process.owner,
-            original: process.clone() 
+            original: process.clone(),
         }
     }
 }
@@ -91,9 +87,10 @@ impl ProcessTracker {
             // if a vector of process records has been found
             // check if the previous records in the vector are from the same process
             // (if the process with that pid is not a new one) and if so, drop it for a new one
-            if cfg!(target_os="linux") {
+            if cfg!(target_os = "linux") {
                 if !vector.is_empty()
-                    && process_record.process.original.stat.comm != vector.get(0).unwrap().process.original.stat.comm
+                    && process_record.process.original.stat.comm
+                        != vector.get(0).unwrap().process.original.stat.comm
                 {
                     *vector = vec![];
                 }
@@ -149,7 +146,9 @@ impl ProcessTracker {
     pub fn get_diff_utime(&self, pid: i32) -> Option<u64> {
         let records = self.find_records(pid).unwrap();
         if records.len() > 1 {
-            return Some(records[0].process.original.stat.utime - records[1].process.original.stat.utime);
+            return Some(
+                records[0].process.original.stat.utime - records[1].process.original.stat.utime,
+            );
         }
         None
     }
@@ -158,7 +157,9 @@ impl ProcessTracker {
     pub fn get_diff_stime(&self, pid: i32) -> Option<u64> {
         let records = self.find_records(pid).unwrap();
         if records.len() > 1 {
-            return Some(records[0].process.original.stat.stime - records[1].process.original.stat.stime);
+            return Some(
+                records[0].process.original.stat.stime - records[1].process.original.stat.stime,
+            );
         }
         None
     }
@@ -201,7 +202,7 @@ impl ProcessTracker {
     /// currently running docker containers on the machine.
     /// The *pods* slice contains the [Pod] items referencing currently
     /// running pods on the machine if it is a kubernetes cluster node.
-    #[cfg(target_os="linux")]
+    #[cfg(target_os = "linux")]
     pub fn get_process_container_description(
         &self,
         pid: i32,
@@ -572,7 +573,7 @@ pub fn current_system_time_since_epoch() -> Duration {
         .unwrap()
 }
 
-#[cfg(all(test, target_os="linux"))]
+#[cfg(all(test, target_os = "linux"))]
 mod tests {
     use super::*;
     #[test]
@@ -580,7 +581,12 @@ mod tests {
         let proc = Process::myself().unwrap();
         let mut tracker = ProcessTracker::new(3);
         for _ in 0..3 {
-            assert_eq!(tracker.add_process_record(IProcess::from_linux_process(&proc)).is_ok(), true);
+            assert_eq!(
+                tracker
+                    .add_process_record(IProcess::from_linux_process(&proc))
+                    .is_ok(),
+                true
+            );
         }
         assert_eq!(tracker.procs.len(), 1);
         assert_eq!(tracker.procs[0].len(), 3);
@@ -591,12 +597,22 @@ mod tests {
         let proc = Process::myself().unwrap();
         let mut tracker = ProcessTracker::new(3);
         for _ in 0..5 {
-            assert_eq!(tracker.add_process_record(IProcess::from_linux_process(&proc)).is_ok(), true);
+            assert_eq!(
+                tracker
+                    .add_process_record(IProcess::from_linux_process(&proc))
+                    .is_ok(),
+                true
+            );
         }
         assert_eq!(tracker.procs.len(), 1);
         assert_eq!(tracker.procs[0].len(), 3);
         for _ in 0..15 {
-            assert_eq!(tracker.add_process_record(IProcess::from_linux_process(&proc)).is_ok(), true);
+            assert_eq!(
+                tracker
+                    .add_process_record(IProcess::from_linux_process(&proc))
+                    .is_ok(),
+                true
+            );
         }
         assert_eq!(tracker.procs.len(), 1);
         assert_eq!(tracker.procs[0].len(), 3);

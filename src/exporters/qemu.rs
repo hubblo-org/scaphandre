@@ -68,8 +68,9 @@ impl QemuExporter {
                 if qp.len() > 2 {
                     let last = qp.first().unwrap();
                     let previous = qp.get(1).unwrap();
-                    let vm_name =
-                        QemuExporter::get_vm_name_from_cmdline(&last.process.original.cmdline().unwrap());
+                    let vm_name = QemuExporter::get_vm_name_from_cmdline(
+                        &last.process.original.cmdline().unwrap(),
+                    );
                     let time_pdiff = last.total_time_jiffies() - previous.total_time_jiffies();
                     if let Some(time_tdiff) = &topo_stat_diff {
                         let first_domain_path = format!("{}/{}/intel-rapl:0:0", path, vm_name);

@@ -3,7 +3,7 @@ use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
 use scaphandre::{get_exporters_options, run};
 fn main() {
     let mut sensors = vec![];
-    if cfg!(target_os="linux") {
+    if cfg!(target_os = "linux") {
         sensors.push("powercap_rapl");
     }
     let exporters_options = get_exporters_options();

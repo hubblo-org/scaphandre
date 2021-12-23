@@ -1,9 +1,7 @@
 use clap::Arg;
 
 use crate::exporters::*;
-use crate::sensors::{
-    Sensor, utils::IProcess
-};
+use crate::sensors::{utils::IProcess, Sensor};
 use colored::*;
 use regex::Regex;
 use std::thread;
