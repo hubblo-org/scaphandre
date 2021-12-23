@@ -302,7 +302,7 @@ impl Topology {
             if let Ok(procs) = process::all_processes() {
                 let current_procs = procs
                     .iter()
-                    .map(|p| IProcess::from_linux_process(p))
+                    .map(IProcess::from_linux_process)
                     .collect::<Vec<_>>();
 
                 for p in current_procs {
