@@ -87,13 +87,12 @@ impl ProcessTracker {
             // if a vector of process records has been found
             // check if the previous records in the vector are from the same process
             // (if the process with that pid is not a new one) and if so, drop it for a new one
-            if cfg!(target_os = "linux") {
-                if !vector.is_empty()
-                    && process_record.process.original.stat.comm
-                        != vector.get(0).unwrap().process.original.stat.comm
-                {
-                    *vector = vec![];
-                }
+            if cfg!(target_os = "linux")
+                && !vector.is_empty()
+                && process_record.process.original.stat.comm
+                    != vector.get(0).unwrap().process.original.stat.comm
+            {
+                *vector = vec![];
             }
             //ProcessTracker::check_pid_changes(&process_record, vector);
             vector.insert(0, process_record); // we add the process record to the vector
@@ -169,14 +168,12 @@ impl ProcessTracker {
     pub fn get_alive_processes(&self) -> Vec<&Vec<ProcessRecord>> {
         let mut res = vec![];
         for p in self.procs.iter() {
-            if !p.is_empty() {
-                if cfg!(target_os = "linux") {
-                    let status = p[0].process.original.status();
-                    if let Ok(status_val) = status {
-                        if !&status_val.state.contains('T') {
-                            // !&status_val.state.contains("Z") &&
-                            res.push(p);
-                        }
+            if !p.is_empty() && cfg!(target_os = "linux") {
+                let status = p[0].process.original.status();
+                if let Ok(status_val) = status {
+                    if !&status_val.state.contains('T') {
+                        // !&status_val.state.contains("Z") &&
+                        res.push(p);
                     }
                 }
             }
