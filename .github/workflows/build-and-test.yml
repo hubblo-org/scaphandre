@@ -2,6 +2,7 @@ name: Tests
 
 on:
   push:
+    branches: [ main, dev ]
     paths-ignore:
       - 'docs_src/**'
       - 'README.md'
@@ -10,6 +11,7 @@ on:
       - 'book.toml'
       - 'CONTRIBUTING.md'
   pull_request:
+    branches: [ main, dev ]
     paths-ignore:
       - 'docs_src/**'
       - 'README.md'
