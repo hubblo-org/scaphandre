@@ -70,7 +70,7 @@ impl ProcessTracker {
     /// use scaphandre::sensors::utils::ProcessTracker;
     /// let mut tracker = ProcessTracker::new(5);
     /// let pid = 1;
-    /// if let Ok(result) = tracker.add_linux_process_record(
+    /// if let Ok(result) = tracker.add_process_record(
     ///     Process::new(pid).unwrap()
     /// ){
     ///     println!("ProcessRecord stored successfully: {}", result);
