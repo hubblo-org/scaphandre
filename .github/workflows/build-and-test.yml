@@ -79,3 +79,11 @@ jobs:
         id: unittests
         run: |
           awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 14 --monitor
+      - name: Build Docker image
+        id: unittests
+        run: |
+          awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 15 --monitor
+      - name: Test Scaphandre + Prometheus in docker-compose
+        id: unittests
+        run: |
+          awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 16 --monitor
