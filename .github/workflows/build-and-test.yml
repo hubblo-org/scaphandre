@@ -62,9 +62,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install awxkit
-      - name: Debug env vars
-        run: |
-            echo "GITHUB_REPOSITORY = $GITHUB_REPOSITORY" 
       - name: Log on AWX 
         id: login
         run: |
@@ -73,12 +70,12 @@ jobs:
       - name: Prepare Rust environment on bare metal worker
         id: rust
         run: |
-          "awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 12 --monitor"
+          echo $GITHUB_REPOSITORY && echo $GITHUB_WORKSPACE && awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 12 --monitor
       - name: Clone Scaphandre repository
         id: clone
         run: |
-          "awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 13 --monitor"
+          awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 13 --monitor
       - name: Run Unit Tests
         id: unittests
         run: |
-          "awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 14 --monitor"
+          awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 14 --monitor
