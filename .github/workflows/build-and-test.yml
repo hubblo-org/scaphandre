@@ -121,3 +121,9 @@ jobs:
       - name: Install Rust toolchain
         run: |
           rustup toolchain install stable-x86_64-pc-windows-msvc
+      - name: Debug
+        run: |
+          dir
+      - name: Build (debug mode)
+        run: |
+          cargo build
