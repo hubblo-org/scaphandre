@@ -30,6 +30,8 @@ jobs:
     name: Cargo Fmt and Clippy
     runs-on: ubuntu-20.04
     steps:
+      - name: Cancel Previous Runs
+        uses: ambimax/action-cancel-previous-runs@v1
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Install Rust
