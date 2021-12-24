@@ -113,7 +113,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install Rustup
-        uses: crazy-max/ghaction-chocolatey@v2
+        uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: install rustup.install
       - name: Install Rust toolchain
