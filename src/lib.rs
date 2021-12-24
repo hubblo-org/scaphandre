@@ -13,7 +13,7 @@ use exporters::{
     json::JSONExporter, prometheus::PrometheusExporter, qemu::QemuExporter,
     riemann::RiemannExporter, stdout::StdoutExporter, warpten::Warp10Exporter, Exporter,
 };
-use sensors::{powercap_rapl::PowercapRAPLSensor, Sensor};
+use sensors::{Sensor, powercap_rapl::PowercapRAPLSensor};
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 

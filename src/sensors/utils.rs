@@ -67,11 +67,11 @@ impl ProcessTracker {
     /// # Linux Example:
     /// ```
     /// use procfs::process::Process;
-    /// use scaphandre::sensors::utils::ProcessTracker;
+    /// use scaphandre::sensors::utils::{ProcessTracker, IProcess};
     /// let mut tracker = ProcessTracker::new(5);
     /// let pid = 1;
     /// if let Ok(result) = tracker.add_process_record(
-    ///     Process::new(pid).unwrap()
+    ///     IProcess::from_linux_process(&Process::new(pid).unwrap())
     /// ){
     ///     println!("ProcessRecord stored successfully: {}", result);
     /// }
