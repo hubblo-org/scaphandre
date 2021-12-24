@@ -115,8 +115,14 @@ jobs:
       - name: Install Rustup
         uses: crazy-max/ghaction-chocolatey@v2
         with:
-          args: ['install', 'rustup.install' ]
+          args:
+            - install
+            - rustup.install
       - name: Install Rust toolchain
         uses: crazy-max/ghaction-chocolatey@v
         with:
-          args: ['rustup', 'toolchain', 'install', 'stable-x86_64-pc-windows-msvc']
+          args:
+            - rustup
+            - toolchain
+            - install
+            - stable-x86_64-pc-windows-msvc
