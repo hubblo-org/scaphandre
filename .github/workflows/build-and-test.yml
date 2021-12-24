@@ -87,3 +87,14 @@ jobs:
         id: promtest
         run: |
           awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 16 --monitor
+  test_windows_x86_64:
+    name: Test on Windows x86_64 (Bare metal worker)
+    runs-on: "windows-2019"
+    needs: fmt_and_clippy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Try chocolatey
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: -h
