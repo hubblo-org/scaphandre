@@ -26,29 +26,29 @@ env:
   AWX_HOST: "https://cd.hubblo.org"
 
 jobs:
-    fmt_and_clippy:
-      name: Cargo Fmt and Clippy
-      runs-on: ubuntu-20.04
-      steps:
-        - name: Checkout repository
-          uses: actions/checkout@v2
-        - name: Install Rust
-          uses: actions-rs/toolchain@v1
-          with:
-            toolchain: stable
-            profile: minimal
-            override: true
-            components: rustfmt
-        - name: Check formatting
-          uses: actions-rs/cargo@v1
-          with:
-            command: fmt
-            args: --all -- --check
-        - name: Clippy Check
-          uses: actions-rs/cargo@v1
-          with:
-            command: clippy
-            args: -- -A clippy::upper_case_acronyms -D warnings
+  fmt_and_clippy:
+    name: Cargo Fmt and Clippy
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+          components: rustfmt
+      - name: Check formatting
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+      - name: Clippy Check
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -A clippy::upper_case_acronyms -D warnings
   test_linux_x86_64:
     name: Test Scaphandre on GNU/Linux x86_64 (Bare metal worker)
     runs-on: ubuntu-latest
