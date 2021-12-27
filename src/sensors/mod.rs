@@ -3,6 +3,7 @@
 //! `Sensor` is the root for all sensors. It defines the [Sensor] trait
 //! needed to implement a sensor.
 
+#[cfg(target_os = "linux")]
 pub mod powercap_rapl;
 pub mod units;
 pub mod utils;

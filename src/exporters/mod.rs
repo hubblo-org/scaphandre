@@ -12,13 +12,17 @@ pub mod warpten;
 use crate::sensors::{utils::current_system_time_since_epoch, RecordGenerator, Topology};
 use chrono::Utc;
 use clap::ArgMatches;
-use docker_sync::{container::Container, Docker};
-use k8s_sync::kubernetes::Kubernetes;
-use k8s_sync::Pod;
 use std::collections::HashMap;
 use std::fmt;
 use std::time::Duration;
-use utils::{get_docker_client, get_kubernetes_client, get_scaphandre_version};
+use utils::get_scaphandre_version;
+#[cfg(feature="containers")]
+use {
+    docker_sync::{container::Container, Docker},
+    k8s_sync::kubernetes::Kubernetes,
+    k8s_sync::Pod,
+    utils::{get_docker_client, get_kubernetes_client},
+};
 
 /// General metric definition.
 #[derive(Debug)]
@@ -110,24 +114,34 @@ struct MetricGenerator {
     /// Tells MetricGenerator if it has to watch for qemu virtual machines.
     qemu: bool,
     /// Tells MetricGenerator if it has to watch for containers.
+    #[cfg(feature="containers")]
     watch_containers: bool,
     ///
+    #[cfg(feature="containers")]
     containers_last_check: String,
     /// `containers` contains the containers descriptions when --containers is true
+    #[cfg(feature="containers")]
     containers: Vec<Container>,
     /// docker_version contains the version number of local docker daemon
+    #[cfg(feature="containers")]
     docker_version: String,
     /// docker_client holds the opened docker socket
+    #[cfg(feature="containers")]
     docker_client: Option<Docker>,
     /// watch Docker
+    #[cfg(feature="containers")]
     watch_docker: bool,
     /// watch Kubernetes
+    #[cfg(feature="containers")]
     watch_kubernetes: bool,
     /// kubernetes socket
+    #[cfg(feature="containers")]
     kubernetes_client: Option<Kubernetes>,
     /// Kubernetes pods
+    #[cfg(feature="containers")]
     pods: Vec<Pod>,
     ///
+    #[cfg(feature="containers")]
     pods_last_check: String,
     // kubernetes cluster version
     //kubernetes_version: String,
@@ -152,7 +166,7 @@ impl MetricGenerator {
         let mut docker_client = None;
         //let kubernetes_version = String::from("");
         let mut kubernetes_client = None;
-        if watch_containers {
+        if cfg!(feature="containers") && watch_containers {
             let mut container_runtime = false;
             match get_docker_client() {
                 Ok(docker) => {

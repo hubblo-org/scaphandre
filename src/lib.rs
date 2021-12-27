@@ -9,11 +9,16 @@ pub mod exporters;
 pub mod sensors;
 use clap::ArgMatches;
 use colored::*;
+use sensors::Sensor;
 use exporters::{
-    json::JSONExporter, prometheus::PrometheusExporter, qemu::QemuExporter,
+    json::JSONExporter, prometheus::PrometheusExporter,
     riemann::RiemannExporter, stdout::StdoutExporter, warpten::Warp10Exporter, Exporter,
+}; 
+#[cfg(target_os = "linux")]
+use {
+    sensors::powercap_rapl::PowercapRAPLSensor,
+    exporters::qemu::QemuExporter,
 };
-use sensors::{powercap_rapl::PowercapRAPLSensor, Sensor};
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 
@@ -28,6 +33,7 @@ fn get_argument(matches: &ArgMatches, arg: &'static str) -> String {
 /// Helper function to get a Sensor instance from ArgMatches
 fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
     let sensor = match &get_argument(matches, "sensor")[..] {
+        #[cfg(target_os="linux")]
         "powercap_rapl" => PowercapRAPLSensor::new(
             get_argument(matches, "sensor-buffer-per-socket-max-kB")
                 .parse()
@@ -37,6 +43,7 @@ fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
                 .unwrap(),
             matches.is_present("vm"),
         ),
+        #[cfg(target_os="linux")]
         _ => PowercapRAPLSensor::new(
             get_argument(matches, "sensor-buffer-per-socket-max-kB")
                 .parse()
@@ -46,6 +53,8 @@ fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
                 .unwrap(),
             matches.is_present("vm"),
         ),
+        #[cfg(not(target_os="linux"))]
+        _ => panic!("No sensor available for this Operating System !")
     };
     Box::new(sensor)
 }
@@ -93,13 +102,16 @@ pub fn run(matches: ArgMatches) {
         exporter_parameters = prometheus_exporter_parameters.clone();
         let mut exporter = PrometheusExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
-    } else if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
-        if header {
-            scaphandre_header("qemu");
-        }
-        exporter_parameters = qemu_exporter_parameters.clone();
-        let mut exporter = QemuExporter::new(sensor_boxed);
-        exporter.run(exporter_parameters);
+    } else if cfg!(target_os="linux") {
+        #[cfg(target_os="linux")]
+        if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
+            if header {
+                scaphandre_header("qemu");
+            }
+            exporter_parameters = qemu_exporter_parameters.clone();
+            let mut exporter = QemuExporter::new(sensor_boxed);
+            exporter.run(exporter_parameters);
+        } else { error!("Qemu exporter is compatible only with GNU/Linux operating systems."); }
     } else if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
         if header {
             scaphandre_header("warp10");
@@ -108,7 +120,7 @@ pub fn run(matches: ArgMatches) {
         let mut exporter = Warp10Exporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else {
-        error!("Couldn't determine which exporter has been chosen.");
+        error!("Couldn't determine which exporter to run.");
     }
 }
 

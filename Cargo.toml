@@ -16,7 +16,6 @@ loggerv = "0.7.2"
 log = "0.4"
 clap = "2.33.3"
 regex = "1"
-procfs = "0.12.0"
 riemann_client = { version = "0.9.0", optional = true }
 hostname = "0.3.1"
 protobuf = "2.20.0"
@@ -33,8 +32,11 @@ k8s-sync = { version = "0.2.3", optional = true }
 hyper = { version = "0.14", features = ["full"], optional = true }
 tokio = { version = "1", features = ["full"], optional = true}
 
+[target."cfg(target_os=\"linux\")".dependencies]
+procfs = { version = "0.12.0", optional = true }
+
 [features]
-default = ["prometheus", "riemann", "warp10", "containers", "json"]
+default = ["prometheus", "riemann", "warp10", "json"]
 prometheus = ["hyper", "tokio"]
 riemann = ["riemann_client"]
 json = ["serde", "serde_json"]
