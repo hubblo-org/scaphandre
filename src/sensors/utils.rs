@@ -18,11 +18,67 @@ pub struct IStatM {
     pub dt: u64,
 }
 
+//pub struct IStat {
+//    pub pid: i32,
+//    pub comm: String,
+//    pub state: char,
+//    pub ppid: i32,
+//    pub pgrp: i32,
+//    pub session: i32,
+//    pub tty_nr: i32,
+//    pub tpgid: i32,
+//    pub flags: u32,
+//    //pub minflt: u64,
+//    //pub cminflt: u64,
+//    //pub majflt: u64,
+//    //pub cmajflt: u64,
+//    pub utime: u64,
+//    pub stime: u64,
+//    pub cutime: i64,
+//    pub cstime: i64,
+//    //pub priority: i64,
+//    pub nice: i64,
+//    pub num_threads: i64,
+//    pub itrealvalue: i64,
+//    pub starttime: u64,
+//    pub vsize: u64,
+//    //pub rss: i64,
+//    //pub rsslim: u64,
+//    //pub startcode: u64,
+//    //pub endcode: u64,
+//    //pub startstack: u64,
+//    //pub kstkesp: u64,
+//    //pub kstkeip: u64,
+//    pub signal: u64,
+//    pub blocked: u64,
+//    //pub sigignore: u64,
+//    //pub sigcatch: u64,
+//    //pub wchan: u64,
+//    //pub nswap: u64,
+//    //pub cnswap: u64,
+//    pub exit_signal: Option<i32>,
+//    pub processor: Option<i32>,
+//    //pub rt_priority: Option<u32>,
+//    //pub policy: Option<u32>,
+//    pub delayacct_blkio_ticks: Option<u64>,
+//    pub guest_time: Option<u64>,
+//    pub cguest_time: Option<i64>,
+//    pub start_data: Option<u64>,
+//    pub end_data: Option<u64>,
+//    //pub start_brk: Option<u64>,
+//    //pub arg_start: Option<u64>,
+//    //pub arg_end: Option<u64>,
+//    //pub env_start: Option<u64>,
+//    //pub env_end: Option<u64>,
+//    pub exit_code: Option<i32>,
+//}
+
 #[derive(Debug, Clone)]
 pub struct IProcess {
     pub pid: i32,
     pub owner: u32,
     pub comm: String,
+    pub cmdline: Vec<String>,
     //pub root: Option<String>,
     #[cfg(target_os = "linux")]
     pub original: Process,
@@ -39,6 +95,7 @@ impl IProcess {
             owner: process.owner,
             original: process.clone(),
             comm: process.stat.comm.clone(),
+            cmdline: process.cmdline().unwrap(),
         }
     }
 
@@ -79,6 +136,10 @@ impl IProcess {
             original: Process::myself().unwrap(),
             #[cfg(target_os = "linux")]
             comm: Process::myself().unwrap().stat.comm,
+            #[cfg(target_os = "linux")]
+            cmdline: Process::myself().unwrap().cmdline().unwrap(),
+            #[cfg(not(target_os = "linux"))]
+            cmdline: vec!["Not implemented yet !"; 5],
             #[cfg(not(target_os = "linux"))]
             original: Box::new(42),
             #[cfg(not(target_os = "linux"))]
@@ -174,14 +235,16 @@ impl ProcessTracker {
             // check if the previous records in the vector are from the same process
             // (if the process with that pid is not a new one) and if so, drop it for a new one
             #[cfg(target_os = "linux")]
-            if !vector.is_empty()
-                && process_record.process.original.stat.comm
-                    != vector.get(0).unwrap().process.original.stat.comm
             {
-                *vector = vec![];
+                if !vector.is_empty()
+                    && process_record.process.original.stat.comm
+                        != vector.get(0).unwrap().process.original.stat.comm
+                {
+                    *vector = vec![];
+                }
+                //ProcessTracker::check_pid_changes(&process_record, vector);
+                vector.insert(0, process_record); // we add the process record to the vector
             }
-            //ProcessTracker::check_pid_changes(&process_record, vector);
-            vector.insert(0, process_record); // we add the process record to the vector
             ProcessTracker::clean_old_process_records(vector, self.max_records_per_process);
         } else {
             // if no vector of process records with the same pid has been found in self.procs
@@ -438,7 +501,7 @@ impl ProcessTracker {
         if result.next().is_some() {
             panic!("Found two vectors of processes with the same id, maintainers should fix this.");
         }
-        process.get(0).unwrap().process.original.stat.comm.clone()
+        process.get(0).unwrap().process.comm.clone()
     }
 
     /// Returns the cmdline string associated to a PID
@@ -449,15 +512,13 @@ impl ProcessTracker {
             .filter(|x| !x.is_empty() && x.get(0).unwrap().process.pid == pid);
         let process = result.next().unwrap();
         if let Some(vec) = process.get(0) {
-            if let Ok(mut cmdline_vec) = vec.process.original.cmdline() {
-                let mut cmdline = String::from("");
-                while !cmdline_vec.is_empty() {
-                    if !cmdline_vec.is_empty() {
-                        cmdline.push_str(&cmdline_vec.remove(0));
-                    }
+            let mut cmdline = String::from("");
+            while !vec.process.cmdline.is_empty() {
+                if !vec.process.cmdline.is_empty() {
+                    cmdline.push_str(vec.process.cmdline.get(0).unwrap().as_str());
                 }
-                return Some(cmdline);
             }
+            return Some(cmdline);
         }
         None
     }
