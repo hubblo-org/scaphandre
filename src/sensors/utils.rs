@@ -1,6 +1,7 @@
 #[cfg(target_os = "linux")]
 use procfs::{self, process::Process};
 use regex::Regex;
+#[cfg(feature = "containers")]
 use std::collections::HashMap;
 //use std::error::Error;
 use std::time::{Duration, SystemTime};
@@ -25,7 +26,7 @@ pub struct IProcess {
     #[cfg(target_os = "linux")]
     pub original: Process,
     #[cfg(not(target_os = "linux"))]
-    pub original: Box,
+    pub original: Box<u64>,
 }
 
 impl IProcess {
