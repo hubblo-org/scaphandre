@@ -648,7 +648,7 @@ impl MetricGenerator {
     /// Generate process metrics.
     fn gen_process_metrics(&mut self) {
         #[cfg(feature = "containers")]
-        if cfg!(feature = "containers") && self.watch_containers {
+        if self.watch_containers {
             let now = current_system_time_since_epoch().as_secs().to_string();
             if self.watch_docker && self.docker_client.is_some() {
                 let last_check = self.containers_last_check.clone();
@@ -707,8 +707,7 @@ impl MetricGenerator {
             let mut attributes = HashMap::new();
 
             #[cfg(feature = "containers")]
-            if cfg!(feature = "containers")
-                && self.watch_containers
+            if self.watch_containers
                 && (!self.containers.is_empty() || !self.pods.is_empty())
             {
                 let container_data = self
