@@ -9,7 +9,7 @@ pub mod riemann;
 pub mod stdout;
 pub mod utils;
 pub mod warpten;
-use crate::sensors::{utils::current_system_time_since_epoch, RecordGenerator, Topology};
+use crate::sensors::{utils::{current_system_time_since_epoch, page_size, IProcess}, RecordGenerator, Topology};
 use chrono::Utc;
 use clap::ArgMatches;
 use std::collections::HashMap;
@@ -245,7 +245,7 @@ impl MetricGenerator {
 
         if let Some(metric_value) = self
             .topology
-            .get_process_cpu_consumption_percentage(procfs::process::Process::myself().unwrap().pid)
+            .get_process_cpu_consumption_percentage(IProcess::myself().unwrap().pid)
         {
             self.data.push(Metric {
                 name: String::from("scaph_self_cpu_usage_percent"),
@@ -263,8 +263,8 @@ impl MetricGenerator {
             });
         }
 
-        if let Ok(metric_value) = procfs::process::Process::myself().unwrap().statm() {
-            let value = metric_value.size * procfs::page_size().unwrap() as u64;
+        if let Ok(metric_value) = IProcess::myself().unwrap().statm() {
+            let value = metric_value.size * page_size().unwrap() as u64;
             self.data.push(Metric {
                 name: String::from("scaph_self_mem_total_program_size"),
                 metric_type: String::from("gauge"),
@@ -278,7 +278,7 @@ impl MetricGenerator {
                 metric_value: MetricValueType::IntUnsigned(value),
             });
 
-            let value = metric_value.resident * procfs::page_size().unwrap() as u64;
+            let value = metric_value.resident * page_size().unwrap() as u64;
             self.data.push(Metric {
                 name: String::from("scaph_self_mem_resident_set_size"),
                 metric_type: String::from("gauge"),
@@ -292,7 +292,7 @@ impl MetricGenerator {
                 metric_value: MetricValueType::IntUnsigned(value),
             });
 
-            let value = metric_value.shared * procfs::page_size().unwrap() as u64;
+            let value = metric_value.shared * page_size().unwrap() as u64;
             self.data.push(Metric {
                 name: String::from("scaph_self_mem_shared_resident_size"),
                 metric_type: String::from("gauge"),
