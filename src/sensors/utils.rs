@@ -80,9 +80,12 @@ impl IProcess {
     }
 
     pub fn myself() -> Result<IProcess, String> {
-        if cfg!(target_os = "linux") {
+        #[cfg(target_os = "linux")]
+        {
             Ok(IProcess::from_linux_process(&Process::myself().unwrap()))
-        } else {
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
             Ok(IProcess::mock())
         }
     }
@@ -90,9 +93,12 @@ impl IProcess {
 
 pub fn page_size() -> Result<i64, String> {
     let res;
-    if cfg!(target_os = "linux") {
+    #[cfg(target_os = "linux")]
+    {
         res = Ok(procfs::page_size().unwrap())
-    } else {
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
         res = Err(String::from("page_size not implemented on this OS"))
     }
     res

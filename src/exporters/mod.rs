@@ -3,11 +3,14 @@
 //! `Exporter` is the root for all exporters. It defines the [Exporter] trait
 //! needed to implement an exporter.
 pub mod json;
+#[cfg(feature = "prometheus")]
 pub mod prometheus;
 pub mod qemu;
+#[cfg(feature = "riemann")]
 pub mod riemann;
 pub mod stdout;
 pub mod utils;
+#[cfg(feature = "warp10")]
 pub mod warpten;
 use crate::sensors::{
     utils::{current_system_time_since_epoch, page_size, IProcess},

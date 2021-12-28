@@ -162,7 +162,8 @@ impl Topology {
     pub fn generate_cpu_cores() -> Result<Vec<CPUCore>, String> {
         let mut cores = vec![];
 
-        if cfg!(target_os = "linux") {
+        #[cfg(target_os = "linux")]
+        {
             let cpuinfo = CpuInfo::new().unwrap();
             for id in 0..(cpuinfo.num_cores() - 1) {
                 let mut info = HashMap::new();
@@ -449,7 +450,8 @@ impl Topology {
 
     /// Reads content from /proc/stat and extracts the stats of the whole CPU topology.
     pub fn read_stats(&self) -> Option<CPUStat> {
-        if cfg!(target_os = "linux") {
+        #[cfg(target_os = "linux")]
+        {
             let kernelstats_or_not = KernelStats::new();
             if let Ok(res_cputime) = kernelstats_or_not {
                 return Some(CPUStat {
@@ -471,7 +473,8 @@ impl Topology {
 
     /// Returns the number of processes currently available
     pub fn read_nb_process_total_count(&self) -> Option<u64> {
-        if cfg!(target_os = "linux") {
+        #[cfg(target_os = "linux")]
+        {
             if let Ok(result) = KernelStats::new() {
                 return Some(result.processes);
             }
@@ -481,7 +484,8 @@ impl Topology {
 
     /// Returns the number of processes currently in a running state
     pub fn read_nb_process_running_current(&self) -> Option<u32> {
-        if cfg!(target_os = "linux") {
+        #[cfg(target_os = "linux")]
+        {
             if let Ok(result) = KernelStats::new() {
                 if let Some(procs_running) = result.procs_running {
                     return Some(procs_running);
@@ -492,7 +496,8 @@ impl Topology {
     }
     /// Returns the number of processes currently blocked waiting
     pub fn read_nb_process_blocked_current(&self) -> Option<u32> {
-        if cfg!(target_os = "linux") {
+        #[cfg(target_os = "linux")]
+        {
             if let Ok(result) = KernelStats::new() {
                 if let Some(procs_blocked) = result.procs_blocked {
                     return Some(procs_blocked);
@@ -503,7 +508,8 @@ impl Topology {
     }
     /// Returns the current number of context switches
     pub fn read_nb_context_switches_total_count(&self) -> Option<u64> {
-        if cfg!(target_os = "linux") {
+        #[cfg(target_os = "linux")]
+        {
             if let Ok(result) = KernelStats::new() {
                 return Some(result.ctxt);
             }
@@ -919,7 +925,8 @@ impl CPUCore {
 
     /// Reads content from /proc/stat and extracts the stats of the CPU core
     fn read_stats(&self) -> Option<CPUStat> {
-        if cfg!(target_os = "linux") {
+        #[cfg(target_os = "linux")]
+        {
             if let Ok(mut kernelstats) = KernelStats::new() {
                 return Some(CPUStat::from_procfs_cputime(
                     kernelstats.cpu_time.remove(self.id as usize),
