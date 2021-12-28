@@ -299,7 +299,8 @@ impl Topology {
     /// Gets currently running processes (as procfs::Process instances) and stores
     /// them in self.proc_tracker
     fn refresh_procs(&mut self) {
-        #[cfg(target_os = "linux")] {
+        #[cfg(target_os = "linux")]
+        {
             //current_procs is the up to date list of processus running on the host
             if let Ok(procs) = process::all_processes() {
                 let current_procs = procs
@@ -319,7 +320,8 @@ impl Topology {
                 }
             }
         }
-        #[cfg(not(target_os = "linux"))] {
+        #[cfg(not(target_os = "linux"))]
+        {
             error!("OS not implemented, could not refresh running processes.");
         }
     }
