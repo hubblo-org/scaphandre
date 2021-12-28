@@ -740,6 +740,7 @@ impl MetricGenerator {
             if let Some(cmdline_str) = cmdline {
                 attributes.insert("cmdline".to_string(), cmdline_str.replace("\"", "\\\""));
 
+                #[cfg(target_os="linux")]
                 if self.qemu {
                     if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
                         attributes.insert("vmname".to_string(), vmname);
