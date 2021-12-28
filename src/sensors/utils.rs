@@ -1,8 +1,10 @@
 use regex::Regex;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
-#[cfg(target_os = "linux")]
-use {docker_sync::container::Container, k8s_sync::Pod, procfs::process::Process};
+#[cfg(all(target_os = "linux", feature="containers"))]
+use {docker_sync::container::Container, k8s_sync::Pod};
+#[cfg(target_os="linux")]
+use procfs::process::Process;
 
 #[derive(Debug, Clone)]
 pub struct IProcess {
@@ -199,7 +201,7 @@ impl ProcessTracker {
     /// currently running docker containers on the machine.
     /// The *pods* slice contains the [Pod] items referencing currently
     /// running pods on the machine if it is a kubernetes cluster node.
-    #[cfg(target_os = "linux")]
+    #[cfg(feature = "containers")]
     pub fn get_process_container_description(
         &self,
         pid: i32,

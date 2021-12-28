@@ -21,7 +21,7 @@ use {
     docker_sync::{container::Container, Docker},
     k8s_sync::kubernetes::Kubernetes,
     k8s_sync::Pod,
-    utils::{get_docker_client, get_kubernetes_client},
+    utils::{get_docker_client, get_kubernetes_client}
 };
 
 /// General metric definition.
@@ -100,6 +100,7 @@ pub trait Exporter {
     fn get_options() -> Vec<clap::Arg<'static, 'static>>;
 }
 
+
 /// MetricGenerator is an exporter helper structure to collect Scaphandre metrics.
 /// The goal is to provide a standard Vec\<Metric\> that can be used by exporters
 /// to avoid code duplication.
@@ -112,6 +113,7 @@ struct MetricGenerator {
     /// `hostname` is the system name where the metrics belongs.
     hostname: String,
     /// Tells MetricGenerator if it has to watch for qemu virtual machines.
+    #[cfg(target_os="linux")]
     qemu: bool,
     /// Tells MetricGenerator if it has to watch for containers.
     #[cfg(feature="containers")]
@@ -143,8 +145,6 @@ struct MetricGenerator {
     ///
     #[cfg(feature="containers")]
     pods_last_check: String,
-    // kubernetes cluster version
-    //kubernetes_version: String,
 }
 
 /// This is not mandatory to use MetricGenerator methods. Exporter can use dedicated
@@ -160,49 +160,71 @@ impl MetricGenerator {
         watch_containers: bool,
     ) -> MetricGenerator {
         let data = Vec::new();
-        let containers = vec![];
-        let pods = vec![];
-        let docker_version = String::from("");
-        let mut docker_client = None;
-        //let kubernetes_version = String::from("");
-        let mut kubernetes_client = None;
-        if cfg!(feature="containers") && watch_containers {
+        #[cfg(feature="containers")]
+        {
+            let containers = vec![];
+            let pods = vec![];
+            let docker_version = String::from("");
+            let mut docker_client = None;
+            //let kubernetes_version = String::from("");
+            let mut kubernetes_client = None;
             let mut container_runtime = false;
-            match get_docker_client() {
-                Ok(docker) => {
-                    docker_client = Some(docker);
+            if watch_containers {
+                match get_docker_client() {
+                    Ok(docker) => {
+                        docker_client = Some(docker);
+                        container_runtime = true;
+                    }
+                    Err(err) => {
+                        info!("Couldn't connect to docker socket. Error: {}", err);
+                    }
+                }
+                if let Ok(kubernetes) = get_kubernetes_client() {
+                    kubernetes_client = Some(kubernetes);
                     container_runtime = true;
+                } else {
+                    info!("Couldn't connect to kubernetes API.");
                 }
-                Err(err) => {
-                    info!("Couldn't connect to docker socket. Error: {}", err);
+                if !container_runtime {
+                    warn!("--containers was used but scaphandre couldn't connect to any container runtime.");
                 }
             }
-            if let Ok(kubernetes) = get_kubernetes_client() {
-                kubernetes_client = Some(kubernetes);
-                container_runtime = true;
-            } else {
-                info!("Couldn't connect to kubernetes API.");
-            }
-            if !container_runtime {
-                warn!("--containers was used but scaphandre couldn't connect to any container runtime.");
+            return MetricGenerator {
+                data,
+                topology,
+                hostname,
+                #[cfg(feature="containers")]
+                containers,
+                #[cfg(target_os="linux")]
+                qemu,
+                #[cfg(feature="containers")]
+                containers_last_check: String::from(""),
+                #[cfg(feature="containers")]
+                docker_version: docker_version,
+                #[cfg(feature="containers")]
+                docker_client,
+                #[cfg(feature="containers")]
+                watch_containers,
+                #[cfg(feature="containers")]
+                watch_docker: true,
+                #[cfg(feature="containers")]
+                kubernetes_client,
+                #[cfg(feature="containers")]
+                watch_kubernetes: true,
+                #[cfg(feature="containers")]
+                pods,
+                #[cfg(feature="containers")]
+                pods_last_check: String::from(""),
+                //kubernetes_version,
             }
         }
-        MetricGenerator {
+        #[cfg(not(feature="containers"))]
+        return MetricGenerator {
             data,
             topology,
             hostname,
-            containers,
+            #[cfg(target_os="linux")]
             qemu,
-            containers_last_check: String::from(""),
-            docker_version,
-            docker_client,
-            watch_containers,
-            watch_docker: true,
-            kubernetes_client,
-            watch_kubernetes: true,
-            pods,
-            pods_last_check: String::from(""),
-            //kubernetes_version,
         }
     }
 
@@ -588,6 +610,7 @@ impl MetricGenerator {
     /// to *self.docker_client*. Stores the resulting vector as *self.containers*.
     /// Updates *self.containers_last_check* to the current timestamp, if the
     /// operation is successful.
+    #[cfg(feature="containers")]
     fn gen_docker_containers_basic_metadata(&mut self) {
         if self.watch_docker && self.docker_client.is_some() {
             if let Some(docker) = self.docker_client.as_mut() {
@@ -606,6 +629,7 @@ impl MetricGenerator {
     /// queries the local kubernetes API (if this is a kubernetes cluster node)
     /// and retrieves the list of pods running on this node, thanks to *self.kubernetes_client*.
     /// Stores the result as *self.pods* and updates *self.pods_last_check* if the operation is successfull.
+    #[cfg(feature="containers")]
     fn gen_kubernetes_pods_basic_metadata(&mut self) {
         if self.watch_kubernetes {
             if let Some(kubernetes) = self.kubernetes_client.as_mut() {
@@ -624,7 +648,8 @@ impl MetricGenerator {
 
     /// Generate process metrics.
     fn gen_process_metrics(&mut self) {
-        if self.watch_containers {
+        #[cfg(feature="containers")]
+        if cfg!(feature="containers") && self.watch_containers {
             let now = current_system_time_since_epoch().as_secs().to_string();
             if self.watch_docker && self.docker_client.is_some() {
                 let last_check = self.containers_last_check.clone();
@@ -682,7 +707,9 @@ impl MetricGenerator {
 
             let mut attributes = HashMap::new();
 
-            if self.watch_containers && (!self.containers.is_empty() || !self.pods.is_empty()) {
+
+            #[cfg(feature="containers")]
+            if cfg!(feature="containers") && self.watch_containers && (!self.containers.is_empty() || !self.pods.is_empty()) {
                 let container_data = self
                     .topology
                     .proc_tracker
