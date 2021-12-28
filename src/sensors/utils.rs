@@ -18,60 +18,133 @@ pub struct IStatM {
     pub dt: u64,
 }
 
-//pub struct IStat {
-//    pub pid: i32,
-//    pub comm: String,
-//    pub state: char,
-//    pub ppid: i32,
-//    pub pgrp: i32,
-//    pub session: i32,
-//    pub tty_nr: i32,
-//    pub tpgid: i32,
-//    pub flags: u32,
-//    //pub minflt: u64,
-//    //pub cminflt: u64,
-//    //pub majflt: u64,
-//    //pub cmajflt: u64,
-//    pub utime: u64,
-//    pub stime: u64,
-//    pub cutime: i64,
-//    pub cstime: i64,
-//    //pub priority: i64,
-//    pub nice: i64,
-//    pub num_threads: i64,
-//    pub itrealvalue: i64,
-//    pub starttime: u64,
-//    pub vsize: u64,
-//    //pub rss: i64,
-//    //pub rsslim: u64,
-//    //pub startcode: u64,
-//    //pub endcode: u64,
-//    //pub startstack: u64,
-//    //pub kstkesp: u64,
-//    //pub kstkeip: u64,
-//    pub signal: u64,
-//    pub blocked: u64,
-//    //pub sigignore: u64,
-//    //pub sigcatch: u64,
-//    //pub wchan: u64,
-//    //pub nswap: u64,
-//    //pub cnswap: u64,
-//    pub exit_signal: Option<i32>,
-//    pub processor: Option<i32>,
-//    //pub rt_priority: Option<u32>,
-//    //pub policy: Option<u32>,
-//    pub delayacct_blkio_ticks: Option<u64>,
-//    pub guest_time: Option<u64>,
-//    pub cguest_time: Option<i64>,
-//    pub start_data: Option<u64>,
-//    pub end_data: Option<u64>,
-//    //pub start_brk: Option<u64>,
-//    //pub arg_start: Option<u64>,
-//    //pub arg_end: Option<u64>,
-//    //pub env_start: Option<u64>,
-//    //pub env_end: Option<u64>,
-//    pub exit_code: Option<i32>,
-//}
+#[derive(Debug, Clone)]
+pub struct IStat {
+    pub pid: i32,
+    pub comm: String,
+    pub state: char,
+    pub ppid: i32,
+    pub pgrp: i32,
+    pub session: i32,
+    pub tty_nr: i32,
+    pub tpgid: i32,
+    pub flags: u32,
+    //pub minflt: u64,
+    //pub cminflt: u64,
+    //pub majflt: u64,
+    //pub cmajflt: u64,
+    pub utime: u64,
+    pub stime: u64,
+    pub cutime: i64,
+    pub cstime: i64,
+    //pub priority: i64,
+    pub nice: i64,
+    pub num_threads: i64,
+    pub itrealvalue: i64,
+    pub starttime: u64,
+    pub vsize: u64,
+    //pub rss: i64,
+    //pub rsslim: u64,
+    //pub startcode: u64,
+    //pub endcode: u64,
+    //pub startstack: u64,
+    //pub kstkesp: u64,
+    //pub kstkeip: u64,
+    pub signal: u64,
+    pub blocked: u64,
+    //pub sigignore: u64,
+    //pub sigcatch: u64,
+    //pub wchan: u64,
+    //pub nswap: u64,
+    //pub cnswap: u64,
+    pub exit_signal: Option<i32>,
+    pub processor: Option<i32>,
+    //pub rt_priority: Option<u32>,
+    //pub policy: Option<u32>,
+    pub delayacct_blkio_ticks: Option<u64>,
+    pub guest_time: Option<u64>,
+    pub cguest_time: Option<i64>,
+    pub start_data: Option<u64>,
+    pub end_data: Option<u64>,
+    //pub start_brk: Option<u64>,
+    //pub arg_start: Option<u64>,
+    //pub arg_end: Option<u64>,
+    //pub env_start: Option<u64>,
+    //pub env_end: Option<u64>,
+    pub exit_code: Option<i32>,
+}
+
+impl IStat {
+
+    #[cfg(target_os = "linux")]
+    fn from_procfs_stat(stat: &procfs::process::Stat) -> IStat {
+        IStat {
+            blocked : stat.blocked,
+            cguest_time: stat.cguest_time,
+            comm: stat.comm.clone(),
+            cstime: stat.cstime,
+            cutime: stat.cutime,
+            delayacct_blkio_ticks: stat.delayacct_blkio_ticks,
+            end_data: stat.end_data,
+            exit_code: stat.exit_code,
+            exit_signal: stat.exit_signal,
+            flags: stat.flags,
+            guest_time: stat.guest_time,
+            itrealvalue: stat.itrealvalue,
+            nice: stat.nice,
+            num_threads: stat.num_threads,
+            pgrp: stat.pgrp,
+            pid: stat.pid,
+            ppid: stat.ppid,
+            processor: stat.processor,
+            session: stat.session,
+            signal: stat.signal,
+            start_data: stat.start_data,
+            starttime: stat.starttime,
+            state: stat.state,
+            stime: stat.stime,
+            tpgid: stat.tpgid,
+            tty_nr: stat.tty_nr,
+            utime: stat.utime,
+            vsize: stat.vsize
+        }
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    fn from_windows_process_stat() -> IStat {
+        IStat {
+            blocked : 0,
+            cguest_time: 0,
+            comm: "Not implemented yet !",
+            cstime: 0,
+            cutime: 0,
+            delayacct_blkio_ticks: 0,
+            end_data: 0,
+            exit_code: 0,
+            exit_signal: 0,
+            flags: 0,
+            guest_time: 0,
+            itrealvalue: 0,
+            nice: 0,
+            num_threads: 0,
+            pgrp: 0,
+            pid: 0,
+            ppid: 0,
+            processor: 0,
+            session: 0,
+            signal: 0,
+            start_data: 0,
+            starttime: 0,
+            state: 0,
+            stime: 0,
+            tpgid: 0,
+            tty_nr: 0,
+            utime: 0,
+            vsize: 0 
+        }
+    }
+
+}
 
 #[derive(Debug, Clone)]
 pub struct IProcess {
@@ -79,6 +152,7 @@ pub struct IProcess {
     pub owner: u32,
     pub comm: String,
     pub cmdline: Vec<String>,
+    pub stat: IStat,
     //pub root: Option<String>,
     #[cfg(target_os = "linux")]
     pub original: Process,
@@ -96,6 +170,7 @@ impl IProcess {
             original: process.clone(),
             comm: process.stat.comm.clone(),
             cmdline: process.cmdline().unwrap(),
+            stat: IStat::from_procfs_stat(&process.stat)
         }
     }
 
@@ -138,12 +213,16 @@ impl IProcess {
             comm: Process::myself().unwrap().stat.comm,
             #[cfg(target_os = "linux")]
             cmdline: Process::myself().unwrap().cmdline().unwrap(),
+            #[cfg(target_os = "linux")]
+            stat: IStat::from_procfs_stat(&Process::myself().unwrap().stat),
             #[cfg(not(target_os = "linux"))]
             cmdline: vec!["Not implemented yet !"; 5],
             #[cfg(not(target_os = "linux"))]
             original: Box::new(42),
             #[cfg(not(target_os = "linux"))]
             comm: String::from("Not implemented yet !"),
+            #[cfg(not(target_os = "linux"))]
+            stat: IStat::from_windows_process_stat()
         }
     }
 
@@ -292,7 +371,7 @@ impl ProcessTracker {
         let records = self.find_records(pid).unwrap();
         if records.len() > 1 {
             return Some(
-                records[0].process.original.stat.utime - records[1].process.original.stat.utime,
+                records[0].process.stat.utime - records[1].process.stat.utime,
             );
         }
         None
