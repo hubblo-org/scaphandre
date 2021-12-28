@@ -1,10 +1,10 @@
+#[cfg(target_os = "linux")]
+use procfs::process::Process;
 use regex::Regex;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
-#[cfg(all(target_os = "linux", feature="containers"))]
+#[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
-#[cfg(target_os="linux")]
-use procfs::process::Process;
 
 #[derive(Debug, Clone)]
 pub struct IProcess {
