@@ -126,4 +126,4 @@ jobs:
           dir
       - name: Build (debug mode)
         run: |
-          cargo build --no-default-features --features "prometheus json warp10 riemann"
+          cargo build --no-default-features --features "prometheus json riemann"
