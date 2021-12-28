@@ -9,7 +9,10 @@ pub mod riemann;
 pub mod stdout;
 pub mod utils;
 pub mod warpten;
-use crate::sensors::{utils::{current_system_time_since_epoch, page_size, IProcess}, RecordGenerator, Topology};
+use crate::sensors::{
+    utils::{current_system_time_since_epoch, page_size, IProcess},
+    RecordGenerator, Topology,
+};
 use chrono::Utc;
 use clap::ArgMatches;
 use std::collections::HashMap;

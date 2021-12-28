@@ -1,8 +1,8 @@
 #[cfg(target_os = "linux")]
 use procfs::{self, process::Process};
 use regex::Regex;
-use std::error::Error;
 use std::collections::HashMap;
+//use std::error::Error;
 use std::time::{Duration, SystemTime};
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
@@ -17,7 +17,6 @@ pub struct IStatM {
     pub dt: u64,
 }
 
-
 #[derive(Debug, Clone)]
 pub struct IProcess {
     pub pid: i32,
@@ -25,8 +24,8 @@ pub struct IProcess {
     //pub root: Option<String>,
     #[cfg(target_os = "linux")]
     pub original: Process,
-    #[cfg(not(target_os="linux"))]
-    pub original: Box
+    #[cfg(not(target_os = "linux"))]
+    pub original: Box,
 }
 
 impl IProcess {
@@ -41,36 +40,32 @@ impl IProcess {
     }
 
     pub fn statm(self) -> Result<IStatM, String> {
-        #[cfg(target_os="linux")]
+        #[cfg(target_os = "linux")]
         {
             let processes = procfs::process::all_processes().unwrap();
             let mut result = processes.iter().filter(|p| p.pid == self.pid);
             let me = result.next().unwrap();
             let mystatm = me.statm().unwrap();
-            Ok(
-                IStatM {
-                    size: mystatm.size,
-                    data: mystatm.data,
-                    dt: mystatm.dt,
-                    lib: mystatm.lib,
-                    resident: mystatm.resident,
-                    shared: mystatm.shared,
-                    text: mystatm.text 
-                }
-            )
+            Ok(IStatM {
+                size: mystatm.size,
+                data: mystatm.data,
+                dt: mystatm.dt,
+                lib: mystatm.lib,
+                resident: mystatm.resident,
+                shared: mystatm.shared,
+                text: mystatm.text,
+            })
         }
-        #[cfg(not(target_os="linux"))]
-        Ok(
-            IStatM{
-                size: 42,
-                data: 42,
-                dt: 42,
-                lib: 42,
-                resident: 42,
-                shared: 42,
-                text: 42
-            }
-        )
+        #[cfg(not(target_os = "linux"))]
+        Ok(IStatM {
+            size: 42,
+            data: 42,
+            dt: 42,
+            lib: 42,
+            resident: 42,
+            shared: 42,
+            text: 42,
+        })
     }
 
     pub fn mock() -> IProcess {
@@ -80,12 +75,12 @@ impl IProcess {
             #[cfg(target_os = "linux")]
             original: Process::myself().unwrap(),
             #[cfg(not(target_os = "linux"))]
-            original: Box::new(42) 
+            original: Box::new(42),
         }
     }
 
     pub fn myself() -> Result<IProcess, String> {
-        if cfg!(target_os="linux") {
+        if cfg!(target_os = "linux") {
             Ok(IProcess::from_linux_process(&Process::myself().unwrap()))
         } else {
             Ok(IProcess::mock())
@@ -93,9 +88,9 @@ impl IProcess {
     }
 }
 
-pub fn page_size() -> Result<i64, String>{
-    let mut res = Err(String::from("Couldn't get memory page_size."));
-    if cfg!(target_os="linux") {
+pub fn page_size() -> Result<i64, String> {
+    let res;
+    if cfg!(target_os = "linux") {
         res = Ok(procfs::page_size().unwrap())
     } else {
         res = Err(String::from("page_size not implemented on this OS"))
@@ -260,7 +255,7 @@ impl ProcessTracker {
     }
 
     /// Extracts the container_id from a cgroup path containing it.
-    #[cfg(feature="containers")]
+    #[cfg(feature = "containers")]
     fn extract_pod_id_from_cgroup_path(&self, pathname: String) -> Result<String, std::io::Error> {
         let mut container_id = String::from(pathname.split('/').last().unwrap());
         if container_id.starts_with("docker-") {
