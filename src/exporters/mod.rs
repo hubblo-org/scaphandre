@@ -707,9 +707,7 @@ impl MetricGenerator {
             let mut attributes = HashMap::new();
 
             #[cfg(feature = "containers")]
-            if self.watch_containers
-                && (!self.containers.is_empty() || !self.pods.is_empty())
-            {
+            if self.watch_containers && (!self.containers.is_empty() || !self.pods.is_empty()) {
                 let container_data = self
                     .topology
                     .proc_tracker
