@@ -22,6 +22,7 @@ pub struct IStatM {
 pub struct IProcess {
     pub pid: i32,
     pub owner: u32,
+    pub comm: String,
     //pub root: Option<String>,
     #[cfg(target_os = "linux")]
     pub original: Process,
@@ -37,6 +38,7 @@ impl IProcess {
             pid: process.pid,
             owner: process.owner,
             original: process.clone(),
+            comm: process.stat.comm.clone(),
         }
     }
 
@@ -75,8 +77,12 @@ impl IProcess {
             owner: 42,
             #[cfg(target_os = "linux")]
             original: Process::myself().unwrap(),
+            #[cfg(target_os = "linux")]
+            comm: Process::myself().unwrap().stat.comm,
             #[cfg(not(target_os = "linux"))]
             original: Box::new(42),
+            #[cfg(not(target_os = "linux"))]
+            comm: String::from("Not implemented yet !"),
         }
     }
 
@@ -167,8 +173,8 @@ impl ProcessTracker {
             // if a vector of process records has been found
             // check if the previous records in the vector are from the same process
             // (if the process with that pid is not a new one) and if so, drop it for a new one
-            if cfg!(target_os = "linux")
-                && !vector.is_empty()
+            #[cfg(target_os = "linux")]
+            if !vector.is_empty()
                 && process_record.process.original.stat.comm
                     != vector.get(0).unwrap().process.original.stat.comm
             {
@@ -176,9 +182,6 @@ impl ProcessTracker {
             }
             //ProcessTracker::check_pid_changes(&process_record, vector);
             vector.insert(0, process_record); // we add the process record to the vector
-                                              //if filtered.next().is_some() {
-                                              //    panic!("Found more than one set of ProcessRecord (more than one pid) that matches the current process.");
-                                              //}
             ProcessTracker::clean_old_process_records(vector, self.max_records_per_process);
         } else {
             // if no vector of process records with the same pid has been found in self.procs

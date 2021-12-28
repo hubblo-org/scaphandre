@@ -158,6 +158,7 @@ pub fn get_exporters_options() -> HashMap<String, Vec<clap::Arg<'static, 'static
         String::from("riemann"),
         exporters::riemann::RiemannExporter::get_options(),
     );
+    #[cfg(target_os = "linux")]
     options.insert(
         String::from("qemu"),
         exporters::qemu::QemuExporter::get_options(),

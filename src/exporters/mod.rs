@@ -5,6 +5,7 @@
 pub mod json;
 #[cfg(feature = "prometheus")]
 pub mod prometheus;
+#[cfg(target_os = "linux")]
 pub mod qemu;
 #[cfg(feature = "riemann")]
 pub mod riemann;
