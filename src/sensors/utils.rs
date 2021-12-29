@@ -1,7 +1,8 @@
 #[cfg(target_os = "linux")]
 use procfs::{self, process::Process};
+use regex::Regex;
 #[cfg(feature = "containers")]
-use {regex::Regex, std::collections::HashMap};
+use std::collections::HashMap;
 //use std::error::Error;
 use std::time::{Duration, SystemTime};
 #[cfg(all(target_os = "linux", feature = "containers"))]
@@ -112,28 +113,28 @@ impl IStat {
     fn from_windows_process_stat() -> IStat {
         IStat {
             blocked: 0,
-            cguest_time: 0,
-            comm: "Not implemented yet !",
+            cguest_time: Some(0),
+            comm: String::from("Not implemented yet !"),
             cstime: 0,
             cutime: 0,
-            delayacct_blkio_ticks: 0,
-            end_data: 0,
-            exit_code: 0,
-            exit_signal: 0,
+            delayacct_blkio_ticks: Some(0),
+            end_data: Some(0),
+            exit_code: Some(0),
+            exit_signal: Some(0),
             flags: 0,
-            guest_time: 0,
+            guest_time: Some(0),
             itrealvalue: 0,
             nice: 0,
             num_threads: 0,
             pgrp: 0,
             pid: 0,
             ppid: 0,
-            processor: 0,
+            processor: Some(0),
             session: 0,
             signal: 0,
-            start_data: 0,
+            start_data: Some(0),
             starttime: 0,
-            state: 0,
+            state: 'X',
             stime: 0,
             tpgid: 0,
             tty_nr: 0,
@@ -278,11 +279,11 @@ impl IProcess {
         #[cfg(not(target_os = "linux"))]
         {
             Ok(IStatus {
-                name: "Not implemented yet !",
+                name: String::from("Not implemented yet !"),
                 pid: 42,
                 ppid: 42,
-                state: "X",
-                umask: 4242,
+                state: String::from("X"),
+                umask: None,
             })
         }
     }
@@ -309,7 +310,7 @@ impl IProcess {
             #[cfg(target_os = "linux")]
             stat: IStat::from_procfs_stat(&Process::myself().unwrap().stat),
             #[cfg(not(target_os = "linux"))]
-            cmdline: vec!["Not implemented yet !"; 5],
+            cmdline: vec![String::from("Not implemented yet !"); 5],
             #[cfg(not(target_os = "linux"))]
             original: Box::new(42),
             #[cfg(not(target_os = "linux"))]
@@ -352,8 +353,11 @@ pub struct ProcessTracker {
     /// Maximum number of ProcessRecord instances that scaphandre is allowed to
     /// store, per PID (thus, for each subvector).
     pub max_records_per_process: u16,
+    #[cfg(feature = "containers")]
     pub regex_cgroup_docker: Regex,
+    #[cfg(feature = "containers")]
     pub regex_cgroup_kubernetes: Regex,
+    #[cfg(feature = "containers")]
     pub regex_cgroup_containerd: Regex,
 }
 
