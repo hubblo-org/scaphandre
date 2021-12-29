@@ -760,7 +760,7 @@ impl ProcessTracker {
         for p in &self.procs {
             if p.len() > 1 {
                 let diff = self.get_cpu_time_consumed(p);
-                let process_name = p.last().unwrap().process.original.exe().unwrap_or_default();
+                let process_name = p.last().unwrap().process.exe().unwrap_or_default();
                 if regex_filter.is_match(process_name.to_str().unwrap_or_default()) {
                     consumers.push((p.last().unwrap().process.clone(), diff));
                     consumers.sort_by(|x, y| y.1.cmp(&x.1));
