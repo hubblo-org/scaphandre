@@ -29,7 +29,6 @@ docker-sync = { version = "0.1.2", optional = true }
 k8s-sync = { version = "0.2.3", optional = true }
 hyper = { version = "0.14", features = ["full"], optional = true }
 tokio = { version = "1", features = ["full"], optional = true}
-#procfs = { version = "0.12.0", optional = true }
 
 [target.'cfg(target_os="linux")'.dependencies]
 procfs = { version = "0.12.0" }
