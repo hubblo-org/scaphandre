@@ -4,6 +4,7 @@ use regex::Regex;
 #[cfg(feature = "containers")]
 use std::collections::HashMap;
 //use std::error::Error;
+use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
@@ -239,7 +240,7 @@ impl IProcess {
     pub fn statm(self) -> Result<IStatM, String> {
         #[cfg(target_os = "linux")]
         {
-            let me = self.get_original_me();
+            let me = self.get_original_me(None);
             let mystatm = me.statm().unwrap();
             Ok(IStatM {
                 size: mystatm.size,
@@ -263,10 +264,23 @@ impl IProcess {
         })
     }
 
+    pub fn exe(&self) -> Result<PathBuf, String> {
+        #[cfg(target_os = "linux")]
+        {
+            let process = self.get_original_me(None);
+            let original_exe = process.exe().unwrap();
+            Ok(original_exe)
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            Err("Not implemented yet !")
+        }
+    }
+
     pub fn status(&self) -> Result<IStatus, String> {
         #[cfg(target_os = "linux")]
         {
-            let process = self.get_original_me();
+            let process = self.get_original_me(None);
             let original_status = process.status().unwrap();
             Ok(IStatus {
                 name: original_status.name,
@@ -289,9 +303,16 @@ impl IProcess {
     }
 
     #[cfg(target_os = "linux")]
-    fn get_original_me(&self) -> Process {
+    fn get_original_me(&self, buffer: Option<&Vec<Process>>) -> Process {
         #[cfg(target_os = "linux")]
-        let processes = procfs::process::all_processes().unwrap();
+        let processes: &Vec<Process>;
+        let anchor: Vec<Process>;
+        if let Some(procs) = buffer {
+            processes = procs;
+        } else {
+            anchor = procfs::process::all_processes().unwrap();
+            processes = &anchor;
+        }
         let mut result = processes.iter().filter(|p| p.pid == self.pid);
         let me = result.next().unwrap();
         me.clone()
