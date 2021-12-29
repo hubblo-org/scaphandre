@@ -5,6 +5,8 @@
 
 #[cfg(target_os = "linux")]
 pub mod powercap_rapl;
+#[cfg(not(target_os = "linux"))]
+pub mod msr_rapl;
 pub mod units;
 pub mod utils;
 #[cfg(target_os = "linux")]
@@ -1193,14 +1195,20 @@ mod tests {
 
     #[test]
     fn read_topology_stats() {
+        #[cfg(target_os="linux")]
         let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
+        #[cfg(not(target_os="linux"))]
+        let mut sensor = msr_rapl::MsrRAPLSensor::new();
         let topo = (*sensor.get_topology()).unwrap();
         println!("{:?}", topo.read_stats());
     }
 
     #[test]
     fn read_core_stats() {
+        #[cfg(target_os="linux")]
         let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
+        #[cfg(not(target_os="linux"))]
+        let mut sensor = msr_rapl::MsrRAPLSensor::new();
         let mut topo = (*sensor.get_topology()).unwrap();
         for s in topo.get_sockets() {
             for c in s.get_cores() {
@@ -1211,7 +1219,10 @@ mod tests {
 
     #[test]
     fn read_socket_stats() {
+        #[cfg(target_os="linux")]
         let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
+        #[cfg(not(target_os="linux"))]
+        let mut sensor = msr_rapl::MsrRAPLSensor::new();
         let mut topo = (*sensor.get_topology()).unwrap();
         for s in topo.get_sockets() {
             println!("{:?}", s.read_stats());
