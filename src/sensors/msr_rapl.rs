@@ -1,5 +1,4 @@
-use crate::sensors::Sensor;
-use crate::sensors::Topology;
+use crate::sensors::{Sensor, Topology};
 use core::ffi::c_void;
 use std::error::Error;
 use std::mem::{size_of, size_of_val};
@@ -28,7 +27,10 @@ impl MsrRAPLSensor {
 }
 
 impl Sensor for MsrRAPLSensor {
-    fn generate_topology(&self) -> Result<Topology, Box<dyn Error>> {}
+    fn generate_topology(&self) -> Result<Topology, Box<dyn Error>> {
+        let topology = Topology::new();
+        Ok(topology)
+    }
 
     fn get_topology(&mut self) -> Box<Option<Topology>> {
         let topology = self.generate_topology().ok();

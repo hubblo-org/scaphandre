@@ -19,6 +19,7 @@ use exporters::riemann::RiemannExporter;
 use exporters::warpten::Warp10Exporter;
 use exporters::{stdout::StdoutExporter, Exporter};
 use sensors::Sensor;
+use sensors::msr_rapl::MsrRAPLSensor;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 #[cfg(target_os = "linux")]
@@ -56,7 +57,7 @@ fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
             matches.is_present("vm"),
         ),
         #[cfg(not(target_os = "linux"))]
-        _ => panic!("No sensor available for this Operating System !"),
+        _ => MsrRAPLSensor::new(),
     };
     Box::new(sensor)
 }
