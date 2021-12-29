@@ -273,7 +273,7 @@ impl IProcess {
         }
         #[cfg(not(target_os = "linux"))]
         {
-            Err("Not implemented yet !")
+            Err(String::from("Not implemented yet !"))
         }
     }
 
