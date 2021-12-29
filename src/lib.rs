@@ -15,7 +15,7 @@ use exporters::json::JSONExporter;
 use exporters::prometheus::PrometheusExporter;
 #[cfg(feature = "riemann")]
 use exporters::riemann::RiemannExporter;
-#[cfg(feature = "warp10")]
+#[cfg(feature = "warpten")]
 use exporters::warpten::Warp10Exporter;
 use exporters::{stdout::StdoutExporter, Exporter};
 use sensors::Sensor;
@@ -117,7 +117,7 @@ pub fn run(matches: ArgMatches) {
             error!("Qemu exporter is compatible only with GNU/Linux operating systems.");
         }
     } else if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
-        #[cfg(feature = "warp10")]
+        #[cfg(feature = "warpten")]
         {
             if header {
                 scaphandre_header("warp10");
@@ -126,7 +126,7 @@ pub fn run(matches: ArgMatches) {
             let mut exporter = Warp10Exporter::new(sensor_boxed);
             exporter.run(exporter_parameters);
         }
-        #[cfg(not(feature = "warp10"))]
+        #[cfg(not(feature = "warpten"))]
         {
             error!("Warp10 exporter feature was not included in this build.");
         }

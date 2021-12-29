@@ -11,7 +11,7 @@ pub mod qemu;
 pub mod riemann;
 pub mod stdout;
 pub mod utils;
-#[cfg(feature = "warp10")]
+#[cfg(feature = "warpten")]
 pub mod warpten;
 use crate::sensors::{
     utils::{current_system_time_since_epoch, page_size, IProcess},
