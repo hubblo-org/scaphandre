@@ -28,7 +28,7 @@ impl MsrRAPLSensor {
 }
 
 impl Sensor for MsrRAPLSensor {
-    fn generate_topology(&mut self) -> Result<Topology, Box<dyn Error>> {}
+    fn generate_topology(&self) -> Result<Topology, Box<dyn Error>> {}
 
     fn get_topology(&mut self) -> Box<Option<Topology>> {
         let topology = self.generate_topology().ok();
