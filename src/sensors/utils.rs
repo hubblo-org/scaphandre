@@ -1,8 +1,7 @@
 #[cfg(target_os = "linux")]
 use procfs::{self, process::Process};
-use regex::Regex;
 #[cfg(feature = "containers")]
-use std::collections::HashMap;
+use {regex::Regex, std::collections::HashMap};
 //use std::error::Error;
 use std::time::{Duration, SystemTime};
 #[cfg(all(target_os = "linux", feature = "containers"))]
@@ -75,11 +74,10 @@ pub struct IStat {
 }
 
 impl IStat {
-
     #[cfg(target_os = "linux")]
     fn from_procfs_stat(stat: &procfs::process::Stat) -> IStat {
         IStat {
-            blocked : stat.blocked,
+            blocked: stat.blocked,
             cguest_time: stat.cguest_time,
             comm: stat.comm.clone(),
             cstime: stat.cstime,
@@ -106,14 +104,14 @@ impl IStat {
             tpgid: stat.tpgid,
             tty_nr: stat.tty_nr,
             utime: stat.utime,
-            vsize: stat.vsize
+            vsize: stat.vsize,
         }
     }
 
     #[cfg(not(target_os = "linux"))]
     fn from_windows_process_stat() -> IStat {
         IStat {
-            blocked : 0,
+            blocked: 0,
             cguest_time: 0,
             comm: "Not implemented yet !",
             cstime: 0,
@@ -140,10 +138,73 @@ impl IStat {
             tpgid: 0,
             tty_nr: 0,
             utime: 0,
-            vsize: 0 
+            vsize: 0,
         }
     }
+}
 
+pub struct IStatus {
+    pub name: String,
+    pub umask: Option<u32>,
+    pub state: String,
+    //pub tgid: i32,
+    //pub ngid: Option<i32>,
+    pub pid: i32,
+    pub ppid: i32,
+    //pub tracerpid: i32,
+    //pub ruid: u32,
+    //pub euid: u32,
+    //pub suid: u32,
+    //pub fuid: u32,
+    //pub rgid: u32,
+    //pub egid: u32,
+    //pub sgid: u32,
+    //pub fgid: u32,
+    //pub fdsize: u32,
+    //pub groups: Vec<i32>,
+    //pub nstgid: Option<Vec<i32>>,
+    //pub nspid: Option<Vec<i32>>,
+    //pub nspgid: Option<Vec<i32>>,
+    //pub nssid: Option<Vec<i32>>,
+    //pub vmpeak: Option<u64>,
+    //pub vmsize: Option<u64>,
+    //pub vmlck: Option<u64>,
+    //pub vmpin: Option<u64>,
+    //pub vmhwm: Option<u64>,
+    //pub vmrss: Option<u64>,
+    //pub rssanon: Option<u64>,
+    //pub rssfile: Option<u64>,
+    //pub rssshmem: Option<u64>,
+    //pub vmdata: Option<u64>,
+    //pub vmstk: Option<u64>,
+    //pub vmexe: Option<u64>,
+    //pub vmlib: Option<u64>,
+    //pub vmpte: Option<u64>,
+    //pub vmswap: Option<u64>,
+    //pub hugetlbpages: Option<u64>,
+    //pub threads: u64,
+    //pub sigq: (u64, u64),
+    //pub sigpnd: u64,
+    //pub shdpnd: u64,
+    //pub sigblk: u64,
+    //pub sigign: u64,
+    //pub sigcgt: u64,
+    //pub capinh: u64,
+    //pub capprm: u64,
+    //pub capeff: u64,
+    //pub capbnd: Option<u64>,
+    //pub capamb: Option<u64>,
+    //pub nonewprivs: Option<u64>,
+    //pub seccomp: Option<u32>,
+    //pub speculation_store_bypass: Option<String>,
+    //pub cpus_allowed: Option<Vec<u32>>,
+    //pub cpus_allowed_list: Option<Vec<(u32, u32)>>,
+    //pub mems_allowed: Option<Vec<u32>>,
+    //pub mems_allowed_list: Option<Vec<(u32, u32)>>,
+    //pub voluntary_ctxt_switches: Option<u64>,
+    //pub nonvoluntary_ctxt_switches: Option<u64>,
+    //pub core_dumping: Option<bool>,
+    //pub thp_enabled: Option<bool>,
 }
 
 #[derive(Debug, Clone)]
@@ -170,16 +231,14 @@ impl IProcess {
             original: process.clone(),
             comm: process.stat.comm.clone(),
             cmdline: process.cmdline().unwrap(),
-            stat: IStat::from_procfs_stat(&process.stat)
+            stat: IStat::from_procfs_stat(&process.stat),
         }
     }
 
     pub fn statm(self) -> Result<IStatM, String> {
         #[cfg(target_os = "linux")]
         {
-            let processes = procfs::process::all_processes().unwrap();
-            let mut result = processes.iter().filter(|p| p.pid == self.pid);
-            let me = result.next().unwrap();
+            let me = self.get_original_me();
             let mystatm = me.statm().unwrap();
             Ok(IStatM {
                 size: mystatm.size,
@@ -203,6 +262,40 @@ impl IProcess {
         })
     }
 
+    pub fn status(&self) -> Result<IStatus, String> {
+        #[cfg(target_os = "linux")]
+        {
+            let process = self.get_original_me();
+            let original_status = process.status().unwrap();
+            Ok(IStatus {
+                name: original_status.name,
+                pid: original_status.pid,
+                ppid: original_status.ppid,
+                state: original_status.state,
+                umask: original_status.umask,
+            })
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            Ok(IStatus {
+                name: "Not implemented yet !",
+                pid: 42,
+                ppid: 42,
+                state: "X",
+                umask: 4242,
+            })
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    fn get_original_me(&self) -> Process {
+        #[cfg(target_os = "linux")]
+        let processes = procfs::process::all_processes().unwrap();
+        let mut result = processes.iter().filter(|p| p.pid == self.pid);
+        let me = result.next().unwrap();
+        me.clone()
+    }
+
     pub fn mock() -> IProcess {
         IProcess {
             pid: 42,
@@ -222,7 +315,7 @@ impl IProcess {
             #[cfg(not(target_os = "linux"))]
             comm: String::from("Not implemented yet !"),
             #[cfg(not(target_os = "linux"))]
-            stat: IStat::from_windows_process_stat()
+            stat: IStat::from_windows_process_stat(),
         }
     }
 
@@ -275,15 +368,23 @@ impl ProcessTracker {
     /// let tracker = ProcessTracker::new(5);
     /// ```
     pub fn new(max_records_per_process: u16) -> ProcessTracker {
-        let regex_cgroup_docker = Regex::new(r"^/docker/.*$").unwrap();
-        let regex_cgroup_kubernetes = Regex::new(r"^/kubepods.*$").unwrap();
-        let regex_cgroup_containerd = Regex::new("/system.slice/containerd.service").unwrap();
+        #[cfg(feature = "containers")]
+        {
+            let regex_cgroup_docker = Regex::new(r"^/docker/.*$").unwrap();
+            let regex_cgroup_kubernetes = Regex::new(r"^/kubepods.*$").unwrap();
+            let regex_cgroup_containerd = Regex::new("/system.slice/containerd.service").unwrap();
+            ProcessTracker {
+                procs: vec![],
+                max_records_per_process,
+                regex_cgroup_docker,
+                regex_cgroup_kubernetes,
+                regex_cgroup_containerd,
+            }
+        }
+        #[cfg(not(feature = "containers"))]
         ProcessTracker {
             procs: vec![],
             max_records_per_process,
-            regex_cgroup_docker,
-            regex_cgroup_kubernetes,
-            regex_cgroup_containerd,
         }
     }
 
@@ -313,17 +414,13 @@ impl ProcessTracker {
             // if a vector of process records has been found
             // check if the previous records in the vector are from the same process
             // (if the process with that pid is not a new one) and if so, drop it for a new one
-            #[cfg(target_os = "linux")]
+            if !vector.is_empty()
+                && process_record.process.comm != vector.get(0).unwrap().process.comm
             {
-                if !vector.is_empty()
-                    && process_record.process.original.stat.comm
-                        != vector.get(0).unwrap().process.original.stat.comm
-                {
-                    *vector = vec![];
-                }
-                //ProcessTracker::check_pid_changes(&process_record, vector);
-                vector.insert(0, process_record); // we add the process record to the vector
+                *vector = vec![];
             }
+            //ProcessTracker::check_pid_changes(&process_record, vector);
+            vector.insert(0, process_record); // we add the process record to the vector
             ProcessTracker::clean_old_process_records(vector, self.max_records_per_process);
         } else {
             // if no vector of process records with the same pid has been found in self.procs
@@ -370,9 +467,7 @@ impl ProcessTracker {
     pub fn get_diff_utime(&self, pid: i32) -> Option<u64> {
         let records = self.find_records(pid).unwrap();
         if records.len() > 1 {
-            return Some(
-                records[0].process.stat.utime - records[1].process.stat.utime,
-            );
+            return Some(records[0].process.stat.utime - records[1].process.stat.utime);
         }
         None
     }
@@ -381,9 +476,7 @@ impl ProcessTracker {
     pub fn get_diff_stime(&self, pid: i32) -> Option<u64> {
         let records = self.find_records(pid).unwrap();
         if records.len() > 1 {
-            return Some(
-                records[0].process.original.stat.stime - records[1].process.original.stat.stime,
-            );
+            return Some(records[0].process.stat.stime - records[1].process.stat.stime);
         }
         None
     }
@@ -394,7 +487,7 @@ impl ProcessTracker {
         let mut res = vec![];
         for p in self.procs.iter() {
             if !p.is_empty() && cfg!(target_os = "linux") {
-                let status = p[0].process.original.status();
+                let status = p[0].process.status();
                 if let Ok(status_val) = status {
                     if !&status_val.state.contains('T') {
                         // !&status_val.state.contains("Z") &&
@@ -671,7 +764,7 @@ impl ProcessTracker {
         for v in &mut self.procs {
             if !v.is_empty() {
                 if let Some(first) = v.first() {
-                    if let Ok(status) = first.process.original.status() {
+                    if let Ok(status) = first.process.status() {
                         if status.state.contains('T') {
                             while !v.is_empty() {
                                 v.pop();
@@ -756,8 +849,8 @@ impl ProcessRecord {
 
     // Returns the total CPU time consumed by this process since its creation
     pub fn total_time_jiffies(&self) -> u64 {
-        let stime = self.process.original.stat.stime;
-        let utime = self.process.original.stat.utime;
+        let stime = self.process.stat.stime;
+        let utime = self.process.stat.utime;
         //let cutime = self.process.stat.cutime as u64;
         //let cstime = self.process.stat.cstime as u64;
         //let guest_time = self.process.stat.guest_time.unwrap_or_default();
