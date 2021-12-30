@@ -56,13 +56,10 @@ unsafe fn CTL_CODE(device_type: u32, request_code: u32, method: u32, access: u32
 
 pub fn extract_rapl_current_power(data: u64) -> String {
     let mut energy_consumed: u64 = 0;
-    let mut energy_consumed_previous: u64 = 0;
-    energy_consumed = data & 0xFFFFFFFF;
-
-    println!("Current power usage: {} microJ\n", energy_consumed);
-    println!("Current power usage: {} Watts\n", ((energy_consumed - energy_consumed_previous) / 1) / 1000000);
-
-    energy_consumed_previous = energy_consumed;
+    warn!("{}", data);
+    energy_consumed = (data & 0xFFFFFFFF)*100;
+    warn!("Current power usage: {} microJ\n", energy_consumed);
+    //println!("Current power usage: {} Watts\n", ((energy_consumed - energy_consumed_previous) / 1) / 1000000);
     format!("{}", energy_consumed)
 }
 
@@ -115,7 +112,8 @@ impl RecordReader for CPUSocket {
             if let Ok(device) = crate::sensors::msr_rapl::get_handle(&self.source) {
                 let mut msr_result = [0u8; size_of::<u64>()];
                         
-                if send_request(device, AGENT_POWER_UNIT_CODE, // nouvelle version à integrer : request_code est ignoré et request doit contenir
+                if send_request(device, AGENT_ENERGY_STATUS_CODE,
+                    // nouvelle version à integrer : request_code est ignoré et request doit contenir
                     // request_code sous forme d'un char *
                     std::ptr::null(), 0,
                     msr_result.as_mut_ptr(), size_of::<u64>()
