@@ -172,8 +172,12 @@ impl StdoutExporter {
             None => MetricValueType::Text("0".to_string()),
         };
 
-        let domain_names = metric_generator.topology.domains_names.as_ref().unwrap();
-        info!("domain_name: {:?}", domain_names);
+        let mut domain_names = vec![];
+
+        if let Some(domains) = metric_generator.topology.domains_names.as_ref() {
+            info!("domain_name: {:?}", domains);
+            domain_names = domains.clone();
+        }
 
         println!(
             "Host:\t{} W",
@@ -199,7 +203,7 @@ impl StdoutExporter {
                     && x.attributes.get("socket_id").unwrap() == &socket_id
             });
 
-            for d in domain_names {
+            for d in &domain_names {
                 info!("current domain : {}", d);
                 info!("domains size : {}", &domains.clone().count());
                 if let Some(current_domain) = domains.clone().find(|x| {

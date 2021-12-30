@@ -1,5 +1,5 @@
-use crate::sensors::Sensor;
-use crate::sensors::Topology;
+use crate::sensors::{Sensor, Topology, RecordReader, Record};
+use crate::sensors::units::MicroJoule;
 use procfs::{modules, KernelModule};
 use regex::Regex;
 use std::collections::HashMap;
@@ -60,6 +60,34 @@ impl PowercapRAPLSensor {
             Err(String::from(
                 "None of intel_rapl, intel_rapl_common or intel_rapl_msr kernel modules found.",
             ))
+        }
+    }
+}
+
+impl RecordReader for Topology {
+    fn read_record(&self) -> Result<Record, Box<dyn Error>> {
+        Record {
+            timestamp: current_system_time_since_epoch(),
+            value: String::from("5"),
+            unit: MicroJoule
+        }
+    }
+}
+impl RecordReader for CPUSocket {
+    fn read_record(&self) -> Result<Record, Box<dyn Error>> {
+        Record {
+            timestamp: current_system_time_since_epoch(),
+            value: String::from("5"),
+            unit: MicroJoule
+        }
+    }
+}
+impl RecordReader for Domain {
+    fn read_record(&self) -> Result<Record, Box<dyn Error>> {
+        Record {
+            timestamp: current_system_time_since_epoch(),
+            value: String::from("5"),
+            unit: MicroJoule
         }
     }
 }

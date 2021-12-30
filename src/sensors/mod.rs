@@ -11,6 +11,8 @@ pub mod units;
 pub mod utils;
 #[cfg(target_os = "linux")]
 use procfs::{process, CpuInfo, CpuTime, KernelStats};
+#[cfg(not(target_os="linux"))]
+use sysinfo::{System, SystemExt, ProcessExt, ProcessorExt};
 use std::collections::HashMap;
 use std::error::Error;
 use std::mem::size_of_val;
@@ -33,6 +35,10 @@ pub trait RecordGenerator {
     fn clean_old_records(&mut self);
 }
 
+pub trait RecordReader {
+    fn read_record(&self) -> Result<Record, Box<dyn Error>>;
+}
+
 // !!!!!!!!!!!!!!!!! Topology !!!!!!!!!!!!!!!!!!!!!!!
 /// Topology struct represents the whole CPUSocket architecture,
 /// from the electricity consumption point of view,
@@ -52,6 +58,8 @@ pub struct Topology {
     pub buffer_max_kbytes: u16,
     /// Sorted list of all domains names
     pub domains_names: Option<Vec<String>>,
+    ///
+    source: String,
 }
 
 impl RecordGenerator for Topology {
@@ -130,13 +138,13 @@ impl RecordGenerator for Topology {
 
 impl Default for Topology {
     fn default() -> Self {
-        Self::new()
+        Self::new(String::from(""))
     }
 }
 
 impl Topology {
     /// Instanciates Topology and returns the instance
-    pub fn new() -> Topology {
+    pub fn new(source: String) -> Topology {
         Topology {
             sockets: vec![],
             proc_tracker: ProcessTracker::new(5),
@@ -144,6 +152,7 @@ impl Topology {
             record_buffer: vec![],
             buffer_max_kbytes: 1,
             domains_names: None,
+            source,
         }
     }
 
@@ -175,6 +184,10 @@ impl Topology {
                 cores.push(CPUCore::new(id as u16, info));
             }
         }
+        #[cfg(target_os = "windows")]
+        {
+            
+        }
         Ok(cores)
     }
 
@@ -187,6 +200,7 @@ impl Topology {
         attributes: Vec<Vec<HashMap<String, String>>>,
         counter_uj_path: String,
         buffer_max_kbytes: u16,
+        source: String,
     ) {
         if !self.sockets.iter().any(|s| s.id == socket_id) {
             let socket = CPUSocket::new(
@@ -195,6 +209,7 @@ impl Topology {
                 attributes,
                 counter_uj_path,
                 buffer_max_kbytes,
+                source,
             );
             self.sockets.push(socket);
         }
@@ -237,6 +252,7 @@ impl Topology {
         name: &str,
         uj_counter: &str,
         buffer_max_kbytes: u16,
+        source: String,
     ) {
         let iterator = self.sockets.iter_mut();
         for socket in iterator {
@@ -246,6 +262,7 @@ impl Topology {
                     String::from(name),
                     String::from(uj_counter),
                     buffer_max_kbytes,
+                    source.clone()
                 ));
             }
         }
@@ -322,17 +339,37 @@ impl Topology {
                 }
             }
         }
-        #[cfg(not(target_os = "linux"))]
+        #[cfg(target_os = "windows")]
         {
-            error!("OS not implemented, could not refresh running processes.");
+        
+            let pt = &mut self.proc_tracker;
+            pt.sysinfo.refresh_processes();
+            let current_procs = pt.sysinfo.processes()
+                .values()
+                .map(IProcess::from_windows_process)
+                .collect::<Vec<_>>();
+            for p in current_procs {
+                debug!("Trying to track process with pid {}", &p.pid);
+                match pt.add_process_record(p) {
+                    Ok(_) => {},
+                    Err(msg) => {
+                        panic!("Failed to track process !\nGot: {}", msg)
+                    }
+                }
+
+            }
         }
     }
 
     /// Gets currents stats and stores them as a CPUStat instance in self.stat_buffer
     pub fn refresh_stats(&mut self) {
-        self.stat_buffer.insert(0, self.read_stats().unwrap());
-        if !self.stat_buffer.is_empty() {
-            self.clean_old_stats();
+        if let Some(stats) = self.read_stats() {
+            self.stat_buffer.insert(0, stats);
+            if !self.stat_buffer.is_empty() {
+                self.clean_old_stats();
+            }
+        } else {
+            debug!("read_stats() is None");
         }
     }
 
@@ -603,13 +640,16 @@ pub struct CPUSocket {
     pub cpu_cores: Vec<CPUCore>,
     /// Usage statistics records stored for this socket.
     pub stat_buffer: Vec<CPUStat>,
+    ///
+    source: String,
 }
 
 impl RecordGenerator for CPUSocket {
     /// Generates a new record of the socket energy consumption and stores it in the record_buffer.
     /// Returns a clone of this Record instance.
     fn refresh_record(&mut self) {
-        if let Ok(record) = self.read_record_uj() {
+        //if let Ok(record) = self.read_record_uj() {
+        if let Ok(record) = self.read_record() {
             self.record_buffer.push(record);
         }
 
@@ -673,6 +713,7 @@ impl CPUSocket {
         attributes: Vec<Vec<HashMap<String, String>>>,
         counter_uj_path: String,
         buffer_max_kbytes: u16,
+        source: String,
     ) -> CPUSocket {
         CPUSocket {
             id,
@@ -683,6 +724,7 @@ impl CPUSocket {
             buffer_max_kbytes,
             cpu_cores: vec![], // cores are instantiated on a later step
             stat_buffer: vec![],
+            source,
         }
     }
 
@@ -957,12 +999,15 @@ pub struct Domain {
     pub record_buffer: Vec<Record>,
     /// Maximum size of record_buffer, in kilobytes
     pub buffer_max_kbytes: u16,
+    ///
+    source: String,
 }
 impl RecordGenerator for Domain {
     /// Computes a measurement of energy comsumption for this CPU domain,
     /// stores a copy in self.record_buffer and returns it.
     fn refresh_record(&mut self) {
-        if let Ok(record) = self.read_record_uj() {
+        //if let Ok(record) = self.read_record_uj() {
+        if let Ok(record) = self.read_record() {
             self.record_buffer.push(record);
         }
 
@@ -1005,13 +1050,14 @@ impl RecordGenerator for Domain {
 }
 impl Domain {
     /// Instanciates Domain and returns the instance
-    fn new(id: u16, name: String, counter_uj_path: String, buffer_max_kbytes: u16) -> Domain {
+    fn new(id: u16, name: String, counter_uj_path: String, buffer_max_kbytes: u16, source: String) -> Domain {
         Domain {
             id,
             name,
             counter_uj_path,
             record_buffer: vec![],
             buffer_max_kbytes,
+            source,
         }
     }
     /// Reads content of this domain's energy_uj file
