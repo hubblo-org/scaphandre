@@ -18,8 +18,9 @@ use exporters::riemann::RiemannExporter;
 #[cfg(feature = "warpten")]
 use exporters::warpten::Warp10Exporter;
 use exporters::{stdout::StdoutExporter, Exporter};
-use sensors::Sensor;
+#[cfg(target_os = "windows")]
 use sensors::msr_rapl::MsrRAPLSensor;
+use sensors::Sensor;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 #[cfg(target_os = "linux")]

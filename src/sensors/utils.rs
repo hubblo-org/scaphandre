@@ -1,10 +1,10 @@
 #[cfg(target_os = "linux")]
 use procfs::{self, process::Process};
-#[cfg(target_os = "windows")]
-use sysinfo::{System, SystemExt, Process, ProcessExt};
 use regex::Regex;
 #[cfg(feature = "containers")]
 use std::collections::HashMap;
+#[cfg(target_os = "windows")]
+use sysinfo::{Process, ProcessExt, System, SystemExt};
 //use std::error::Error;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
@@ -244,15 +244,25 @@ impl IProcess {
             owner: 0,
             comm: String::from(process.exe().to_str().unwrap()),
             cmdline: process.cmd().to_vec(),
-            stat: None
+            stat: None,
         }
     }
 
-    pub fn statm(self) -> Result<IStatM, String> {
+    pub fn cmdline(&self) -> Result<Vec<String>, String> {
         #[cfg(target_os = "linux")]
         {
-            let me = self.get_original_me(None);
-            let mystatm = me.statm().unwrap();
+            if let Ok(cmdline) = self.original.cmdline() {
+                Ok(cmdline)
+            } else {
+                Err(String::from("cmdline() was none"))
+            }
+        }
+    }
+
+    pub fn statm(&self) -> Result<IStatM, String> {
+        #[cfg(target_os = "linux")]
+        {
+            let mystatm = self.original.statm().unwrap();
             Ok(IStatM {
                 size: mystatm.size,
                 data: mystatm.data,
@@ -275,24 +285,20 @@ impl IProcess {
         })
     }
 
+    #[cfg(target_os = "linux")]
     pub fn exe(&self) -> Result<PathBuf, String> {
-        #[cfg(target_os = "linux")]
-        {
-            let process = self.get_original_me(None);
-            let original_exe = process.exe().unwrap();
-            Ok(original_exe)
-        }
-        #[cfg(not(target_os = "linux"))]
-        {
-            Err(String::from("Not implemented yet !"))
-        }
+        let original_exe = self.original.exe().unwrap();
+        Ok(original_exe)
+    }
+    #[cfg(target_os = "windows")]
+    pub fn exe(&self) -> Result<PathBuf, String> {
+        Err(String::from("Not implemented yet !"))
     }
 
     pub fn status(&self) -> Result<IStatus, String> {
         #[cfg(target_os = "linux")]
         {
-            let process = self.get_original_me(None);
-            let original_status = process.status().unwrap();
+            let original_status = self.original.status().unwrap();
             Ok(IStatus {
                 name: original_status.name,
                 pid: original_status.pid,
@@ -301,7 +307,7 @@ impl IProcess {
                 umask: original_status.umask,
             })
         }
-        #[cfg(not(target_os = "linux"))]
+        #[cfg(target_os = "windows")]
         {
             Ok(IStatus {
                 name: String::from("Not implemented yet !"),
@@ -311,22 +317,6 @@ impl IProcess {
                 umask: None,
             })
         }
-    }
-
-    #[cfg(target_os = "linux")]
-    fn get_original_me(&self, buffer: Option<&Vec<Process>>) -> Process {
-        #[cfg(target_os = "linux")]
-        let processes: &Vec<Process>;
-        let anchor: Vec<Process>;
-        if let Some(procs) = buffer {
-            processes = procs;
-        } else {
-            anchor = procfs::process::all_processes().unwrap();
-            processes = &anchor;
-        }
-        let mut result = processes.iter().filter(|p| p.pid == self.pid);
-        let me = result.next().unwrap();
-        me.clone()
     }
 
     pub fn mock() -> IProcess {
@@ -383,8 +373,8 @@ pub struct ProcessTracker {
     /// Maximum number of ProcessRecord instances that scaphandre is allowed to
     /// store, per PID (thus, for each subvector).
     pub max_records_per_process: u16,
-    #[cfg(target_os="windows")]
-    pub sysinfo: System, 
+    #[cfg(target_os = "windows")]
+    pub sysinfo: System,
     #[cfg(feature = "containers")]
     pub regex_cgroup_docker: Regex,
     #[cfg(feature = "containers")]
@@ -401,11 +391,11 @@ impl Clone for ProcessTracker {
             #[cfg(target_os = "windows")]
             sysinfo: System::new_all(),
             #[cfg(feature = "containers")]
-            regex_cgroup_docker: regex_cgroup_docker.clone(),
+            regex_cgroup_docker: self.regex_cgroup_docker.clone(),
             #[cfg(feature = "containers")]
-            regex_cgroup_kubernetes: regex_cgroup_kubernetes.clone(),
+            regex_cgroup_kubernetes: self.regex_cgroup_kubernetes.clone(),
             #[cfg(feature = "containers")]
-            regex_cgroup_containerd: regex_cgroup_containerd.clone(),
+            regex_cgroup_containerd: self.regex_cgroup_containerd.clone(),
         }
     }
 }
@@ -429,7 +419,7 @@ impl ProcessTracker {
             ProcessTracker {
                 procs: vec![],
                 max_records_per_process,
-                #[cfg(target_os="windows")]
+                #[cfg(target_os = "windows")]
                 sysinfo: System::new_all(),
                 regex_cgroup_docker,
                 regex_cgroup_kubernetes,
@@ -440,7 +430,7 @@ impl ProcessTracker {
         ProcessTracker {
             procs: vec![],
             max_records_per_process,
-            #[cfg(target_os="windows")]
+            #[cfg(target_os = "windows")]
             sysinfo: System::new_all(),
         }
     }
@@ -526,7 +516,7 @@ impl ProcessTracker {
         if records.len() > 1 {
             if let Some(previous) = &records[0].process.stat {
                 if let Some(current) = &records[1].process.stat {
-                    return Some(previous.utime - current.utime)
+                    return Some(previous.utime - current.utime);
                 }
             }
         }
@@ -539,7 +529,7 @@ impl ProcessTracker {
         if records.len() > 1 {
             if let Some(previous) = &records[0].process.stat {
                 if let Some(current) = &records[1].process.stat {
-                    return Some(previous.stime - current.stime)
+                    return Some(previous.stime - current.stime);
                 }
             }
         }
@@ -549,9 +539,11 @@ impl ProcessTracker {
     /// Returns all vectors of process records linked to a running, sleeping, waiting or zombie process.
     /// (Not terminated)
     pub fn get_alive_processes(&self) -> Vec<&Vec<ProcessRecord>> {
+        debug!("In get alive processes.");
         let mut res = vec![];
         for p in self.procs.iter() {
-            if !p.is_empty() && cfg!(target_os = "linux") {
+            #[cfg(target_os = "linux")]
+            if !p.is_empty() {
                 let status = p[0].process.status();
                 if let Ok(status_val) = status {
                     if !&status_val.state.contains('T') {
@@ -560,7 +552,10 @@ impl ProcessTracker {
                     }
                 }
             }
+            #[cfg(target_os = "windows")]
+            if !p.is_empty() {}
         }
+        debug!("End of get alive processes.");
         res
     }
 
@@ -738,6 +733,7 @@ impl ProcessTracker {
         if result.next().is_some() {
             panic!("Found two vectors of processes with the same id, maintainers should fix this.");
         }
+        debug!("End of get process name.");
         process.get(0).unwrap().process.comm.clone()
     }
 
@@ -748,15 +744,19 @@ impl ProcessTracker {
             .iter()
             .filter(|x| !x.is_empty() && x.get(0).unwrap().process.pid == pid);
         let process = result.next().unwrap();
-        if let Some(vec) = process.get(0) {
-            let mut cmdline = String::from("");
-            while !vec.process.cmdline.is_empty() {
-                if !vec.process.cmdline.is_empty() {
-                    cmdline.push_str(vec.process.cmdline.get(0).unwrap().as_str());
+        if let Some(p) = process.get(0) {
+            if let Ok(mut cmdline_vec) = p.process.cmdline() {
+                let mut cmdline = String::from("");
+                while !cmdline_vec.is_empty() {
+                    if !cmdline_vec.is_empty() {
+                        cmdline.push_str(&cmdline_vec.remove(0));
+                    }
                 }
+                debug!("End of get process cmdline.");
+                return Some(cmdline);
             }
-            return Some(cmdline);
         }
+        debug!("End of get process cmdline.");
         None
     }
 
@@ -920,7 +920,7 @@ impl ProcessRecord {
                 stat.stime,
                 stat.utime //, cutime, cstime, guest_time, cguest_time, delayacct_blkio_ticks, itrealvalue
             );
-            return stat.stime + stat.utime
+            return stat.stime + stat.utime;
         }
         //let cutime = self.process.stat.cutime as u64;
         //let cstime = self.process.stat.cstime as u64;

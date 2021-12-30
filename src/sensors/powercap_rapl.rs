@@ -1,5 +1,6 @@
-use crate::sensors::{Sensor, Topology, RecordReader, Record};
-use crate::sensors::units::MicroJoule;
+use crate::sensors::units::Unit::MicroJoule;
+use crate::sensors::utils::current_system_time_since_epoch;
+use crate::sensors::{CPUSocket, Domain, Record, RecordReader, Sensor, Topology};
 use procfs::{modules, KernelModule};
 use regex::Regex;
 use std::collections::HashMap;
@@ -66,28 +67,34 @@ impl PowercapRAPLSensor {
 
 impl RecordReader for Topology {
     fn read_record(&self) -> Result<Record, Box<dyn Error>> {
-        Record {
+        Ok(Record {
             timestamp: current_system_time_since_epoch(),
             value: String::from("5"),
-            unit: MicroJoule
-        }
+            unit: MicroJoule,
+        })
     }
 }
 impl RecordReader for CPUSocket {
     fn read_record(&self) -> Result<Record, Box<dyn Error>> {
-        Record {
-            timestamp: current_system_time_since_epoch(),
-            value: String::from("5"),
-            unit: MicroJoule
+        match fs::read_to_string(&self.source) {
+            Ok(result) => Ok(Record::new(
+                current_system_time_since_epoch(),
+                result,
+                MicroJoule,
+            )),
+            Err(error) => Err(Box::new(error)),
         }
     }
 }
 impl RecordReader for Domain {
     fn read_record(&self) -> Result<Record, Box<dyn Error>> {
-        Record {
-            timestamp: current_system_time_since_epoch(),
-            value: String::from("5"),
-            unit: MicroJoule
+        match fs::read_to_string(&self.source) {
+            Ok(result) => Ok(Record {
+                timestamp: current_system_time_since_epoch(),
+                unit: MicroJoule,
+                value: result,
+            }),
+            Err(error) => Err(Box::new(error)),
         }
     }
 }
@@ -99,7 +106,7 @@ impl Sensor for PowercapRAPLSensor {
         if modules_state.is_err() && !self.virtual_machine {
             warn!("Couldn't find intel_rapl modules.");
         }
-        let mut topo = Topology::new();
+        let mut topo = Topology::new(String::from(""));
         let re_domain = Regex::new(r"^.*/intel-rapl:\d+:\d+$").unwrap();
         for folder in fs::read_dir(&self.base_path).unwrap() {
             let folder_name = String::from(folder.unwrap().path().to_str().unwrap());
@@ -116,6 +123,7 @@ impl Sensor for PowercapRAPLSensor {
                     vec![],
                     format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
                     self.buffer_per_socket_max_kbytes,
+                    format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
                 );
                 if let Ok(domain_name) = &fs::read_to_string(format!("{}/name", folder_name)) {
                     topo.safe_add_domain_to_socket(
@@ -127,6 +135,10 @@ impl Sensor for PowercapRAPLSensor {
                             self.base_path, socket_id, domain_id
                         ),
                         self.buffer_per_domain_max_kbytes,
+                        format!(
+                            "{}/intel-rapl:{}:{}/energy_uj",
+                            self.base_path, socket_id, domain_id
+                        ),
                     );
                 }
             }
