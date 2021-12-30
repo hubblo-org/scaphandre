@@ -144,7 +144,7 @@ impl Default for Topology {
 
 impl Topology {
     /// Instanciates Topology and returns the instance
-    pub fn new(source: String) -> Topology {
+    pub fn new(source: String, ) -> Topology {
         Topology {
             sockets: vec![],
             proc_tracker: ProcessTracker::new(5),
