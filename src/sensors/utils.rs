@@ -4,7 +4,7 @@ use regex::Regex;
 #[cfg(feature = "containers")]
 use std::collections::HashMap;
 #[cfg(target_os = "windows")]
-use sysinfo::{Process, ProcessExt, System, SystemExt};
+use sysinfo::{Process, ProcessExt, System, SystemExt, get_current_pid};
 //use std::error::Error;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
@@ -248,14 +248,20 @@ impl IProcess {
         }
     }
 
+    #[cfg(target_os = "linux")]
     pub fn cmdline(&self) -> Result<Vec<String>, String> {
-        #[cfg(target_os = "linux")]
-        {
-            if let Ok(cmdline) = self.original.cmdline() {
-                Ok(cmdline)
-            } else {
-                Err(String::from("cmdline() was none"))
-            }
+        if let Ok(cmdline) = self.original.cmdline() {
+            Ok(cmdline)
+        } else {
+            Err(String::from("cmdline() was none"))
+        }
+    }
+    #[cfg(target_os = "windows")]
+    pub fn cmdline(&self, proc_tracker: &ProcessTracker) -> Result<Vec<String>, String> {
+        if let Some(p) = proc_tracker.sysinfo.process(self.pid as usize) {
+            Ok(p.cmd().to_vec())
+        } else {
+            Err(String::from("Failed to get original process."))
         }
     }
 
@@ -273,7 +279,7 @@ impl IProcess {
                 text: mystatm.text,
             })
         }
-        #[cfg(not(target_os = "linux"))]
+        #[cfg(target_os = "windows")]
         Ok(IStatM {
             size: 42,
             data: 42,
@@ -291,8 +297,12 @@ impl IProcess {
         Ok(original_exe)
     }
     #[cfg(target_os = "windows")]
-    pub fn exe(&self) -> Result<PathBuf, String> {
-        Err(String::from("Not implemented yet !"))
+    pub fn exe(&self, proc_tracker: &ProcessTracker) -> Result<PathBuf, String> {
+        if let Some(p) = proc_tracker.sysinfo.process(self.pid as usize) {
+            Ok(PathBuf::from(p.exe().to_str().unwrap()))
+        } else {
+            Err(String::from("Couldn't get process."))
+        }
     }
 
     pub fn status(&self) -> Result<IStatus, String> {
@@ -319,36 +329,13 @@ impl IProcess {
         }
     }
 
-    pub fn mock() -> IProcess {
-        IProcess {
-            pid: 42,
-            owner: 42,
-            #[cfg(target_os = "linux")]
-            original: Process::myself().unwrap(),
-            #[cfg(target_os = "linux")]
-            comm: Process::myself().unwrap().stat.comm,
-            #[cfg(target_os = "linux")]
-            cmdline: Process::myself().unwrap().cmdline().unwrap(),
-            #[cfg(target_os = "linux")]
-            stat: Some(IStat::from_procfs_stat(&Process::myself().unwrap().stat)),
-            #[cfg(not(target_os = "linux"))]
-            cmdline: vec![String::from("Not implemented yet !"); 5],
-            #[cfg(not(target_os = "linux"))]
-            comm: String::from("Not implemented yet !"),
-            #[cfg(not(target_os = "linux"))]
-            stat: Some(IStat::from_windows_process_stat()),
-        }
-    }
-
+    #[cfg(target_os = "linux")]
     pub fn myself() -> Result<IProcess, String> {
-        #[cfg(target_os = "linux")]
-        {
-            Ok(IProcess::from_linux_process(&Process::myself().unwrap()))
-        }
-        #[cfg(not(target_os = "linux"))]
-        {
-            Ok(IProcess::mock())
-        }
+        Ok(IProcess::from_linux_process(&Process::myself().unwrap()))
+    }
+    #[cfg(target_os = "windows")]
+    pub fn myself(proc_tracker: &ProcessTracker) -> Result<IProcess, String> {
+        Ok(IProcess::from_windows_process(proc_tracker.sysinfo.process(get_current_pid().unwrap() as usize).unwrap()))
     }
 }
 
@@ -745,7 +732,11 @@ impl ProcessTracker {
             .filter(|x| !x.is_empty() && x.get(0).unwrap().process.pid == pid);
         let process = result.next().unwrap();
         if let Some(p) = process.get(0) {
-            if let Ok(mut cmdline_vec) = p.process.cmdline() {
+            #[cfg(target_os = "windows")]
+            let cmdline_request = p.process.cmdline(self);
+            #[cfg(target_os = "linux")]
+            let cmdline_request = p.process.cmdline();
+            if let Ok(mut cmdline_vec) = cmdline_request {
                 let mut cmdline = String::from("");
                 while !cmdline_vec.is_empty() {
                     if !cmdline_vec.is_empty() {
@@ -800,8 +791,11 @@ impl ProcessTracker {
         for p in &self.procs {
             if p.len() > 1 {
                 let diff = self.get_cpu_time_consumed(p);
-                let process_name = p.last().unwrap().process.exe().unwrap_or_default();
-                if regex_filter.is_match(process_name.to_str().unwrap_or_default()) {
+                #[cfg(target_os = "linux")]
+                let process_exe = p.last().unwrap().process.exe().unwrap_or_default();
+                #[cfg(target_os = "windows")]
+                let process_exe = p.last().unwrap().process.exe(self).unwrap_or_default();
+                if regex_filter.is_match(process_exe.to_str().unwrap_or_default()) {
                     consumers.push((p.last().unwrap().process.clone(), diff));
                     consumers.sort_by(|x, y| y.1.cmp(&x.1));
                 }

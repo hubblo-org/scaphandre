@@ -236,6 +236,12 @@ impl MetricGenerator {
 
     /// Generate all scaphandre internal metrics.
     fn gen_self_metrics(&mut self) {
+
+        #[cfg(target_os = "linux")]
+        let myself = IProcess::myself().unwrap();
+        #[cfg(target_os = "windows")]
+        let myself = IProcess::myself(self.topology.get_proc_tracker()).unwrap();
+
         let default_timestamp = current_system_time_since_epoch();
         self.data.push(Metric {
             name: String::from("scaph_self_version"),
@@ -250,9 +256,10 @@ impl MetricGenerator {
             metric_value: MetricValueType::Text(get_scaphandre_version()),
         });
 
+
         if let Some(metric_value) = self
             .topology
-            .get_process_cpu_consumption_percentage(IProcess::myself().unwrap().pid)
+            .get_process_cpu_consumption_percentage(myself.pid)
         {
             self.data.push(Metric {
                 name: String::from("scaph_self_cpu_usage_percent"),
@@ -270,7 +277,7 @@ impl MetricGenerator {
             });
         }
 
-        if let Ok(metric_value) = IProcess::myself().unwrap().statm() {
+        if let Ok(metric_value) = myself.statm() {
             let value = metric_value.size * page_size().unwrap() as u64;
             self.data.push(Metric {
                 name: String::from("scaph_self_mem_total_program_size"),
