@@ -737,12 +737,12 @@ impl CPUSocket {
 
     /// Returns the content of the energy consumption counter file, as a String
     /// value of microjoules.
-    pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
-        match fs::read_to_string(&self.counter_uj_path) {
-            Ok(result) => Ok(result),
-            Err(error) => Err(Box::new(error)),
-        }
-    }
+    //pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
+    //    match fs::read_to_string(&self.counter_uj_path) {
+    //        Ok(result) => Ok(result),
+    //        Err(error) => Err(Box::new(error)),
+    //    }
+    //}
     pub fn read_record_uj(&self) -> Result<Record, Box<dyn Error>> {
         match fs::read_to_string(&self.counter_uj_path) {
             Ok(result) => Ok(Record::new(
@@ -1067,12 +1067,12 @@ impl Domain {
         }
     }
     /// Reads content of this domain's energy_uj file
-    pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
-        match fs::read_to_string(&self.counter_uj_path) {
-            Ok(result) => Ok(result),
-            Err(error) => Err(Box::new(error)),
-        }
-    }
+    //pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
+    //    match fs::read_to_string(&self.counter_uj_path) {
+    //        Ok(result) => Ok(result),
+    //        Err(error) => Err(Box::new(error)),
+    //    }
+    //}
 
     pub fn read_record_uj(&self) -> Result<Record, Box<dyn Error>> {
         match fs::read_to_string(&self.counter_uj_path) {
