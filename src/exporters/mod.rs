@@ -654,6 +654,7 @@ impl MetricGenerator {
 
     /// Generate process metrics.
     fn gen_process_metrics(&mut self) {
+        debug!("In gen_process_metrics.");
         #[cfg(feature = "containers")]
         if self.watch_containers {
             let now = current_system_time_since_epoch().as_secs().to_string();
@@ -706,12 +707,14 @@ impl MetricGenerator {
                 }
             }
         }
+        debug!("Before loop.");
 
         for pid in self.topology.proc_tracker.get_alive_pids() {
             let exe = self.topology.proc_tracker.get_process_name(pid);
             let cmdline = self.topology.proc_tracker.get_process_cmdline(pid);
 
             let mut attributes = HashMap::new();
+            debug!("Working on {}: {}", pid, exe);
 
             #[cfg(feature = "containers")]
             if self.watch_containers && (!self.containers.is_empty() || !self.pods.is_empty()) {

@@ -11,13 +11,13 @@ pub mod units;
 pub mod utils;
 #[cfg(target_os = "linux")]
 use procfs::{process, CpuInfo, CpuTime, KernelStats};
-#[cfg(not(target_os="linux"))]
-use sysinfo::{System, SystemExt, ProcessExt, ProcessorExt};
 use std::collections::HashMap;
 use std::error::Error;
 use std::mem::size_of_val;
 use std::time::Duration;
 use std::{fmt, fs};
+#[cfg(not(target_os = "linux"))]
+use sysinfo::{ProcessExt, ProcessorExt, System, SystemExt};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
@@ -185,9 +185,7 @@ impl Topology {
             }
         }
         #[cfg(target_os = "windows")]
-        {
-            
-        }
+        {}
         Ok(cores)
     }
 
@@ -262,7 +260,7 @@ impl Topology {
                     String::from(name),
                     String::from(uj_counter),
                     buffer_max_kbytes,
-                    source.clone()
+                    source.clone(),
                 ));
             }
         }
@@ -322,11 +320,13 @@ impl Topology {
         {
             //current_procs is the up to date list of processus running on the host
             if let Ok(procs) = process::all_processes() {
+                info!("Before refresh procs init.");
                 let current_procs = procs
                     .iter()
                     .map(IProcess::from_linux_process)
                     .collect::<Vec<_>>();
 
+                info!("Before refresh procs loop.");
                 for p in current_procs {
                     let pid = p.pid;
                     let res = self.proc_tracker.add_process_record(p);
@@ -341,22 +341,22 @@ impl Topology {
         }
         #[cfg(target_os = "windows")]
         {
-        
             let pt = &mut self.proc_tracker;
             pt.sysinfo.refresh_processes();
-            let current_procs = pt.sysinfo.processes()
+            let current_procs = pt
+                .sysinfo
+                .processes()
                 .values()
                 .map(IProcess::from_windows_process)
                 .collect::<Vec<_>>();
             for p in current_procs {
                 debug!("Trying to track process with pid {}", &p.pid);
                 match pt.add_process_record(p) {
-                    Ok(_) => {},
+                    Ok(_) => {}
                     Err(msg) => {
                         panic!("Failed to track process !\nGot: {}", msg)
                     }
                 }
-
             }
         }
     }
@@ -1050,7 +1050,13 @@ impl RecordGenerator for Domain {
 }
 impl Domain {
     /// Instanciates Domain and returns the instance
-    fn new(id: u16, name: String, counter_uj_path: String, buffer_max_kbytes: u16, source: String) -> Domain {
+    fn new(
+        id: u16,
+        name: String,
+        counter_uj_path: String,
+        buffer_max_kbytes: u16,
+        source: String,
+    ) -> Domain {
         Domain {
             id,
             name,
