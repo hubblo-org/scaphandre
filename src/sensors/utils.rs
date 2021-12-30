@@ -1,5 +1,7 @@
 #[cfg(target_os = "linux")]
 use procfs::{self, process::Process};
+#[cfg(target_os = "windows")]
+use sysinfo::{System, SystemExt, Process, ProcessExt};
 use regex::Regex;
 #[cfg(feature = "containers")]
 use std::collections::HashMap;
@@ -215,12 +217,10 @@ pub struct IProcess {
     pub owner: u32,
     pub comm: String,
     pub cmdline: Vec<String>,
-    pub stat: IStat,
+    pub stat: Option<IStat>,
     //pub root: Option<String>,
     #[cfg(target_os = "linux")]
     pub original: Process,
-    #[cfg(not(target_os = "linux"))]
-    pub original: Box<u64>,
 }
 
 impl IProcess {
@@ -233,7 +233,18 @@ impl IProcess {
             original: process.clone(),
             comm: process.stat.comm.clone(),
             cmdline: process.cmdline().unwrap(),
-            stat: IStat::from_procfs_stat(&process.stat),
+            stat: Some(IStat::from_procfs_stat(&process.stat)),
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    pub fn from_windows_process(process: &Process) -> IProcess {
+        IProcess {
+            pid: process.pid() as i32,
+            owner: 0,
+            comm: String::from(process.exe().to_str().unwrap()),
+            cmdline: process.cmd().to_vec(),
+            stat: None
         }
     }
 
@@ -329,15 +340,13 @@ impl IProcess {
             #[cfg(target_os = "linux")]
             cmdline: Process::myself().unwrap().cmdline().unwrap(),
             #[cfg(target_os = "linux")]
-            stat: IStat::from_procfs_stat(&Process::myself().unwrap().stat),
+            stat: Some(IStat::from_procfs_stat(&Process::myself().unwrap().stat)),
             #[cfg(not(target_os = "linux"))]
             cmdline: vec![String::from("Not implemented yet !"); 5],
             #[cfg(not(target_os = "linux"))]
-            original: Box::new(42),
-            #[cfg(not(target_os = "linux"))]
             comm: String::from("Not implemented yet !"),
             #[cfg(not(target_os = "linux"))]
-            stat: IStat::from_windows_process_stat(),
+            stat: Some(IStat::from_windows_process_stat()),
         }
     }
 
@@ -361,12 +370,12 @@ pub fn page_size() -> Result<i64, String> {
     }
     #[cfg(not(target_os = "linux"))]
     {
-        res = Err(String::from("page_size not implemented on this OS"))
+        res = Ok(4096)
     }
     res
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 /// Manages ProcessRecord instances.
 pub struct ProcessTracker {
     /// Each subvector keeps track of records for a given PID.
@@ -374,12 +383,31 @@ pub struct ProcessTracker {
     /// Maximum number of ProcessRecord instances that scaphandre is allowed to
     /// store, per PID (thus, for each subvector).
     pub max_records_per_process: u16,
+    #[cfg(target_os="windows")]
+    pub sysinfo: System, 
     #[cfg(feature = "containers")]
     pub regex_cgroup_docker: Regex,
     #[cfg(feature = "containers")]
     pub regex_cgroup_kubernetes: Regex,
     #[cfg(feature = "containers")]
     pub regex_cgroup_containerd: Regex,
+}
+
+impl Clone for ProcessTracker {
+    fn clone(&self) -> ProcessTracker {
+        ProcessTracker {
+            procs: self.procs.clone(),
+            max_records_per_process: self.max_records_per_process,
+            #[cfg(target_os = "windows")]
+            sysinfo: System::new_all(),
+            #[cfg(feature = "containers")]
+            regex_cgroup_docker: regex_cgroup_docker.clone(),
+            #[cfg(feature = "containers")]
+            regex_cgroup_kubernetes: regex_cgroup_kubernetes.clone(),
+            #[cfg(feature = "containers")]
+            regex_cgroup_containerd: regex_cgroup_containerd.clone(),
+        }
+    }
 }
 
 impl ProcessTracker {
@@ -401,6 +429,8 @@ impl ProcessTracker {
             ProcessTracker {
                 procs: vec![],
                 max_records_per_process,
+                #[cfg(target_os="windows")]
+                sysinfo: System::new_all(),
                 regex_cgroup_docker,
                 regex_cgroup_kubernetes,
                 regex_cgroup_containerd,
@@ -410,6 +440,8 @@ impl ProcessTracker {
         ProcessTracker {
             procs: vec![],
             max_records_per_process,
+            #[cfg(target_os="windows")]
+            sysinfo: System::new_all(),
         }
     }
 
@@ -492,7 +524,11 @@ impl ProcessTracker {
     pub fn get_diff_utime(&self, pid: i32) -> Option<u64> {
         let records = self.find_records(pid).unwrap();
         if records.len() > 1 {
-            return Some(records[0].process.stat.utime - records[1].process.stat.utime);
+            if let Some(previous) = &records[0].process.stat {
+                if let Some(current) = &records[1].process.stat {
+                    return Some(previous.utime - current.utime)
+                }
+            }
         }
         None
     }
@@ -501,7 +537,11 @@ impl ProcessTracker {
     pub fn get_diff_stime(&self, pid: i32) -> Option<u64> {
         let records = self.find_records(pid).unwrap();
         if records.len() > 1 {
-            return Some(records[0].process.stat.stime - records[1].process.stat.stime);
+            if let Some(previous) = &records[0].process.stat {
+                if let Some(current) = &records[1].process.stat {
+                    return Some(previous.stime - current.stime)
+                }
+            }
         }
         None
     }
@@ -874,8 +914,14 @@ impl ProcessRecord {
 
     // Returns the total CPU time consumed by this process since its creation
     pub fn total_time_jiffies(&self) -> u64 {
-        let stime = self.process.stat.stime;
-        let utime = self.process.stat.utime;
+        if let Some(stat) = &self.process.stat {
+            trace!(
+                "ProcessRecord: stime {} utime {}", //cutime {} cstime {} guest_time {} cguest_time {} delayacct_blkio_ticks {} itrealvalue {}",
+                stat.stime,
+                stat.utime //, cutime, cstime, guest_time, cguest_time, delayacct_blkio_ticks, itrealvalue
+            );
+            return stat.stime + stat.utime
+        }
         //let cutime = self.process.stat.cutime as u64;
         //let cstime = self.process.stat.cstime as u64;
         //let guest_time = self.process.stat.guest_time.unwrap_or_default();
@@ -883,16 +929,10 @@ impl ProcessRecord {
         //let delayacct_blkio_ticks = self.process.stat.delayacct_blkio_ticks.unwrap_or_default();
         //let itrealvalue = self.process.stat.itrealvalue as u64;
 
-        trace!(
-            "ProcessRecord: stime {} utime {}", //cutime {} cstime {} guest_time {} cguest_time {} delayacct_blkio_ticks {} itrealvalue {}",
-            stime,
-            utime //, cutime, cstime, guest_time, cguest_time, delayacct_blkio_ticks, itrealvalue
-        );
-
         // not including cstime and cutime in total as they are reported only when child dies
         // child metrics as already reported as the child processes are in the global process
         // list, found as /proc/PID/stat
-        stime + utime //+ guest_time + cguest_time + delayacct_blkio_ticks + itrealvalue
+        0 //+ guest_time + cguest_time + delayacct_blkio_ticks + itrealvalue
     }
 }
 
