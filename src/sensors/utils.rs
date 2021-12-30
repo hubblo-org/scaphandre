@@ -147,6 +147,7 @@ impl IStat {
     }
 }
 
+#[derive(Clone)]
 pub struct IStatus {
     pub name: String,
     pub umask: Option<u32>,
@@ -308,14 +309,18 @@ impl IProcess {
     pub fn status(&self) -> Result<IStatus, String> {
         #[cfg(target_os = "linux")]
         {
-            let original_status = self.original.status().unwrap();
-            Ok(IStatus {
-                name: original_status.name,
-                pid: original_status.pid,
-                ppid: original_status.ppid,
-                state: original_status.state,
-                umask: original_status.umask,
-            })
+            if let Ok(original_status) = self.original.status() {
+                let status = IStatus {
+                    name: original_status.name,
+                    pid: original_status.pid,
+                    ppid: original_status.ppid,
+                    state: original_status.state,
+                    umask: original_status.umask,
+                };
+                Ok(status.clone())
+            } else {
+                Err(format!("Couldn't get status for {}", self.pid))
+            }
         }
         #[cfg(target_os = "windows")]
         {
