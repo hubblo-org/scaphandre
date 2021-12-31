@@ -83,6 +83,7 @@ impl RecordGenerator for Topology {
                 }
             }
         }
+        warn!("Record value from topo (addition of sockets) : {}", value);
         let record = Record::new(last_timestamp, value.to_string(), units::Unit::MicroJoule);
 
         self.record_buffer.push(record);
@@ -432,8 +433,10 @@ impl Topology {
                 return None;
             }
             let microjoules = last_microjoules - previous_microjoules;
+            warn!("microjoules: {} last: {} previous: {}", microjoules, last_microjoules, previous_microjoules);
             let time_diff =
                 last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
+            warn!("timediff: {}", time_diff);
             let microwatts = microjoules as f64 / time_diff;
             return Some(Record::new(
                 last_record.timestamp,
@@ -732,25 +735,6 @@ impl CPUSocket {
     fn safe_add_domain(&mut self, domain: Domain) {
         if !self.domains.iter().any(|d| d.id == domain.id) {
             self.domains.push(domain);
-        }
-    }
-
-    /// Returns the content of the energy consumption counter file, as a String
-    /// value of microjoules.
-    //pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
-    //    match fs::read_to_string(&self.counter_uj_path) {
-    //        Ok(result) => Ok(result),
-    //        Err(error) => Err(Box::new(error)),
-    //    }
-    //}
-    pub fn read_record_uj(&self) -> Result<Record, Box<dyn Error>> {
-        match fs::read_to_string(&self.counter_uj_path) {
-            Ok(result) => Ok(Record::new(
-                current_system_time_since_epoch(),
-                result,
-                units::Unit::MicroJoule,
-            )),
-            Err(error) => Err(Box::new(error)),
         }
     }
 
@@ -1064,24 +1048,6 @@ impl Domain {
             record_buffer: vec![],
             buffer_max_kbytes,
             source,
-        }
-    }
-    /// Reads content of this domain's energy_uj file
-    //pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
-    //    match fs::read_to_string(&self.counter_uj_path) {
-    //        Ok(result) => Ok(result),
-    //        Err(error) => Err(Box::new(error)),
-    //    }
-    //}
-
-    pub fn read_record_uj(&self) -> Result<Record, Box<dyn Error>> {
-        match fs::read_to_string(&self.counter_uj_path) {
-            Ok(result) => Ok(Record {
-                timestamp: current_system_time_since_epoch(),
-                unit: units::Unit::MicroJoule,
-                value: result,
-            }),
-            Err(error) => Err(Box::new(error)),
         }
     }
 
