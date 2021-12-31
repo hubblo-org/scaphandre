@@ -532,7 +532,7 @@ impl ProcessTracker {
     /// (Not terminated)
     pub fn get_alive_processes(&self) -> Vec<&Vec<ProcessRecord>> {
         debug!("In get alive processes.");
-        let res = vec![];
+        let mut res = vec![];
         for p in self.procs.iter() {
             #[cfg(target_os = "linux")]
             if !p.is_empty() {
@@ -545,7 +545,10 @@ impl ProcessTracker {
                 }
             }
             #[cfg(target_os = "windows")]
-            if !p.is_empty() {}
+            if !p.is_empty() {
+                //TODO implement
+                // clippy will ask you to remove mut from res, but you just need to implement to fix that
+            }
         }
         debug!("End of get alive processes.");
         res
