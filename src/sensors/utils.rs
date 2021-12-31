@@ -532,7 +532,7 @@ impl ProcessTracker {
     /// (Not terminated)
     pub fn get_alive_processes(&self) -> Vec<&Vec<ProcessRecord>> {
         debug!("In get alive processes.");
-        let mut res = vec![];
+        let res = vec![];
         for p in self.procs.iter() {
             #[cfg(target_os = "linux")]
             if !p.is_empty() {

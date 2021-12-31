@@ -19,7 +19,6 @@ const AGENT_ENERGY_STATUS_CODE: u16 = 0xBED;
 unsafe fn send_request(device: HANDLE, request_code: u16,
     request: *const u8, request_length: usize,
     reply: *mut u8, reply_length: usize) -> bool {
-    let i: usize;
     let mut len: u32 = 0;
     let len_ptr: *mut u32 = &mut len; 
 
@@ -28,7 +27,7 @@ unsafe fn send_request(device: HANDLE, request_code: u16,
 
     if DeviceIoControl(
         device, // envoi 8 octet et je recoi 8 octet
-        crate::sensors::msr_rapl::CTL_CODE(
+        crate::sensors::msr_rapl::ctl_code(
             FILE_DEVICE_UNKNOWN, request_code as _,
             METHOD_OUT_DIRECT, FILE_READ_DATA.0
             // nouvelle version : METHOD_OUD_DIRECT devien METHOD_BUFFERED
@@ -47,7 +46,7 @@ unsafe fn send_request(device: HANDLE, request_code: u16,
     }
 }
     
-unsafe fn CTL_CODE(device_type: u32, request_code: u32, method: u32, access: u32) -> u32 {
+unsafe fn ctl_code(device_type: u32, request_code: u32, method: u32, access: u32) -> u32 {
     let res = ((device_type) << 16) | ((access) << 14) | ((request_code) << 2) | (method);
     println!("device_type: {}, access: {:?}, request_code: {}, method: {}", device_type, access, request_code, method);
     println!("res: {}", res);
@@ -57,7 +56,7 @@ unsafe fn CTL_CODE(device_type: u32, request_code: u32, method: u32, access: u32
 pub fn extract_rapl_current_power(data: u64) -> String {
     let mut energy_consumed: u64 = 0;
     warn!("{}", data);
-    energy_consumed = (data & 0xFFFFFFFF)*100;
+    energy_consumed = (data & 0xFFFFFFF);
     warn!("Current power usage: {} microJ\n", energy_consumed);
     //println!("Current power usage: {} Watts\n", ((energy_consumed - energy_consumed_previous) / 1) / 1000000);
     format!("{}", energy_consumed)
@@ -121,10 +120,13 @@ impl RecordReader for CPUSocket {
                     warn!("msr_result: {:?}", msr_result);
                     let mut arr = [0u8; 8];
                     arr.copy_from_slice(&msr_result);
+                    warn!("arr: {:?}", arr);
+                    warn!("from ne bytes arr: {:?}", u64::from_ne_bytes(arr));
                     Ok(Record {
                         timestamp: current_system_time_since_epoch(),
                         unit: super::units::Unit::MicroJoule,
-                        value: crate::sensors::msr_rapl::extract_rapl_current_power(u64::from_ne_bytes(arr)),
+                        value: format!("{}", u64::from_ne_bytes(arr)),
+                        //value: crate::sensors::msr_rapl::extract_rapl_current_power(u64::from_ne_bytes(arr)),
                     })
                 } else {
                     error!("Failed to get data from send_request.");
@@ -160,7 +162,7 @@ impl Sensor for MsrRAPLSensor {
         let mut topology = Topology::new(self.driver_name.clone());
         let mut sys = System::new_all();
         sys.refresh_all();
-        let mut i = 0;
+        let i = 0;
         //TODO fix that to actually count the number of sockets
         topology.safe_add_socket(
             i,

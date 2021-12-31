@@ -199,27 +199,17 @@ impl MetricGenerator {
                 data,
                 topology,
                 hostname,
-                #[cfg(feature = "containers")]
                 containers,
                 #[cfg(target_os = "linux")]
                 qemu,
-                #[cfg(feature = "containers")]
                 containers_last_check: String::from(""),
-                #[cfg(feature = "containers")]
                 docker_version,
-                #[cfg(feature = "containers")]
                 docker_client,
-                #[cfg(feature = "containers")]
                 watch_containers,
-                #[cfg(feature = "containers")]
                 watch_docker: true,
-                #[cfg(feature = "containers")]
                 kubernetes_client,
-                #[cfg(feature = "containers")]
                 watch_kubernetes: true,
-                #[cfg(feature = "containers")]
                 pods,
-                #[cfg(feature = "containers")]
                 pods_last_check: String::from(""),
                 //kubernetes_version,
             }
