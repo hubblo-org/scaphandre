@@ -2,14 +2,14 @@ use crate::sensors::utils::current_system_time_since_epoch;
 use crate::sensors::{CPUSocket, Domain, Record, RecordReader, Sensor, Topology};
 use core::ffi::c_void;
 use std::error::Error;
-use std::mem::{size_of, size_of_val};
+use std::mem::{transmute, size_of, size_of_val};
 use sysinfo::{ProcessorExt, System, SystemExt};
 use windows::Win32::Foundation::{CloseHandle, GetLastError, HANDLE, INVALID_HANDLE_VALUE};
 use windows::Win32::Storage::FileSystem::{
     CreateFileW, FILE_ACCESS_FLAGS, FILE_FLAG_OVERLAPPED, FILE_GENERIC_READ, FILE_GENERIC_WRITE,
     FILE_READ_DATA, FILE_SHARE_READ, FILE_SHARE_WRITE, OPEN_EXISTING,
 };
-use windows::Win32::System::Ioctl::{FILE_DEVICE_UNKNOWN, METHOD_OUT_DIRECT};
+use windows::Win32::System::Ioctl::{FILE_DEVICE_UNKNOWN, METHOD_OUT_DIRECT, METHOD_BUFFERED};
 use windows::Win32::System::IO::{DeviceIoControl, OVERLAPPED};
 
 const AGENT_POWER_UNIT_CODE: u16 = 0xBEB;
@@ -18,18 +18,20 @@ const AGENT_ENERGY_STATUS_CODE: u16 = 0xBED;
 
 unsafe fn send_request(device: HANDLE, request_code: u16,
     request: *const u8, request_length: usize,
-    reply: *mut u8, reply_length: usize) -> bool {
+    reply: *mut u8, reply_length: usize) -> Result<String, String> {
     let mut len: u32 = 0;
     let len_ptr: *mut u32 = &mut len; 
 
     let slice = std::slice::from_raw_parts_mut(reply, reply_length);
+    info!("slice: {:?}", slice);
     slice.fill(0); //memset(reply, 0, replyLength);
+    info!("slice: {:?}", slice);
 
     if DeviceIoControl(
         device, // envoi 8 octet et je recoi 8 octet
         crate::sensors::msr_rapl::ctl_code(
             FILE_DEVICE_UNKNOWN, request_code as _,
-            METHOD_OUT_DIRECT, FILE_READ_DATA.0
+            METHOD_BUFFERED, FILE_READ_DATA.0
             // nouvelle version : METHOD_OUD_DIRECT devien METHOD_BUFFERED
         ),
         request as _, request_length as u32,
@@ -39,27 +41,78 @@ unsafe fn send_request(device: HANDLE, request_code: u16,
         if len != reply_length as u32 {
             error!("Got invalid answer length, Expected {}, got {}", reply_length, len);
         }
-        warn!("Device answered !");
-        true 
+        info!("Device answered");
+        Ok(String::from("Device answered !"))
     } else {
-        false
+        error!("DeviceIoControl failed");
+        Err(String::from("DeviceIoControl failed"))
     }
 }
     
 unsafe fn ctl_code(device_type: u32, request_code: u32, method: u32, access: u32) -> u32 {
     let res = ((device_type) << 16) | ((access) << 14) | ((request_code) << 2) | (method);
     println!("device_type: {}, access: {:?}, request_code: {}, method: {}", device_type, access, request_code, method);
-    println!("res: {}", res);
+    println!("control colde : {}", res);
     res
 }
 
 pub fn extract_rapl_current_power(data: u64) -> String {
     let mut energy_consumed: u64 = 0;
     warn!("{}", data);
-    energy_consumed = (data & 0xFFFFFFF);
+    energy_consumed = (data & 0xFFFFFFFF)*100;
     warn!("Current power usage: {} microJ\n", energy_consumed);
     //println!("Current power usage: {} Watts\n", ((energy_consumed - energy_consumed_previous) / 1) / 1000000);
     format!("{}", energy_consumed)
+}
+
+pub fn extract_rapl_power_units(data: u64){
+    // Intel documentation says high level bits are reserved, so ignore them
+    let new_data: u64;
+	//uint16_t time;
+    let time: u64;
+	//uint16_t power;
+    let power: u64;
+	//uint32_t energy;
+    let energy: u64;
+	//double time_units;
+    let time_units: i32; 
+	//double power_units;
+    let power_units: i32;
+	//double energy_units;
+    let energy_units: i32;
+
+	new_data = data & 0xFFFFFFFF;
+
+	//// Power units are located from bits 0 to 3, extract them
+	power = new_data & 0x0F;
+
+	//// Energy state units are located from bits 8 to 12, extract them
+	energy = (new_data >> 8) & 0x1F;
+
+	//// Time units are located from bits 16 to 19, extract them
+	time = (new_data >> 16) & 0x0F;
+
+	//// Intel documentation says: 1 / 2^power
+	//power_units = 1.0 / pow(2, static_cast<double>(power));
+    let divider = i32::pow(power as i32, 2);
+    println!("divider: {}", divider);
+	power_units = 1 / divider;
+
+	//// Intel documentation says: 1 / 2^energy
+	//energy_units = 1.0 / pow(2, static_cast<double>(energy));
+    let divider = i32::pow(energy as i32, 2);
+    println!("divider: {}", divider);
+    energy_units = 1 / divider;
+
+	//// Intel documentation says: 1 / 2^energy
+	//time_units = 1.0 / pow(2, static_cast<double>(time));
+    let divider = i32::pow(time as i32, 2);
+    println!("divider: {}", divider);
+    time_units = 1 / divider;
+
+	println!("CPU energy unit is: {} microJ\n", energy_units * 1000000);
+	println!("CPU power unit is: {} Watt(s)\n", power_units);
+	println!("CPU time unit is: {} second(s)\n", time_units);
 }
 
 pub unsafe fn get_handle(driver_name: &str) -> Result<HANDLE, String> {
@@ -78,6 +131,58 @@ pub unsafe fn get_handle(driver_name: &str) -> Result<HANDLE, String> {
     }
     info!("Device opened : {:?}", device);
     Ok(device)
+}
+
+pub unsafe fn get_rapl_energy_unit(device: HANDLE) -> Result<Record, String> {
+    warn!("ENERGY UNIT ########################### START");
+    let mut msr_result = [0u8; size_of::<u64>()];
+            
+    match send_request(device, AGENT_POWER_UNIT_CODE,
+        // nouvelle version à integrer : request_code est ignoré et request doit contenir
+        // request_code sous forme d'un char *
+        std::ptr::null(), 0,
+        msr_result.as_mut_ptr(), size_of::<u64>()
+    ) {
+        Ok(res) => {
+            warn!("msr_result: {:?}", msr_result);
+            let mut arr = [0u8; 8];
+            arr.copy_from_slice(&msr_result);
+            warn!("arr: {:?}", arr);
+            warn!("from ne bytes arr: {:?}", u64::from_ne_bytes(arr));
+            crate::sensors::msr_rapl::extract_rapl_power_units(u64::from_ne_bytes(arr));
+            //crate::sensors::msr_rapl::close_handle(device);
+            warn!("ENERGY UNIT ########################### END");
+            Ok(Record {
+                timestamp: current_system_time_since_epoch(),
+                unit: super::units::Unit::MicroJoule,
+                //value: format!("{}", u64::from_ne_bytes(arr)*100),
+                value: crate::sensors::msr_rapl::extract_rapl_current_power(u64::from_le_bytes(arr)),
+            })
+        },
+        Err(err) => {
+            error!("Failed to get data from send_request.");
+            //crate::sensors::msr_rapl::close_handle(device);
+            warn!("ENERGY UNIT ########################### END");
+            Err(String::from(""))
+        }
+    }
+}
+
+pub unsafe fn close_handle(handle: HANDLE) {
+    let res = CloseHandle(handle);
+    if res.as_bool() {
+        debug!("Device closed.")
+    } else {
+        error!("Failed to close device.");
+    }
+}
+
+pub fn convert(value: [u16; 4]) -> u64 {
+    let [a, b] = value[0].to_le_bytes();
+    let [c, d] = value[1].to_le_bytes();
+    let [e, f] = value[2].to_le_bytes();
+    let [g, h] = value[3].to_le_bytes();
+    u64::from_le_bytes([a, b, c, d, e, f, g, h])
 }
 
 pub struct MsrRAPLSensor {
@@ -110,11 +215,33 @@ impl RecordReader for CPUSocket {
         unsafe {
             if let Ok(device) = crate::sensors::msr_rapl::get_handle(&self.source) {
                 let mut msr_result = [0u8; size_of::<u64>()];
+
+                //if let Ok(res) = crate::sensors::msr_rapl::get_rapl_energy_unit(device) {
+                //    warn!("SUCCESS");
+                //} else {
+                //    warn!("FAILURE");
+                //}
                         
-                if send_request(device, AGENT_ENERGY_STATUS_CODE,
+                warn!("AGENT_ENERGY_STATUS_CODE: {}", AGENT_ENERGY_STATUS_CODE);
+                //let src: [u8; 8] = [0xBE, 0xD, 0, 0, 0, 0, 0, 0];
+                let src = ctl_code(FILE_DEVICE_UNKNOWN, AGENT_ENERGY_STATUS_CODE as _,
+                    METHOD_BUFFERED, FILE_READ_DATA.0);
+                warn!("src: {:?}",src);
+                //let request: u64 = convert(src);
+                //warn!("request = AGENT_ENERGY... : {}", request);
+                //let ptr = &src.as_bytes()[0] as *const u8;
+                let ptr = 0 as *const u8;
+                warn!("&request: {:?} ptr (as *const u8): {:?}", &src, ptr);
+                let b: [u8; 8];
+                warn!("deref and reading: {:?}", *ptr);
+                //b = transmute(ptr);
+                //println!(" READ : {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
+
+                //warn!("deref and reading: {:?}", *((ptr + 1) as *const u8));
+                if let Ok(res) = send_request(device, AGENT_ENERGY_STATUS_CODE,
                     // nouvelle version à integrer : request_code est ignoré et request doit contenir
                     // request_code sous forme d'un char *
-                    std::ptr::null(), 0,
+                    ptr, 7,
                     msr_result.as_mut_ptr(), size_of::<u64>()
                 ) {
                     warn!("msr_result: {:?}", msr_result);
@@ -122,14 +249,16 @@ impl RecordReader for CPUSocket {
                     arr.copy_from_slice(&msr_result);
                     warn!("arr: {:?}", arr);
                     warn!("from ne bytes arr: {:?}", u64::from_ne_bytes(arr));
+                    crate::sensors::msr_rapl::close_handle(device);
                     Ok(Record {
                         timestamp: current_system_time_since_epoch(),
                         unit: super::units::Unit::MicroJoule,
-                        value: format!("{}", u64::from_ne_bytes(arr)),
-                        //value: crate::sensors::msr_rapl::extract_rapl_current_power(u64::from_ne_bytes(arr)),
+                        //value: format!("{}", u64::from_ne_bytes(arr)*100),
+                        value: crate::sensors::msr_rapl::extract_rapl_current_power(u64::from_le_bytes(arr)),
                     })
                 } else {
                     error!("Failed to get data from send_request.");
+                    crate::sensors::msr_rapl::close_handle(device);
                     Ok(Record {
                         timestamp: current_system_time_since_epoch(),
                         unit: super::units::Unit::MicroJoule,
