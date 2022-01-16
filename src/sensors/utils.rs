@@ -4,7 +4,7 @@ use regex::Regex;
 #[cfg(feature = "containers")]
 use std::collections::HashMap;
 #[cfg(target_os = "windows")]
-use sysinfo::{Process, ProcessExt, System, SystemExt, get_current_pid};
+use sysinfo::{Process, ProcessExt, ProcessStatus, System, SystemExt, get_current_pid};
 //use std::error::Error;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
@@ -112,8 +112,8 @@ impl IStat {
         }
     }
 
-    #[cfg(not(target_os = "linux"))]
-    fn from_windows_process_stat() -> IStat {
+    #[cfg(target_os = "windows")]
+    fn from_windows_process_stat(process: &Process) -> IStat {
         IStat {
             blocked: 0,
             cguest_time: Some(0),
@@ -245,7 +245,7 @@ impl IProcess {
             owner: 0,
             comm: String::from(process.exe().to_str().unwrap()),
             cmdline: process.cmd().to_vec(),
-            stat: None,
+            stat: Some(IStat::from_windows_process_stat(&process)),
         }
     }
 
@@ -350,7 +350,7 @@ pub fn page_size() -> Result<i64, String> {
     {
         res = Ok(procfs::page_size().unwrap())
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "windows")]
     {
         res = Ok(4096)
     }
@@ -362,6 +362,8 @@ pub fn page_size() -> Result<i64, String> {
 pub struct ProcessTracker {
     /// Each subvector keeps track of records for a given PID.
     pub procs: Vec<Vec<ProcessRecord>>,
+    /// Number of CPU cores to deal with
+    pub nb_cores: usize,
     /// Maximum number of ProcessRecord instances that scaphandre is allowed to
     /// store, per PID (thus, for each subvector).
     pub max_records_per_process: u16,
@@ -388,6 +390,7 @@ impl Clone for ProcessTracker {
             regex_cgroup_kubernetes: self.regex_cgroup_kubernetes.clone(),
             #[cfg(feature = "containers")]
             regex_cgroup_containerd: self.regex_cgroup_containerd.clone(),
+            nb_cores: self.nb_cores
         }
     }
 }
@@ -408,22 +411,22 @@ impl ProcessTracker {
             let regex_cgroup_docker = Regex::new(r"^/docker/.*$").unwrap();
             let regex_cgroup_kubernetes = Regex::new(r"^/kubepods.*$").unwrap();
             let regex_cgroup_containerd = Regex::new("/system.slice/containerd.service").unwrap();
-            ProcessTracker {
-                procs: vec![],
-                max_records_per_process,
-                #[cfg(target_os = "windows")]
-                sysinfo: System::new_all(),
-                regex_cgroup_docker,
-                regex_cgroup_kubernetes,
-                regex_cgroup_containerd,
-            }
         }
-        #[cfg(not(feature = "containers"))]
         ProcessTracker {
             procs: vec![],
             max_records_per_process,
             #[cfg(target_os = "windows")]
             sysinfo: System::new_all(),
+            #[cfg(feature = "containers")]
+            regex_cgroup_docker,
+            #[cfg(feature = "containers")]
+            regex_cgroup_kubernetes,
+            #[cfg(feature = "containers")]
+            regex_cgroup_containerd,
+            #[cfg(target_os="windows")]
+            nb_cores: System::new_all().processors().len(),
+            #[cfg(target_os="linux")]
+            nb_cores: 0, // TODO implement
         }
     }
 
@@ -548,6 +551,12 @@ impl ProcessTracker {
             if !p.is_empty() {
                 //TODO implement
                 // clippy will ask you to remove mut from res, but you just need to implement to fix that
+                if let Some(sysinfo_p) = self.sysinfo.process(p[0].process.pid as usize) {
+                    let status = sysinfo_p.status();
+                    if status != ProcessStatus::Dead && status != ProcessStatus::Stop {
+                        res.push(p);
+                    }
+                }
             }
         }
         debug!("End of get alive processes.");
@@ -759,10 +768,12 @@ impl ProcessTracker {
         None
     }
 
+    #[cfg(target_os="linux")]
     /// Returns the CPU time consumed between two measure iteration
     fn get_cpu_time_consumed(&self, p: &[ProcessRecord]) -> u64 {
         let last_time = p.first().unwrap().total_time_jiffies();
         let previous_time = p.get(1).unwrap().total_time_jiffies();
+        //warn!("last_time: {} previous_time: {}", last_time, previous_time);
         let mut diff = 0;
         if previous_time <= last_time {
             diff = last_time - previous_time;
@@ -770,22 +781,60 @@ impl ProcessTracker {
         diff
     }
 
+    #[cfg(target_os="windows")]
+    pub fn get_cpu_usage_percentage(&self, pid: usize, nb_cores: usize) -> f32 {
+        if let Some(p) = self.sysinfo.process(pid) {
+            p.cpu_usage() / nb_cores as f32
+        } else {
+            0.0
+        }
+    }
+
     /// Returns processes sorted by the highest consumers in first
     pub fn get_top_consumers(&self, top: u16) -> Vec<(IProcess, u64)> {
         let mut consumers: Vec<(IProcess, u64)> = vec![];
         for p in &self.procs {
             if p.len() > 1 {
-                let diff = self.get_cpu_time_consumed(p);
-                if consumers
-                    .iter()
-                    .filter(|x| ProcessRecord::new(x.0.to_owned()).total_time_jiffies() > diff)
-                    .count()
-                    < top as usize
-                {
-                    consumers.push((p.last().unwrap().process.clone(), diff));
-                    consumers.sort_by(|x, y| y.1.cmp(&x.1));
-                    if consumers.len() > top as usize {
-                        consumers.pop();
+                #[cfg(target_os="linux")] {
+                    let diff = self.get_cpu_time_consumed(p);
+                    if consumers
+                        .iter()
+                        .filter(|x| ProcessRecord::new(x.0.to_owned()).total_time_jiffies() > diff)
+                        .count()
+                        < top as usize
+                    {
+                        consumers.push((p.last().unwrap().process.clone(), diff));
+                        consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                        if consumers.len() > top as usize {
+                            consumers.pop();
+                        }
+                    }
+                }
+                #[cfg(target_os="windows")] {
+                    let diff = self.get_cpu_usage_percentage(p.first().unwrap().process.pid as _, self.nb_cores);
+                    if consumers
+                        .iter()
+                        .filter(|x| {
+                            if let Some(p) = self.sysinfo.process(x.0.pid as _) {
+                                return p.cpu_usage() > diff
+                            }
+                            false
+                        })
+                        .count()
+                        < top as usize
+                    {
+                        let pid = p.first().unwrap().process.pid ;
+                        if let Some(sysinfo_process) = self.sysinfo.process(pid as _) {
+                            let new_consumer = IProcess::from_windows_process(sysinfo_process);
+                            consumers.push((new_consumer, (diff*1000.0) as u64));
+                            consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                            if consumers.len() > top as usize {
+                                consumers.pop();
+                            }
+                        }
+                        else {
+                            warn!("Couldn't get process info for {}", pid);
+                        }
                     }
                 }
             }
@@ -798,14 +847,21 @@ impl ProcessTracker {
         let mut consumers: Vec<(IProcess, u64)> = vec![];
         for p in &self.procs {
             if p.len() > 1 {
-                let diff = self.get_cpu_time_consumed(p);
-                #[cfg(target_os = "linux")]
-                let process_exe = p.last().unwrap().process.exe().unwrap_or_default();
-                #[cfg(target_os = "windows")]
-                let process_exe = p.last().unwrap().process.exe(self).unwrap_or_default();
-                if regex_filter.is_match(process_exe.to_str().unwrap_or_default()) {
-                    consumers.push((p.last().unwrap().process.clone(), diff));
-                    consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                #[cfg(target_os = "linux")]  {
+                    let diff = self.get_cpu_time_consumed(p);
+                    let process_exe = p.last().unwrap().process.exe().unwrap_or_default();
+                    if regex_filter.is_match(process_exe.to_str().unwrap_or_default()) {
+                        consumers.push((p.last().unwrap().process.clone(), diff));
+                        consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                    }
+                }
+                #[cfg(target_os = "windows")] {
+                    let diff = self.get_cpu_usage_percentage(p.first().unwrap().process.pid as _, self.nb_cores);
+                    let process_exe = p.last().unwrap().process.exe(self).unwrap_or_default();
+                    if regex_filter.is_match(process_exe.to_str().unwrap_or_default()) {
+                        consumers.push((p.last().unwrap().process.clone(), (diff*1000.0) as u64));
+                        consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                    }
                 }
             }
         }
@@ -916,6 +972,7 @@ impl ProcessRecord {
 
     // Returns the total CPU time consumed by this process since its creation
     pub fn total_time_jiffies(&self) -> u64 {
+        #[cfg(target_os="linux")]
         if let Some(stat) = &self.process.stat {
             trace!(
                 "ProcessRecord: stime {} utime {}", //cutime {} cstime {} guest_time {} cguest_time {} delayacct_blkio_ticks {} itrealvalue {}",
@@ -923,7 +980,12 @@ impl ProcessRecord {
                 stat.utime //, cutime, cstime, guest_time, cguest_time, delayacct_blkio_ticks, itrealvalue
             );
             return stat.stime + stat.utime;
+        } else {
+            warn!("No IStat !");
         }
+
+        //#[cfg(target_os="windows")]
+        //let usage = &self.sysinfo.
         //let cutime = self.process.stat.cutime as u64;
         //let cstime = self.process.stat.cstime as u64;
         //let guest_time = self.process.stat.guest_time.unwrap_or_default();

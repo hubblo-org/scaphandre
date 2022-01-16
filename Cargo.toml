@@ -24,6 +24,7 @@ serde_json = { version = "1.0", optional = true }
 warp10 = { version = "1.0.0", optional = true }
 rand = { version = "0.7.3" }
 time = "0.2.25"
+lazy_static = "1.4.0"
 colored = "2.0.0"
 chrono = "0.4.19"
 docker-sync = { version = "0.1.2", optional = true }
