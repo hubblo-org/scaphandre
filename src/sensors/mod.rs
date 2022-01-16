@@ -20,6 +20,7 @@ use std::{fmt, fs};
 use sysinfo::{ProcessExt, ProcessorExt, System, SystemExt};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 
+
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
 /// Sensor trait, the Sensor API.
 pub trait Sensor {
@@ -59,7 +60,7 @@ pub struct Topology {
     /// Sorted list of all domains names
     pub domains_names: Option<Vec<String>>,
     ///
-    source: String,
+    sensor_data: HashMap<String, String>,
 }
 
 impl RecordGenerator for Topology {
@@ -139,13 +140,13 @@ impl RecordGenerator for Topology {
 
 impl Default for Topology {
     fn default() -> Self {
-        Self::new(String::from(""))
+        Self::new(HashMap::new())
     }
 }
 
 impl Topology {
     /// Instanciates Topology and returns the instance
-    pub fn new(source: String, ) -> Topology {
+    pub fn new(sensor_data: HashMap<String, String>) -> Topology {
         Topology {
             sockets: vec![],
             proc_tracker: ProcessTracker::new(5),
@@ -153,7 +154,7 @@ impl Topology {
             record_buffer: vec![],
             buffer_max_kbytes: 1,
             domains_names: None,
-            source,
+            sensor_data,
         }
     }
 
@@ -186,7 +187,9 @@ impl Topology {
             }
         }
         #[cfg(target_os = "windows")]
-        {}
+        {
+            warn!("generate_cpu_info is not implemented yet on this OS.");
+        }
         Ok(cores)
     }
 
@@ -199,7 +202,7 @@ impl Topology {
         attributes: Vec<Vec<HashMap<String, String>>>,
         counter_uj_path: String,
         buffer_max_kbytes: u16,
-        source: String,
+        sensor_data: HashMap<String, String>,
     ) {
         if !self.sockets.iter().any(|s| s.id == socket_id) {
             let socket = CPUSocket::new(
@@ -208,7 +211,7 @@ impl Topology {
                 attributes,
                 counter_uj_path,
                 buffer_max_kbytes,
-                source,
+                sensor_data,
             );
             self.sockets.push(socket);
         }
@@ -251,7 +254,7 @@ impl Topology {
         name: &str,
         uj_counter: &str,
         buffer_max_kbytes: u16,
-        source: String,
+        sensor_data: HashMap<String,String>,
     ) {
         let iterator = self.sockets.iter_mut();
         for socket in iterator {
@@ -261,7 +264,7 @@ impl Topology {
                     String::from(name),
                     String::from(uj_counter),
                     buffer_max_kbytes,
-                    source.clone(),
+                    sensor_data.clone(),
                 ));
             }
         }
@@ -351,7 +354,6 @@ impl Topology {
                 .map(IProcess::from_windows_process)
                 .collect::<Vec<_>>();
             for p in current_procs {
-                debug!("Trying to track process with pid {}", &p.pid);
                 match pt.add_process_record(p) {
                     Ok(_) => {}
                     Err(msg) => {
@@ -567,26 +569,42 @@ impl Topology {
         let tracker = self.get_proc_tracker();
         if let Some(recs) = tracker.find_records(pid) {
             if recs.len() > 1 {
-                let last = recs.first().unwrap();
-                let previous = recs.get(1).unwrap();
-                if let Some(topo_stats_diff) = self.get_stats_diff() {
-                    //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
-                    let process_total_time =
-                        last.total_time_jiffies() - previous.total_time_jiffies();
-                    let topo_total_time = topo_stats_diff.total_time_jiffies();
-                    let usage_percent = process_total_time as f64 / topo_total_time as f64;
+                #[cfg(target_os="linux")] {
+                    let last = recs.first().unwrap();
+                    let previous = recs.get(1).unwrap();
+                    if let Some(topo_stats_diff) = self.get_stats_diff() {
+                        //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
+                        let process_total_time =
+                            last.total_time_jiffies() - previous.total_time_jiffies();
+                        let topo_total_time = topo_stats_diff.total_time_jiffies();
+                        let usage_percent = process_total_time as f64 / topo_total_time as f64;
+                        let topo_conso = self.get_records_diff_power_microwatts();
+                        if let Some(val) = &topo_conso {
+                            //trace!("topo conso: {}", val);
+                            let val_f64 = val.value.parse::<f64>().unwrap();
+                            //trace!("val f64: {}", val_f64);
+                            let result = (val_f64 * usage_percent) as u64;
+                            //trace!("result: {}", result);
+                            return Some(Record::new(
+                                last.timestamp,
+                                result.to_string(),
+                                units::Unit::MicroWatt,
+                            ));
+                        }
+                    }
+                }
+                #[cfg(target_os="windows")] {
+                    let last = recs.first().unwrap();
+                    let process_cpu_percentage = tracker.get_cpu_usage_percentage(pid as usize, tracker.nb_cores);
                     let topo_conso = self.get_records_diff_power_microwatts();
-                    if let Some(val) = &topo_conso {
-                        //trace!("topo conso: {}", val);
-                        let val_f64 = val.value.parse::<f64>().unwrap();
-                        //trace!("val f64: {}", val_f64);
-                        let result = (val_f64 * usage_percent) as u64;
-                        //trace!("result: {}", result);
+                    if let Some(conso) = &topo_conso {
+                        let conso_f64 = conso.value.parse::<f64>().unwrap();
+                        let result = (conso_f64 * process_cpu_percentage as f64) as u64;
                         return Some(Record::new(
                             last.timestamp,
                             result.to_string(),
-                            units::Unit::MicroWatt,
-                        ));
+                            units::Unit::MicroWatt
+                        ))
                     }
                 }
             }
@@ -644,7 +662,7 @@ pub struct CPUSocket {
     /// Usage statistics records stored for this socket.
     pub stat_buffer: Vec<CPUStat>,
     ///
-    source: String,
+    sensor_data: HashMap<String, String>,
 }
 
 impl RecordGenerator for CPUSocket {
@@ -716,7 +734,7 @@ impl CPUSocket {
         attributes: Vec<Vec<HashMap<String, String>>>,
         counter_uj_path: String,
         buffer_max_kbytes: u16,
-        source: String,
+        sensor_data: HashMap<String,String>,
     ) -> CPUSocket {
         CPUSocket {
             id,
@@ -727,7 +745,7 @@ impl CPUSocket {
             buffer_max_kbytes,
             cpu_cores: vec![], // cores are instantiated on a later step
             stat_buffer: vec![],
-            source,
+            sensor_data,
         }
     }
 
@@ -984,7 +1002,7 @@ pub struct Domain {
     /// Maximum size of record_buffer, in kilobytes
     pub buffer_max_kbytes: u16,
     ///
-    source: String,
+    sensor_data: HashMap<String,String>,
 }
 impl RecordGenerator for Domain {
     /// Computes a measurement of energy comsumption for this CPU domain,
@@ -1039,7 +1057,7 @@ impl Domain {
         name: String,
         counter_uj_path: String,
         buffer_max_kbytes: u16,
-        source: String,
+        sensor_data: HashMap<String,String>,
     ) -> Domain {
         Domain {
             id,
@@ -1047,7 +1065,7 @@ impl Domain {
             counter_uj_path,
             record_buffer: vec![],
             buffer_max_kbytes,
-            source,
+            sensor_data,
         }
     }
 

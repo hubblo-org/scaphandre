@@ -3,6 +3,7 @@ use crate::sensors::{CPUSocket, Domain, Record, RecordReader, Sensor, Topology};
 use core::ffi::c_void;
 use std::error::Error;
 use std::mem::{transmute, size_of, size_of_val};
+use std::collections::HashMap;
 use sysinfo::{ProcessorExt, System, SystemExt};
 use windows::Win32::Foundation::{CloseHandle, GetLastError, HANDLE, INVALID_HANDLE_VALUE};
 use windows::Win32::Storage::FileSystem::{
@@ -12,9 +13,18 @@ use windows::Win32::Storage::FileSystem::{
 use windows::Win32::System::Ioctl::{FILE_DEVICE_UNKNOWN, METHOD_OUT_DIRECT, METHOD_BUFFERED};
 use windows::Win32::System::IO::{DeviceIoControl, OVERLAPPED};
 
-const AGENT_POWER_UNIT_CODE: u16 = 0x606;
-const AGENT_POWER_LIMIT_CODE: u16 = 0x610;
-const AGENT_ENERGY_STATUS_CODE: u16 = 0x611;
+const MSR_RAPL_POWER_UNIT: u16 = 0x606; // 
+const MSR_PKG_POWER_LIMIT: u16 = 0x610; // PKG RAPL Power Limit Control (R/W) See Section 14.7.3, Package RAPL Domain. 
+const MSR_PKG_ENERGY_STATUS: u16 = 0x611;
+const MSR_PKG_POWER_INFO: u16 = 0x614;
+const MSR_DRAM_ENERGY_STATUS: u16 = 0x619;
+const MSR_PP0_ENERGY_STATUS: u16 = 0x639; //PP0 Energy Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
+const MSR_PP0_PERF_STATUS: u16 = 0x63b; // PP0 Performance Throttling Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
+const MSR_PP0_POLICY: u16 = 0x63a; //PP0 Balance Policy (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
+const MSR_PP0_POWER_LIMIT: u16 = 0x638; // PP0 RAPL Power Limit Control (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
+const MSR_PP1_ENERGY_STATUS: u16 = 0x641; // PP1 Energy Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
+const MSR_PP1_POLICY: u16 = 0x642; // PP1 Balance Policy (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
+const MSR_PP1_POWER_LIMIT: u16 = 0x640; // PP1 RAPL Power Limit Control (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains. 
 
     
 unsafe fn ctl_code(device_type: u32, request_code: u32, method: u32, access: u32) -> u32 {
@@ -24,64 +34,6 @@ unsafe fn ctl_code(device_type: u32, request_code: u32, method: u32, access: u32
     res
 }
 
-pub fn extract_rapl_current_power(data: u64) -> String {
-    let mut energy_consumed: u64 = 0;
-    warn!("{}", data);
-    energy_consumed = (data & 0xFFFFFFFF)*100;
-    warn!("Current power usage: {} microJ\n", energy_consumed);
-    //println!("Current power usage: {} Watts\n", ((energy_consumed - energy_consumed_previous) / 1) / 1000000);
-    format!("{}", energy_consumed)
-}
-
-pub fn extract_rapl_power_units(data: u64){
-    // Intel documentation says high level bits are reserved, so ignore them
-    let new_data: u64;
-	//uint16_t time;
-    let time: u64;
-	//uint16_t power;
-    let power: u64;
-	//uint32_t energy;
-    let energy: u64;
-	//double time_units;
-    let time_units: i32; 
-	//double power_units;
-    let power_units: i32;
-	//double energy_units;
-    let energy_units: i32;
-
-	new_data = data & 0xFFFFFFFF;
-
-	//// Power units are located from bits 0 to 3, extract them
-	power = new_data & 0x0F;
-
-	//// Energy state units are located from bits 8 to 12, extract them
-	energy = (new_data >> 8) & 0x1F;
-
-	//// Time units are located from bits 16 to 19, extract them
-	time = (new_data >> 16) & 0x0F;
-
-	//// Intel documentation says: 1 / 2^power
-	//power_units = 1.0 / pow(2, static_cast<double>(power));
-    let divider = i32::pow(power as i32, 2);
-    println!("divider: {}", divider);
-	power_units = 1 / divider;
-
-	//// Intel documentation says: 1 / 2^energy
-	//energy_units = 1.0 / pow(2, static_cast<double>(energy));
-    let divider = i32::pow(energy as i32, 2);
-    println!("divider: {}", divider);
-    energy_units = 1 / divider;
-
-	//// Intel documentation says: 1 / 2^energy
-	//time_units = 1.0 / pow(2, static_cast<double>(time));
-    let divider = i32::pow(time as i32, 2);
-    println!("divider: {}", divider);
-    time_units = 1 / divider;
-
-	println!("CPU energy unit is: {} microJ\n", energy_units * 1000000);
-	println!("CPU power unit is: {} Watt(s)\n", power_units);
-	println!("CPU time unit is: {} second(s)\n", time_units);
-}
 
 pub unsafe fn get_handle(driver_name: &str) -> Result<HANDLE, String> {
     let device: HANDLE;
@@ -101,41 +53,6 @@ pub unsafe fn get_handle(driver_name: &str) -> Result<HANDLE, String> {
     Ok(device)
 }
 
-pub unsafe fn get_rapl_energy_unit(device: HANDLE) -> Result<Record, String> {
-    warn!("ENERGY UNIT ########################### START");
-    let mut msr_result = [0u8; size_of::<u64>()];
-            
-    match send_request(device, AGENT_POWER_UNIT_CODE,
-        // nouvelle version à integrer : request_code est ignoré et request doit contenir
-        // request_code sous forme d'un char *
-        std::ptr::null(), 0,
-        msr_result.as_mut_ptr(), size_of::<u64>()
-    ) {
-        Ok(res) => {
-            warn!("msr_result: {:?}", msr_result);
-            let mut arr = [0u8; 8];
-            arr.copy_from_slice(&msr_result);
-            warn!("arr: {:?}", arr);
-            warn!("from ne bytes arr: {:?}", u64::from_ne_bytes(arr));
-            crate::sensors::msr_rapl::extract_rapl_power_units(u64::from_ne_bytes(arr));
-            //crate::sensors::msr_rapl::close_handle(device);
-            warn!("ENERGY UNIT ########################### END");
-            Ok(Record {
-                timestamp: current_system_time_since_epoch(),
-                unit: super::units::Unit::MicroJoule,
-                //value: format!("{}", u64::from_ne_bytes(arr)*100),
-                value: crate::sensors::msr_rapl::extract_rapl_current_power(u64::from_le_bytes(arr)),
-            })
-        },
-        Err(err) => {
-            error!("Failed to get data from send_request.");
-            //crate::sensors::msr_rapl::close_handle(device);
-            warn!("ENERGY UNIT ########################### END");
-            Err(String::from(""))
-        }
-    }
-}
-
 pub unsafe fn close_handle(handle: HANDLE) {
     let res = CloseHandle(handle);
     if res.as_bool() {
@@ -145,27 +62,159 @@ pub unsafe fn close_handle(handle: HANDLE) {
     }
 }
 
-pub fn convert(value: [u16; 4]) -> u64 {
-    let [a, b] = value[0].to_le_bytes();
-    let [c, d] = value[1].to_le_bytes();
-    let [e, f] = value[2].to_le_bytes();
-    let [g, h] = value[3].to_le_bytes();
-    u64::from_le_bytes([a, b, c, d, e, f, g, h])
-}
-
 pub struct MsrRAPLSensor {
     driver_name: String,
+    power_unit: f64,
+    energy_unit: f64,
+    time_unit: f64
+}
+
+pub fn extract_rapl_power_units(data: u64) {
+    // Intel documentation says high level bits are reserved, so ignore them
+    let new_data: u32;
+	//uint16_t time;
+    let time: u32;
+	//uint16_t power;
+    let power: u32;
+	//uint32_t energy;
+    let energy: u32;
+	//double time_units;
+    let time_units: f64; 
+	//double power_units;
+    let power_units: f64;
+	//double energy_units;
+    let energy_units: f64;
+
+	new_data = (data & 0xFFFFFFFF) as u32;
+    warn!("data: {:b} new_data: {:b}", data, new_data);
+
+	//// Power units are located from bits 0 to 3, extract them
+	power = new_data & 0x0F;
+    warn!("power raw : {:b}", power);
+    warn!("power raw : {}", power);
+
+	//// Energy state units are located from bits 8 to 12, extract them
+	energy = (new_data >> 8) & 0x1F;
+    warn!("energy raw : {:b}", energy);
+    warn!("energy raw : {}", energy);
+
+	//// Time units are located from bits 16 to 19, extract them
+	time = (new_data >> 16) & 0x0F;
+    warn!("time raw : {:b}", time);
+    warn!("time raw : {}", time);
+
+	//// Intel documentation says: 1 / 2^power
+    let divider= i64::pow(2, power);
+    warn!("divider: {}", divider);
+	power_units = 1.0 / divider as f64;
+    warn!("power unit : {:.8}", power_units);
+
+	//// Intel documentation says: 1 / 2^energy
+    let divider = i64::pow(2, energy);
+    warn!("divider: {}", divider);
+    energy_units = 1.0 / divider as f64;
+    warn!("energy unit : {:.8}", energy_units);
+
+	//// Intel documentation says: 1 / 2^energy
+    let divider = i64::pow(2, time);
+    warn!("divider: {}", divider);
+    time_units = 1.0 / divider as f64;
+    warn!("time unit : {:.8}", energy_units);
+
+	println!("CPU energy unit is: {} microJ\n", energy_units);
+	println!("CPU power unit is: {} Watt(s)\n", power_units);
+	println!("CPU time unit is: {} second(s)\n", time_units);
 }
 
 impl MsrRAPLSensor {
     pub fn new() -> MsrRAPLSensor {
        
         let driver_name = "\\\\.\\ScaphandreDriver";
-        
+
+        let mut power_unit: f64 = 1.0;
+        let mut energy_unit: f64 = 1.0;
+        let mut time_unit: f64 = 1.0;
+
+        unsafe {
+            if let Ok(device) = get_handle(driver_name) {
+                let mut msr_result: u64 = 0;
+                let mut ptr_result = &mut msr_result as *mut u64;
+                let mut src = MSR_RAPL_POWER_UNIT as u64;
+                let ptr = &src as *const u64;
+                if let Ok(res) = send_request(device, MSR_RAPL_POWER_UNIT,
+                    ptr, 8, ptr_result, size_of::<u64>()) {
+                    power_unit = MsrRAPLSensor::extract_rapl_power_unit(msr_result);
+                    energy_unit = MsrRAPLSensor::extract_rapl_energy_unit(msr_result);
+                    time_unit = MsrRAPLSensor::extract_rapl_time_unit(msr_result);
+                } else {
+                    warn!("Couldn't get RAPL units !");
+                }
+
+                close_handle(device);
+            }
+        }
+
         MsrRAPLSensor {
             driver_name: String::from(driver_name),
+            energy_unit,
+            power_unit,
+            time_unit
         }
     }    
+
+    pub fn extract_rapl_power_unit(data: u64) -> f64 {
+        let new_data: u32;
+        let power: u32;
+
+        // Intel documentation says high level bits are reserved, so ignore them
+        new_data = (data & 0xFFFFFFFF) as u32;
+	    //// Power units are located from bits 0 to 3, extract them
+	    power = new_data & 0x0F;
+
+	    //// Intel documentation says: 1 / 2^power
+        let divider= i64::pow(2, power);
+
+	    1.0 / divider as f64
+    }
+    pub fn extract_rapl_energy_unit(data: u64) -> f64 {
+        let new_data: u32;
+        let energy: u32;
+
+        // Intel documentation says high level bits are reserved, so ignore them
+        new_data = (data & 0xFFFFFFFF) as u32;
+	    //// Energy state units are located from bits 8 to 12, extract them
+	    energy = (new_data >> 8) & 0x1F;
+
+	    //// Intel documentation says: 1 / 2^power
+        let divider= i64::pow(2, energy);
+
+	    1.0 / divider as f64
+    }
+    pub fn extract_rapl_time_unit(data: u64) -> f64 {
+        let new_data: u32;
+        let time: u32;
+
+        // Intel documentation says high level bits are reserved, so ignore them
+        new_data = (data & 0xFFFFFFFF) as u32;
+	    //// Time units are located from bits 16 to 19, extract them
+	    time = (new_data >> 16) & 0x0F;
+
+	    //// Intel documentation says: 1 / 2^power
+        let divider= i64::pow(2, time);
+
+	    1.0 / divider as f64
+    }
+
+    pub fn extract_rapl_current_power(data: u64, energy_unit: f64) -> String {
+        let mut energy_consumed: f64 = 0.0;
+        warn!("data : {}", data);
+        warn!("OxFFFFFFFF {:b}", 0xFFFFFFF);
+        energy_consumed = ((data & 0xFFFFFFFF) as f64) * energy_unit * 1000000.0 ;
+        warn!("Current power usage: {} microJ\n", energy_consumed);
+        //println!("Current power usage: {} Watts\n", ((energy_consumed - energy_consumed_previous) / 1) / 1000000);
+        format!("{}", energy_consumed as u64)
+    }
+
 }
 
 impl RecordReader for Topology {
@@ -181,7 +230,7 @@ impl RecordReader for Topology {
 
 unsafe fn send_request(device: HANDLE, request_code: u16,
     request: *const u64, request_length: usize,
-    reply: *mut u8, reply_length: usize) -> Result<String, String> {
+    reply: *mut u64, reply_length: usize) -> Result<String, String> {
     let mut len: u32 = 0;
     let len_ptr: *mut u32 = &mut len; 
 
@@ -209,42 +258,41 @@ unsafe fn send_request(device: HANDLE, request_code: u16,
 impl RecordReader for CPUSocket {
     fn read_record(&self) -> Result<Record, Box<dyn Error>> {
         unsafe {
-            if let Ok(device) = crate::sensors::msr_rapl::get_handle(&self.source) {
-                let mut msr_result = [0u8; size_of::<u64>()];
-
-                warn!("AGENT_ENERGY_STATUS_CODE: {:b}", AGENT_ENERGY_STATUS_CODE);
-
-                //1100 0010  0010 0000  0000 0000  0000 0000  0000 0000  0000 0000  0000 0000 0000 0000
-                //let src = (AGENT_ENERGY_STATUS_CODE as u64) << 47;
-                let src = AGENT_ENERGY_STATUS_CODE as u64;
-                warn!("src: {:x}",src);
-                warn!("src: {:b}",src);
-
+            let driver_name = self.sensor_data.get("DRIVER_NAME").unwrap();
+            if let Ok(device) = get_handle(driver_name) {
+                let mut msr_result: u64 = 0;
+                let mut ptr_result = &mut msr_result as *mut u64;
+                let mut src = MSR_RAPL_POWER_UNIT as u64;
                 let ptr = &src as *const u64;
-                warn!("*ptr: {}", *ptr);
-                warn!("&request: {:?} ptr (as *const u8): {:?}", &src, ptr);
 
-                if let Ok(res) = send_request(device, AGENT_ENERGY_STATUS_CODE,
+                src = MSR_PKG_ENERGY_STATUS as u64;
+                trace!("src: {:x}",src);
+                trace!("src: {:b}",src);
+
+                trace!("*ptr: {}", *ptr);
+                trace!("&request: {:?} ptr (as *const u8): {:?}", &src, ptr);
+
+                if let Ok(res) = send_request(device, MSR_PKG_ENERGY_STATUS,
                     // nouvelle version à integrer : request_code est ignoré et request doit contenir
                     // request_code sous forme d'un char *
                     ptr, 8,
-                    msr_result.as_mut_ptr(), size_of::<u64>()
+                    ptr_result, size_of::<u64>()
                 ) {
                     warn!("msr_result: {:?}", msr_result);
-                    let mut arr = [0u8; 8];
-                    arr.copy_from_slice(&msr_result);
-                    warn!("arr: {:?}", arr);
-                    warn!("from ne bytes arr: {:?}", u64::from_ne_bytes(arr));
-                    crate::sensors::msr_rapl::close_handle(device);
+                    warn!("msr_result: {:b}", msr_result);
+
+                    close_handle(device);
+
+                    let energy_unit = self.sensor_data.get("ENERGY_UNIT").unwrap().parse::<f64>().unwrap();
+
                     Ok(Record {
                         timestamp: current_system_time_since_epoch(),
                         unit: super::units::Unit::MicroJoule,
-                        //value: format!("{}", u64::from_ne_bytes(arr)*100),
-                        value: crate::sensors::msr_rapl::extract_rapl_current_power(u64::from_le_bytes(arr)),
+                        value: MsrRAPLSensor::extract_rapl_current_power(msr_result, energy_unit),
                     })
                 } else {
                     error!("Failed to get data from send_request.");
-                    crate::sensors::msr_rapl::close_handle(device);
+                    close_handle(device);
                     Ok(Record {
                         timestamp: current_system_time_since_epoch(),
                         unit: super::units::Unit::MicroJoule,
@@ -274,7 +322,13 @@ impl RecordReader for Domain {
 
 impl Sensor for MsrRAPLSensor {
     fn generate_topology(&self) -> Result<Topology, Box<dyn Error>> {
-        let mut topology = Topology::new(self.driver_name.clone());
+        let mut sensor_data = HashMap::new();
+        sensor_data.insert(String::from("DRIVER_NAME"), self.driver_name.clone());
+        sensor_data.insert(String::from("ENERGY_UNIT"), self.energy_unit.to_string());
+        sensor_data.insert(String::from("POWER_UNIT"), self.power_unit.to_string());
+        sensor_data.insert(String::from("TIME_UNIT"), self.time_unit.to_string());
+
+        let mut topology = Topology::new(sensor_data.clone());
         let mut sys = System::new_all();
         sys.refresh_all();
         let i = 0;
@@ -285,7 +339,7 @@ impl Sensor for MsrRAPLSensor {
             vec![],
             String::from(""),
             4,
-            self.driver_name.clone(),
+            sensor_data.clone(),
         );
 
         Ok(topology)
