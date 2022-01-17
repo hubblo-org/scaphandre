@@ -349,7 +349,7 @@ impl Warp10Exporter {
             let metric_name = format!(
                 "{}_{}_{}",
                 "scaph_process_power_consumption_microwats",
-                pid.to_string(),
+                pid,
                 exe
             );
             if let Some(power) = self.topology.get_process_power_consumption_microwatts(pid) {

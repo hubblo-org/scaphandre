@@ -198,7 +198,7 @@ impl Exporter for RiemannExporter {
                 let metric_name = format!(
                     "{}_{}_{}",
                     "scaph_process_power_consumption_microwatts",
-                    pid.to_string(),
+                    pid,
                     exe
                 );
                 if let Some(power) = metric_generator
