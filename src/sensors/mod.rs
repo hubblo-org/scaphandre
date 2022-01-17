@@ -58,8 +58,6 @@ pub struct Topology {
     pub buffer_max_kbytes: u16,
     /// Sorted list of all domains names
     pub domains_names: Option<Vec<String>>,
-    ///
-    sensor_data: HashMap<String, String>,
 }
 
 impl RecordGenerator for Topology {
@@ -139,13 +137,13 @@ impl RecordGenerator for Topology {
 
 impl Default for Topology {
     fn default() -> Self {
-        Self::new(HashMap::new())
+        Self::new()
     }
 }
 
 impl Topology {
     /// Instanciates Topology and returns the instance
-    pub fn new(sensor_data: HashMap<String, String>) -> Topology {
+    pub fn new() -> Topology {
         Topology {
             sockets: vec![],
             proc_tracker: ProcessTracker::new(5),
@@ -153,7 +151,6 @@ impl Topology {
             record_buffer: vec![],
             buffer_max_kbytes: 1,
             domains_names: None,
-            sensor_data,
         }
     }
 
