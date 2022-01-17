@@ -59,6 +59,7 @@ pub struct Topology {
     /// Sorted list of all domains names
     pub domains_names: Option<Vec<String>>,
     ///
+    #[cfg(target_os = "windows")]
     sensor_data: HashMap<String, String>,
 }
 
@@ -139,12 +140,19 @@ impl RecordGenerator for Topology {
 
 impl Default for Topology {
     fn default() -> Self {
-        Self::new(HashMap::new())
+        #[cfg(target_os = "windows")]
+        {
+            Self::new(HashMap::new())
+        }
+
+        #[cfg(target_os = "linux")]
+        Self::new()
     }
 }
 
 impl Topology {
     /// Instanciates Topology and returns the instance
+    #[cfg(target_os = "windows")]
     pub fn new(sensor_data: HashMap<String, String>) -> Topology {
         Topology {
             sockets: vec![],
@@ -154,6 +162,18 @@ impl Topology {
             buffer_max_kbytes: 1,
             domains_names: None,
             sensor_data,
+        }
+    }
+    /// Instanciates Topology and returns the instance
+    #[cfg(target_os = "linux")]
+    pub fn new() -> Topology {
+        Topology {
+            sockets: vec![],
+            proc_tracker: ProcessTracker::new(5),
+            stat_buffer: vec![],
+            record_buffer: vec![],
+            buffer_max_kbytes: 1,
+            domains_names: None,
         }
     }
 
