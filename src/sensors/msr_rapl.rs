@@ -28,8 +28,6 @@ const MSR_PKG_ENERGY_STATUS: u16 = 0x611;
     
 unsafe fn ctl_code(device_type: u32, request_code: u32, method: u32, access: u32) -> u32 {
     let res = ((device_type) << 16) | ((access) << 14) | ((request_code) << 2) | (method);
-    println!("device_type: {}, access: {:?}, request_code: {}, method: {}", device_type, access, request_code, method);
-    println!("control colde : {}", res);
     res
 }
 
