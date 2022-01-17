@@ -13,7 +13,7 @@ use colored::*;
 use exporters::json::JSONExporter;
 #[cfg(feature = "prometheus")]
 use exporters::prometheus::PrometheusExporter;
-#[cfg(not(feature = "warpten"))]
+#[cfg(target_os="linux")]
 use exporters::qemu::QemuExporter;
 #[cfg(feature = "riemann")]
 use exporters::riemann::RiemannExporter;
