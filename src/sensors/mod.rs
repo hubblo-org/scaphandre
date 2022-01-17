@@ -84,7 +84,7 @@ impl RecordGenerator for Topology {
                 }
             }
         }
-        warn!("Record value from topo (addition of sockets) : {}", value);
+        debug!("Record value from topo (addition of sockets) : {}", value);
         let record = Record::new(last_timestamp, value.to_string(), units::Unit::MicroJoule);
 
         self.record_buffer.push(record);
