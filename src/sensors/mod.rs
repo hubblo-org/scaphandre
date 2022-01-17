@@ -15,9 +15,9 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::mem::size_of_val;
 use std::time::Duration;
-use std::{fmt, fs};
+use std::fmt;
 #[cfg(not(target_os = "linux"))]
-use sysinfo::{ProcessExt, ProcessorExt, System, SystemExt};
+use sysinfo::{ProcessorExt, System, SystemExt};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 
 
@@ -189,6 +189,18 @@ impl Topology {
         #[cfg(target_os = "windows")]
         {
             warn!("generate_cpu_info is not implemented yet on this OS.");
+            let sysinfo_system = System::new_all();
+            let sysinfo_cores = sysinfo_system.processors();
+            let mut id: u16 = 0;
+            for c in sysinfo_cores {
+                let mut info = HashMap::new();
+                info.insert(String::from("frequency"), c.frequency().to_string());
+                info.insert(String::from("name"), c.name().to_string());
+                info.insert(String::from("vendor_id"), c.vendor_id().to_string());
+                info.insert(String::from("brand"), c.brand().to_string());
+                cores.push(CPUCore::new(id, info));
+                id = id + 1;
+            }
         }
         Ok(cores)
     }
@@ -435,10 +447,8 @@ impl Topology {
                 return None;
             }
             let microjoules = last_microjoules - previous_microjoules;
-            warn!("microjoules: {} last: {} previous: {}", microjoules, last_microjoules, previous_microjoules);
             let time_diff =
                 last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
-            warn!("timediff: {}", time_diff);
             let microwatts = microjoules as f64 / time_diff;
             return Some(Record::new(
                 last_record.timestamp,
@@ -599,7 +609,7 @@ impl Topology {
                     let topo_conso = self.get_records_diff_power_microwatts();
                     if let Some(conso) = &topo_conso {
                         let conso_f64 = conso.value.parse::<f64>().unwrap();
-                        let result = (conso_f64 * process_cpu_percentage as f64) as u64;
+                        let result = (conso_f64 * process_cpu_percentage as f64) / 100.0 as f64;
                         return Some(Record::new(
                             last.timestamp,
                             result.to_string(),

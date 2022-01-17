@@ -233,7 +233,7 @@ impl StdoutExporter {
             println!("{}\n", to_print);
         }
 
-        let consumers: Vec<(IProcess, u64)>;
+        let consumers: Vec<(IProcess, f64)>;
         if let Some(regex_filter) = regex_filter {
             println!("Processes filtered by '{}':", regex_filter.as_str());
             consumers = metric_generator
