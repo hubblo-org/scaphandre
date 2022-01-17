@@ -24,7 +24,9 @@ use sensors::Sensor;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 #[cfg(target_os = "linux")]
-use {exporters::qemu::QemuExporter, sensors::powercap_rapl::PowercapRAPLSensor};
+use {sensors::powercap_rapl::PowercapRAPLSensor};
+#[cfg(not(feature = "warpten"))]
+ use exporters::qemu::QemuExporter;
 
 /// Helper function to get an argument from ArgMatches
 fn get_argument(matches: &ArgMatches, arg: &'static str) -> String {
@@ -106,33 +108,34 @@ pub fn run(matches: ArgMatches) {
         exporter_parameters = prometheus_exporter_parameters.clone();
         let mut exporter = PrometheusExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
-    }
-    #[cfg(target_os = "linux")]
-    if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
-        #[cfg(feature = "warpten")]
-        {
-            if header {
-                scaphandre_header("warp10");
+    } else {
+        #[cfg(target_os = "linux")] {
+            #[cfg(feature = "warpten")]
+            {
+                if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
+                    if header {
+                        scaphandre_header("warp10");
+                    }
+                    exporter_parameters = warp10_exporter_parameters.clone();
+                    let mut exporter = Warp10Exporter::new(sensor_boxed);
+                    exporter.run(exporter_parameters);
+                }
             }
-            exporter_parameters = warp10_exporter_parameters.clone();
-            let mut exporter = Warp10Exporter::new(sensor_boxed);
-            exporter.run(exporter_parameters);
+            #[cfg(not(feature = "warpten"))]
+            {
+                if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
+                    if header {
+                        scaphandre_header("qemu");
+                    }
+                    exporter_parameters = qemu_exporter_parameters.clone();
+                    let mut exporter = QemuExporter::new(sensor_boxed);
+                    exporter.run(exporter_parameters);
+                }
+                error!("Warp10 exporter feature was not included in this build.");
+            }
         }
-        #[cfg(not(feature = "warpten"))]
-        {
-            error!("Warp10 exporter feature was not included in this build.");
-        }
+        error!("Couldn't determine which exporter to run.");
     }
-    #[cfg(target_os = "linux")]
-    if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
-        if header {
-            scaphandre_header("qemu");
-        }
-        exporter_parameters = qemu_exporter_parameters.clone();
-        let mut exporter = QemuExporter::new(sensor_boxed);
-        exporter.run(exporter_parameters);
-    }
-    error!("Couldn't determine which exporter to run.");
 }
 
 /// Returns options needed for each exporter as a HashMap.

@@ -205,7 +205,7 @@ impl MetricGenerator {
                 containers_last_check: String::from(""),
                 docker_version,
                 docker_client,
-                watch_containers,
+                watch_containers: _watch_containers,
                 watch_docker: true,
                 kubernetes_client,
                 watch_kubernetes: true,
