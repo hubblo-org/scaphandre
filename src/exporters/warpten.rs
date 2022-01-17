@@ -348,9 +348,7 @@ impl Warp10Exporter {
             }
             let metric_name = format!(
                 "{}_{}_{}",
-                "scaph_process_power_consumption_microwats",
-                pid,
-                exe
+                "scaph_process_power_consumption_microwats", pid, exe
             );
             if let Some(power) = self.topology.get_process_power_consumption_microwatts(pid) {
                 process_data.push(warp10::Data::new(

@@ -197,9 +197,7 @@ impl Exporter for RiemannExporter {
                 // to differentiate services/metrics
                 let metric_name = format!(
                     "{}_{}_{}",
-                    "scaph_process_power_consumption_microwatts",
-                    pid,
-                    exe
+                    "scaph_process_power_consumption_microwatts", pid, exe
                 );
                 if let Some(power) = metric_generator
                     .topology
