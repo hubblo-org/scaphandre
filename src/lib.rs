@@ -13,6 +13,8 @@ use colored::*;
 use exporters::json::JSONExporter;
 #[cfg(feature = "prometheus")]
 use exporters::prometheus::PrometheusExporter;
+#[cfg(not(feature = "warpten"))]
+use exporters::qemu::QemuExporter;
 #[cfg(feature = "riemann")]
 use exporters::riemann::RiemannExporter;
 #[cfg(feature = "warpten")]
@@ -20,13 +22,11 @@ use exporters::warpten::Warp10Exporter;
 use exporters::{stdout::StdoutExporter, Exporter};
 #[cfg(target_os = "windows")]
 use sensors::msr_rapl::MsrRAPLSensor;
+#[cfg(target_os = "linux")]
+use sensors::powercap_rapl::PowercapRAPLSensor;
 use sensors::Sensor;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
-#[cfg(target_os = "linux")]
-use {sensors::powercap_rapl::PowercapRAPLSensor};
-#[cfg(not(feature = "warpten"))]
- use exporters::qemu::QemuExporter;
 
 /// Helper function to get an argument from ArgMatches
 fn get_argument(matches: &ArgMatches, arg: &'static str) -> String {
@@ -109,7 +109,8 @@ pub fn run(matches: ArgMatches) {
         let mut exporter = PrometheusExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else {
-        #[cfg(target_os = "linux")] {
+        #[cfg(target_os = "linux")]
+        {
             #[cfg(feature = "warpten")]
             {
                 if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {

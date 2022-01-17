@@ -121,7 +121,10 @@ impl Sensor for PowercapRAPLSensor {
                 let socket_id = String::from(splitted.next().unwrap()).parse().unwrap();
                 let domain_id = String::from(splitted.next().unwrap()).parse().unwrap();
                 let mut sensor_data_for_socket = HashMap::new();
-                sensor_data_for_socket.insert(String::from("source_file"), format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id));
+                sensor_data_for_socket.insert(
+                    String::from("source_file"),
+                    format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
+                );
                 topo.safe_add_socket(
                     socket_id,
                     vec![],
@@ -131,7 +134,13 @@ impl Sensor for PowercapRAPLSensor {
                     sensor_data_for_socket,
                 );
                 let mut sensor_data_for_domain = HashMap::new();
-                sensor_data_for_domain.insert(String::from("source_file"),format!("{}/intel-rapl:{}:{}/energy_uj", self.base_path, socket_id, domain_id));
+                sensor_data_for_domain.insert(
+                    String::from("source_file"),
+                    format!(
+                        "{}/intel-rapl:{}:{}/energy_uj",
+                        self.base_path, socket_id, domain_id
+                    ),
+                );
                 if let Ok(domain_name) = &fs::read_to_string(format!("{}/name", folder_name)) {
                     topo.safe_add_domain_to_socket(
                         socket_id,
@@ -142,7 +151,7 @@ impl Sensor for PowercapRAPLSensor {
                             self.base_path, socket_id, domain_id
                         ),
                         self.buffer_per_domain_max_kbytes,
-                        sensor_data_for_domain
+                        sensor_data_for_domain,
                     );
                 }
             }

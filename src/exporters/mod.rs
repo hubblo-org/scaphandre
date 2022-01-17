@@ -226,7 +226,6 @@ impl MetricGenerator {
 
     /// Generate all scaphandre internal metrics.
     fn gen_self_metrics(&mut self) {
-
         #[cfg(target_os = "linux")]
         let myself = IProcess::myself().unwrap();
         #[cfg(target_os = "windows")]
@@ -245,7 +244,6 @@ impl MetricGenerator {
             description: String::from("Version number of scaphandre represented as a float."),
             metric_value: MetricValueType::Text(get_scaphandre_version()),
         });
-
 
         if let Some(metric_value) = self
             .topology

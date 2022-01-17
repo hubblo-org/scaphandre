@@ -4,10 +4,10 @@ use regex::Regex;
 #[cfg(feature = "containers")]
 use std::collections::HashMap;
 #[cfg(target_os = "windows")]
-use sysinfo::{Process, ProcessExt, ProcessStatus, System, SystemExt, get_current_pid};
+use sysinfo::{get_current_pid, Process, ProcessExt, ProcessStatus, System, SystemExt};
 //use std::error::Error;
-use std::path::PathBuf;
 use ordered_float::*;
+use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
@@ -318,7 +318,7 @@ impl IProcess {
                     state: original_status.state,
                     umask: original_status.umask,
                 };
-                Ok(status.clone())
+                Ok(status)
             } else {
                 Err(format!("Couldn't get status for {}", self.pid))
             }
@@ -341,7 +341,12 @@ impl IProcess {
     }
     #[cfg(target_os = "windows")]
     pub fn myself(proc_tracker: &ProcessTracker) -> Result<IProcess, String> {
-        Ok(IProcess::from_windows_process(proc_tracker.sysinfo.process(get_current_pid().unwrap() as usize).unwrap()))
+        Ok(IProcess::from_windows_process(
+            proc_tracker
+                .sysinfo
+                .process(get_current_pid().unwrap() as usize)
+                .unwrap(),
+        ))
     }
 }
 
@@ -391,7 +396,7 @@ impl Clone for ProcessTracker {
             regex_cgroup_kubernetes: self.regex_cgroup_kubernetes.clone(),
             #[cfg(feature = "containers")]
             regex_cgroup_containerd: self.regex_cgroup_containerd.clone(),
-            nb_cores: self.nb_cores
+            nb_cores: self.nb_cores,
         }
     }
 }
@@ -424,9 +429,9 @@ impl ProcessTracker {
             regex_cgroup_kubernetes,
             #[cfg(feature = "containers")]
             regex_cgroup_containerd,
-            #[cfg(target_os="windows")]
+            #[cfg(target_os = "windows")]
             nb_cores: System::new_all().processors().len(),
-            #[cfg(target_os="linux")]
+            #[cfg(target_os = "linux")]
             nb_cores: 0, // TODO implement
         }
     }
@@ -769,7 +774,7 @@ impl ProcessTracker {
         None
     }
 
-    #[cfg(target_os="linux")]
+    #[cfg(target_os = "linux")]
     /// Returns the CPU time consumed between two measure iteration
     fn get_cpu_time_consumed(&self, p: &[ProcessRecord]) -> u64 {
         let last_time = p.first().unwrap().total_time_jiffies();
@@ -782,7 +787,7 @@ impl ProcessTracker {
         diff
     }
 
-    #[cfg(target_os="windows")]
+    #[cfg(target_os = "windows")]
     pub fn get_cpu_usage_percentage(&self, pid: usize, nb_cores: usize) -> f32 {
         if let Some(p) = self.sysinfo.process(pid) {
             let result = p.cpu_usage() / nb_cores as f32;
@@ -797,7 +802,8 @@ impl ProcessTracker {
         let mut consumers: Vec<(IProcess, OrderedFloat<f64>)> = vec![];
         for p in &self.procs {
             if p.len() > 1 {
-                #[cfg(target_os="linux")] {
+                #[cfg(target_os = "linux")]
+                {
                     let diff = self.get_cpu_time_consumed(p);
                     if consumers
                         .iter()
@@ -805,27 +811,32 @@ impl ProcessTracker {
                         .count()
                         < top as usize
                     {
-                        consumers.push((p.last().unwrap().process.clone(), OrderedFloat(diff as f64)));
+                        consumers
+                            .push((p.last().unwrap().process.clone(), OrderedFloat(diff as f64)));
                         consumers.sort_by(|x, y| y.1.cmp(&x.1));
                         if consumers.len() > top as usize {
                             consumers.pop();
                         }
                     }
                 }
-                #[cfg(target_os="windows")] {
-                    let diff = self.get_cpu_usage_percentage(p.first().unwrap().process.pid as _, self.nb_cores);
+                #[cfg(target_os = "windows")]
+                {
+                    let diff = self.get_cpu_usage_percentage(
+                        p.first().unwrap().process.pid as _,
+                        self.nb_cores,
+                    );
                     if consumers
                         .iter()
                         .filter(|x| {
                             if let Some(p) = self.sysinfo.process(x.0.pid as _) {
-                                return p.cpu_usage() > diff
+                                return p.cpu_usage() > diff;
                             }
                             false
                         })
                         .count()
                         < top as usize
                     {
-                        let pid = p.first().unwrap().process.pid ;
+                        let pid = p.first().unwrap().process.pid;
                         if let Some(sysinfo_process) = self.sysinfo.process(pid as _) {
                             let new_consumer = IProcess::from_windows_process(sysinfo_process);
                             consumers.push((new_consumer, OrderedFloat(diff as f64)));
@@ -833,8 +844,7 @@ impl ProcessTracker {
                             if consumers.len() > top as usize {
                                 consumers.pop();
                             }
-                        }
-                        else {
+                        } else {
                             warn!("Couldn't get process info for {}", pid);
                         }
                     }
@@ -853,19 +863,26 @@ impl ProcessTracker {
         let mut consumers: Vec<(IProcess, OrderedFloat<f64>)> = vec![];
         for p in &self.procs {
             if p.len() > 1 {
-                #[cfg(target_os = "linux")]  {
+                #[cfg(target_os = "linux")]
+                {
                     let diff = self.get_cpu_time_consumed(p);
                     let process_exe = p.last().unwrap().process.exe().unwrap_or_default();
                     if regex_filter.is_match(process_exe.to_str().unwrap_or_default()) {
-                        consumers.push((p.last().unwrap().process.clone(), OrderedFloat(diff as f64)));
+                        consumers
+                            .push((p.last().unwrap().process.clone(), OrderedFloat(diff as f64)));
                         consumers.sort_by(|x, y| y.1.cmp(&x.1));
                     }
                 }
-                #[cfg(target_os = "windows")] {
-                    let diff = self.get_cpu_usage_percentage(p.first().unwrap().process.pid as _, self.nb_cores);
+                #[cfg(target_os = "windows")]
+                {
+                    let diff = self.get_cpu_usage_percentage(
+                        p.first().unwrap().process.pid as _,
+                        self.nb_cores,
+                    );
                     let process_exe = p.last().unwrap().process.exe(self).unwrap_or_default();
                     if regex_filter.is_match(process_exe.to_str().unwrap_or_default()) {
-                        consumers.push((p.last().unwrap().process.clone(), OrderedFloat(diff as f64)));
+                        consumers
+                            .push((p.last().unwrap().process.clone(), OrderedFloat(diff as f64)));
                         consumers.sort_by(|x, y| y.1.cmp(&x.1));
                     }
                 }
@@ -981,7 +998,7 @@ impl ProcessRecord {
 
     // Returns the total CPU time consumed by this process since its creation
     pub fn total_time_jiffies(&self) -> u64 {
-        #[cfg(target_os="linux")]
+        #[cfg(target_os = "linux")]
         if let Some(stat) = &self.process.stat {
             trace!(
                 "ProcessRecord: stime {} utime {}", //cutime {} cstime {} guest_time {} cguest_time {} delayacct_blkio_ticks {} itrealvalue {}",
