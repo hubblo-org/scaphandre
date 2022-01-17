@@ -162,8 +162,8 @@ impl MetricGenerator {
     fn new(
         topology: Topology,
         hostname: String,
-        qemu: bool,
-        watch_containers: bool,
+        _qemu: bool,
+        _watch_containers: bool,
     ) -> MetricGenerator {
         let data = Vec::new();
         #[cfg(feature = "containers")]
@@ -175,7 +175,7 @@ impl MetricGenerator {
             //let kubernetes_version = String::from("");
             let mut kubernetes_client = None;
             let mut container_runtime = false;
-            if watch_containers {
+            if _watch_containers {
                 match get_docker_client() {
                     Ok(docker) => {
                         docker_client = Some(docker);
@@ -201,7 +201,7 @@ impl MetricGenerator {
                 hostname,
                 containers,
                 #[cfg(target_os = "linux")]
-                qemu,
+                qemu: _qemu,
                 containers_last_check: String::from(""),
                 docker_version,
                 docker_client,

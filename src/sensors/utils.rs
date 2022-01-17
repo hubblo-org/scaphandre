@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use sysinfo::{Process, ProcessExt, ProcessStatus, System, SystemExt, get_current_pid};
 //use std::error::Error;
 use std::path::PathBuf;
+use ordered_float::*;
 use std::time::{Duration, SystemTime};
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
@@ -113,7 +114,7 @@ impl IStat {
     }
 
     #[cfg(target_os = "windows")]
-    fn from_windows_process_stat(process: &Process) -> IStat {
+    fn from_windows_process_stat(_process: &Process) -> IStat {
         IStat {
             blocked: 0,
             cguest_time: Some(0),
@@ -784,15 +785,16 @@ impl ProcessTracker {
     #[cfg(target_os="windows")]
     pub fn get_cpu_usage_percentage(&self, pid: usize, nb_cores: usize) -> f32 {
         if let Some(p) = self.sysinfo.process(pid) {
-            p.cpu_usage() / nb_cores as f32
+            let result = p.cpu_usage() / nb_cores as f32;
+            result
         } else {
             0.0
         }
     }
 
     /// Returns processes sorted by the highest consumers in first
-    pub fn get_top_consumers(&self, top: u16) -> Vec<(IProcess, u64)> {
-        let mut consumers: Vec<(IProcess, u64)> = vec![];
+    pub fn get_top_consumers(&self, top: u16) -> Vec<(IProcess, f64)> {
+        let mut consumers: Vec<(IProcess, OrderedFloat<f64>)> = vec![];
         for p in &self.procs {
             if p.len() > 1 {
                 #[cfg(target_os="linux")] {
@@ -803,7 +805,7 @@ impl ProcessTracker {
                         .count()
                         < top as usize
                     {
-                        consumers.push((p.last().unwrap().process.clone(), diff));
+                        consumers.push((p.last().unwrap().process.clone(), OrderedFloat(diff as f64)));
                         consumers.sort_by(|x, y| y.1.cmp(&x.1));
                         if consumers.len() > top as usize {
                             consumers.pop();
@@ -826,7 +828,7 @@ impl ProcessTracker {
                         let pid = p.first().unwrap().process.pid ;
                         if let Some(sysinfo_process) = self.sysinfo.process(pid as _) {
                             let new_consumer = IProcess::from_windows_process(sysinfo_process);
-                            consumers.push((new_consumer, (diff*1000.0) as u64));
+                            consumers.push((new_consumer, OrderedFloat(diff as f64)));
                             consumers.sort_by(|x, y| y.1.cmp(&x.1));
                             if consumers.len() > top as usize {
                                 consumers.pop();
@@ -839,19 +841,23 @@ impl ProcessTracker {
                 }
             }
         }
-        consumers
+        let mut result: Vec<(IProcess, f64)> = vec![];
+        for (p, f) in consumers {
+            result.push((p, f.into_inner()));
+        }
+        result
     }
 
     /// Returns processes filtered by a regexp
-    pub fn get_filtered_processes(&self, regex_filter: &Regex) -> Vec<(IProcess, u64)> {
-        let mut consumers: Vec<(IProcess, u64)> = vec![];
+    pub fn get_filtered_processes(&self, regex_filter: &Regex) -> Vec<(IProcess, f64)> {
+        let mut consumers: Vec<(IProcess, OrderedFloat<f64>)> = vec![];
         for p in &self.procs {
             if p.len() > 1 {
                 #[cfg(target_os = "linux")]  {
                     let diff = self.get_cpu_time_consumed(p);
                     let process_exe = p.last().unwrap().process.exe().unwrap_or_default();
                     if regex_filter.is_match(process_exe.to_str().unwrap_or_default()) {
-                        consumers.push((p.last().unwrap().process.clone(), diff));
+                        consumers.push((p.last().unwrap().process.clone(), OrderedFloat(diff as f64)));
                         consumers.sort_by(|x, y| y.1.cmp(&x.1));
                     }
                 }
@@ -859,14 +865,17 @@ impl ProcessTracker {
                     let diff = self.get_cpu_usage_percentage(p.first().unwrap().process.pid as _, self.nb_cores);
                     let process_exe = p.last().unwrap().process.exe(self).unwrap_or_default();
                     if regex_filter.is_match(process_exe.to_str().unwrap_or_default()) {
-                        consumers.push((p.last().unwrap().process.clone(), (diff*1000.0) as u64));
+                        consumers.push((p.last().unwrap().process.clone(), OrderedFloat(diff as f64)));
                         consumers.sort_by(|x, y| y.1.cmp(&x.1));
                     }
                 }
             }
         }
-
-        consumers
+        let mut result: Vec<(IProcess, f64)> = vec![];
+        for (p, f) in consumers {
+            result.push((p, f.into_inner()));
+        }
+        result
     }
 
     /// Drops a vector of ProcessRecord instances from self.procs

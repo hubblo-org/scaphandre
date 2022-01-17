@@ -1284,6 +1284,7 @@ dependencies = [
  "lazy_static",
  "log",
  "loggerv",
+ "ordered-float",
  "procfs",
  "protobuf",
  "rand 0.7.3",

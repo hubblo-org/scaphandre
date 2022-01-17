@@ -1,30 +1,29 @@
 use crate::sensors::utils::current_system_time_since_epoch;
 use crate::sensors::{CPUSocket, Domain, Record, RecordReader, Sensor, Topology};
-use core::ffi::c_void;
 use std::error::Error;
-use std::mem::{transmute, size_of, size_of_val};
+use std::mem::size_of;
 use std::collections::HashMap;
-use sysinfo::{ProcessorExt, System, SystemExt};
+use sysinfo::{System, SystemExt};
 use windows::Win32::Foundation::{CloseHandle, GetLastError, HANDLE, INVALID_HANDLE_VALUE};
 use windows::Win32::Storage::FileSystem::{
-    CreateFileW, FILE_ACCESS_FLAGS, FILE_FLAG_OVERLAPPED, FILE_GENERIC_READ, FILE_GENERIC_WRITE,
+    CreateFileW, FILE_FLAG_OVERLAPPED, FILE_GENERIC_READ, FILE_GENERIC_WRITE,
     FILE_READ_DATA, FILE_SHARE_READ, FILE_SHARE_WRITE, OPEN_EXISTING, FILE_WRITE_DATA
 };
-use windows::Win32::System::Ioctl::{FILE_DEVICE_UNKNOWN, METHOD_OUT_DIRECT, METHOD_BUFFERED};
-use windows::Win32::System::IO::{DeviceIoControl, OVERLAPPED};
+use windows::Win32::System::Ioctl::{FILE_DEVICE_UNKNOWN, METHOD_BUFFERED};
+use windows::Win32::System::IO::DeviceIoControl;
 
 const MSR_RAPL_POWER_UNIT: u16 = 0x606; // 
-const MSR_PKG_POWER_LIMIT: u16 = 0x610; // PKG RAPL Power Limit Control (R/W) See Section 14.7.3, Package RAPL Domain. 
+//const MSR_PKG_POWER_LIMIT: u16 = 0x610; // PKG RAPL Power Limit Control (R/W) See Section 14.7.3, Package RAPL Domain. 
 const MSR_PKG_ENERGY_STATUS: u16 = 0x611;
-const MSR_PKG_POWER_INFO: u16 = 0x614;
-const MSR_DRAM_ENERGY_STATUS: u16 = 0x619;
-const MSR_PP0_ENERGY_STATUS: u16 = 0x639; //PP0 Energy Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
-const MSR_PP0_PERF_STATUS: u16 = 0x63b; // PP0 Performance Throttling Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
-const MSR_PP0_POLICY: u16 = 0x63a; //PP0 Balance Policy (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
-const MSR_PP0_POWER_LIMIT: u16 = 0x638; // PP0 RAPL Power Limit Control (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
-const MSR_PP1_ENERGY_STATUS: u16 = 0x641; // PP1 Energy Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
-const MSR_PP1_POLICY: u16 = 0x642; // PP1 Balance Policy (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
-const MSR_PP1_POWER_LIMIT: u16 = 0x640; // PP1 RAPL Power Limit Control (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains. 
+//const MSR_PKG_POWER_INFO: u16 = 0x614;
+//const MSR_DRAM_ENERGY_STATUS: u16 = 0x619;
+//const MSR_PP0_ENERGY_STATUS: u16 = 0x639; //PP0 Energy Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
+//const MSR_PP0_PERF_STATUS: u16 = 0x63b; // PP0 Performance Throttling Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
+//const MSR_PP0_POLICY: u16 = 0x63a; //PP0 Balance Policy (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
+//const MSR_PP0_POWER_LIMIT: u16 = 0x638; // PP0 RAPL Power Limit Control (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
+//const MSR_PP1_ENERGY_STATUS: u16 = 0x641; // PP1 Energy Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
+//const MSR_PP1_POLICY: u16 = 0x642; // PP1 Balance Policy (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
+//const MSR_PP1_POWER_LIMIT: u16 = 0x640; // PP1 RAPL Power Limit Control (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains. 
 
     
 unsafe fn ctl_code(device_type: u32, request_code: u32, method: u32, access: u32) -> u32 {
@@ -47,7 +46,7 @@ pub unsafe fn get_handle(driver_name: &str) -> Result<HANDLE, String> {
         None);
     if device == INVALID_HANDLE_VALUE {
         error!("Failed to open device : {:?}", device);
-        return Err(String::from("Couldn't get handle got INVALIDE_HANDLE_VALUE"))
+        return Err(format!("Got Last Error : {:?}", GetLastError()))
     }
     info!("Device opened : {:?}", device);
     Ok(device)
@@ -138,11 +137,12 @@ impl MsrRAPLSensor {
         unsafe {
             if let Ok(device) = get_handle(driver_name) {
                 let mut msr_result: u64 = 0;
-                let mut ptr_result = &mut msr_result as *mut u64;
-                let mut src = MSR_RAPL_POWER_UNIT as u64;
+                let ptr_result = &mut msr_result as *mut u64;
+                let src = MSR_RAPL_POWER_UNIT as u64;
                 let ptr = &src as *const u64;
                 if let Ok(res) = send_request(device, MSR_RAPL_POWER_UNIT,
                     ptr, 8, ptr_result, size_of::<u64>()) {
+                    debug!("{}", res);
                     power_unit = MsrRAPLSensor::extract_rapl_power_unit(msr_result);
                     energy_unit = MsrRAPLSensor::extract_rapl_energy_unit(msr_result);
                     time_unit = MsrRAPLSensor::extract_rapl_time_unit(msr_result);
@@ -206,12 +206,7 @@ impl MsrRAPLSensor {
     }
 
     pub fn extract_rapl_current_power(data: u64, energy_unit: f64) -> String {
-        let mut energy_consumed: f64 = 0.0;
-        warn!("data : {}", data);
-        warn!("OxFFFFFFFF {:b}", 0xFFFFFFF);
-        energy_consumed = ((data & 0xFFFFFFFF) as f64) * energy_unit * 1000000.0 ;
-        warn!("Current power usage: {} microJ\n", energy_consumed);
-        //println!("Current power usage: {} Watts\n", ((energy_consumed - energy_consumed_previous) / 1) / 1000000);
+        let energy_consumed: f64 = ((data & 0xFFFFFFFF) as f64) * energy_unit * 1000000.0;
         format!("{}", energy_consumed as u64)
     }
 
@@ -237,7 +232,7 @@ unsafe fn send_request(device: HANDLE, request_code: u16,
     if DeviceIoControl(
         device, // envoi 8 octet et je recoi 8 octet
         crate::sensors::msr_rapl::ctl_code(
-            FILE_DEVICE_UNKNOWN, 0x801 as _,
+            FILE_DEVICE_UNKNOWN, request_code as _,
             METHOD_BUFFERED, FILE_READ_DATA.0 | FILE_WRITE_DATA.0
             // nouvelle version : METHOD_OUD_DIRECT devien METHOD_BUFFERED
         ),
@@ -261,7 +256,7 @@ impl RecordReader for CPUSocket {
             let driver_name = self.sensor_data.get("DRIVER_NAME").unwrap();
             if let Ok(device) = get_handle(driver_name) {
                 let mut msr_result: u64 = 0;
-                let mut ptr_result = &mut msr_result as *mut u64;
+                let ptr_result = &mut msr_result as *mut u64;
                 let mut src = MSR_RAPL_POWER_UNIT as u64;
                 let ptr = &src as *const u64;
 
@@ -278,8 +273,7 @@ impl RecordReader for CPUSocket {
                     ptr, 8,
                     ptr_result, size_of::<u64>()
                 ) {
-                    warn!("msr_result: {:?}", msr_result);
-                    warn!("msr_result: {:b}", msr_result);
+                    debug!("{}", res);
 
                     close_handle(device);
 

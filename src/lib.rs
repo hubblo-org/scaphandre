@@ -106,19 +106,9 @@ pub fn run(matches: ArgMatches) {
         exporter_parameters = prometheus_exporter_parameters.clone();
         let mut exporter = PrometheusExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
-    } else if cfg!(target_os = "linux") {
-        #[cfg(target_os = "linux")]
-        if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
-            if header {
-                scaphandre_header("qemu");
-            }
-            exporter_parameters = qemu_exporter_parameters.clone();
-            let mut exporter = QemuExporter::new(sensor_boxed);
-            exporter.run(exporter_parameters);
-        } else {
-            error!("Qemu exporter is compatible only with GNU/Linux operating systems.");
-        }
-    } else if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
+    }
+    #[cfg(target_os = "linux")]
+    if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
         #[cfg(feature = "warpten")]
         {
             if header {
@@ -132,9 +122,17 @@ pub fn run(matches: ArgMatches) {
         {
             error!("Warp10 exporter feature was not included in this build.");
         }
-    } else {
-        error!("Couldn't determine which exporter to run.");
     }
+    #[cfg(target_os = "linux")]
+    if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
+        if header {
+            scaphandre_header("qemu");
+        }
+        exporter_parameters = qemu_exporter_parameters.clone();
+        let mut exporter = QemuExporter::new(sensor_boxed);
+        exporter.run(exporter_parameters);
+    }
+    error!("Couldn't determine which exporter to run.");
 }
 
 /// Returns options needed for each exporter as a HashMap.
