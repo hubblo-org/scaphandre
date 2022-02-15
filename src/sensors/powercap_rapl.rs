@@ -30,7 +30,7 @@ impl PowercapRAPLSensor {
                 powercap_path = val;
             }
 
-            warn!("Powercap_rapl path is: {}", powercap_path);
+            info!("Powercap_rapl path is: {}", powercap_path);
         }
 
         PowercapRAPLSensor {

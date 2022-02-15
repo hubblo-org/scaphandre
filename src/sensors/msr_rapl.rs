@@ -65,63 +65,6 @@ pub struct MsrRAPLSensor {
     time_unit: f64,
 }
 
-pub fn extract_rapl_power_units(data: u64) {
-    // Intel documentation says high level bits are reserved, so ignore them
-    let new_data: u32;
-    //uint16_t time;
-    let time: u32;
-    //uint16_t power;
-    let power: u32;
-    //uint32_t energy;
-    let energy: u32;
-    //double time_units;
-    let time_units: f64;
-    //double power_units;
-    let power_units: f64;
-    //double energy_units;
-    let energy_units: f64;
-
-    new_data = (data & 0xFFFFFFFF) as u32;
-    warn!("data: {:b} new_data: {:b}", data, new_data);
-
-    //// Power units are located from bits 0 to 3, extract them
-    power = new_data & 0x0F;
-    warn!("power raw : {:b}", power);
-    warn!("power raw : {}", power);
-
-    //// Energy state units are located from bits 8 to 12, extract them
-    energy = (new_data >> 8) & 0x1F;
-    warn!("energy raw : {:b}", energy);
-    warn!("energy raw : {}", energy);
-
-    //// Time units are located from bits 16 to 19, extract them
-    time = (new_data >> 16) & 0x0F;
-    warn!("time raw : {:b}", time);
-    warn!("time raw : {}", time);
-
-    //// Intel documentation says: 1 / 2^power
-    let divider = i64::pow(2, power);
-    warn!("divider: {}", divider);
-    power_units = 1.0 / divider as f64;
-    warn!("power unit : {:.8}", power_units);
-
-    //// Intel documentation says: 1 / 2^energy
-    let divider = i64::pow(2, energy);
-    warn!("divider: {}", divider);
-    energy_units = 1.0 / divider as f64;
-    warn!("energy unit : {:.8}", energy_units);
-
-    //// Intel documentation says: 1 / 2^energy
-    let divider = i64::pow(2, time);
-    warn!("divider: {}", divider);
-    time_units = 1.0 / divider as f64;
-    warn!("time unit : {:.8}", energy_units);
-
-    println!("CPU energy unit is: {} microJ\n", energy_units);
-    println!("CPU power unit is: {} Watt(s)\n", power_units);
-    println!("CPU time unit is: {} second(s)\n", time_units);
-}
-
 impl MsrRAPLSensor {
     pub fn new() -> MsrRAPLSensor {
         let driver_name = "\\\\.\\ScaphandreDriver";

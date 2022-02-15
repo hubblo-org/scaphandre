@@ -358,6 +358,7 @@ impl Topology {
         {
             let pt = &mut self.proc_tracker;
             pt.sysinfo.refresh_processes();
+            pt.sysinfo.refresh_cpu();
             let current_procs = pt
                 .sysinfo
                 .processes()

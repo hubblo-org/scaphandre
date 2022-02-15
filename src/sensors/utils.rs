@@ -4,7 +4,7 @@ use regex::Regex;
 #[cfg(feature = "containers")]
 use std::collections::HashMap;
 #[cfg(target_os = "windows")]
-use sysinfo::{get_current_pid, Process, ProcessExt, ProcessStatus, System, SystemExt};
+use sysinfo::{get_current_pid, Process, ProcessExt, ProcessorExt, ProcessStatus, System, SystemExt};
 //use std::error::Error;
 use ordered_float::*;
 use std::path::PathBuf;
@@ -559,9 +559,9 @@ impl ProcessTracker {
                 // clippy will ask you to remove mut from res, but you just need to implement to fix that
                 if let Some(sysinfo_p) = self.sysinfo.process(p[0].process.pid as usize) {
                     let status = sysinfo_p.status();
-                    if status != ProcessStatus::Dead && status != ProcessStatus::Stop {
-                        res.push(p);
-                    }
+                    //if status != ProcessStatus::Dead {//&& status != ProcessStatus::Stop {
+                    res.push(p);
+                    //}
                 }
             }
         }
@@ -789,8 +789,15 @@ impl ProcessTracker {
 
     #[cfg(target_os = "windows")]
     pub fn get_cpu_usage_percentage(&self, pid: usize, nb_cores: usize) -> f32 {
+        let mut cpu_current_usage = 0.0;
+        for c in self.sysinfo.processors() {
+            cpu_current_usage += c.cpu_usage();
+        }
         if let Some(p) = self.sysinfo.process(pid) {
-            let result = p.cpu_usage() / nb_cores as f32;
+            //warn!("p.cpu_usage {}%", p.cpu_usage());
+            //warn!("nb_cores {}%", nb_cores);
+            //warn!("cpu_current_usage: {}%", cpu_current_usage/nb_cores as f32);
+            let result = (p.cpu_usage() + (100.0 - cpu_current_usage/nb_cores as f32) * p.cpu_usage() / 100.0 ) / nb_cores as f32;
             result
         } else {
             0.0
