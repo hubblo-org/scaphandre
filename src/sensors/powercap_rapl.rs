@@ -108,8 +108,7 @@ impl Sensor for PowercapRAPLSensor {
         if modules_state.is_err() && !self.virtual_machine {
             warn!("Couldn't find intel_rapl modules.");
         }
-        let sensor_data_for_topo = HashMap::new();
-        let mut topo = Topology::new(sensor_data_for_topo);
+        let mut topo = Topology::new();
         let re_domain = Regex::new(r"^.*/intel-rapl:\d+:\d+$").unwrap();
         for folder in fs::read_dir(&self.base_path).unwrap() {
             let folder_name = String::from(folder.unwrap().path().to_str().unwrap());
