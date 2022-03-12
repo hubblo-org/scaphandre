@@ -2,7 +2,7 @@ name: docker_release
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ main, dev ]
     paths-ignore:
       - 'docs_src/**'
       - 'README.md'
