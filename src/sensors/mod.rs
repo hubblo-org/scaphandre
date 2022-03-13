@@ -247,10 +247,8 @@ impl Topology {
     /// Generates CPUCore instances for the host and adds them
     /// to appropriate CPUSocket instance from self.sockets
     pub fn add_cpu_cores(&mut self) {
-        let mut cores = Topology::generate_cpu_cores().unwrap();
-        while !cores.is_empty() {
-            let c = cores.pop().unwrap();
-            let socket_id = &c
+        Topology::generate_cpu_cores().unwrap().into_iter().for_each(|core| {
+            let socket_id = &core
                 .attributes
                 .get("physical id")
                 .unwrap()
@@ -262,9 +260,9 @@ impl Topology {
                 .find(|x| &x.id == socket_id)
                 .expect("Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line");
             if socket_id == &socket.id {
-                socket.add_cpu_core(c);
+                socket.add_cpu_core(core);
             }
-        }
+        });
     }
 
     /// Triggers ProcessTracker refresh on process stats
@@ -298,10 +296,8 @@ impl Topology {
 
         for p in current_procs {
             let pid = p.pid;
-            let res = self.proc_tracker.add_process_record(p);
-            match res {
-                Ok(_) => {}
-                Err(msg) => panic!("Failed to track process with pid {} !\nGot: {}", pid, msg),
+            if let Err(msg) = self.proc_tracker.add_process_record(p) {
+                panic!("Failed to track process with pid {} !\nGot: {}", pid, msg);
             }
         }
     }
@@ -435,47 +431,27 @@ impl Topology {
 
     /// Reads content from /proc/stat and extracts the stats of the whole CPU topology.
     pub fn read_stats(&self) -> Option<CPUStat> {
-        let kernelstats_or_not = KernelStats::new();
-        if let Ok(res_cputime) = kernelstats_or_not {
-            return Some(CPUStat {
-                cputime: res_cputime.total,
-            });
-        }
-        None
+        KernelStats::new()
+            .ok()
+            .map(|res| CPUStat { cputime: res.total })
     }
 
     /// Returns the number of processes currently available
     pub fn read_nb_process_total_count(&self) -> Option<u64> {
-        if let Ok(result) = KernelStats::new() {
-            return Some(result.processes);
-        }
-        None
+        KernelStats::new().ok().map(|res| res.processes)
     }
 
     /// Returns the number of processes currently in a running state
     pub fn read_nb_process_running_current(&self) -> Option<u32> {
-        if let Ok(result) = KernelStats::new() {
-            if let Some(procs_running) = result.procs_running {
-                return Some(procs_running);
-            }
-        }
-        None
+        KernelStats::new().ok().and_then(|res| res.procs_running)
     }
     /// Returns the number of processes currently blocked waiting
     pub fn read_nb_process_blocked_current(&self) -> Option<u32> {
-        if let Ok(result) = KernelStats::new() {
-            if let Some(procs_blocked) = result.procs_blocked {
-                return Some(procs_blocked);
-            }
-        }
-        None
+        KernelStats::new().ok().and_then(|res| res.procs_blocked)
     }
     /// Returns the current number of context switches
     pub fn read_nb_context_switches_total_count(&self) -> Option<u64> {
-        if let Ok(result) = KernelStats::new() {
-            return Some(result.ctxt);
-        }
-        None
+        KernelStats::new().ok().map(|res| res.ctxt)
     }
 
     /// Returns the power consumed between last and previous measurement for a given process ID, in microwatts
@@ -749,35 +725,29 @@ impl CPUSocket {
     /// Combines stats from all CPU cores owned byu the socket and returns
     /// a CpuTime struct containing stats for the whole socket.
     pub fn read_stats(&self) -> Option<CPUStat> {
-        let mut stats = CPUStat {
-            cputime: CpuTime {
-                user: 0.0,
-                nice: 0.0,
-                system: 0.0,
-                idle: 0.0,
-                iowait: Some(0.0),
-                irq: Some(0.0),
-                softirq: Some(0.0),
-                guest: Some(0.0),
-                guest_nice: Some(0.0),
-                steal: Some(0.0),
-            },
-        };
-        for c in &self.cpu_cores {
-            let c_stats = c.read_stats().unwrap();
-            stats.cputime.user += c_stats.user;
-            stats.cputime.nice += c_stats.nice;
-            stats.cputime.system += c_stats.system;
-            stats.cputime.idle += c_stats.idle;
-            stats.cputime.iowait =
-                Some(stats.cputime.iowait.unwrap_or_default() + c_stats.iowait.unwrap_or_default());
-            stats.cputime.irq =
-                Some(stats.cputime.irq.unwrap_or_default() + c_stats.irq.unwrap_or_default());
-            stats.cputime.softirq = Some(
-                stats.cputime.softirq.unwrap_or_default() + c_stats.softirq.unwrap_or_default(),
-            );
-        }
-        Some(stats)
+        Some(
+            self.cpu_cores
+                .iter()
+                .fold(CPUStat::default(), |mut stats, c| {
+                    let c_stats = c.read_stats().unwrap();
+                    stats.cputime.user += c_stats.user;
+                    stats.cputime.nice += c_stats.nice;
+                    stats.cputime.system += c_stats.system;
+                    stats.cputime.idle += c_stats.idle;
+                    stats.cputime.iowait = Some(
+                        stats.cputime.iowait.unwrap_or_default()
+                            + c_stats.iowait.unwrap_or_default(),
+                    );
+                    stats.cputime.irq = Some(
+                        stats.cputime.irq.unwrap_or_default() + c_stats.irq.unwrap_or_default(),
+                    );
+                    stats.cputime.softirq = Some(
+                        stats.cputime.softirq.unwrap_or_default()
+                            + c_stats.softirq.unwrap_or_default(),
+                    );
+                    stats
+                }),
+        )
     }
 
     /// Computes the difference between previous usage statistics record for the socket
@@ -1053,6 +1023,25 @@ impl fmt::Display for Record {
 #[derive(Debug)]
 pub struct CPUStat {
     pub cputime: CpuTime,
+}
+
+impl Default for CPUStat {
+    fn default() -> Self {
+        Self {
+            cputime: CpuTime {
+                user: 0.0,
+                nice: 0.0,
+                system: 0.0,
+                idle: 0.0,
+                iowait: Some(0.0),
+                irq: Some(0.0),
+                softirq: Some(0.0),
+                guest: Some(0.0),
+                guest_nice: Some(0.0),
+                steal: Some(0.0),
+            },
+        }
+    }
 }
 
 impl CPUStat {
