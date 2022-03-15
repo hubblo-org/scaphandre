@@ -38,17 +38,16 @@ impl RiemannClient {
             .unwrap()
             .parse::<u16>()
             .expect("Fail parsing port number");
-        let client: Client;
-        if parameters.is_present("mtls") {
+        let client: Client = if parameters.is_present("mtls") {
             let cafile = parameters.value_of("cafile").unwrap();
             let certfile = parameters.value_of("certfile").unwrap();
             let keyfile = parameters.value_of("keyfile").unwrap();
-            client = Client::connect_tls(&address, port, cafile, certfile, keyfile)
-                .expect("Fail to connect to Riemann server using mTLS");
+            Client::connect_tls(&address, port, cafile, certfile, keyfile)
+                .expect("Fail to connect to Riemann server using mTLS")
         } else {
-            client = Client::connect(&(address, port))
-                .expect("Fail to connect to Riemann server using raw TCP");
-        }
+            Client::connect(&(address, port))
+                .expect("Fail to connect to Riemann server using raw TCP")
+        };
         RiemannClient { client }
     }
 
