@@ -19,17 +19,16 @@ impl Exporter for Warp10Exporter {
         let host = parameters.value_of("host").unwrap();
         let scheme = parameters.value_of("scheme").unwrap();
         let port = parameters.value_of("port").unwrap();
-        let write_token;
-        if let Some(token) = parameters.value_of("write-token") {
-            write_token = token.to_owned();
+        let write_token = if let Some(token) = parameters.value_of("write-token") {
+            token.to_owned()
         } else {
-            write_token = match env::var("SCAPH_WARP10_WRITE_TOKEN") {
+            match env::var("SCAPH_WARP10_WRITE_TOKEN") {
                 Ok(val) => val,
                 Err(_e) => panic!(
                     "SCAPH_WARP10_WRITE_TOKEN not found in env, nor write-token flag was used."
                 ),
-            };
-        }
+            }
+        };
         //let read_token = parameters.value_of("read-token");
         let step = parameters.value_of("step").unwrap();
         let qemu = parameters.is_present("qemu");
