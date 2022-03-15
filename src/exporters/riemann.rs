@@ -88,7 +88,7 @@ impl RiemannClient {
                 i64::try_from(value).expect("Metric cannot be converted to signed integer."),
             ),
             MetricValueType::Text(ref value) => {
-                let value = value.replace(",", ".").replace("\n", "");
+                let value = value.replace(',', ".").replace('\n', "");
                 if value.contains('.') {
                     event.set_metric_d(value.parse::<f64>().expect("Cannot parse metric value."));
                 } else {
@@ -184,7 +184,7 @@ impl Exporter for RiemannExporter {
                 attributes.insert("exe".to_string(), exe.clone());
 
                 if let Some(cmdline_str) = cmdline {
-                    attributes.insert("cmdline".to_string(), cmdline_str.replace("\"", "\\\""));
+                    attributes.insert("cmdline".to_string(), cmdline_str.replace('\"', "\\\""));
 
                     if parameters.is_present("qemu") {
                         if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
@@ -197,9 +197,7 @@ impl Exporter for RiemannExporter {
                 // to differentiate services/metrics
                 let metric_name = format!(
                     "{}_{}_{}",
-                    "scaph_process_power_consumption_microwatts",
-                    pid.to_string(),
-                    exe
+                    "scaph_process_power_consumption_microwatts", pid, exe
                 );
                 if let Some(power) = metric_generator
                     .topology
