@@ -194,7 +194,7 @@ fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>
     if let Some(labels) = labels {
         result.push('{');
         for (k, v) in labels.iter() {
-            result.push_str(&format!("{}=\"{}\",", k, v.replace("\"", "_")));
+            result.push_str(&format!("{}=\"{}\",", k, v.replace('\"', "_")));
         }
         result.remove(result.len() - 1);
         result.push('}');
