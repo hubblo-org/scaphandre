@@ -343,14 +343,12 @@ impl Warp10Exporter {
                 }
                 plabels.push(warp10::Label::new(
                     "cmdline",
-                    &cmdline_str.replace("\"", "\\\""),
+                    &cmdline_str.replace('\"', "\\\""),
                 ));
             }
             let metric_name = format!(
                 "{}_{}_{}",
-                "scaph_process_power_consumption_microwats",
-                pid.to_string(),
-                exe
+                "scaph_process_power_consumption_microwats", pid, exe
             );
             if let Some(power) = self.topology.get_process_power_consumption_microwatts(pid) {
                 process_data.push(warp10::Data::new(

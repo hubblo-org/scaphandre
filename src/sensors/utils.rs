@@ -205,7 +205,7 @@ impl ProcessTracker {
                         if let Some(container) = containers.iter().find(|x| x.Id == container_id) {
                             let mut names = String::from("");
                             for n in &container.Names {
-                                names.push_str(&n.trim().replace("/", ""));
+                                names.push_str(&n.trim().replace('/', ""));
                             }
                             description.insert(String::from("container_names"), names);
                             description.insert(
