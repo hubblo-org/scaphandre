@@ -1,6 +1,6 @@
 # Compatibility
 
-Scaphandre intends to provide multiple ways to gather power consumption metrics and make understanding tech services footprint possible in many situations. Depending on how you use scaph, you may have some restrictions.
+Scaphandre intends to provide multiple ways to gather power consumption metrics and make understanding tech services footprint possible in many situations. Depending on how you use scaphandre, you may have some restrictions.
 
 To summarize, scaphandre should provide two ways to estimate the power consumption of a service, process or machine. Either by **measuring it**, using software interfaces that give access to hardware metrics, or by **estimating it** if measuring is not an option (this is a [planned feature](https://github.com/hubblo-org/scaphandre/issues/25), not yet implemented as those lines are written, in december 2020).
 
