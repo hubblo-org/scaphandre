@@ -1,4 +1,4 @@
-FROM rust:1.48 as planner
+FROM rust:1.59 as planner
 WORKDIR app
 
 RUN cargo install cargo-chef
@@ -7,7 +7,7 @@ COPY . .
 # Analyze dependencies
 RUN cargo chef prepare  --recipe-path recipe.json
 
-FROM rust:1.48 as cacher
+FROM rust:1.59 as cacher
 WORKDIR app
 RUN cargo install cargo-chef
 COPY --from=planner /app/recipe.json recipe.json
@@ -15,7 +15,7 @@ COPY --from=planner /app/recipe.json recipe.json
 # Cache dependencies
 RUN cargo chef cook --release --recipe-path recipe.json
 
-FROM rust:1.48 as builder
+FROM rust:1.59 as builder
 WORKDIR app
 COPY . .
 
@@ -24,7 +24,7 @@ COPY --from=cacher /app/target target
 COPY --from=cacher $CARGO_HOME $CARGO_HOME
 RUN cargo build --release
 
-FROM ubuntu:20.10 as runtime
+FROM ubuntu:20.04 as runtime
 WORKDIR app
 
 RUN apt-get update \
