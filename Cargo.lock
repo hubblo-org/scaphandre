@@ -619,9 +619,8 @@ dependencies = [
 
 [[package]]
 name = "k8s-sync"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d3c2f8f5cb2611742f8ceb73f23451690ff0d930149eac45fcb63ca86fbd443"
+version = "0.2.2"
+source = "git+https://github.com/rossf7/rs-k8s-sync?branch=fix/list-pods-options#c93bfd2d0d7ba73f9a874fe84d411ae6c3965eaf"
 dependencies = [
  "base64",
  "chrono",
@@ -1149,6 +1148,7 @@ dependencies = [
  "docker-sync",
  "hostname",
  "hyper",
+ "k8s-openapi",
  "k8s-sync",
  "log",
  "loggerv",

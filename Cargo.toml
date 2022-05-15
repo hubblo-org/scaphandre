@@ -28,8 +28,9 @@ colored = "2.0.0"
 chrono = "0.4.19"
 docker-sync = { version = "0.1.2", optional = true }
 #docker-sync = { path = "../rs-docker-sync", optional = true }
-k8s-sync = { version = "0.2.3", optional = true }
-#k8s-sync = { path = "../rs-k8s-sync", optional = true }
+k8s-openapi = { version = "0.13.0", features = ["v1_21"] }
+#k8s-sync = { version = "0.2.3", optional = true }
+k8s-sync = { git = "https://github.com/rossf7/rs-k8s-sync", branch = "fix/list-pods-options", optional = true }
 hyper = { version = "0.14", features = ["full"], optional = true }
 tokio = { version = "1", features = ["full"], optional = true}
 
