@@ -602,7 +602,7 @@ impl MetricGenerator {
                 let mut list_options = ListOptional {
                     ..Default::default()
                 };
-                if node_name != "" {
+                if !node_name.is_empty() {
                     list_options.field_selector = Some(&selector);
                 }
                 if let Ok(pods_result) = kubernetes.list_pods("".to_string(), list_options) {
