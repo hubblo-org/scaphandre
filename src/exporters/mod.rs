@@ -599,7 +599,9 @@ impl MetricGenerator {
             if let Some(kubernetes) = self.kubernetes_client.as_mut() {
                 let node_name = env::var("KUBERNETES_NODE_NAME").unwrap_or_default();
                 let selector = format!("spec.nodeName={}", node_name);
-                let mut list_options = ListOptional { ..Default::default() };
+                let mut list_options = ListOptional {
+                    ..Default::default()
+                };
                 if node_name != "" {
                     list_options.field_selector = Some(&selector);
                 }
