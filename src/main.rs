@@ -2,7 +2,7 @@
 use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
 use scaphandre::{get_exporters_options, run};
 fn main() {
-    let sensors = ["powercap_rapl"];
+    let sensors = ["powercap_rapl", "debug"];
     let exporters_options = get_exporters_options();
     let exporters = exporters_options.keys();
     let exporters: Vec<&str> = exporters.into_iter().map(|x| x.as_str()).collect();

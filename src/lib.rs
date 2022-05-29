@@ -13,7 +13,7 @@ use exporters::{
     json::JSONExporter, prometheus::PrometheusExporter, qemu::QemuExporter,
     riemann::RiemannExporter, stdout::StdoutExporter, warpten::Warp10Exporter, Exporter,
 };
-use sensors::{powercap_rapl::PowercapRAPLSensor, Sensor};
+use sensors::{powercap_rapl::PowercapRAPLSensor, Sensor, debug::DebugSensor};
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 
@@ -27,8 +27,8 @@ fn get_argument(matches: &ArgMatches, arg: &'static str) -> String {
 
 /// Helper function to get a Sensor instance from ArgMatches
 fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
-    let sensor = match &get_argument(matches, "sensor")[..] {
-        "powercap_rapl" => PowercapRAPLSensor::new(
+    match &get_argument(matches, "sensor")[..] {
+        "powercap_rapl" => Box::new(PowercapRAPLSensor::new(
             get_argument(matches, "sensor-buffer-per-socket-max-kB")
                 .parse()
                 .unwrap(),
@@ -36,8 +36,13 @@ fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
                 .parse()
                 .unwrap(),
             matches.is_present("vm"),
-        ),
-        _ => PowercapRAPLSensor::new(
+        )),
+        "debug" => Box::new(DebugSensor::new(
+            get_argument(matches, "sensor-buffer-per-socket-max-kB")
+                .parse()
+                .unwrap(),
+        )),
+        _ => Box::new(PowercapRAPLSensor::new(
             get_argument(matches, "sensor-buffer-per-socket-max-kB")
                 .parse()
                 .unwrap(),
@@ -45,9 +50,8 @@ fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
                 .parse()
                 .unwrap(),
             matches.is_present("vm"),
-        ),
-    };
-    Box::new(sensor)
+        ))
+    }
 }
 
 /// Matches the sensor and exporter name and options requested from the command line and
