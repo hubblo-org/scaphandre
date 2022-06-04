@@ -331,7 +331,7 @@ impl MetricGenerator {
                 tags: vec!["scaphandre".to_string()],
                 attributes: attributes.clone(),
                 description: String::from("Number of CPUStat traces stored for each socket"),
-                metric_value: MetricValueType::IntUnsigned(socket.get_stat_buffer().len() as u64),
+                metric_value: MetricValueType::IntUnsigned(socket.get_stat_buffer_passive().len() as u64),
             });
 
             self.data.push(Metric {

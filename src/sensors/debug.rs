@@ -117,6 +117,10 @@ impl Socket for DebugSocket {
         &mut self.stat_buffer
     }
 
+    fn get_stat_buffer_passive(&self) -> &Vec<CPUStat> {
+        &self.stat_buffer
+    }
+
     fn get_debug_type(&self) -> String {
         String::from("Debug")
     }

@@ -236,7 +236,7 @@ impl Warp10Exporter {
         for socket in &self.topology.sockets {
             let mut metric_labels = labels.clone();
             metric_labels.push(warp10::Label::new("socket_id", &socket.get_id().to_string()));
-            let metric_value = socket.get_stat_buffer().len();
+            let metric_value = socket.get_stat_buffer_passive().len();
             data.push(warp10::Data::new(
                 time::OffsetDateTime::now_utc(),
                 None,

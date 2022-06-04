@@ -7,7 +7,7 @@ use dyn_clone::DynClone;
 use crate::sensors::units;
 use super::{Record, Domain, CPUStat, CPUCore, RecordGenerator, StatsGenerator};
 
-pub trait Socket: DynClone {
+pub trait Socket: DynClone + Send {
     fn read_record_uj(&self) -> Result<Record, Box<dyn Error>>;
     fn get_record_buffer(&mut self) -> &mut Vec<Record>;
     fn get_record_buffer_passive(&self) -> &Vec<Record>;
@@ -16,6 +16,7 @@ pub trait Socket: DynClone {
     fn get_domains_passive(&self) -> &Vec<Domain>;
     fn get_domains(&mut self) -> &mut Vec<Domain>;
     fn get_stat_buffer(&mut self) -> &mut Vec<CPUStat>;
+    fn get_stat_buffer_passive(&self) -> &Vec<CPUStat>;
     fn read_stats(&self) -> Option<CPUStat>;
     fn get_cores(&mut self) -> &mut Vec<CPUCore>;
     fn get_cores_passive(&self) -> &Vec<CPUCore>;
@@ -144,30 +145,33 @@ impl StatsGenerator for dyn Socket {
     /// Generates a new CPUStat object storing current usage statistics of the socket
     /// and stores it in the stat_buffer.
     fn refresh_stats(&mut self) {
-        let stat_buffer = self.get_stat_buffer();
+        let stat_buffer = self.get_stat_buffer_passive();
         if !stat_buffer.is_empty() {
             self.clean_old_stats();
         }
-        stat_buffer.insert(0, self.read_stats().unwrap());
+        let stats = self.read_stats();
+        self.get_stat_buffer().insert(0, stats.unwrap());
     }
 
     /// Checks the size in memory of stats_buffer and deletes as many CPUStat
     /// instances from the buffer to make it smaller in memory than buffer_max_kbytes.
     fn clean_old_stats(&mut self) {
+        let id = self.get_id();
+        let buffer_max_kbytes = self.get_buffer_max_kbytes();
         let stat_buffer = self.get_stat_buffer();
         let stat_ptr = &stat_buffer[0];
         let size_of_stat = size_of_val(stat_ptr);
         let curr_size = size_of_stat * stat_buffer.len();
-        trace!("current_size of stats in socket {}: {}", self.get_id(), curr_size);
+        trace!("current_size of stats in socket {}: {}", id, curr_size);
         trace!(
             "estimated max nb of socket stats: {}",
-            self.get_buffer_max_kbytes() as f32 * 1000.0 / size_of_stat as f32
+            buffer_max_kbytes as f32 * 1000.0 / size_of_stat as f32
         );
-        if curr_size > (self.get_buffer_max_kbytes() * 1000) as usize {
-            let size_diff = curr_size - (self.get_buffer_max_kbytes() * 1000) as usize;
+        if curr_size > (buffer_max_kbytes * 1000) as usize {
+            let size_diff = curr_size - (buffer_max_kbytes * 1000) as usize;
             trace!(
                 "socket {} size_diff: {} size of: {}",
-                self.get_id(),
+                id,
                 size_diff,
                 size_of_stat
             );
@@ -175,7 +179,7 @@ impl StatsGenerator for dyn Socket {
                 let nb_stats_to_delete = size_diff as f32 / size_of_stat as f32;
                 trace!(
                     "socket {} nb_stats_to_delete: {} size_diff: {} size of: {}",
-                    self.get_id(),
+                    id,
                     nb_stats_to_delete,
                     size_diff,
                     size_of_stat
@@ -186,7 +190,7 @@ impl StatsGenerator for dyn Socket {
                         let res = stat_buffer.pop();
                         debug!(
                             "Cleaning stat buffer of socket {}, removing: {:?}",
-                            self.get_id(), res
+                            id, res
                         );
                     }
                 }
