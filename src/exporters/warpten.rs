@@ -235,8 +235,8 @@ impl Warp10Exporter {
 
         for socket in &self.topology.sockets {
             let mut metric_labels = labels.clone();
-            metric_labels.push(warp10::Label::new("socket_id", &socket.id.to_string()));
-            let metric_value = socket.stat_buffer.len();
+            metric_labels.push(warp10::Label::new("socket_id", &socket.get_id().to_string()));
+            let metric_value = socket.get_stat_buffer().len();
             data.push(warp10::Data::new(
                 time::OffsetDateTime::now_utc(),
                 None,
@@ -244,7 +244,7 @@ impl Warp10Exporter {
                 metric_labels.clone(),
                 warp10::Value::Int(metric_value as i32),
             ));
-            let metric_value = socket.record_buffer.len();
+            let metric_value = socket.get_record_buffer_passive().len();
             data.push(warp10::Data::new(
                 time::OffsetDateTime::now_utc(),
                 None,
@@ -277,7 +277,7 @@ impl Warp10Exporter {
                 }
             }
 
-            for domain in &socket.domains {
+            for domain in socket.get_domains_passive() {
                 let mut metric_labels = labels.clone();
                 metric_labels.push(warp10::Label::new("rapl_domain_name", &domain.name));
                 let metric_value = domain.record_buffer.len();

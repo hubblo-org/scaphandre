@@ -33,6 +33,7 @@ impl Sensor for DebugSensor {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct DebugSocket {
     /// Numerical ID of the CPU socket (physical_id in /proc/cpuinfo)
     pub id: u16,

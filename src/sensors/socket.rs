@@ -2,11 +2,12 @@ use core::fmt::Debug;
 use procfs::CpuTime;
 use std::error::Error;
 use std::mem::size_of_val;
+use dyn_clone::DynClone;
 
 use crate::sensors::units;
 use super::{Record, Domain, CPUStat, CPUCore, RecordGenerator, StatsGenerator};
 
-pub trait Socket {
+pub trait Socket: DynClone {
     fn read_record_uj(&self) -> Result<Record, Box<dyn Error>>;
     fn get_record_buffer(&mut self) -> &mut Vec<Record>;
     fn get_record_buffer_passive(&self) -> &Vec<Record>;
@@ -20,6 +21,8 @@ pub trait Socket {
     fn get_cores_passive(&self) -> &Vec<CPUCore>;
     fn get_debug_type(&self) -> String;
 }
+
+dyn_clone::clone_trait_object!(Socket);
 
 impl dyn Socket {
     pub fn add_cpu_core(&mut self, core: CPUCore) {

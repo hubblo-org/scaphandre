@@ -44,8 +44,7 @@ pub trait StatsGenerator {
 /// from the electricity consumption point of view,
 /// including the potentially multiple CPUSocket sockets.
 /// Owns a vector of CPUSocket structs representing each socket.
-// #[derive(Debug, Clone)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Topology {
     /// The CPU sockets found on the host, represented as CPUSocket instances attached to this topology
     pub sockets: Vec<Box<dyn Socket>>,

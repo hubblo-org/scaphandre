@@ -225,7 +225,7 @@ impl JSONExporter {
             .filter_map(|socket| {
                 if let Some(metric) = metrics_iter.find(|x| {
                     if x.name == "scaph_socket_power_microwatts" {
-                        socket.id
+                        socket.get_id()
                             == x.attributes
                                 .get("socket_id")
                                 .unwrap()
@@ -247,7 +247,7 @@ impl JSONExporter {
                                     .unwrap()
                                     .parse::<u16>()
                                     .unwrap()
-                                    == socket.id
+                                    == socket.get_id()
                         })
                         .map(|d| Domain {
                             name: d.name.clone(),
@@ -257,7 +257,7 @@ impl JSONExporter {
                         .collect::<Vec<_>>();
 
                     Some(Socket {
-                        id: socket.id,
+                        id: socket.get_id(),
                         consumption: (socket_power as f32),
                         domains,
                         timestamp: metric.timestamp.as_secs_f64(),
