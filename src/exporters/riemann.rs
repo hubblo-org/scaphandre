@@ -10,7 +10,6 @@ use clap::Arg;
 use riemann_client::proto::Attribute;
 use riemann_client::proto::Event;
 use riemann_client::Client;
-use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -138,9 +137,8 @@ impl Exporter for RiemannExporter {
         println!("Press CTRL-C to stop scaphandre");
         println!("Measurement step is: {}s", dispatch_duration);
 
-        let topology = self.sensor.get_topology().unwrap();
         let mut metric_generator = MetricGenerator::new(
-            topology,
+            self.sensor.get_topology().unwrap(),
             hostname,
             parameters.is_present("qemu"),
             parameters.is_present("containers"),
@@ -164,66 +162,27 @@ impl Exporter for RiemannExporter {
             metric_generator.topology.refresh();
 
             info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-            // Here we need a specific behavior for process metrics, so we call each gen function
-            // and then implement that specific behavior (we don't use gen_all_metrics).
-            metric_generator.gen_self_metrics();
-            metric_generator.gen_host_metrics();
-            metric_generator.gen_socket_metrics();
+            metric_generator.gen_all_metrics();
 
-            let mut data = vec![];
-            let processes_tracker = &metric_generator.topology.proc_tracker;
-
-            for pid in processes_tracker.get_alive_pids() {
-                let exe = processes_tracker.get_process_name(pid);
-                let cmdline = processes_tracker.get_process_cmdline(pid);
-
-                let mut attributes = HashMap::new();
-                attributes.insert("pid".to_string(), pid.to_string());
-
-                attributes.insert("exe".to_string(), exe.clone());
-
-                if let Some(cmdline_str) = cmdline {
-                    attributes.insert("cmdline".to_string(), cmdline_str.replace('\"', "\\\""));
-
-                    if parameters.is_present("qemu") {
-                        if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
-                            attributes.insert("vmname".to_string(), vmname);
-                        }
-                    }
-                }
-
-                // Here we define a metric name with pid + exe string suffix as riemann needs
-                // to differentiate services/metrics
-                let metric_name = format!(
-                    "{}_{}_{}",
-                    "scaph_process_power_consumption_microwatts", pid, exe
-                );
-                if let Some(power) = metric_generator
-                    .topology
-                    .get_process_power_consumption_microwatts(pid)
-                {
-                    data.push(Metric {
-                        name: metric_name,
-                        metric_type: String::from("gauge"),
-                        ttl: 60.0,
-                        hostname: get_hostname(),
-                        timestamp: power.timestamp,
-                        state: String::from("ok"),
-                        tags: vec!["scaphandre".to_string()],
-                        attributes,
-                        description: String::from("Power consumption due to the process, measured on at the topology level, in microwatts"),
-                        metric_value: MetricValueType::Text(power.value),
-                    });
-                }
-            }
             // Send all data
             info!("{}: Send data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-            for metric in metric_generator.pop_metrics() {
-                rclient.send_metric(&metric);
-            }
-            for metric in data {
-                rclient.send_metric(&metric);
-            }
+            metric_generator
+                .pop_metrics()
+                .iter_mut()
+                .map(|mut metric| {
+                    // Here we define a metric name with pid + exe string suffix as riemann needs
+                    // to differentiate services/metrics
+                    if metric.name == "scaph_process_power_consumption_microwatts" {
+                        metric.name = format!(
+                            "{}_{}_{}",
+                            "scaph_process_power_consumption_microwatts",
+                            metric.attributes.get("pid").unwrap(),
+                            metric.attributes.get("exe").unwrap()
+                        )
+                    }
+                    metric
+                })
+                .for_each(|metric| rclient.send_metric(metric));
 
             thread::sleep(Duration::new(dispatch_duration, 0));
         }
@@ -263,6 +222,13 @@ impl Exporter for RiemannExporter {
             .help("Instruct that scaphandre is running on an hypervisor")
             .long("qemu")
             .short("q")
+            .required(false)
+            .takes_value(false);
+        options.push(arg);
+
+        let arg = Arg::with_name("containers")
+            .help("Monitor and apply labels for processes running as containers")
+            .long("containers")
             .required(false)
             .takes_value(false);
         options.push(arg);
@@ -319,3 +285,4 @@ impl Exporter for RiemannExporter {
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+//
