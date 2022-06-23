@@ -1,5 +1,4 @@
 use core::fmt::Debug;
-use procfs::CpuTime;
 use std::error::Error;
 use std::mem::size_of_val;
 use dyn_clone::DynClone;
