@@ -51,7 +51,7 @@ On ubuntu 20.01 and 20.10, try to install `linux-modules-extra-$(uname-r)` with 
 
 We verified that scaphandre (and especially the powercap_rapl sensor) works on AMD Zen processors with a Linux kernel **5.11 or later**. Before that kernel version, it won't probably work as the [drivers](https://www.phoronix.com/scan.php?page=news_item&px=AMD-Zen-PowerCap-RAPL-5.11) needed to feed powercap with rapl data are not present.
 
-### Trying to build the project I get this error
+### Trying to build the project I get "linker `cc` not found"
 
     error: linker `cc` not found
       |
@@ -64,3 +64,41 @@ We verified that scaphandre (and especially the powercap_rapl sensor) works on A
 You need compiling tooling. On Ubuntu/Debian, run:
 
      sudo apt install build-essential
+
+## Trying to build the project I get "pkg_config fail: Failed to run ... openssl"
+
+Full error may look like that :
+
+    run pkg_config fail: "Failed to run `\"pkg-config\" \"--libs\" \"--cflags\" \"openssl\"`: No such file or directory (os error 2)"
+
+    --- stderr
+    thread 'main' panicked at '
+
+    Could not find directory of OpenSSL installation, and this `-sys` crate cannot
+    proceed without this knowledge. If OpenSSL is installed and this crate had
+    trouble finding it,  you can set the `OPENSSL_DIR` environment variable for the
+    compilation process.
+
+    Make sure you also have the development packages of openssl installed.
+    For example, `libssl-dev` on Ubuntu or `openssl-devel` on Fedora.
+
+    If you're in a situation where you think the directory *should* be found
+    automatically, please open a bug at https://github.com/sfackler/rust-openssl
+    and include information about your system as well as this message.
+
+    $HOST = x86_64-unknown-linux-gnu
+    $TARGET = x86_64-unknown-linux-gnu
+    openssl-sys = 0.9.66
+
+
+    It looks like you're compiling on Linux and also targeting Linux. Currently this
+    requires the `pkg-config` utility to find OpenSSL but unfortunately `pkg-config`
+    could not be found. If you have OpenSSL installed you can likely fix this by
+    installing `pkg-config`.
+
+    ', /home/bpetit/.cargo/registry/src/github.com-1ecc6299db9ec823/openssl-sys-0.9.66/build/find_normal.rs:174:5
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+On Debian/Ubuntum the solution would be to install both pkg-config and libssl-dev :
+
+    apt install pkg-config libssl-dev
