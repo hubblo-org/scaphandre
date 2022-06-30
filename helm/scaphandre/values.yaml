@@ -13,8 +13,10 @@ resources:
 
 scaphandre:
   command: prometheus
+  args: {}
   extraArgs:
     containers: true
+#  rustBacktrace: '1'
 
 # Run as root user to get proper permissions
 userID: 0

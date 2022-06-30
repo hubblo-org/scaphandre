@@ -389,8 +389,8 @@ impl Topology {
     /// and previous stats measurement (from stat_buffer), attribute by attribute.
     pub fn get_stats_diff(&self) -> Option<CPUStat> {
         if self.stat_buffer.len() > 1 {
-            let last = &self.stat_buffer[0].cputime;
-            let previous = &self.stat_buffer[1].cputime;
+            let last = &self.stat_buffer[0];
+            let previous = &self.stat_buffer[1];
             let mut iowait = None;
             let mut irq = None;
             let mut softirq = None;
@@ -416,18 +416,16 @@ impl Topology {
                 guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
             }
             return Some(CPUStat {
-                cputime: CpuTime {
-                    user: last.user - previous.user,
-                    nice: last.nice - previous.nice,
-                    system: last.system - previous.system,
-                    idle: last.idle - previous.idle,
-                    iowait,
-                    irq,
-                    softirq,
-                    steal,
-                    guest,
-                    guest_nice,
-                },
+                user: last.user - previous.user,
+                nice: last.nice - previous.nice,
+                system: last.system - previous.system,
+                idle: last.idle - previous.idle,
+                iowait,
+                irq,
+                softirq,
+                steal,
+                guest,
+                guest_nice,
             });
         }
         None
@@ -438,7 +436,16 @@ impl Topology {
         let kernelstats_or_not = KernelStats::new();
         if let Ok(res_cputime) = kernelstats_or_not {
             return Some(CPUStat {
-                cputime: res_cputime.total,
+                user: res_cputime.total.user,
+                guest: res_cputime.total.guest,
+                guest_nice: res_cputime.total.guest_nice,
+                idle: res_cputime.total.idle,
+                iowait: res_cputime.total.iowait,
+                irq: res_cputime.total.irq,
+                nice: res_cputime.total.nice,
+                softirq: res_cputime.total.softirq,
+                steal: res_cputime.total.steal,
+                system: res_cputime.total.system,
             });
         }
         None
@@ -489,8 +496,7 @@ impl Topology {
                     //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
                     let process_total_time =
                         last.total_time_jiffies() - previous.total_time_jiffies();
-                    let topo_total_time = topo_stats_diff.total_time_jiffies()
-                        * procfs::ticks_per_second().unwrap() as f32;
+                    let topo_total_time = topo_stats_diff.total_time_jiffies();
                     let usage_percent = process_total_time as f64 / topo_total_time as f64;
                     let topo_conso = self.get_records_diff_power_microwatts();
                     if let Some(val) = &topo_conso {
@@ -523,14 +529,13 @@ impl Topology {
                     let process_total_time =
                         last.total_time_jiffies() - previous.total_time_jiffies();
 
-                    let topo_total_time = topo_stats_diff.total_time_jiffies()
-                        * procfs::ticks_per_second().unwrap() as f32;
+                    let topo_total_time = topo_stats_diff.total_time_jiffies();
 
                     let usage = process_total_time as f64 / topo_total_time as f64;
 
                     return Some(Record::new(
                         current_system_time_since_epoch(),
-                        (usage * 100.0).to_string(),
+                        usage.to_string(),
                         units::Unit::Percentage,
                     ));
                 }
@@ -750,32 +755,28 @@ impl CPUSocket {
     /// a CpuTime struct containing stats for the whole socket.
     pub fn read_stats(&self) -> Option<CPUStat> {
         let mut stats = CPUStat {
-            cputime: CpuTime {
-                user: 0.0,
-                nice: 0.0,
-                system: 0.0,
-                idle: 0.0,
-                iowait: Some(0.0),
-                irq: Some(0.0),
-                softirq: Some(0.0),
-                guest: Some(0.0),
-                guest_nice: Some(0.0),
-                steal: Some(0.0),
-            },
+            user: 0,
+            nice: 0,
+            system: 0,
+            idle: 0,
+            iowait: Some(0),
+            irq: Some(0),
+            softirq: Some(0),
+            guest: Some(0),
+            guest_nice: Some(0),
+            steal: Some(0),
         };
         for c in &self.cpu_cores {
             let c_stats = c.read_stats().unwrap();
-            stats.cputime.user += c_stats.user;
-            stats.cputime.nice += c_stats.nice;
-            stats.cputime.system += c_stats.system;
-            stats.cputime.idle += c_stats.idle;
-            stats.cputime.iowait =
-                Some(stats.cputime.iowait.unwrap_or_default() + c_stats.iowait.unwrap_or_default());
-            stats.cputime.irq =
-                Some(stats.cputime.irq.unwrap_or_default() + c_stats.irq.unwrap_or_default());
-            stats.cputime.softirq = Some(
-                stats.cputime.softirq.unwrap_or_default() + c_stats.softirq.unwrap_or_default(),
-            );
+            stats.user += c_stats.user;
+            stats.nice += c_stats.nice;
+            stats.system += c_stats.system;
+            stats.idle += c_stats.idle;
+            stats.iowait =
+                Some(stats.iowait.unwrap_or_default() + c_stats.iowait.unwrap_or_default());
+            stats.irq = Some(stats.irq.unwrap_or_default() + c_stats.irq.unwrap_or_default());
+            stats.softirq =
+                Some(stats.softirq.unwrap_or_default() + c_stats.softirq.unwrap_or_default());
         }
         Some(stats)
     }
@@ -785,8 +786,8 @@ impl CPUSocket {
     /// by field.
     pub fn get_stats_diff(&mut self) -> Option<CPUStat> {
         if self.stat_buffer.len() > 1 {
-            let last = &self.stat_buffer[0].cputime;
-            let previous = &self.stat_buffer[1].cputime;
+            let last = &self.stat_buffer[0];
+            let previous = &self.stat_buffer[1];
             let mut iowait = None;
             let mut irq = None;
             let mut softirq = None;
@@ -812,18 +813,16 @@ impl CPUSocket {
                 guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
             }
             return Some(CPUStat {
-                cputime: CpuTime {
-                    user: last.user - previous.user,
-                    nice: last.nice - previous.nice,
-                    system: last.system - previous.system,
-                    idle: last.idle - previous.idle,
-                    iowait,
-                    irq,
-                    softirq,
-                    steal,
-                    guest,
-                    guest_nice,
-                },
+                user: last.user - previous.user,
+                nice: last.nice - previous.nice,
+                system: last.system - previous.system,
+                idle: last.idle - previous.idle,
+                iowait,
+                irq,
+                softirq,
+                steal,
+                guest,
+                guest_nice,
             });
         }
         None
@@ -842,15 +841,26 @@ impl CPUSocket {
                 "last_record value: {} previous_record value: {}",
                 &last_record.value, &previous_record.value
             );
-            if let (Ok(last_microjoules), Ok(previous_microjoules)) = (
-                last_record.value.trim().parse::<u64>(),
-                previous_record.value.trim().parse::<u64>(),
-            ) {
-                let microjoules = last_microjoules - previous_microjoules;
+            let last_rec_val = last_record.value.trim();
+            debug!("l851 : trying to parse {} as u64", last_rec_val);
+            let prev_rec_val = previous_record.value.trim();
+            debug!("l853 : trying to parse {} as u64", prev_rec_val);
+            if let (Ok(last_microjoules), Ok(previous_microjoules)) =
+                (last_rec_val.parse::<u64>(), prev_rec_val.parse::<u64>())
+            {
+                let mut microjoules = 0;
+                if last_microjoules >= previous_microjoules {
+                    microjoules = last_microjoules - previous_microjoules;
+                } else {
+                    debug!(
+                        "previous_microjoules ({}) > last_microjoules ({})",
+                        previous_microjoules, last_microjoules
+                    );
+                }
                 let time_diff =
                     last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
                 let microwatts = microjoules as f64 / time_diff;
-                debug!("microwatts: {}", microwatts);
+                debug!("l866: microwatts: {}", microwatts);
                 return Some(Record::new(
                     last_record.timestamp,
                     (microwatts as u64).to_string(),
@@ -1052,23 +1062,32 @@ impl fmt::Display for Record {
 
 #[derive(Debug)]
 pub struct CPUStat {
-    pub cputime: CpuTime,
+    user: u64,
+    nice: u64,
+    system: u64,
+    idle: u64,
+    irq: Option<u64>,
+    iowait: Option<u64>,
+    softirq: Option<u64>,
+    steal: Option<u64>,
+    guest: Option<u64>,
+    guest_nice: Option<u64>,
 }
 
 impl CPUStat {
     /// Returns the total of active CPU time spent, for this stat measurement
     /// (not iowait, idle, irq or softirq)
-    pub fn total_time_jiffies(&self) -> f32 {
-        let user = self.cputime.user;
-        let nice = self.cputime.nice;
-        let system = self.cputime.system;
-        let idle = self.cputime.idle;
-        let irq = self.cputime.irq.unwrap_or_default();
-        let iowait = self.cputime.iowait.unwrap_or_default();
-        let softirq = self.cputime.softirq.unwrap_or_default();
-        let steal = self.cputime.steal.unwrap_or_default();
-        let guest_nice = self.cputime.guest_nice.unwrap_or_default();
-        let guest = self.cputime.guest.unwrap_or_default();
+    pub fn total_time_jiffies(&self) -> u64 {
+        let user = self.user;
+        let nice = self.nice;
+        let system = self.system;
+        let idle = self.idle;
+        let irq = self.irq.unwrap_or_default();
+        let iowait = self.iowait.unwrap_or_default();
+        let softirq = self.softirq.unwrap_or_default();
+        let steal = self.steal.unwrap_or_default();
+        let guest_nice = self.guest_nice.unwrap_or_default();
+        let guest = self.guest.unwrap_or_default();
 
         trace!(
             "CPUStat contains user {} nice {} system {} idle: {} irq {} softirq {} iowait {} steal {} guest_nice {} guest {}",
@@ -1082,18 +1101,16 @@ impl Clone for CPUStat {
     /// Returns a copy of CPUStat instance
     fn clone(&self) -> CPUStat {
         CPUStat {
-            cputime: CpuTime {
-                user: self.cputime.user,
-                nice: self.cputime.nice,
-                system: self.cputime.system,
-                softirq: self.cputime.softirq,
-                irq: self.cputime.irq,
-                idle: self.cputime.idle,
-                iowait: self.cputime.iowait,
-                steal: self.cputime.steal,
-                guest: self.cputime.guest,
-                guest_nice: self.cputime.guest_nice,
-            },
+            user: self.user,
+            guest: self.guest,
+            guest_nice: self.guest_nice,
+            idle: self.idle,
+            iowait: self.iowait,
+            irq: self.irq,
+            nice: self.nice,
+            softirq: self.softirq,
+            steal: self.steal,
+            system: self.system,
         }
     }
 }
@@ -1112,7 +1129,7 @@ mod tests {
         for c in &cores {
             println!("{:?}", c.attributes.get("processor"));
         }
-        assert_eq!(cores.len() > 0, true);
+        assert_eq!(!cores.is_empty(), true);
         for c in &cores {
             assert_eq!(c.attributes.len() > 5, true);
         }

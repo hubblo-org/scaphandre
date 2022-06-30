@@ -20,6 +20,13 @@ spec:
       - name:  {{ template "scaphandre.name" . }}
         image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"
         args:
+            {{- range $key, $value := .Values.scaphandre.args }}
+            {{- if $value }}
+            - --{{ $key }}={{ $value }}
+            {{- else }}
+            - --{{ $key }}
+            {{- end }}
+            {{- end }}
             - {{ .Values.scaphandre.command }}
             {{- range $key, $value := .Values.scaphandre.extraArgs }}
             {{- if $value }}
@@ -28,6 +35,11 @@ spec:
             - --{{ $key }}
             {{- end }}
             {{- end }}
+        env:
+        {{- if .Values.scaphandre.rustBacktrace }}
+        - name: RUST_BACKTRACE
+          value: '{{ .Values.scaphandre.rustBacktrace }}'
+        {{- end }}
         ports:
         - name: metrics
           containerPort: {{ .Values.port }}

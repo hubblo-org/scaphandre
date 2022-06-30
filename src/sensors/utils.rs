@@ -31,7 +31,7 @@ impl ProcessTracker {
     pub fn new(max_records_per_process: u16) -> ProcessTracker {
         let regex_cgroup_docker = Regex::new(r"^/docker/.*$").unwrap();
         let regex_cgroup_kubernetes = Regex::new(r"^/kubepods.*$").unwrap();
-        let regex_cgroup_containerd = Regex::new("/system.slice/containerd.service").unwrap();
+        let regex_cgroup_containerd = Regex::new("/system.slice/containerd.service/.*$").unwrap();
         ProcessTracker {
             procs: vec![],
             max_records_per_process,
@@ -165,6 +165,9 @@ impl ProcessTracker {
         if container_id.ends_with(".scope") {
             container_id = container_id.strip_suffix(".scope").unwrap().to_string();
         }
+        if container_id.contains("cri-containerd") {
+            container_id = container_id.split(':').last().unwrap().to_string();
+        }
         Ok(container_id)
     }
 
@@ -205,7 +208,7 @@ impl ProcessTracker {
                         if let Some(container) = containers.iter().find(|x| x.Id == container_id) {
                             let mut names = String::from("");
                             for n in &container.Names {
-                                names.push_str(&n.trim().replace("/", ""));
+                                names.push_str(&n.trim().replace('/', ""));
                             }
                             description.insert(String::from("container_names"), names);
                             description.insert(
@@ -225,12 +228,20 @@ impl ProcessTracker {
                             }
                         }
                         found = true;
-                    } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
-                        // kubernetes
-                        description.insert(
-                            String::from("container_scheduler"),
-                            String::from("kubernetes"),
-                        );
+                    } else {
+                        // containerd
+                        if self.regex_cgroup_containerd.is_match(&cg.pathname) {
+                            description.insert(
+                                String::from("container_runtime"),
+                                String::from("containerd"),
+                            );
+                        } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
+                            // kubernetes not using containerd but we can get the container id
+                        } else {
+                            // cgroup not related to a container technology
+                            continue;
+                        }
+
                         let container_id =
                             match self.extract_pod_id_from_cgroup_path(cg.pathname.clone()) {
                                 Ok(id) => id,
@@ -273,6 +284,10 @@ impl ProcessTracker {
                             }
                             None => false,
                         }) {
+                            description.insert(
+                                String::from("container_scheduler"),
+                                String::from("kubernetes"),
+                            );
                             if let Some(pod_name) = &pod.metadata.name {
                                 description
                                     .insert(String::from("kubernetes_pod_name"), pod_name.clone());
@@ -292,13 +307,6 @@ impl ProcessTracker {
                                 }
                             }
                         }
-                        found = true;
-                    } else if self.regex_cgroup_containerd.is_match(&cg.pathname) {
-                        // containerd
-                        description.insert(
-                            String::from("container_runtime"),
-                            String::from("containerd"),
-                        );
                         found = true;
                     } //else {
                       //    debug!("Cgroup not identified as related to a container technology : {}", &cg.pathname);
@@ -516,22 +524,23 @@ impl ProcessRecord {
     pub fn total_time_jiffies(&self) -> u64 {
         let stime = self.process.stat.stime;
         let utime = self.process.stat.utime;
-        let cutime = self.process.stat.cutime as u64;
-        let cstime = self.process.stat.cstime as u64;
-        let guest_time = self.process.stat.guest_time.unwrap_or_default();
-        let cguest_time = self.process.stat.cguest_time.unwrap_or_default() as u64;
-        let delayacct_blkio_ticks = self.process.stat.delayacct_blkio_ticks.unwrap_or_default();
-        let itrealvalue = self.process.stat.itrealvalue as u64;
+        //let cutime = self.process.stat.cutime as u64;
+        //let cstime = self.process.stat.cstime as u64;
+        //let guest_time = self.process.stat.guest_time.unwrap_or_default();
+        //let cguest_time = self.process.stat.cguest_time.unwrap_or_default() as u64;
+        //let delayacct_blkio_ticks = self.process.stat.delayacct_blkio_ticks.unwrap_or_default();
+        //let itrealvalue = self.process.stat.itrealvalue as u64;
 
         trace!(
-            "ProcessRecord: stime {} utime {} cutime {} cstime {} guest_time {} cguest_time {} delayacct_blkio_ticks {} itrealvalue {}",
-            stime, utime, cutime, cstime, guest_time, cguest_time, delayacct_blkio_ticks, itrealvalue
+            "ProcessRecord: stime {} utime {}", //cutime {} cstime {} guest_time {} cguest_time {} delayacct_blkio_ticks {} itrealvalue {}",
+            stime,
+            utime //, cutime, cstime, guest_time, cguest_time, delayacct_blkio_ticks, itrealvalue
         );
 
         // not including cstime and cutime in total as they are reported only when child dies
         // child metrics as already reported as the child processes are in the global process
         // list, found as /proc/PID/stat
-        stime + utime + guest_time + cguest_time + delayacct_blkio_ticks + itrealvalue
+        stime + utime //+ guest_time + cguest_time + delayacct_blkio_ticks + itrealvalue
     }
 }
 
