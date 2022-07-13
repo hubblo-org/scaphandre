@@ -11,6 +11,7 @@ use clap::{Arg, ArgMatches};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
 use std::convert::Infallible;
+use std::fmt::Write as _;
 use std::{
     collections::HashMap,
     net::{IpAddr, SocketAddr},
@@ -194,12 +195,12 @@ fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>
     if let Some(labels) = labels {
         result.push('{');
         for (k, v) in labels.iter() {
-            result.push_str(&format!("{}=\"{}\",", k, v.replace('\"', "_")));
+            let _ = write!(result, "{}=\"{}\",", k, v.replace('\"', "_"));
         }
         result.remove(result.len() - 1);
         result.push('}');
     }
-    result.push_str(&format!(" {}\n", value));
+    let _ = writeln!(result, " {}", value);
     result
 }
 
@@ -213,8 +214,8 @@ fn push_metric(
     add_help: bool,
 ) -> String {
     if add_help {
-        body.push_str(&format!("# HELP {} {}", metric_name, help));
-        body.push_str(&format!("\n# TYPE {} {}\n", metric_name, metric_type));
+        let _ = write!(body, "# HELP {} {}", metric_name, help);
+        let _ = write!(body, "\n# TYPE {} {}\n", metric_name, metric_type);
     }
     body.push_str(&metric_line);
     body
@@ -287,7 +288,7 @@ async fn show_metrics(
             );
         }
     } else {
-        body.push_str(&format!("<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{}\">/{}</a>", suffix, suffix));
+        let _ = write!(body, "<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{}\">/{}</a>", suffix, suffix);
     }
     Ok(Response::new(body.into()))
 }
