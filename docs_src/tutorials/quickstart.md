@@ -16,7 +16,7 @@ Or if you downloaded or built a binary, you'd run:
 
 Running scaphandre with podman on a distribution using SELinux may fail because of access denied to `/proc` files.
 
-To make it work you should run scaphandre in provileged mode :
+To make it work you should run scaphandre in privileged mode :
 
     podman run --privileged ...
 
