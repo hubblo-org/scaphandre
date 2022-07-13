@@ -12,7 +12,7 @@ Or if you downloaded or built a binary, you'd run:
 
     scaphandre stdout -t 15
 
-## Running scaphandre on centos/redhat (family using SELinux) with podman
+## Running scaphandre on Fedora / CentOS Stream / RHEL (or any distribution using SELinux) with podman
 
 Running scaphandre with podman on a distribution using SELinux may fail because of access denied to `/proc` files.
 
