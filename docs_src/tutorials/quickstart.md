@@ -12,6 +12,18 @@ Or if you downloaded or built a binary, you'd run:
 
     scaphandre stdout -t 15
 
+## Running scaphandre on centos/redhat (family using SELinux) with podman
+
+Running scaphandre with podman on a distribution using SELinux may fail because of access denied to `/proc` files.
+
+To make it work you should run scaphandre in provileged mode :
+
+    podman run --privileged ...
+
+You'll find explanation of this requirement here : [#106](https://github.com/hubblo-org/scaphandre/issues/106).
+
+## Output
+
 Here we are using the stdout [exporter](../explanations/internal-structure.md) to print current power consumption usage in the terminal during 15 seconds.
 
 You should get an output like:
@@ -33,6 +45,8 @@ If you have more than one CPU Socket, you'll have multiple *SocketX* lines.
 Then you have the 5 processes consuming the most power during the last two measurements.
 
 If you don't get this output and get an error, jump to the [Troubleshooting](../troubleshooting.md) section of the documentation.
+
+## Going further
 
 At that point, you're ready to use scaphandre. The Stdout exporter is very basic and other exporters should allow you to use and send those metrics the way you like.
 
