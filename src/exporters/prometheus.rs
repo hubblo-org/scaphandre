@@ -210,9 +210,12 @@ fn push_metric(
     metric_type: String,
     metric_name: String,
     metric_line: String,
+    add_help: bool,
 ) -> String {
-    body.push_str(&format!("# HELP {} {}", metric_name, help));
-    body.push_str(&format!("\n# TYPE {} {}\n", metric_name, metric_type));
+    if add_help {
+        body.push_str(&format!("# HELP {} {}", metric_name, help));
+        body.push_str(&format!("\n# TYPE {} {}\n", metric_name, metric_type));
+    }
     body.push_str(&metric_line);
     body
 }
@@ -249,6 +252,8 @@ async fn show_metrics(
 
         metric_generator.gen_all_metrics();
 
+        let mut metrics_pushed: Vec<String> = vec![];
+
         // Send all data
         for msg in metric_generator.pop_metrics() {
             let mut attributes: Option<&HashMap<String, String>> = None;
@@ -263,12 +268,22 @@ async fn show_metrics(
                 MetricValueType::IntUnsigned(value) => value.to_string(),
                 MetricValueType::Text(ref value) => value.to_string(),
             };
+
+            let mut should_i_add_help = true;
+
+            if metrics_pushed.contains(&msg.name) {
+                should_i_add_help = false;
+            } else {
+                metrics_pushed.insert(0, msg.name.clone());
+            }
+
             body = push_metric(
                 body,
                 msg.description.clone(),
                 msg.metric_type.clone(),
                 msg.name.clone(),
                 format_metric(&msg.name, &value, attributes),
+                should_i_add_help,
             );
         }
     } else {
