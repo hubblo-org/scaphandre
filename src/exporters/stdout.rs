@@ -99,17 +99,16 @@ impl StdoutExporter {
             .parse()
             .expect("Wrong process_number value, should be a number");
 
-        let regex_filter: Option<Regex>;
-        if !parameters.is_present("regex_filter")
+        let regex_filter: Option<Regex> = if !parameters.is_present("regex_filter")
             || parameters.value_of("regex_filter").unwrap().is_empty()
         {
-            regex_filter = None;
+            None
         } else {
-            regex_filter = Some(
+            Some(
                 Regex::new(parameters.value_of("regex_filter").unwrap())
                     .expect("Wrong regex_filter, regexp is invalid"),
-            );
-        }
+            )
+        };
 
         if parameters.occurrences_of("regex_filter") == 1
             && parameters.occurrences_of("process_number") == 1

@@ -637,13 +637,13 @@ impl MetricGenerator {
                 if let Ok(pods_result) = kubernetes.list_pods("".to_string()) {
                     self.pods = pods_result;
                     debug!("Found {} pods", &self.pods.len());
-                    self.pods_last_check = current_system_time_since_epoch().as_secs().to_string();
                 } else {
                     info!("Failed getting pods list, despite client seems ok.");
                 }
             } else {
                 debug!("Kubernetes socket is not some.");
             }
+            self.pods_last_check = current_system_time_since_epoch().as_secs().to_string();
         }
     }
 
