@@ -5,6 +5,16 @@ use clap::crate_version;
 use docker_sync::Docker;
 use k8s_sync::{errors::KubernetesError, kubernetes::Kubernetes};
 
+/// Returns a cmdline String filtered from potential characters that
+/// could break exporters output.
+///
+/// Here we replace:
+/// 1. Double quote by backslash double quote.
+/// 2. Remove carriage return.
+pub fn filter_cmdline(cmdline: &str) -> String {
+    cmdline.replace('\"', "\\\"").replace('\n', "")
+}
+
 /// Returns an Option containing the VM name of a qemu process.
 ///
 /// Then VM name is extracted from the command line.
@@ -80,6 +90,16 @@ mod tests {
     fn test_filter_qemu_cmdline_ko_empty_guest02() {
         let cmdline = "qemu-system-x86_64,file=/var/lib/libvirt/qemu/domain-1-fedora33/master-key.aes-object-Sguest=";
         assert_eq!(filter_qemu_cmdline(cmdline), None);
+    }
+
+    #[test]
+    // Fix bug https://github.com/hubblo-org/scaphandre/issues/175
+    fn test_filter_cmdline_with_carriage_return() {
+        let cmdline = "bash-csleep infinity;\n> echo plop";
+        assert_eq!(
+            filter_cmdline(cmdline),
+            String::from("bash-csleep infinity;> echo plop")
+        );
     }
 }
 
