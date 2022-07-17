@@ -4,6 +4,7 @@ use crate::exporters::*;
 use crate::sensors::Sensor;
 use colored::*;
 use regex::Regex;
+use std::fmt::Write;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -211,7 +212,8 @@ impl StdoutExporter {
                     }
                     false
                 }) {
-                    to_print.push_str(&format!(
+                    write!(
+                        to_print,
                         "{} W\t",
                         current_domain
                             .metric_value
@@ -219,7 +221,8 @@ impl StdoutExporter {
                             .parse::<f32>()
                             .unwrap()
                             / 1000000.0
-                    ));
+                    )
+                    .unwrap()
                 } else {
                     to_print.push_str("---");
                 }
