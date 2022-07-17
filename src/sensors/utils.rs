@@ -4,7 +4,6 @@ use regex::Regex;
 #[cfg(feature = "containers")]
 use std::collections::HashMap;
 #[cfg(target_os = "windows")]
-
 use sysinfo::{
     get_current_pid, Process, ProcessExt, ProcessStatus, ProcessorExt, System, SystemExt,
 };
@@ -800,7 +799,8 @@ impl ProcessTracker {
             //warn!("p.cpu_usage {}%", p.cpu_usage());
             //warn!("nb_cores {}%", nb_cores);
             //warn!("cpu_current_usage: {}%", cpu_current_usage/nb_cores as f32);
-            (p.cpu_usage() + (100.0 - cpu_current_usage/nb_cores as f32) * p.cpu_usage() / 100.0 ) / nb_cores as f32
+            (p.cpu_usage() + (100.0 - cpu_current_usage / nb_cores as f32) * p.cpu_usage() / 100.0)
+                / nb_cores as f32
         } else {
             0.0
         }

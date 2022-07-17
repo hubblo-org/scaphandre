@@ -31,7 +31,7 @@ unsafe fn ctl_code(device_type: u32, request_code: u32, method: u32, access: u32
 
 /// # Safety
 ///
-/// Unsafe code due to direct calls to Windows API. 
+/// Unsafe code due to direct calls to Windows API.
 pub unsafe fn get_handle(driver_name: &str) -> Result<HANDLE, String> {
     let device: HANDLE = CreateFileW(
         driver_name,
@@ -52,7 +52,7 @@ pub unsafe fn get_handle(driver_name: &str) -> Result<HANDLE, String> {
 
 /// # Safety
 ///
-/// Unsafe code due to direct calls to Windows API. 
+/// Unsafe code due to direct calls to Windows API.
 pub unsafe fn close_handle(handle: HANDLE) {
     let res = CloseHandle(handle);
     if res.as_bool() {
@@ -70,14 +70,12 @@ pub struct MsrRAPLSensor {
 }
 
 impl Default for MsrRAPLSensor {
-
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl MsrRAPLSensor {
-
     pub fn new() -> MsrRAPLSensor {
         let driver_name = "\\\\.\\ScaphandreDriver";
 
