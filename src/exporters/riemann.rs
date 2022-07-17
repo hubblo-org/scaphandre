@@ -230,13 +230,13 @@ impl Exporter for RiemannExporter {
     }
 
     /// Returns options understood by the exporter.
-    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
+    fn get_options() -> Vec<clap::Arg<'static>> {
         let mut options = Vec::new();
         let arg = Arg::with_name("address")
             .default_value(DEFAULT_IP_ADDRESS)
             .help("Riemann ipv6 or ipv4 address. If mTLS is used then server fqdn must be provided")
             .long("address")
-            .short("a")
+            .short('a')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -245,7 +245,7 @@ impl Exporter for RiemannExporter {
             .default_value(DEFAULT_PORT)
             .help("Riemann TCP port number")
             .long("port")
-            .short("p")
+            .short('p')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -254,7 +254,7 @@ impl Exporter for RiemannExporter {
             .default_value("5")
             .help("Duration between metrics dispatch")
             .long("dispatch")
-            .short("d")
+            .short('d')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -262,7 +262,7 @@ impl Exporter for RiemannExporter {
         let arg = Arg::with_name("qemu")
             .help("Instruct that scaphandre is running on an hypervisor")
             .long("qemu")
-            .short("q")
+            .short('q')
             .required(false)
             .takes_value(false);
         options.push(arg);

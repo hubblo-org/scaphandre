@@ -1,5 +1,5 @@
 //! Generic sensor and transmission agent for energy consumption related metrics.
-use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
+use clap::{crate_authors, crate_version, App, AppSettings, Arg, ArgAction, SubCommand};
 use scaphandre::{get_exporters_options, run};
 fn main() {
     let sensors = ["powercap_rapl"];
@@ -14,8 +14,8 @@ fn main() {
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .arg(
             Arg::with_name("v")
-                .short("v")
-                .multiple(true)
+                .short('v')
+                .action(ArgAction::Count)
                 .help("Sets the level of verbosity.")
         )
         .arg(
@@ -33,8 +33,8 @@ fn main() {
                 .required(false)
                 .takes_value(true)
                 .default_value("powercap_rapl")
-                .possible_values(&sensors)
-                .short("s")
+                .possible_values(sensors)
+                .short('s')
                 .long("sensor")
         ).arg(
             Arg::with_name("sensor-buffer-per-domain-max-kB")
