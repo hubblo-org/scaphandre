@@ -23,12 +23,12 @@ impl Exporter for JSONExporter {
 
     /// Returns options needed for that exporter, as a HashMap
 
-    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
+    fn get_options() -> Vec<clap::Arg<'static>> {
         let mut options = Vec::new();
         let arg = Arg::with_name("timeout")
             .help("Maximum time spent measuring, in seconds.")
             .long("timeout")
-            .short("t")
+            .short('t')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -37,7 +37,7 @@ impl Exporter for JSONExporter {
             .default_value("2")
             .help("Set measurement step duration in second.")
             .long("step")
-            .short("s")
+            .short('s')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -46,7 +46,7 @@ impl Exporter for JSONExporter {
             .default_value("0")
             .help("Set measurement step duration in nano second.")
             .long("step_nano")
-            .short("n")
+            .short('n')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -55,7 +55,7 @@ impl Exporter for JSONExporter {
             .default_value("")
             .help("Destination file for the report.")
             .long("file")
-            .short("f")
+            .short('f')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -64,7 +64,7 @@ impl Exporter for JSONExporter {
             .default_value("10")
             .help("Maximum number of processes to watch.")
             .long("max-top-consumers")
-            .short("m")
+            .short('m')
             .required(false)
             .takes_value(true);
         options.push(arg);

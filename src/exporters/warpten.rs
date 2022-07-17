@@ -50,13 +50,13 @@ impl Exporter for Warp10Exporter {
     }
 
     /// Options for configuring the exporter.
-    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
+    fn get_options() -> Vec<clap::Arg<'static>> {
         let mut options = Vec::new();
         let arg = Arg::with_name("host")
             .default_value("localhost")
             .help("Warp10 host's FQDN or IP address to send data to")
             .long("host")
-            .short("H")
+            .short('H')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -65,7 +65,7 @@ impl Exporter for Warp10Exporter {
             .default_value("http")
             .help("Either 'http' or 'https'")
             .long("scheme")
-            .short("s")
+            .short('s')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -74,7 +74,7 @@ impl Exporter for Warp10Exporter {
             .default_value("8080")
             .help("TCP port to join Warp10 on the host")
             .long("port")
-            .short("p")
+            .short('p')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -82,7 +82,7 @@ impl Exporter for Warp10Exporter {
         let arg = Arg::with_name("write-token")
             .help("Auth. token to write on Warp10")
             .long("write-token")
-            .short("t")
+            .short('t')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -91,7 +91,7 @@ impl Exporter for Warp10Exporter {
             .default_value("30")
             .help("Time step between measurements, in seconds.")
             .long("step")
-            .short("S")
+            .short('S')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -99,7 +99,7 @@ impl Exporter for Warp10Exporter {
         let arg = Arg::with_name("qemu")
             .help("Tells scaphandre it is running on a Qemu hypervisor.")
             .long("qemu")
-            .short("q")
+            .short('q')
             .required(false)
             .takes_value(false);
         options.push(arg);

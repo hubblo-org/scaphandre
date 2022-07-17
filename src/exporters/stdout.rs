@@ -21,13 +21,13 @@ impl Exporter for StdoutExporter {
     }
 
     /// Returns options needed for that exporter, as a HashMap
-    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
+    fn get_options() -> Vec<clap::Arg<'static>> {
         let mut options = Vec::new();
         let arg = Arg::with_name("timeout")
             .default_value("10")
             .help("Maximum time spent measuring, in seconds. 0 means continuous measurement.")
             .long("timeout")
-            .short("t")
+            .short('t')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -36,7 +36,7 @@ impl Exporter for StdoutExporter {
             .default_value("2")
             .help("Set measurement step duration in second.")
             .long("step")
-            .short("s")
+            .short('s')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -45,7 +45,7 @@ impl Exporter for StdoutExporter {
             .default_value("5")
             .help("Number of processes to display.")
             .long("process")
-            .short("p")
+            .short('p')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -53,7 +53,7 @@ impl Exporter for StdoutExporter {
         let arg = Arg::with_name("regex_filter")
             .help("Filter processes based on regular expressions (e.g: 'scaph\\w\\wd.e'). This option disable '-p' or '--process' one.")
             .long("regex")
-            .short("r")
+            .short('r')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -61,7 +61,7 @@ impl Exporter for StdoutExporter {
         let arg = Arg::with_name("qemu")
             .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
             .long("qemu")
-            .short("q")
+            .short('q')
             .required(false)
             .takes_value(false);
         options.push(arg);
@@ -124,7 +124,8 @@ impl StdoutExporter {
             topology,
             utils::get_hostname(),
             parameters.is_present("qemu"),
-            parameters.is_present("containers"),
+            parameters.is_present("containers"), // This broke clap as the parameter is not
+                                                 // defined
         );
 
         println!("Measurement step is: {}s", step_duration);

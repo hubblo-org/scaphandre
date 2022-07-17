@@ -59,13 +59,13 @@ impl Exporter for PrometheusExporter {
         );
     }
     /// Returns options understood by the exporter.
-    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
+    fn get_options() -> Vec<clap::Arg<'static>> {
         let mut options = Vec::new();
         let arg = Arg::with_name("address")
             .default_value(DEFAULT_IP_ADDRESS)
             .help("ipv6 or ipv4 address to expose the service to")
             .long("address")
-            .short("a")
+            .short('a')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -74,7 +74,7 @@ impl Exporter for PrometheusExporter {
             .default_value("8080")
             .help("TCP port number to expose the service")
             .long("port")
-            .short("p")
+            .short('p')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -83,7 +83,7 @@ impl Exporter for PrometheusExporter {
             .default_value("metrics")
             .help("url suffix to access metrics")
             .long("suffix")
-            .short("s")
+            .short('s')
             .required(false)
             .takes_value(true);
         options.push(arg);
@@ -91,7 +91,7 @@ impl Exporter for PrometheusExporter {
         let arg = Arg::with_name("qemu")
             .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
             .long("qemu")
-            .short("q")
+            .short('q')
             .required(false)
             .takes_value(false);
         options.push(arg);

@@ -141,7 +141,7 @@ pub fn run(matches: ArgMatches) {
 
 /// Returns options needed for each exporter as a HashMap.
 /// This function has to be updated to enable a new exporter.
-pub fn get_exporters_options() -> HashMap<String, Vec<clap::Arg<'static, 'static>>> {
+pub fn get_exporters_options() -> HashMap<String, Vec<clap::Arg<'static>>> {
     let mut options = HashMap::new();
     options.insert(
         String::from("stdout"),
