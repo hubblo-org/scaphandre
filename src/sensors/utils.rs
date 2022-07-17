@@ -4,7 +4,10 @@ use regex::Regex;
 #[cfg(feature = "containers")]
 use std::collections::HashMap;
 #[cfg(target_os = "windows")]
-use sysinfo::{get_current_pid, Process, ProcessExt, ProcessorExt, System, SystemExt};
+
+use sysinfo::{
+    get_current_pid, Process, ProcessExt, ProcessStatus, ProcessorExt, System, SystemExt,
+};
 //use std::error::Error;
 use ordered_float::*;
 use std::path::PathBuf;

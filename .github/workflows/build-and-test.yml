@@ -46,11 +46,11 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
-      - name: Clippy Check
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -A clippy::upper_case_acronyms -D warnings
+      #- name: Clippy Check
+      #  uses: actions-rs/cargo@v1
+      #  with:
+      #    command: clippy
+      #    args: -- -A clippy::upper_case_acronyms -D warnings
   test_linux_x86_64:
     name: Test on GNU/Linux x86_64 (Bare metal worker)
     runs-on: ubuntu-latest
