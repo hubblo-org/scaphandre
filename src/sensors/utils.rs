@@ -4,7 +4,7 @@ use regex::Regex;
 #[cfg(feature = "containers")]
 use std::collections::HashMap;
 #[cfg(target_os = "windows")]
-use sysinfo::{get_current_pid, Process, ProcessExt, ProcessorExt, ProcessStatus, System, SystemExt};
+use sysinfo::{get_current_pid, Process, ProcessExt, ProcessorExt, System, SystemExt};
 //use std::error::Error;
 use ordered_float::*;
 use std::path::PathBuf;
@@ -246,7 +246,7 @@ impl IProcess {
             owner: 0,
             comm: String::from(process.exe().to_str().unwrap()),
             cmdline: process.cmd().to_vec(),
-            stat: Some(IStat::from_windows_process_stat(&process)),
+            stat: Some(IStat::from_windows_process_stat(process)),
         }
     }
 
@@ -558,7 +558,7 @@ impl ProcessTracker {
                 //TODO implement
                 // clippy will ask you to remove mut from res, but you just need to implement to fix that
                 if let Some(sysinfo_p) = self.sysinfo.process(p[0].process.pid as usize) {
-                    let status = sysinfo_p.status();
+                    //let status = sysinfo_p.status();
                     //if status != ProcessStatus::Dead {//&& status != ProcessStatus::Stop {
                     res.push(p);
                     //}
@@ -797,8 +797,7 @@ impl ProcessTracker {
             //warn!("p.cpu_usage {}%", p.cpu_usage());
             //warn!("nb_cores {}%", nb_cores);
             //warn!("cpu_current_usage: {}%", cpu_current_usage/nb_cores as f32);
-            let result = (p.cpu_usage() + (100.0 - cpu_current_usage/nb_cores as f32) * p.cpu_usage() / 100.0 ) / nb_cores as f32;
-            result
+            (p.cpu_usage() + (100.0 - cpu_current_usage/nb_cores as f32) * p.cpu_usage() / 100.0 ) / nb_cores as f32
         } else {
             0.0
         }

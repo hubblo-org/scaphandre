@@ -26,13 +26,14 @@ const MSR_PKG_ENERGY_STATUS: u16 = 0x611;
 //const MSR_PP1_POWER_LIMIT: u16 = 0x640; // PP1 RAPL Power Limit Control (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
 
 unsafe fn ctl_code(device_type: u32, request_code: u32, method: u32, access: u32) -> u32 {
-    let res = ((device_type) << 16) | ((access) << 14) | ((request_code) << 2) | (method);
-    res
+    ((device_type) << 16) | ((access) << 14) | ((request_code) << 2) | (method)
 }
 
+/// # Safety
+///
+/// Unsafe code due to direct calls to Windows API. 
 pub unsafe fn get_handle(driver_name: &str) -> Result<HANDLE, String> {
-    let device: HANDLE;
-    device = CreateFileW(
+    let device: HANDLE = CreateFileW(
         driver_name,
         FILE_GENERIC_READ | FILE_GENERIC_WRITE,
         FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -49,6 +50,9 @@ pub unsafe fn get_handle(driver_name: &str) -> Result<HANDLE, String> {
     Ok(device)
 }
 
+/// # Safety
+///
+/// Unsafe code due to direct calls to Windows API. 
 pub unsafe fn close_handle(handle: HANDLE) {
     let res = CloseHandle(handle);
     if res.as_bool() {
@@ -65,7 +69,15 @@ pub struct MsrRAPLSensor {
     time_unit: f64,
 }
 
+impl Default for MsrRAPLSensor {
+
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MsrRAPLSensor {
+
     pub fn new() -> MsrRAPLSensor {
         let driver_name = "\\\\.\\ScaphandreDriver";
 
@@ -108,13 +120,10 @@ impl MsrRAPLSensor {
     }
 
     pub fn extract_rapl_power_unit(data: u64) -> f64 {
-        let new_data: u32;
-        let power: u32;
-
         // Intel documentation says high level bits are reserved, so ignore them
-        new_data = (data & 0xFFFFFFFF) as u32;
+        let new_data: u32 = (data & 0xFFFFFFFF) as u32;
         //// Power units are located from bits 0 to 3, extract them
-        power = new_data & 0x0F;
+        let power: u32 = new_data & 0x0F;
 
         //// Intel documentation says: 1 / 2^power
         let divider = i64::pow(2, power);
@@ -122,13 +131,10 @@ impl MsrRAPLSensor {
         1.0 / divider as f64
     }
     pub fn extract_rapl_energy_unit(data: u64) -> f64 {
-        let new_data: u32;
-        let energy: u32;
-
         // Intel documentation says high level bits are reserved, so ignore them
-        new_data = (data & 0xFFFFFFFF) as u32;
+        let new_data: u32 = (data & 0xFFFFFFFF) as u32;
         //// Energy state units are located from bits 8 to 12, extract them
-        energy = (new_data >> 8) & 0x1F;
+        let energy: u32 = (new_data >> 8) & 0x1F;
 
         //// Intel documentation says: 1 / 2^power
         let divider = i64::pow(2, energy);
@@ -136,13 +142,10 @@ impl MsrRAPLSensor {
         1.0 / divider as f64
     }
     pub fn extract_rapl_time_unit(data: u64) -> f64 {
-        let new_data: u32;
-        let time: u32;
-
         // Intel documentation says high level bits are reserved, so ignore them
-        new_data = (data & 0xFFFFFFFF) as u32;
+        let new_data: u32 = (data & 0xFFFFFFFF) as u32;
         //// Time units are located from bits 16 to 19, extract them
-        time = (new_data >> 16) & 0x0F;
+        let time: u32 = (new_data >> 16) & 0x0F;
 
         //// Intel documentation says: 1 / 2^power
         let divider = i64::pow(2, time);

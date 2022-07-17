@@ -736,7 +736,7 @@ impl MetricGenerator {
             attributes.insert("exe".to_string(), exe.clone());
 
             if let Some(cmdline_str) = cmdline {
-                attributes.insert("cmdline".to_string(), cmdline_str.replace("\"", "\\\""));
+                attributes.insert("cmdline".to_string(), cmdline_str.replace('"', "\\\""));
 
                 #[cfg(target_os = "linux")]
                 if self.qemu {

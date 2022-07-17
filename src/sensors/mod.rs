@@ -211,14 +211,13 @@ impl Topology {
             let sysinfo_system = System::new_all();
             let sysinfo_cores = sysinfo_system.processors();
             let mut id: u16 = 0;
-            for c in sysinfo_cores {
+            for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
                 let mut info = HashMap::new();
                 info.insert(String::from("frequency"), c.frequency().to_string());
                 info.insert(String::from("name"), c.name().to_string());
                 info.insert(String::from("vendor_id"), c.vendor_id().to_string());
                 info.insert(String::from("brand"), c.brand().to_string());
                 cores.push(CPUCore::new(id, info));
-                id = id + 1;
             }
         }
         Ok(cores)
@@ -632,7 +631,7 @@ impl Topology {
                     let topo_conso = self.get_records_diff_power_microwatts();
                     if let Some(conso) = &topo_conso {
                         let conso_f64 = conso.value.parse::<f64>().unwrap();
-                        let result = (conso_f64 * process_cpu_percentage as f64) / 100.0 as f64;
+                        let result = (conso_f64 * process_cpu_percentage as f64) / 100.0_f64;
                         return Some(Record::new(
                             last.timestamp,
                             result.to_string(),
