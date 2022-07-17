@@ -26,7 +26,6 @@ impl Exporter for JSONExporter {
     fn get_options() -> Vec<clap::Arg<'static, 'static>> {
         let mut options = Vec::new();
         let arg = Arg::with_name("timeout")
-            .default_value("10")
             .help("Maximum time spent measuring, in seconds.")
             .long("timeout")
             .short("t")
@@ -127,7 +126,6 @@ impl JSONExporter {
 
     /// Runs iteration() every 'step', until 'timeout'
     pub fn runner(&mut self, parameters: ArgMatches) {
-        let timeout = parameters.value_of("timeout").unwrap();
         let topology = self.sensor.get_topology().unwrap();
         let mut metric_generator = MetricGenerator::new(
             topology,
@@ -135,29 +133,31 @@ impl JSONExporter {
             parameters.is_present("qemu"),
             parameters.is_present("containers"),
         );
-        if timeout.is_empty() {
-            self.iterate(&parameters, &mut metric_generator);
-        } else {
+
+        // We have a default value of 2s so it is safe to unwrap the option
+        // Panic if a non numerical value is passed
+        let step_duration: u64 = parameters
+            .value_of("step_duration")
+            .unwrap()
+            .parse()
+            .expect("Wrong step_duration value, should be a number of seconds");
+        let step_duration_nano: u32 = parameters
+            .value_of("step_duration_nano")
+            .unwrap()
+            .parse()
+            .expect("Wrong step_duration_nano value, should be a number of nano seconds");
+
+        info!("Measurement step is: {}s", step_duration);
+        if let Some(timeout) = parameters.value_of("timeout") {
             let now = Instant::now();
 
             let timeout_secs: u64 = timeout.parse().unwrap();
-
-            // We have a default value of 2s so it is safe to unwrap the option
-            // Panic if a non numerical value is passed
-            let step_duration: u64 = parameters
-                .value_of("step_duration")
-                .unwrap()
-                .parse()
-                .expect("Wrong step_duration value, should be a number of seconds");
-            let step_duration_nano: u32 = parameters
-                .value_of("step_duration_nano")
-                .unwrap()
-                .parse()
-                .expect("Wrong step_duration_nano value, should be a number of nano seconds");
-
-            info!("Measurement step is: {}s", step_duration);
-
             while now.elapsed().as_secs() <= timeout_secs {
+                self.iterate(&parameters, &mut metric_generator);
+                thread::sleep(Duration::new(step_duration, step_duration_nano));
+            }
+        } else {
+            loop {
                 self.iterate(&parameters, &mut metric_generator);
                 thread::sleep(Duration::new(step_duration, step_duration_nano));
             }
