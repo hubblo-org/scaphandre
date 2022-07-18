@@ -12,6 +12,7 @@ use std::error::Error;
 use std::mem::size_of_val;
 use std::time::Duration;
 use std::{fmt, fs};
+use std::path::Path;
 use utils::{current_system_time_since_epoch, ProcessTracker};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
@@ -256,6 +257,10 @@ impl Topology {
                 .unwrap()
                 .parse::<u16>()
                 .unwrap();
+            println!("socket_id: {}", socket_id);
+            for s in &self.sockets {
+                println!("s.id: {}", s.id);
+            }
             let socket = self
                 .sockets
                 .iter_mut()
@@ -294,7 +299,7 @@ impl Topology {
     /// them in self.proc_tracker
     fn refresh_procs(&mut self) {
         //! current_procs is the up to date list of processus running on the host
-        let current_procs = process::all_processes().unwrap();
+        let current_procs = process::all_processes_with_root().unwrap();
 
         for p in current_procs {
             let pid = p.pid;
