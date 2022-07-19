@@ -231,12 +231,16 @@ impl IProcess {
     #[cfg(target_os = "linux")]
     pub fn from_linux_process(process: &Process) -> IProcess {
         //let root = process.root();
+        let mut cmdline = vec![String::from("")];
+        if let Ok(raw_cmdline) = process.cmdline() {
+            cmdline = raw_cmdline.clone();
+        }
         IProcess {
             pid: process.pid,
             owner: process.owner,
             original: process.clone(),
             comm: process.stat.comm.clone(),
-            cmdline: process.cmdline().unwrap(),
+            cmdline,
             stat: Some(IStat::from_procfs_stat(&process.stat)),
         }
     }
