@@ -6,6 +6,7 @@ use colored::*;
 use regex::Regex;
 use std::thread;
 use std::time::{Duration, Instant};
+use std::fmt::Write as _;
 
 /// An Exporter that displays power consumption data of the host
 /// and its processes on the standard output of the terminal.
@@ -215,15 +216,14 @@ impl StdoutExporter {
                     }
                     false
                 }) {
-                    to_print.push_str(&format!(
-                        "{} W\t",
+                    let _ = write!(to_print, "{} W\t",
                         current_domain
                             .metric_value
                             .to_string()
                             .parse::<f32>()
                             .unwrap()
                             / 1000000.0
-                    ));
+                    );
                 } else {
                     to_print.push_str("---");
                 }
