@@ -4,9 +4,9 @@ use crate::exporters::*;
 use crate::sensors::{utils::IProcess, Sensor};
 use colored::*;
 use regex::Regex;
+use std::fmt::Write as _;
 use std::thread;
 use std::time::{Duration, Instant};
-use std::fmt::Write as _;
 
 /// An Exporter that displays power consumption data of the host
 /// and its processes on the standard output of the terminal.
@@ -216,7 +216,9 @@ impl StdoutExporter {
                     }
                     false
                 }) {
-                    let _ = write!(to_print, "{} W\t",
+                    let _ = write!(
+                        to_print,
+                        "{} W\t",
                         current_domain
                             .metric_value
                             .to_string()
