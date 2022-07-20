@@ -72,11 +72,14 @@ impl Sensor for PowercapRAPLSensor {
             warn!("Couldn't find intel_rapl modules.");
         }
         let mut topo = Topology::new();
+        let re_socket = Regex::new(r"^.*/intel-rapl:\d+$").unwrap();
         let re_domain = Regex::new(r"^.*/intel-rapl:\d+:\d+$").unwrap();
+        let mut re_domain_matched = false;
         for folder in fs::read_dir(&self.base_path).unwrap() {
             let folder_name = String::from(folder.unwrap().path().to_str().unwrap());
             // let's catch domain folders
             if re_domain.is_match(&folder_name) {
+                re_domain_matched = true;
                 // let's get the second number of the intel-rapl:X:X string
                 let mut splitted = folder_name.split(':');
                 let _ = splitted.next();
@@ -100,6 +103,25 @@ impl Sensor for PowercapRAPLSensor {
                         ),
                         self.buffer_per_domain_max_kbytes,
                     );
+                }
+            }
+        }
+        if !re_domain_matched {
+            warn!("Couldn't find domain folders from powercap. Fallback on socket folders.");
+            warn!("Scaphandre will not be able to provide per-domain data.");
+            for folder in fs::read_dir(&self.base_path).unwrap() {
+                let folder_name = String::from(folder.unwrap().path().to_str().unwrap());
+                if re_socket.is_match(&folder_name) {
+                    let mut splitted = folder_name.split(':');
+                    let _ = splitted.next();
+                    let socket_id = String::from(splitted.next().unwrap()).parse().unwrap();
+                    topo.safe_add_socket(
+                        socket_id,
+                        vec![],
+                        vec![],
+                        format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
+                        self.buffer_per_socket_max_kbytes
+                    )
                 }
             }
         }

@@ -256,6 +256,11 @@ impl Topology {
                 .unwrap()
                 .parse::<u16>()
                 .unwrap();
+            info!("socket_id : {}", socket_id);
+            info!("sockets : {:?}", self.sockets);
+            for s in &self.sockets {
+                info!("s id : {}", s.id);
+            }
             let socket = self
                 .sockets
                 .iter_mut()
