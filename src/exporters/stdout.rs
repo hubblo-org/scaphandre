@@ -208,28 +208,30 @@ impl StdoutExporter {
                 for d in domain_names.unwrap() {
                     info!("current domain : {}", d);
                     info!("domains size : {}", &domains.clone().count());
-                    if let Some(current_domain) = domains.clone().find(|x| {
-                        info!("looking for domain metrics for d == {}", d);
-                        info!("current metric analyzed : {:?}", x);
-                        if let Some(domain_name_result) = x.attributes.get("domain_name") {
-                            if domain_name_result == d {
-                                return true;
+                    if let Some(current_domain) = domains.clone().find(
+                        |x| {
+                            info!("looking for domain metrics for d == {}", d);
+                            info!("current metric analyzed : {:?}", x);
+                            if let Some(domain_name_result) = x.attributes.get("domain_name") {
+                                if domain_name_result == d {
+                                    return true;
+                                }
                             }
-                        }
-                    false
-                }) {
-                    let _ = write!(
-                        to_print,
-                        "{} W\t",
-                        current_domain
-                            .metric_value
-                            .to_string()
-                            .parse::<f32>()
-                            .unwrap()
-                            / 1000000.0
-                    );
-                } else {
-                    to_print.push_str("---");
+                            false
+                    }) {
+                        let _ = write!(
+                            to_print,
+                            "{} W\t",
+                            current_domain
+                                .metric_value
+                                .to_string()
+                                .parse::<f32>()
+                                .unwrap()
+                                / 1000000.0
+                        );
+                    } else {
+                        to_print.push_str("---");
+                    }
                 }
             }
 
