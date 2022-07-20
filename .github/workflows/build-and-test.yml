@@ -73,7 +73,8 @@ jobs:
       - name: Clippy Check
         uses: actions-rs/cargo@v1
         with:
-          cargo build --no-default-features --features "prometheus json riemann"
+          command : clippy
+          args: --no-default-features --features "prometheus json riemann"
 
   test_linux_x86_64:
     name: Test on GNU/Linux x86_64 (Bare metal worker)
