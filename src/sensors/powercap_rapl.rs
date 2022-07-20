@@ -120,7 +120,7 @@ impl Sensor for PowercapRAPLSensor {
                         vec![],
                         vec![],
                         format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
-                        self.buffer_per_socket_max_kbytes
+                        self.buffer_per_socket_max_kbytes,
                     )
                 }
             }
