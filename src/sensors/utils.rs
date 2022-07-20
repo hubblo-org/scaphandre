@@ -233,7 +233,7 @@ impl IProcess {
         //let root = process.root();
         let mut cmdline = vec![String::from("")];
         if let Ok(raw_cmdline) = process.cmdline() {
-            cmdline = raw_cmdline.clone();
+            cmdline = raw_cmdline;
         }
         IProcess {
             pid: process.pid,
