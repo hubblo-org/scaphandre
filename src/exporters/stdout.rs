@@ -204,20 +204,19 @@ impl StdoutExporter {
                     && x.attributes.get("socket_id").unwrap() == &socket_id
             });
 
-            if domain_names.is_some() {
-                for d in domain_names.unwrap() {
+            if let Some(domain_names) = domain_names {
+                for d in domain_names {
                     info!("current domain : {}", d);
                     info!("domains size : {}", &domains.clone().count());
-                    if let Some(current_domain) = domains.clone().find(
-                        |x| {
-                            info!("looking for domain metrics for d == {}", d);
-                            info!("current metric analyzed : {:?}", x);
-                            if let Some(domain_name_result) = x.attributes.get("domain_name") {
-                                if domain_name_result == d {
-                                    return true;
-                                }
+                    if let Some(current_domain) = domains.clone().find(|x| {
+                        info!("looking for domain metrics for d == {}", d);
+                        info!("current metric analyzed : {:?}", x);
+                        if let Some(domain_name_result) = x.attributes.get("domain_name") {
+                            if domain_name_result == d {
+                                return true;
                             }
-                            false
+                        }
+                        false
                     }) {
                         let _ = write!(
                             to_print,
