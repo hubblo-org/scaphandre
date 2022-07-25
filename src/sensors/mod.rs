@@ -358,22 +358,19 @@ impl Topology {
             //current_procs is the up to date list of processus running on the host
             if let Ok(procs) = process::all_processes() {
                 info!("Before refresh procs init.");
-                let current_procs = procs
+                procs
                     .iter()
                     .map(IProcess::from_linux_process)
-                    .collect::<Vec<_>>();
-
-                info!("Before refresh procs loop.");
-                for p in current_procs {
-                    let pid = p.pid;
-                    let res = self.proc_tracker.add_process_record(p);
-                    match res {
-                        Ok(_) => {}
-                        Err(msg) => {
-                            panic!("Failed to track process with pid {} !\nGot: {}", pid, msg)
+                    .for_each(|p| {
+                        let pid = p.pid;
+                        let res = self.proc_tracker.add_process_record(p);
+                        match res {
+                            Ok(_) => {}
+                            Err(msg) => {
+                                panic!("Failed to track process with pid {} !\nGot: {}", pid, msg)
+                            }
                         }
-                    }
-                }
+                    });
             }
         }
         #[cfg(target_os = "windows")]
