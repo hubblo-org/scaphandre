@@ -1281,7 +1281,6 @@ dependencies = [
  "hostname",
  "hyper",
  "k8s-sync",
- "lazy_static",
  "log",
  "loggerv",
  "ordered-float",
