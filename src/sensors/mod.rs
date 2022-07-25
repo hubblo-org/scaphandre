@@ -184,14 +184,14 @@ impl Topology {
     /// ```
     /// use scaphandre::sensors::Topology;
     ///
-    /// if let Ok(cores) = Topology::generate_cpu_cores() {
+    /// if let Some(cores) = Topology::generate_cpu_cores() {
     ///     println!("There are {} cores on this host.", cores.len());
     ///     for c in &cores {
     ///         println!("Here is CPU Core number {}", c.attributes.get("processor").unwrap());
     ///     }
     /// }
     /// ```
-    pub fn generate_cpu_cores() -> Result<Vec<CPUCore>, String> {
+    pub fn generate_cpu_cores() -> Option<Vec<CPUCore>> {
         let mut cores = vec![];
 
         #[cfg(target_os = "linux")]
@@ -220,7 +220,7 @@ impl Topology {
                 cores.push(CPUCore::new(id, info));
             }
         }
-        Ok(cores)
+        Some(cores)
     }
 
     /// Adds a Socket instance to self.sockets if and only if the
@@ -304,23 +304,26 @@ impl Topology {
     /// Generates CPUCore instances for the host and adds them
     /// to appropriate CPUSocket instance from self.sockets
     pub fn add_cpu_cores(&mut self) {
-        let mut cores = Topology::generate_cpu_cores().unwrap();
-        while !cores.is_empty() {
-            let c = cores.pop().unwrap();
-            let socket_id = &c
-                .attributes
-                .get("physical id")
-                .unwrap()
-                .parse::<u16>()
-                .unwrap();
-            let socket = self
-                .sockets
-                .iter_mut()
-                .find(|x| &x.id == socket_id)
-                .expect("Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line");
-            if socket_id == &socket.id {
-                socket.add_cpu_core(c);
+        if let Some(mut cores) = Topology::generate_cpu_cores() {
+            while !cores.is_empty() {
+                let c = cores.pop().unwrap();
+                let socket_id = &c
+                    .attributes
+                    .get("physical id")
+                    .unwrap()
+                    .parse::<u16>()
+                    .unwrap();
+                let socket = self
+                    .sockets
+                    .iter_mut()
+                    .find(|x| &x.id == socket_id)
+                    .expect("Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line");
+                if socket_id == &socket.id {
+                    socket.add_cpu_core(c);
+                }
             }
+        } else {
+            warn!("Couldn't retrieve any CPU Core from the topology. (generate_cpu_cores)");
         }
     }
 

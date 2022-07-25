@@ -172,7 +172,6 @@ impl MetricGenerator {
             let pods = vec![];
             let docker_version = String::from("");
             let mut docker_client = None;
-            //let kubernetes_version = String::from("");
             let mut kubernetes_client = None;
             let mut container_runtime = false;
             if _watch_containers {
