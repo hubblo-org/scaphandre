@@ -419,7 +419,7 @@ impl ProcessTracker {
     /// ```
     pub fn new(max_records_per_process: u16) -> ProcessTracker {
         #[cfg(feature = "containers")]
-        let regex_cgroup_docker = Regex::new(r"^/docker/.*$").unwrap();
+        let regex_cgroup_docker = Regex::new(r"(^/docker/.*$)|(^/system.slice/docker.*$)").unwrap();
         #[cfg(feature = "containers")]
         let regex_cgroup_kubernetes = Regex::new(r"^/kubepods.*$").unwrap();
         #[cfg(feature = "containers")]
@@ -794,7 +794,6 @@ impl ProcessTracker {
     fn get_cpu_time_consumed(&self, p: &[ProcessRecord]) -> u64 {
         let last_time = p.first().unwrap().total_time_jiffies();
         let previous_time = p.get(1).unwrap().total_time_jiffies();
-        //warn!("last_time: {} previous_time: {}", last_time, previous_time);
         let mut diff = 0;
         if previous_time <= last_time {
             diff = last_time - previous_time;
