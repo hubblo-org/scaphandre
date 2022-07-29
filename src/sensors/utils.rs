@@ -419,8 +419,7 @@ impl ProcessTracker {
     /// ```
     pub fn new(max_records_per_process: u16) -> ProcessTracker {
         #[cfg(feature = "containers")]
-        let regex_cgroup_docker =
-            Regex::new(r"(^.*/docker/.*$)|(^.*/system.slice/docker.*$)").unwrap();
+        let regex_cgroup_docker = Regex::new(r"^.*/docker.*$").unwrap();
         #[cfg(feature = "containers")]
         let regex_cgroup_kubernetes = Regex::new(r"^/kubepods.*$").unwrap();
         #[cfg(feature = "containers")]
