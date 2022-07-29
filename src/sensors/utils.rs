@@ -622,6 +622,7 @@ impl ProcessTracker {
                     }
                     // docker
                     if self.regex_cgroup_docker.is_match(&cg.pathname) {
+                        info!("regex docker matched : {}", &cg.pathname);
                         description
                             .insert(String::from("container_scheduler"), String::from("docker"));
                         let container_id = cg.pathname.split('/').last().unwrap();
@@ -653,13 +654,16 @@ impl ProcessTracker {
                     } else {
                         // containerd
                         if self.regex_cgroup_containerd.is_match(&cg.pathname) {
+                            info!("regex containerd matched : {}", &cg.pathname);
                             description.insert(
                                 String::from("container_runtime"),
                                 String::from("containerd"),
                             );
                         } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
+                            info!("regex kubernetes matched : {}", &cg.pathname);
                             // kubernetes not using containerd but we can get the container id
                         } else {
+                            warn!("no regex matched : {}", &cg.pathname);
                             // cgroup not related to a container technology
                             continue;
                         }
