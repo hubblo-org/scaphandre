@@ -620,6 +620,7 @@ impl ProcessTracker {
                     if found {
                         break;
                     }
+                    info!("cgroup string is : {}", &cg.pathname);
                     // docker
                     if self.regex_cgroup_docker.is_match(&cg.pathname) {
                         info!("regex docker matched : {}", &cg.pathname);
