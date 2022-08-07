@@ -601,72 +601,83 @@ impl ProcessTracker {
     #[cfg(feature = "containers")]
     pub fn get_process_container_description(
         &self,
-        pid: i32,
+        pid: i32, // the PID of the process to look for
         containers: &[Container],
         docker_version: String,
         pods: &[Pod],
         //kubernetes_version: String,
     ) -> HashMap<String, String> {
-        let mut result = self
-            .procs
-            .iter()
-            .filter(|x| !x.is_empty() && x.get(0).unwrap().process.pid == pid);
+        let mut result = self.procs.iter().filter(
+            // get all processes that have process records
+            |x| !x.is_empty() && x.get(0).unwrap().process.pid == pid,
+        );
         let process = result.next().unwrap();
         let mut description = HashMap::new();
+        let regex_clean_container_id = Regex::new("[[:alnum:]]{12,}").unwrap();
         if let Some(p) = process.get(0) {
+            // if we have the cgroups data from the original process struct
             if let Ok(cgroups) = p.process.original.cgroups() {
                 let mut found = false;
                 for cg in &cgroups {
                     if found {
                         break;
                     }
-                    info!("cgroup string is : {}", &cg.pathname);
                     // docker
                     if self.regex_cgroup_docker.is_match(&cg.pathname) {
-                        info!("regex docker matched : {}", &cg.pathname);
+                        debug!("regex docker matched : {}", &cg.pathname); //coucou
                         description
                             .insert(String::from("container_scheduler"), String::from("docker"));
-                        let container_id = cg.pathname.split('/').last().unwrap();
-                        description
-                            .insert(String::from("container_id"), String::from(container_id));
-                        if let Some(container) = containers.iter().find(|x| x.Id == container_id) {
-                            info!("found container with id: {}", &container_id);
-                            let mut names = String::from("");
-                            for n in &container.Names {
-                                info!("adding container name: {}", &n.trim().replace('/', ""));
-                                names.push_str(&n.trim().replace('/', ""));
-                            }
-                            description.insert(String::from("container_names"), names);
-                            description.insert(
-                                String::from("container_docker_version"),
-                                docker_version.clone(),
-                            );
-                            if let Some(labels) = &container.Labels {
-                                for (k, v) in labels {
-                                    let escape_list = ["-", ".", ":", " "];
-                                    let mut key = k.clone();
-                                    for e in escape_list.iter() {
-                                        key = key.replace(e, "_");
+                        // extract container_id
+                        //let container_id = cg.pathname.split('/').last().unwrap();
+                        if let Some(container_id_capture) =
+                            regex_clean_container_id.captures(&cg.pathname)
+                        {
+                            let container_id = &container_id_capture[0];
+                            debug!("container_id = {}", container_id);
+                            description
+                                .insert(String::from("container_id"), String::from(container_id));
+                            if let Some(container) =
+                                containers.iter().find(|x| x.Id == container_id)
+                            {
+                                debug!("found container with id: {}", &container_id);
+                                let mut names = String::from("");
+                                for n in &container.Names {
+                                    debug!("adding container name: {}", &n.trim().replace('/', ""));
+                                    names.push_str(&n.trim().replace('/', ""));
+                                }
+                                description.insert(String::from("container_names"), names);
+                                description.insert(
+                                    String::from("container_docker_version"),
+                                    docker_version.clone(),
+                                );
+                                if let Some(labels) = &container.Labels {
+                                    for (k, v) in labels {
+                                        let escape_list = ["-", ".", ":", " "];
+                                        let mut key = k.clone();
+                                        for e in escape_list.iter() {
+                                            key = key.replace(e, "_");
+                                        }
+                                        description.insert(
+                                            format!("container_label_{}", key),
+                                            v.to_string(),
+                                        );
                                     }
-                                    description
-                                        .insert(format!("container_label_{}", key), v.to_string());
                                 }
                             }
+                            found = true;
                         }
-                        found = true;
                     } else {
                         // containerd
                         if self.regex_cgroup_containerd.is_match(&cg.pathname) {
-                            info!("regex containerd matched : {}", &cg.pathname);
+                            debug!("regex containerd matched : {}", &cg.pathname);
                             description.insert(
                                 String::from("container_runtime"),
                                 String::from("containerd"),
                             );
                         } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
-                            info!("regex kubernetes matched : {}", &cg.pathname);
+                            debug!("regex kubernetes matched : {}", &cg.pathname);
                             // kubernetes not using containerd but we can get the container id
                         } else {
-                            warn!("no regex matched : {}", &cg.pathname);
                             // cgroup not related to a container technology
                             continue;
                         }
@@ -815,9 +826,6 @@ impl ProcessTracker {
             cpu_current_usage += c.cpu_usage();
         }
         if let Some(p) = self.sysinfo.process(pid) {
-            //warn!("p.cpu_usage {}%", p.cpu_usage());
-            //warn!("nb_cores {}%", nb_cores);
-            //warn!("cpu_current_usage: {}%", cpu_current_usage/nb_cores as f32);
             (p.cpu_usage() + (100.0 - cpu_current_usage / nb_cores as f32) * p.cpu_usage() / 100.0)
                 / nb_cores as f32
         } else {
