@@ -51,6 +51,10 @@ jobs:
         with:
           command: clippy
           args: -- -A clippy::upper_case_acronyms -D warnings
+      - name: Run cargo bloat
+        uses: orf/cargo-bloat-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
   fmt_and_clippy_windows:
     name: Cargo Fmt and Clippy - Windows
     runs-on: windows-latest
