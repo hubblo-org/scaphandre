@@ -1,7 +1,7 @@
 use clap::Arg;
 
 use crate::exporters::*;
-use crate::sensors::Sensor;
+use crate::sensors::{utils::IProcess, Sensor};
 use colored::*;
 use regex::Regex;
 use std::fmt::Write as _;
@@ -172,9 +172,11 @@ impl StdoutExporter {
             None => MetricValueType::Text("0".to_string()),
         };
 
-        let domain_names = metric_generator.topology.domains_names.as_ref();
-        if domain_names.is_some() {
-            info!("domain_names: {:?}", domain_names.unwrap());
+        let mut domain_names = vec![];
+
+        if let Some(domains) = metric_generator.topology.domains_names.as_ref() {
+            info!("domain_name: {:?}", domains);
+            domain_names = domains.clone();
         }
 
         println!(
@@ -204,17 +206,15 @@ impl StdoutExporter {
                     && x.attributes.get("socket_id").unwrap() == &socket_id
             });
 
-            if let Some(domain_names) = domain_names {
-                for d in domain_names {
-                    info!("current domain : {}", d);
-                    info!("domains size : {}", &domains.clone().count());
-                    if let Some(current_domain) = domains.clone().find(|x| {
-                        info!("looking for domain metrics for d == {}", d);
-                        info!("current metric analyzed : {:?}", x);
-                        if let Some(domain_name_result) = x.attributes.get("domain_name") {
-                            if domain_name_result == d {
-                                return true;
-                            }
+            for d in &domain_names {
+                info!("current domain : {}", d);
+                info!("domains size : {}", &domains.clone().count());
+                if let Some(current_domain) = domains.clone().find(|x| {
+                    info!("looking for domain metrics for d == {}", d);
+                    info!("current metric analyzed : {:?}", x);
+                    if let Some(domain_name_result) = x.attributes.get("domain_name") {
+                        if domain_name_result == d {
+                            return true;
                         }
                         false
                     }) {
@@ -231,26 +231,40 @@ impl StdoutExporter {
                     } else {
                         to_print.push_str("---");
                     }
+                    false
+                }) {
+                    let _ = write!(
+                        to_print,
+                        "{} W\t",
+                        current_domain
+                            .metric_value
+                            .to_string()
+                            .parse::<f32>()
+                            .unwrap()
+                            / 1000000.0
+                    );
+                } else {
+                    to_print.push_str("---");
                 }
             }
 
             println!("{}\n", to_print);
         }
 
-        let consumers: Vec<(procfs::process::Process, u64)> =
-            if let Some(regex_filter) = regex_filter {
-                println!("Processes filtered by '{}':", regex_filter.as_str());
-                metric_generator
-                    .topology
-                    .proc_tracker
-                    .get_filtered_processes(regex_filter)
-            } else {
-                println!("Top {} consumers:", process_number);
-                metric_generator
-                    .topology
-                    .proc_tracker
-                    .get_top_consumers(process_number)
-            };
+        let consumers: Vec<(IProcess, f64)>;
+        if let Some(regex_filter) = regex_filter {
+            println!("Processes filtered by '{}':", regex_filter.as_str());
+            consumers = metric_generator
+                .topology
+                .proc_tracker
+                .get_filtered_processes(regex_filter);
+        } else {
+            println!("Top {} consumers:", process_number);
+            consumers = metric_generator
+                .topology
+                .proc_tracker
+                .get_top_consumers(process_number);
+        }
 
         info!("consumers : {:?}", consumers);
         println!("Power\t\tPID\tExe");

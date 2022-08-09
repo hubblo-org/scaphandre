@@ -2,10 +2,18 @@
 use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
 use scaphandre::{get_exporters_options, run};
 fn main() {
+    #[cfg(target_os = "linux")]
     let sensors = ["powercap_rapl"];
+    #[cfg(target_os = "windows")]
+    let sensors = ["msr_rapl"];
     let exporters_options = get_exporters_options();
     let exporters = exporters_options.keys();
     let exporters: Vec<&str> = exporters.into_iter().map(|x| x.as_str()).collect();
+
+    #[cfg(target_os = "linux")]
+    let sensor_default_value = String::from("powercap_rapl");
+    #[cfg(not(target_os = "linux"))]
+    let sensor_default_value = String::from("msr_rapl");
 
     let mut matches = App::new("scaphandre")
         .author(crate_authors!())
@@ -32,7 +40,7 @@ fn main() {
                 .help("Sensor module to apply on the host to get energy consumption metrics.")
                 .required(false)
                 .takes_value(true)
-                .default_value("powercap_rapl")
+                .default_value(&sensor_default_value)
                 .possible_values(&sensors)
                 .short("s")
                 .long("sensor")
