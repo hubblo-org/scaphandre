@@ -167,12 +167,18 @@ impl Sensor for PowercapRAPLSensor {
                     let mut splitted = folder_name.split(':');
                     let _ = splitted.next();
                     let socket_id = String::from(splitted.next().unwrap()).parse().unwrap();
+                    let mut sensor_data_for_socket = HashMap::new();
+                    sensor_data_for_socket.insert(
+                        String::from("source_file"),
+                        format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
+                    );
                     topo.safe_add_socket(
                         socket_id,
                         vec![],
                         vec![],
                         format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
                         self.buffer_per_socket_max_kbytes,
+                        sensor_data_for_socket,
                     )
                 }
             }
