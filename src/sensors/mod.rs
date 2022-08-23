@@ -60,6 +60,7 @@ pub struct Topology {
     pub domains_names: Option<Vec<String>>,
     ///
     #[cfg(target_os = "windows")]
+    #[allow(dead_code)]
     sensor_data: HashMap<String, String>,
 }
 
@@ -210,7 +211,6 @@ impl Topology {
             warn!("generate_cpu_info is not implemented yet on this OS.");
             let sysinfo_system = System::new_all();
             let sysinfo_cores = sysinfo_system.processors();
-            let mut id: u16 = 0;
             for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
                 let mut info = HashMap::new();
                 info.insert(String::from("frequency"), c.frequency().to_string());
@@ -694,6 +694,7 @@ pub struct CPUSocket {
     /// Usage statistics records stored for this socket.
     pub stat_buffer: Vec<CPUStat>,
     ///
+    #[allow(dead_code)]
     sensor_data: HashMap<String, String>,
 }
 
@@ -1034,6 +1035,7 @@ pub struct Domain {
     /// Maximum size of record_buffer, in kilobytes
     pub buffer_max_kbytes: u16,
     ///
+    #[allow(dead_code)]
     sensor_data: HashMap<String, String>,
 }
 impl RecordGenerator for Domain {

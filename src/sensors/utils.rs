@@ -4,9 +4,7 @@ use regex::Regex;
 #[cfg(feature = "containers")]
 use std::collections::HashMap;
 #[cfg(target_os = "windows")]
-use sysinfo::{
-    get_current_pid, Process, ProcessExt, ProcessStatus, ProcessorExt, System, SystemExt,
-};
+use sysinfo::{get_current_pid, Process, ProcessExt, ProcessorExt, System, SystemExt};
 //use std::error::Error;
 use ordered_float::*;
 use std::path::PathBuf;
@@ -564,7 +562,7 @@ impl ProcessTracker {
             if !p.is_empty() {
                 //TODO implement
                 // clippy will ask you to remove mut from res, but you just need to implement to fix that
-                if let Some(sysinfo_p) = self.sysinfo.process(p[0].process.pid as usize) {
+                if let Some(_sysinfo_p) = self.sysinfo.process(p[0].process.pid as usize) {
                     //let status = sysinfo_p.status();
                     //if status != ProcessStatus::Dead {//&& status != ProcessStatus::Stop {
                     res.push(p);
