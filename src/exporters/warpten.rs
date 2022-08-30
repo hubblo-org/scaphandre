@@ -342,7 +342,7 @@ impl Warp10Exporter {
                 }
                 plabels.push(warp10::Label::new(
                     "cmdline",
-                    &cmdline_str.replace('\"', "\\\""),
+                    &cmdline_str.replace('"', "\\\""),
                 ));
             }
             let metric_name = format!(
