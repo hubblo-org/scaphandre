@@ -32,6 +32,7 @@ k8s-sync = { version = "0.2.3", optional = true }
 #k8s-sync = { path = "../rs-k8s-sync", optional = true }
 hyper = { version = "0.14", features = ["full"], optional = true }
 tokio = { version = "1", features = ["full"], optional = true}
+dyn-clone = "1.0.5"
 
 [features]
 default = ["prometheus", "riemann", "warp10", "containers", "json"]

@@ -319,7 +319,7 @@ impl MetricGenerator {
 
         for socket in &self.topology.sockets {
             let mut attributes = HashMap::new();
-            attributes.insert("socket_id".to_string(), socket.id.to_string());
+            attributes.insert("socket_id".to_string(), socket.get_id().to_string());
 
             self.data.push(Metric {
                 name: String::from("scaph_self_socket_stats_nb"),
@@ -331,7 +331,7 @@ impl MetricGenerator {
                 tags: vec!["scaphandre".to_string()],
                 attributes: attributes.clone(),
                 description: String::from("Number of CPUStat traces stored for each socket"),
-                metric_value: MetricValueType::IntUnsigned(socket.stat_buffer.len() as u64),
+                metric_value: MetricValueType::IntUnsigned(socket.get_stat_buffer_passive().len() as u64),
             });
 
             self.data.push(Metric {
@@ -346,10 +346,10 @@ impl MetricGenerator {
                 description: String::from(
                     "Number of energy consumption Records stored for each socket",
                 ),
-                metric_value: MetricValueType::IntUnsigned(socket.record_buffer.len() as u64),
+                metric_value: MetricValueType::IntUnsigned(socket.get_record_buffer_passive().len() as u64),
             });
 
-            for domain in &socket.domains {
+            for domain in socket.get_domains_passive() {
                 attributes.insert("rapl_domain_name".to_string(), domain.name.to_string());
 
                 self.data.push(Metric {
@@ -422,7 +422,7 @@ impl MetricGenerator {
                 let metric_timestamp = metric.timestamp;
 
                 let mut attributes = HashMap::new();
-                attributes.insert("socket_id".to_string(), socket.id.to_string());
+                attributes.insert("socket_id".to_string(), socket.get_id().to_string());
 
                 self.data.push(Metric {
                     name: String::from("scaph_socket_energy_microjoules"),
@@ -466,7 +466,7 @@ impl MetricGenerator {
                     let mut attributes = HashMap::new();
                     attributes.insert("domain_name".to_string(), domain.name.clone());
                     attributes.insert("domain_id".to_string(), domain.id.to_string());
-                    attributes.insert("socket_id".to_string(), socket.id.to_string());
+                    attributes.insert("socket_id".to_string(), socket.get_id().to_string());
 
                     self.data.push(Metric {
                         name: String::from("scaph_domain_energy_microjoules"),

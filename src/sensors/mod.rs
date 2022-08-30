@@ -4,8 +4,11 @@
 //! needed to implement a sensor.
 
 pub mod powercap_rapl;
+pub mod debug;
+pub mod socket;
 pub mod units;
 pub mod utils;
+use core::fmt::Debug;
 use procfs::{process, CpuInfo, CpuTime, KernelStats};
 use std::collections::HashMap;
 use std::error::Error;
@@ -13,6 +16,7 @@ use std::mem::size_of_val;
 use std::time::Duration;
 use std::{fmt, fs};
 use utils::{current_system_time_since_epoch, ProcessTracker};
+use socket::Socket;
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
 /// Sensor trait, the Sensor API.
@@ -29,6 +33,12 @@ pub trait RecordGenerator {
     fn clean_old_records(&mut self);
 }
 
+pub trait StatsGenerator {
+    fn clean_old_stats(&mut self);
+    fn refresh_stats(&mut self);
+    fn get_stats_diff(&mut self) -> Option<CPUStat>;
+}
+
 // !!!!!!!!!!!!!!!!! Topology !!!!!!!!!!!!!!!!!!!!!!!
 /// Topology struct represents the whole CPUSocket architecture,
 /// from the electricity consumption point of view,
@@ -37,7 +47,7 @@ pub trait RecordGenerator {
 #[derive(Debug, Clone)]
 pub struct Topology {
     /// The CPU sockets found on the host, represented as CPUSocket instances attached to this topology
-    pub sockets: Vec<CPUSocket>,
+    pub sockets: Vec<Box<dyn Socket>>,
     /// ProcessTrack instance that keeps track of processes running on the host and CPU stats associated
     pub proc_tracker: ProcessTracker,
     /// CPU usage stats buffer
@@ -174,21 +184,10 @@ impl Topology {
     /// socket id doesn't exist already.
     pub fn safe_add_socket(
         &mut self,
-        socket_id: u16,
-        domains: Vec<Domain>,
-        attributes: Vec<Vec<HashMap<String, String>>>,
-        counter_uj_path: String,
-        buffer_max_kbytes: u16,
+        socket: impl Socket + 'static
     ) {
-        if !self.sockets.iter().any(|s| s.id == socket_id) {
-            let socket = CPUSocket::new(
-                socket_id,
-                domains,
-                attributes,
-                counter_uj_path,
-                buffer_max_kbytes,
-            );
-            self.sockets.push(socket);
+        if !self.sockets.iter().any(|s| s.get_id() == socket.get_id()) {
+            self.sockets.push(Box::new(socket));
         }
     }
 
@@ -198,12 +197,12 @@ impl Topology {
     }
 
     /// Returns a mutable reference to self.sockets
-    pub fn get_sockets(&mut self) -> &mut Vec<CPUSocket> {
+    pub fn get_sockets(&mut self) -> &mut Vec<Box<dyn Socket>> {
         &mut self.sockets
     }
 
     /// Returns an immutable reference to self.sockets
-    pub fn get_sockets_passive(&self) -> &Vec<CPUSocket> {
+    pub fn get_sockets_passive(&self) -> &Vec<Box<dyn Socket>> {
         &self.sockets
     }
 
@@ -232,7 +231,7 @@ impl Topology {
     ) {
         let iterator = self.sockets.iter_mut();
         for socket in iterator {
-            if socket.id == socket_id {
+            if socket.get_id() == socket_id {
                 socket.safe_add_domain(Domain::new(
                     domain_id,
                     String::from(name),
@@ -259,9 +258,9 @@ impl Topology {
             let socket = self
                 .sockets
                 .iter_mut()
-                .find(|x| &x.id == socket_id)
+                .find(|x| &x.get_id() == socket_id)
                 .expect("Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line");
-            if socket_id == &socket.id {
+            if socket_id == &socket.get_id() {
                 socket.add_cpu_core(c);
             }
         }
@@ -568,103 +567,8 @@ pub struct CPUSocket {
     pub stat_buffer: Vec<CPUStat>,
 }
 
-impl RecordGenerator for CPUSocket {
-    /// Generates a new record of the socket energy consumption and stores it in the record_buffer.
-    /// Returns a clone of this Record instance.
-    fn refresh_record(&mut self) {
-        if let Ok(record) = self.read_record_uj() {
-            self.record_buffer.push(record);
-        }
-
-        if !self.record_buffer.is_empty() {
-            self.clean_old_records();
-        }
-    }
-
-    /// Checks the size in memory of record_buffer and deletes as many Record
-    /// instances from the buffer to make it smaller in memory than buffer_max_kbytes.
-    fn clean_old_records(&mut self) {
-        let record_ptr = &self.record_buffer[0];
-        let curr_size = size_of_val(record_ptr) * self.record_buffer.len();
-        trace!(
-            "socket rebord buffer current size: {} max_bytes: {}",
-            curr_size,
-            self.buffer_max_kbytes * 1000
-        );
-        if curr_size > (self.buffer_max_kbytes * 1000) as usize {
-            let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
-            trace!(
-                "socket record size_diff: {} sizeof: {}",
-                size_diff,
-                size_of_val(record_ptr)
-            );
-            if size_diff > size_of_val(record_ptr) {
-                let nb_records_to_delete = size_diff as f32 / size_of_val(record_ptr) as f32;
-                for _ in 1..nb_records_to_delete as u32 {
-                    if !self.record_buffer.is_empty() {
-                        let res = self.record_buffer.remove(0);
-                        debug!(
-                            "Cleaning socket id {} records buffer, removing: {}",
-                            self.id, res
-                        );
-                    }
-                }
-            }
-        }
-    }
-
-    /// Returns a new owned Vector being a clone of the current record_buffer.
-    /// This does not affect the current buffer but is costly.
-    fn get_records_passive(&self) -> Vec<Record> {
-        let mut result = vec![];
-        for r in &self.record_buffer {
-            result.push(Record::new(
-                r.timestamp,
-                r.value.clone(),
-                units::Unit::MicroJoule,
-            ));
-        }
-        result
-    }
-}
-
-impl CPUSocket {
-    /// Creates and returns a CPUSocket instance with an empty buffer and no CPUCore owned yet.
-    fn new(
-        id: u16,
-        domains: Vec<Domain>,
-        attributes: Vec<Vec<HashMap<String, String>>>,
-        counter_uj_path: String,
-        buffer_max_kbytes: u16,
-    ) -> CPUSocket {
-        CPUSocket {
-            id,
-            domains,
-            attributes,
-            counter_uj_path,
-            record_buffer: vec![], // buffer has to be empty first
-            buffer_max_kbytes,
-            cpu_cores: vec![], // cores are instantiated on a later step
-            stat_buffer: vec![],
-        }
-    }
-
-    /// Adds a new Domain instance to the domains vector if and only if it doesn't exist in the vector already.
-    fn safe_add_domain(&mut self, domain: Domain) {
-        if !self.domains.iter().any(|d| d.id == domain.id) {
-            self.domains.push(domain);
-        }
-    }
-
-    /// Returns the content of the energy consumption counter file, as a String
-    /// value of microjoules.
-    pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
-        match fs::read_to_string(&self.counter_uj_path) {
-            Ok(result) => Ok(result),
-            Err(error) => Err(Box::new(error)),
-        }
-    }
-    pub fn read_record_uj(&self) -> Result<Record, Box<dyn Error>> {
+impl Socket for CPUSocket {
+    fn read_record_uj(&self) -> Result<Record, Box<dyn Error>> {
         match fs::read_to_string(&self.counter_uj_path) {
             Ok(result) => Ok(Record::new(
                 current_system_time_since_epoch(),
@@ -675,85 +579,9 @@ impl CPUSocket {
         }
     }
 
-    /// Returns a mutable reference to the domains vector.
-    pub fn get_domains(&mut self) -> &mut Vec<Domain> {
-        &mut self.domains
-    }
-
-    /// Returns a immutable reference to the domains vector.
-    pub fn get_domains_passive(&self) -> &Vec<Domain> {
-        &self.domains
-    }
-
-    /// Returns a mutable reference to the CPU cores vector.
-    pub fn get_cores(&mut self) -> &mut Vec<CPUCore> {
-        &mut self.cpu_cores
-    }
-
-    /// Returns a immutable reference to the CPU cores vector.
-    pub fn get_cores_passive(&self) -> &Vec<CPUCore> {
-        &self.cpu_cores
-    }
-
-    /// Adds a CPU core instance to the cores vector.
-    pub fn add_cpu_core(&mut self, core: CPUCore) {
-        self.cpu_cores.push(core);
-    }
-
-    /// Generates a new CPUStat object storing current usage statistics of the socket
-    /// and stores it in the stat_buffer.
-    pub fn refresh_stats(&mut self) {
-        if !self.stat_buffer.is_empty() {
-            self.clean_old_stats();
-        }
-        self.stat_buffer.insert(0, self.read_stats().unwrap());
-    }
-
-    /// Checks the size in memory of stats_buffer and deletes as many CPUStat
-    /// instances from the buffer to make it smaller in memory than buffer_max_kbytes.
-    fn clean_old_stats(&mut self) {
-        let stat_ptr = &self.stat_buffer[0];
-        let size_of_stat = size_of_val(stat_ptr);
-        let curr_size = size_of_stat * self.stat_buffer.len();
-        trace!("current_size of stats in socket {}: {}", self.id, curr_size);
-        trace!(
-            "estimated max nb of socket stats: {}",
-            self.buffer_max_kbytes as f32 * 1000.0 / size_of_stat as f32
-        );
-        if curr_size > (self.buffer_max_kbytes * 1000) as usize {
-            let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
-            trace!(
-                "socket {} size_diff: {} size of: {}",
-                self.id,
-                size_diff,
-                size_of_stat
-            );
-            if size_diff > size_of_stat {
-                let nb_stats_to_delete = size_diff as f32 / size_of_stat as f32;
-                trace!(
-                    "socket {} nb_stats_to_delete: {} size_diff: {} size of: {}",
-                    self.id,
-                    nb_stats_to_delete,
-                    size_diff,
-                    size_of_stat
-                );
-                trace!("nb stats to delete: {}", nb_stats_to_delete as u32);
-                for _ in 1..nb_stats_to_delete as u32 {
-                    if !self.stat_buffer.is_empty() {
-                        let res = self.stat_buffer.pop();
-                        debug!(
-                            "Cleaning stat buffer of socket {}, removing: {:?}",
-                            self.id, res
-                        );
-                    }
-                }
-            }
-        }
-    }
-
     /// Combines stats from all CPU cores owned byu the socket and returns
     /// a CpuTime struct containing stats for the whole socket.
-    pub fn read_stats(&self) -> Option<CPUStat> {
+    fn read_stats(&self) -> Option<CPUStat> {
         let mut stats = CPUStat {
             user: 0,
             nice: 0,
@@ -781,96 +609,74 @@ impl CPUSocket {
         Some(stats)
     }
 
-    /// Computes the difference between previous usage statistics record for the socket
-    /// and the current one. Returns a CPUStat object containing this difference, field
-    /// by field.
-    pub fn get_stats_diff(&mut self) -> Option<CPUStat> {
-        if self.stat_buffer.len() > 1 {
-            let last = &self.stat_buffer[0];
-            let previous = &self.stat_buffer[1];
-            let mut iowait = None;
-            let mut irq = None;
-            let mut softirq = None;
-            let mut steal = None;
-            let mut guest = None;
-            let mut guest_nice = None;
-            if last.iowait.is_some() && previous.iowait.is_some() {
-                iowait = Some(last.iowait.unwrap() - previous.iowait.unwrap());
-            }
-            if last.irq.is_some() && previous.irq.is_some() {
-                irq = Some(last.irq.unwrap() - previous.irq.unwrap());
-            }
-            if last.softirq.is_some() && previous.softirq.is_some() {
-                softirq = Some(last.softirq.unwrap() - previous.softirq.unwrap());
-            }
-            if last.steal.is_some() && previous.steal.is_some() {
-                steal = Some(last.steal.unwrap() - previous.steal.unwrap());
-            }
-            if last.guest.is_some() && previous.guest.is_some() {
-                guest = Some(last.guest.unwrap() - previous.guest.unwrap());
-            }
-            if last.guest_nice.is_some() && previous.guest_nice.is_some() {
-                guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
-            }
-            return Some(CPUStat {
-                user: last.user - previous.user,
-                nice: last.nice - previous.nice,
-                system: last.system - previous.system,
-                idle: last.idle - previous.idle,
-                iowait,
-                irq,
-                softirq,
-                steal,
-                guest,
-                guest_nice,
-            });
-        }
-        None
+    fn get_id(&self) -> u16 {
+        self.id
     }
 
-    /// Returns a Record instance containing the power consumed between last
-    /// and previous measurement, for this CPU socket
-    pub fn get_records_diff_power_microwatts(&self) -> Option<Record> {
-        if self.record_buffer.len() > 1 {
-            let last_record = self.record_buffer.last().unwrap();
-            let previous_record = self
-                .record_buffer
-                .get(self.record_buffer.len() - 2)
-                .unwrap();
-            debug!(
-                "last_record value: {} previous_record value: {}",
-                &last_record.value, &previous_record.value
-            );
-            let last_rec_val = last_record.value.trim();
-            debug!("l851 : trying to parse {} as u64", last_rec_val);
-            let prev_rec_val = previous_record.value.trim();
-            debug!("l853 : trying to parse {} as u64", prev_rec_val);
-            if let (Ok(last_microjoules), Ok(previous_microjoules)) =
-                (last_rec_val.parse::<u64>(), prev_rec_val.parse::<u64>())
-            {
-                let mut microjoules = 0;
-                if last_microjoules >= previous_microjoules {
-                    microjoules = last_microjoules - previous_microjoules;
-                } else {
-                    debug!(
-                        "previous_microjoules ({}) > last_microjoules ({})",
-                        previous_microjoules, last_microjoules
-                    );
-                }
-                let time_diff =
-                    last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
-                let microwatts = microjoules as f64 / time_diff;
-                debug!("l866: microwatts: {}", microwatts);
-                return Some(Record::new(
-                    last_record.timestamp,
-                    (microwatts as u64).to_string(),
-                    units::Unit::MicroWatt,
-                ));
-            }
-        } else {
-            debug!("Not enough records for socket");
+    fn get_record_buffer(&mut self) -> &mut Vec<Record> {
+        &mut self.record_buffer
+    }
+
+    fn get_record_buffer_passive(&self) -> &Vec<Record> {
+        &self.record_buffer
+    }
+
+    fn get_buffer_max_kbytes(&self) -> u16 {
+        self.buffer_max_kbytes
+    }
+
+    /// Returns a mutable reference to the domains vector.
+    fn get_domains(&mut self) -> &mut Vec<Domain> {
+        &mut self.domains
+    }
+
+    /// Returns a immutable reference to the domains vector.
+    fn get_domains_passive(&self) -> &Vec<Domain> {
+        &self.domains
+    }
+
+    /// Returns a mutable reference to the CPU cores vector.
+    fn get_cores(&mut self) -> &mut Vec<CPUCore> {
+        &mut self.cpu_cores
+    }
+
+    /// Returns a immutable reference to the CPU cores vector.
+    fn get_cores_passive(&self) -> &Vec<CPUCore> {
+        &self.cpu_cores
+    }
+
+    fn get_stat_buffer(&mut self) -> &mut Vec<CPUStat> {
+        &mut self.stat_buffer
+    }
+
+    fn get_stat_buffer_passive(&self) -> &Vec<CPUStat> {
+        &self.stat_buffer
+    }
+
+    fn get_debug_type(&self) -> String {
+        String::from("CPU")
+    }
+}
+
+impl CPUSocket {
+    /// Creates and returns a CPUSocket instance with an empty buffer and no CPUCore owned yet.
+    fn new(
+        id: u16,
+        domains: Vec<Domain>,
+        attributes: Vec<Vec<HashMap<String, String>>>,
+        counter_uj_path: String,
+        buffer_max_kbytes: u16,
+    ) -> CPUSocket {
+        CPUSocket {
+            id,
+            domains,
+            attributes,
+            counter_uj_path,
+            record_buffer: vec![], // buffer has to be empty first
+            buffer_max_kbytes,
+            cpu_cores: vec![], // cores are instantiated on a later step
+            stat_buffer: vec![],
         }
-        None
     }
 }
 

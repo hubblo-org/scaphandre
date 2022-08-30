@@ -1,5 +1,6 @@
 use crate::sensors::Sensor;
 use crate::sensors::Topology;
+use crate::sensors::CPUSocket;
 use procfs::{modules, KernelModule};
 use regex::Regex;
 use std::collections::HashMap;
@@ -82,13 +83,13 @@ impl Sensor for PowercapRAPLSensor {
                 let _ = splitted.next();
                 let socket_id = String::from(splitted.next().unwrap()).parse().unwrap();
                 let domain_id = String::from(splitted.next().unwrap()).parse().unwrap();
-                topo.safe_add_socket(
+                topo.safe_add_socket(CPUSocket::new(
                     socket_id,
                     vec![],
                     vec![],
                     format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
                     self.buffer_per_socket_max_kbytes,
-                );
+                ));
                 if let Ok(domain_name) = &fs::read_to_string(format!("{}/name", folder_name)) {
                     topo.safe_add_domain_to_socket(
                         socket_id,
