@@ -67,6 +67,7 @@ fn main() {
                 "prometheus" => "Prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted format",
                 "riemann" => "Riemann exporter sends power consumption metrics to a Riemann server",
                 "qemu" => "Qemu exporter watches all Qemu/KVM virtual machines running on the host and exposes metrics of each of them in a dedicated folder",
+                #[cfg(feature = "warp10")]
                 "warp10" => "Warp10 exporter sends data to a Warp10 host, through HTTP",
                 _ => "Unknown exporter",
             }

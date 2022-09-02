@@ -8,6 +8,7 @@ pub mod qemu;
 pub mod riemann;
 pub mod stdout;
 pub mod utils;
+#[cfg(feature = "warp10")]
 pub mod warpten;
 use crate::sensors::{utils::current_system_time_since_epoch, RecordGenerator, Topology};
 use chrono::Utc;
