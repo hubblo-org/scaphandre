@@ -1,9 +1,8 @@
-use docker_sync::container::Container;
-use k8s_sync::Pod;
 use procfs::process::Process;
 use regex::Regex;
-use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
+#[cfg(feature = "containers")]
+use {docker_sync::container::Container, k8s_sync::Pod, std::collections::HashMap};
 
 #[derive(Debug, Clone)]
 /// Manages ProcessRecord instances.
@@ -157,6 +156,7 @@ impl ProcessTracker {
     }
 
     /// Extracts the container_id from a cgroup path containing it.
+    #[cfg(feature = "containers")]
     fn extract_pod_id_from_cgroup_path(&self, pathname: String) -> Result<String, std::io::Error> {
         let mut container_id = String::from(pathname.split('/').last().unwrap());
         if container_id.starts_with("docker-") {
@@ -174,6 +174,7 @@ impl ProcessTracker {
     /// currently running docker containers on the machine.
     /// The *pods* slice contains the [Pod] items referencing currently
     /// running pods on the machine if it is a kubernetes cluster node.
+    #[cfg(feature = "containers")]
     pub fn get_process_container_description(
         &self,
         pid: i32,
