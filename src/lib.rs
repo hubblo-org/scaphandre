@@ -121,32 +121,17 @@ pub fn run(matches: ArgMatches) {
 /// This function has to be updated to enable a new exporter.
 pub fn get_exporters_options() -> HashMap<String, Vec<clap::Arg<'static, 'static>>> {
     let mut options = HashMap::new();
-    options.insert(
-        String::from("stdout"),
-        exporters::stdout::StdoutExporter::get_options(),
-    );
-    options.insert(
-        String::from("json"),
-        exporters::json::JSONExporter::get_options(),
-    );
+    options.insert(String::from("stdout"), StdoutExporter::get_options());
+    options.insert(String::from("json"), JSONExporter::get_options());
     options.insert(
         String::from("prometheus"),
-        exporters::prometheus::PrometheusExporter::get_options(),
+        PrometheusExporter::get_options(),
     );
-    options.insert(
-        String::from("riemann"),
-        exporters::riemann::RiemannExporter::get_options(),
-    );
-    options.insert(
-        String::from("qemu"),
-        exporters::qemu::QemuExporter::get_options(),
-    );
+    options.insert(String::from("riemann"), RiemannExporter::get_options());
+    options.insert(String::from("qemu"), QemuExporter::get_options());
     #[cfg(feature = "warp10")]
     {
-        options.insert(
-            String::from("warp10"),
-            exporters::warpten::Warp10Exporter::get_options(),
-        );
+        options.insert(String::from("warp10"), Warp10Exporter::get_options());
     }
 
     options
