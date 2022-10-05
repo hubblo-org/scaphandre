@@ -1,5 +1,5 @@
 #[cfg(target_os = "linux")]
-use procfs::{self, process::Process};
+use procfs::{self, process::Process, process::StatM};
 use regex::Regex;
 #[cfg(feature = "containers")]
 use std::collections::HashMap;
@@ -14,6 +14,8 @@ use std::time::{Duration, SystemTime};
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
 
+
+#[derive(Debug, Clone)]
 pub struct IStatM {
     pub size: u64,
     pub resident: u64,
@@ -22,6 +24,25 @@ pub struct IStatM {
     pub lib: u64,
     pub data: u64,
     pub dt: u64,
+}
+
+impl IStatM {
+    #[cfg(target_os = "linux")]
+    fn from_procfs_statm(statm: StatM) -> IStatM {
+        IStatM {
+            size: statm.size,
+            resident: statm.resident,
+            shared: statm.shared,
+            text: statm.text,
+            lib: statm.lib,
+            data: statm.data,
+            dt: statm.dt
+        } 
+    }
+    #[cfg(target_os = "windows")]
+    fn from_sysinfo_statm() -> IStatM {
+    
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -155,64 +176,8 @@ pub struct IStatus {
     pub name: String,
     pub umask: Option<u32>,
     pub state: String,
-    //pub tgid: i32,
-    //pub ngid: Option<i32>,
     pub pid: i32,
     pub ppid: i32,
-    //pub tracerpid: i32,
-    //pub ruid: u32,
-    //pub euid: u32,
-    //pub suid: u32,
-    //pub fuid: u32,
-    //pub rgid: u32,
-    //pub egid: u32,
-    //pub sgid: u32,
-    //pub fgid: u32,
-    //pub fdsize: u32,
-    //pub groups: Vec<i32>,
-    //pub nstgid: Option<Vec<i32>>,
-    //pub nspid: Option<Vec<i32>>,
-    //pub nspgid: Option<Vec<i32>>,
-    //pub nssid: Option<Vec<i32>>,
-    //pub vmpeak: Option<u64>,
-    //pub vmsize: Option<u64>,
-    //pub vmlck: Option<u64>,
-    //pub vmpin: Option<u64>,
-    //pub vmhwm: Option<u64>,
-    //pub vmrss: Option<u64>,
-    //pub rssanon: Option<u64>,
-    //pub rssfile: Option<u64>,
-    //pub rssshmem: Option<u64>,
-    //pub vmdata: Option<u64>,
-    //pub vmstk: Option<u64>,
-    //pub vmexe: Option<u64>,
-    //pub vmlib: Option<u64>,
-    //pub vmpte: Option<u64>,
-    //pub vmswap: Option<u64>,
-    //pub hugetlbpages: Option<u64>,
-    //pub threads: u64,
-    //pub sigq: (u64, u64),
-    //pub sigpnd: u64,
-    //pub shdpnd: u64,
-    //pub sigblk: u64,
-    //pub sigign: u64,
-    //pub sigcgt: u64,
-    //pub capinh: u64,
-    //pub capprm: u64,
-    //pub capeff: u64,
-    //pub capbnd: Option<u64>,
-    //pub capamb: Option<u64>,
-    //pub nonewprivs: Option<u64>,
-    //pub seccomp: Option<u32>,
-    //pub speculation_store_bypass: Option<String>,
-    //pub cpus_allowed: Option<Vec<u32>>,
-    //pub cpus_allowed_list: Option<Vec<(u32, u32)>>,
-    //pub mems_allowed: Option<Vec<u32>>,
-    //pub mems_allowed_list: Option<Vec<(u32, u32)>>,
-    //pub voluntary_ctxt_switches: Option<u64>,
-    //pub nonvoluntary_ctxt_switches: Option<u64>,
-    //pub core_dumping: Option<bool>,
-    //pub thp_enabled: Option<bool>,
 }
 
 #[derive(Debug, Clone)]
@@ -222,9 +187,11 @@ pub struct IProcess {
     pub comm: String,
     pub cmdline: Vec<String>,
     pub stat: Option<IStat>,
-    //pub root: Option<String>,
     #[cfg(target_os = "linux")]
-    pub original: Process,
+    pub exe: PathBuf,
+    #[cfg(target_os = "linux")]
+    pub status: IStatus
+    //pub root: Option<String>,
 }
 
 impl IProcess {
@@ -237,11 +204,12 @@ impl IProcess {
         }
         IProcess {
             pid: process.pid,
-            owner: process.owner,
-            original: process.clone(),
-            comm: process.stat.comm.clone(),
+            owner: process.uid().unwrap(),
+            comm: process.stat().unwrap().comm.clone(),
             cmdline,
-            stat: Some(IStat::from_procfs_stat(&process.stat)),
+            stat: Some(IStat::from_procfs_stat(&process.stat().unwrap())),
+            exe: process.exe().unwrap(),
+
         }
     }
 
@@ -258,11 +226,7 @@ impl IProcess {
 
     #[cfg(target_os = "linux")]
     pub fn cmdline(&self) -> Result<Vec<String>, String> {
-        if let Ok(cmdline) = self.original.cmdline() {
-            Ok(cmdline)
-        } else {
-            Err(String::from("cmdline() was none"))
-        }
+        Ok(self.cmdline)
     }
     #[cfg(target_os = "windows")]
     pub fn cmdline(&self, proc_tracker: &ProcessTracker) -> Result<Vec<String>, String> {
@@ -273,36 +237,35 @@ impl IProcess {
         }
     }
 
-    pub fn statm(&self) -> Result<IStatM, String> {
-        #[cfg(target_os = "linux")]
-        {
-            let mystatm = self.original.statm().unwrap();
-            Ok(IStatM {
-                size: mystatm.size,
-                data: mystatm.data,
-                dt: mystatm.dt,
-                lib: mystatm.lib,
-                resident: mystatm.resident,
-                shared: mystatm.shared,
-                text: mystatm.text,
-            })
-        }
-        #[cfg(target_os = "windows")]
-        Ok(IStatM {
-            size: 42,
-            data: 42,
-            dt: 42,
-            lib: 42,
-            resident: 42,
-            shared: 42,
-            text: 42,
-        })
-    }
+    //pub fn statm(&self) -> Result<IStatM, String> {
+    //    #[cfg(target_os = "linux")]
+    //    {
+    //        let mystatm = self.istatm;
+    //        Ok(IStatM {
+    //            size: mystatm.size,
+    //            data: mystatm.data,
+    //            dt: mystatm.dt,
+    //            lib: mystatm.lib,
+    //            resident: mystatm.resident,
+    //            shared: mystatm.shared,
+    //            text: mystatm.text,
+    //        })
+    //    }
+    //    #[cfg(target_os = "windows")]
+    //    Ok(IStatM {
+    //        size: 42,
+    //        data: 42,
+    //        dt: 42,
+    //        lib: 42,
+    //        resident: 42,
+    //        shared: 42,
+    //        text: 42,
+    //    })
+    //}
 
     #[cfg(target_os = "linux")]
     pub fn exe(&self) -> Result<PathBuf, String> {
-        let original_exe = self.original.exe().unwrap();
-        Ok(original_exe)
+        Ok(self.exe)
     }
     #[cfg(target_os = "windows")]
     pub fn exe(&self, proc_tracker: &ProcessTracker) -> Result<PathBuf, String> {
@@ -316,7 +279,7 @@ impl IProcess {
     pub fn status(&self) -> Result<IStatus, String> {
         #[cfg(target_os = "linux")]
         {
-            if let Ok(original_status) = self.original.status() {
+            if let Ok(original_status) = self.istatus {
                 let status = IStatus {
                     name: original_status.name,
                     pid: original_status.pid,

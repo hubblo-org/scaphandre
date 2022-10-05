@@ -69,7 +69,7 @@ impl QemuExporter {
                     let last = qp.first().unwrap();
                     let previous = qp.get(1).unwrap();
                     let vm_name = QemuExporter::get_vm_name_from_cmdline(
-                        &last.process.original.cmdline().unwrap(),
+                        &last.process.cmdline,
                     );
                     let time_pdiff = last.total_time_jiffies() - previous.total_time_jiffies();
                     if let Some(time_tdiff) = &topo_stat_diff {
@@ -139,15 +139,14 @@ impl QemuExporter {
         for vecp in processes.iter() {
             if !vecp.is_empty() {
                 if let Some(pr) = vecp.get(0) {
-                    if let Ok(cmdline) = pr.process.original.cmdline() {
-                        if let Some(res) = cmdline.iter().find(|x| x.contains("qemu-system")) {
-                            debug!("Found a process with {}", res);
-                            let mut tmp: Vec<ProcessRecord> = vec![];
-                            for p in vecp.iter() {
-                                tmp.push(p.clone());
-                            }
-                            qemu_processes.push(tmp);
+                    let cmdline = pr.process.cmdline;
+                    if let Some(res) = cmdline.iter().find(|x| x.contains("qemu-system")) {
+                        debug!("Found a process with {}", res);
+                        let mut tmp: Vec<ProcessRecord> = vec![];
+                        for p in vecp.iter() {
+                            tmp.push(p.clone());
                         }
+                        qemu_processes.push(tmp);
                     }
                 }
             }
