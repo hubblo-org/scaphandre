@@ -2,9 +2,10 @@
 
 # Tutorials
 
-- [Quickstart](tutorials/quickstart.md)
-- [Docker-compose](tutorials/docker-compose.md)
+- [Getting Started](tutorials/getting_started.md)
 - [Installation](tutorials/installation.md)
+- [Docker-compose](tutorials/docker-compose.md)
+- [Compilation](tutorials/compilation.md)
 - [Power consumption of a Kubernetes cluster with scaphandre, prometheus and grafana](tutorials/kubernetes.md)
 
 # How-to guides

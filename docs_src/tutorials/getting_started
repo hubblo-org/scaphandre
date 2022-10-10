@@ -1,4 +1,12 @@
-# Quickstart
+# Getting started
+
+To install Scaphandre, depending on your platform, see:
++ [Installation on GNU/Linux](installation_linux.md) section.
++ [Installation on Windows](installation_windows.md) section.
+
+If you want to contribute or just play with the code and need to compile Scaphandre, see :
++ [Compilation on GNU/Linux](compilation_linux.md).
++ [Compilation on Windows](compilation_windows.md).
 
 Depending on your kernel version, you could need to modprobe the module intel_rapl or intel_rapl_common first:
 
