@@ -229,7 +229,8 @@ impl JSONExporter {
                         consumption: format!("{}", metric.metric_value).parse::<f32>().unwrap(),
                         timestamp: metric.timestamp.as_secs_f64(),
                         container: match parameters.is_present("containers") {
-                            true => metric.attributes.get("container_id").map(|container_id| Container {
+                            true => metric.attributes.get("container_id").map(|container_id| {
+                                Container {
                                     id: String::from(container_id),
                                     runtime: String::from(
                                         metric
@@ -243,7 +244,8 @@ impl JSONExporter {
                                             .get("container_scheduler")
                                             .unwrap_or(&String::from("unknown")),
                                     ),
-                                }),
+                                }
+                            }),
                             false => None,
                         },
                     })
