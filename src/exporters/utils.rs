@@ -8,6 +8,16 @@ use {
     k8s_sync::{errors::KubernetesError, kubernetes::Kubernetes},
 };
 
+/// Returns a cmdline String filtered from potential characters that
+/// could break exporters output.
+///
+/// Here we replace:
+/// 1. Double quote by backslash double quote.
+/// 2. Remove carriage return.
+pub fn filter_cmdline(cmdline: &str) -> String {
+    cmdline.replace('\"', "\\\"").replace('\n', "")
+}
+
 /// Returns an Option containing the VM name of a qemu process.
 ///
 /// Then VM name is extracted from the command line.
@@ -110,6 +120,16 @@ pub fn get_kubernetes_client() -> Result<Kubernetes, KubernetesError> {
             Err(err)
         }
     }
+}
+
+#[test]
+// Fix bug https://github.com/hubblo-org/scaphandre/issues/175
+fn test_filter_cmdline_with_carriage_return() {
+    let cmdline = "bash-csleep infinity;\n> echo plop";
+    assert_eq!(
+        filter_cmdline(cmdline),
+        String::from("bash-csleep infinity;> echo plop")
+    );
 }
 
 //  Copyright 2020 The scaphandre authors.
