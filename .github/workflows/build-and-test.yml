@@ -28,7 +28,6 @@ env:
 jobs:
   check_pr_is_on_the_right_branch:
     name: Check PR is open on the right branch
-    needs: check_pr_is_on_the_right_branch
     steps:
       - name: Display warning and kill pipeline if needed
         run: |
@@ -39,6 +38,7 @@ jobs:
   fmt_and_clippy_linux:
     name: Cargo Fmt and Clippy - Linux
     runs-on: ubuntu-latest
+    needs: check_pr_is_on_the_right_branch
     steps:
       - name: Cancel Previous Runs
         uses: ambimax/action-cancel-previous-runs@v1
