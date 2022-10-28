@@ -28,6 +28,7 @@ env:
 jobs:
   check_pr_is_on_the_right_branch:
     name: Check PR is open on the right branch
+    runs-on: ubuntu-latest
     steps:
       - name: Display warning and kill pipeline if needed
         run: |
