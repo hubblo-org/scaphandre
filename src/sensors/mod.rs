@@ -12,10 +12,12 @@ pub mod utils;
 #[cfg(target_os = "linux")]
 use procfs::{process, CpuInfo, CpuTime, KernelStats};
 use std::collections::HashMap;
+use core::fmt::Debug;
 use std::error::Error;
 use std::fmt;
 use std::mem::size_of_val;
 use std::time::Duration;
+use systemstat::{System, Platform, saturating_sub_bytes};
 #[cfg(not(target_os = "linux"))]
 use sysinfo::{ProcessorExt, System, SystemExt};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
@@ -44,7 +46,7 @@ pub trait RecordReader {
 /// from the electricity consumption point of view,
 /// including the potentially multiple CPUSocket sockets.
 /// Owns a vector of CPUSocket structs representing each socket.
-#[derive(Debug, Clone)]
+//#[derive(Clone)]
 pub struct Topology {
     /// The CPU sockets found on the host, represented as CPUSocket instances attached to this topology
     pub sockets: Vec<CPUSocket>,
@@ -58,10 +60,35 @@ pub struct Topology {
     pub buffer_max_kbytes: u16,
     /// Sorted list of all domains names
     pub domains_names: Option<Vec<String>>,
+    /// System resources watcher
+    pub system: System,
     ///
     #[cfg(target_os = "windows")]
     #[allow(dead_code)]
     sensor_data: HashMap<String, String>,
+}
+
+impl Clone for Topology {
+    fn clone(&self) -> Self {
+        Topology {
+            sockets: self.sockets.to_vec(),
+            proc_tracker: self.proc_tracker.clone(),
+            stat_buffer: self.stat_buffer.to_vec(),
+            record_buffer: self.record_buffer.to_vec(),
+            buffer_max_kbytes: self.buffer_max_kbytes,
+            domains_names: match &self.domains_names { 
+                Some(domains)=> Some(domains.to_vec()),
+                None => None
+            },
+            system: System::new()
+        }
+    }
+}
+
+impl Debug for Topology {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Topology: ({} Sockets: {:?})", self.sockets.len(), self.sockets)
+    } 
 }
 
 impl RecordGenerator for Topology {
@@ -175,6 +202,7 @@ impl Topology {
             record_buffer: vec![],
             buffer_max_kbytes: 1,
             domains_names: None,
+            system: System::new()
         }
     }
 
@@ -669,6 +697,16 @@ impl Topology {
             }
         }
         None
+    }
+
+    pub fn get_host_resources_watcher(&self) -> &System {
+        &self.system
+        //let metrics: Vec<Record> = vec![];
+        //if let Ok(cpu) = sys.cpu_load_aggregate() {
+        //    let cpu = cpu.done().unwrap();
+        //    metrics.append(other)
+        //}
+        //metrics
     }
 }
 

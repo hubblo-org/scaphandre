@@ -75,6 +75,13 @@ impl Exporter for JSONExporter {
             .required(false)
             .takes_value(false);
         options.push(arg);
+        
+        let arg = Arg::with_name("resources")
+            .help("Include IT resources consumption metrics in JSON data")
+            .long("resources")
+            .required(false)
+            .takes_value(false);
+        options.push(arg);
 
         // the resulting labels of this option are not yet used by this exporter, activate this option once we display something interesting about it
         //let arg = Arg::with_name("qemu")
@@ -123,8 +130,28 @@ struct Host {
     timestamp: f64,
 }
 #[derive(Serialize, Deserialize)]
+struct Resources {
+    cpu: CpuRes,
+    ram: RamRes
+}
+#[derive(Serialize, Deserialize)]
+struct CpuRes {
+    user: String,
+    nice: String,
+    system: String,
+    intr: String,
+    idle: String,
+    total_active: String    
+}
+#[derive(Serialize,Deserialize)]
+struct RamRes {
+    used: String,
+    free: String
+}
+#[derive(Serialize, Deserialize)]
 struct Report {
     host: Host,
+    resources: Resources,
     consumers: Vec<Consumer>,
     sockets: Vec<Socket>,
 }
@@ -205,6 +232,39 @@ impl JSONExporter {
         } else {
             info!("didn't find host metric");
         };
+        let mut resources = Resources {
+            cpu: CpuRes {
+                user: "0.0".to_string(),
+                idle: "0.0".to_string(),
+                intr: "0.0".to_string(),
+                nice: "0.0".to_string(),
+                system: "0.0".to_string(),
+                total_active: "0.0".to_string() 
+            },
+            ram: RamRes {
+                used: "0".to_string(),
+                free: "0".to_string()
+            }
+        };
+        for m in &metrics {
+            if m.name == "scaph_host_cpu_user_percentage" {
+                resources.cpu.user = m.metric_value.to_string();
+            } else if m.name == "scaph_host_cpu_idle_percentage" {
+                resources.cpu.idle = m.metric_value.to_string();
+            } else if m.name == "scaph_host_cpu_intr_percentage" {
+                resources.cpu.intr = m.metric_value.to_string();
+            } else if m.name == "scaph_host_cpu_nice_percentage" {
+                resources.cpu.nice = m.metric_value.to_string();
+            } else if m.name == "scaph_host_cpu_system_percentage" {
+                resources.cpu.system = m.metric_value.to_string();
+            } else if m.name == "scaph_host_cpu_total_active_percentage" {
+                resources.cpu.total_active = m.metric_value.to_string();
+            } else if m.name == "scaph_host_memory_used" {
+                resources.ram.used = m.metric_value.to_string();
+            } else if m.name == "scaph_host_memory_free" {
+                resources.ram.free = m.metric_value.to_string();
+            }
+        }
 
         let consumers = metric_generator.topology.proc_tracker.get_top_consumers(
             parameters
@@ -306,6 +366,7 @@ impl JSONExporter {
             Some(host) => {
                 let report = Report {
                     host,
+                    resources: resources,
                     consumers: top_consumers,
                     sockets: all_sockets,
                 };
