@@ -1,6 +1,6 @@
 use crate::exporters::*;
 use crate::sensors::Sensor;
-use clap::Arg;
+use clap::{value_parser, Arg};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::File;
@@ -23,68 +23,70 @@ impl Exporter for JSONExporter {
 
     /// Returns options needed for that exporter, as a HashMap
 
-    fn get_options() -> Vec<clap::Arg<'static>> {
+    fn get_options() -> Vec<clap::Arg> {
         let mut options = Vec::new();
-        let arg = Arg::with_name("timeout")
+        let arg = Arg::new("timeout")
             .help("Maximum time spent measuring, in seconds.")
             .long("timeout")
             .short('t')
             .required(false)
-            .takes_value(true);
+            .value_parser(value_parser!(u64))
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("step_duration")
+        let arg = Arg::new("step_duration")
             .default_value("2")
             .help("Set measurement step duration in second.")
             .long("step")
             .short('s')
             .required(false)
-            .takes_value(true);
+            .value_parser(value_parser!(u64))
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("step_duration_nano")
+        let arg = Arg::new("step_duration_nano")
             .default_value("0")
             .help("Set measurement step duration in nano second.")
             .long("step_nano")
             .short('n')
             .required(false)
-            .takes_value(true);
+            .value_parser(value_parser!(u32))
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("file_path")
+        let arg = Arg::new("file_path")
             .default_value("")
             .help("Destination file for the report.")
             .long("file")
             .short('f')
             .required(false)
-            .takes_value(true);
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("max_top_consumers")
+        let arg = Arg::new("max_top_consumers")
             .default_value("10")
             .help("Maximum number of processes to watch.")
             .long("max-top-consumers")
             .short('m')
             .required(false)
-            .takes_value(true);
+            .value_parser(value_parser!(u16))
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("containers")
+        let arg = Arg::new("qemu")
+            .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
+            .long("qemu")
+            .short('q')
+            .required(false)
+            .action(clap::ArgAction::SetTrue);
+        options.push(arg);
+
+        let arg = Arg::new("containers")
             .help("Monitor and apply labels for processes running as containers")
             .long("containers")
             .required(false)
-            .takes_value(false);
+            .action(clap::ArgAction::SetTrue);
         options.push(arg);
-
-        // the resulting labels of this option are not yet used by this exporter, activate this option once we display something interesting about it
-        //let arg = Arg::with_name("qemu")
-        //    .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
-        //    .long("qemu")
-        //    .short("q")
-        //    .required(false)
-        //    .takes_value(false);
-        //options.push(arg);
-
         options
     }
 }
@@ -144,28 +146,24 @@ impl JSONExporter {
         let mut metric_generator = MetricGenerator::new(
             topology,
             utils::get_hostname(),
-            parameters.is_present("qemu"),
-            parameters.is_present("containers"),
+            parameters.get_flag("qemu"),
+            parameters.get_flag("containers"),
         );
 
         // We have a default value of 2s so it is safe to unwrap the option
         // Panic if a non numerical value is passed
-        let step_duration: u64 = parameters
-            .value_of("step_duration")
-            .unwrap()
-            .parse()
+        let step_duration: u64 = *parameters
+            .get_one("step_duration")
             .expect("Wrong step_duration value, should be a number of seconds");
-        let step_duration_nano: u32 = parameters
-            .value_of("step_duration_nano")
-            .unwrap()
-            .parse()
+        let step_duration_nano: u32 = *parameters
+            .get_one("step_duration_nano")
             .expect("Wrong step_duration_nano value, should be a number of nano seconds");
 
         info!("Measurement step is: {}s", step_duration);
-        if let Some(timeout) = parameters.value_of("timeout") {
+        if let Some(timeout) = parameters.get_one::<u64>("timeout") {
             let now = Instant::now();
 
-            let timeout_secs: u64 = timeout.parse().unwrap();
+            let timeout_secs: u64 = *timeout;
             while now.elapsed().as_secs() <= timeout_secs {
                 self.iterate(&parameters, &mut metric_generator);
                 thread::sleep(Duration::new(step_duration, step_duration_nano));
@@ -207,11 +205,9 @@ impl JSONExporter {
         };
 
         let consumers = metric_generator.topology.proc_tracker.get_top_consumers(
-            parameters
-                .value_of("max_top_consumers")
-                .unwrap_or("10")
-                .parse::<u16>()
-                .unwrap(),
+            *parameters
+                .get_one::<u16>("max_top_consumers")
+                .unwrap_or(&10u16),
         );
         let top_consumers = consumers
             .iter()
@@ -228,7 +224,7 @@ impl JSONExporter {
                         pid: process.pid,
                         consumption: format!("{}", metric.metric_value).parse::<f32>().unwrap(),
                         timestamp: metric.timestamp.as_secs_f64(),
-                        container: match parameters.is_present("containers") {
+                        container: match parameters.get_flag("containers") {
                             true => metric.attributes.get("container_id").map(|container_id| {
                                 Container {
                                     id: String::from(container_id),
@@ -310,7 +306,7 @@ impl JSONExporter {
                     sockets: all_sockets,
                 };
 
-                let file_path = parameters.value_of("file_path").unwrap();
+                let file_path = parameters.get_one::<String>("file_path").unwrap();
                 // Print json
                 if file_path.is_empty() {
                     let json: String =

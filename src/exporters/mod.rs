@@ -104,7 +104,7 @@ pub trait Exporter {
     /// Entry point for all Exporters
     fn run(&mut self, parameters: ArgMatches);
     /// Get the options passed via the command line
-    fn get_options() -> Vec<clap::Arg<'static>>;
+    fn get_options() -> Vec<clap::Arg>;
 }
 
 /// MetricGenerator is an exporter helper structure to collect Scaphandre metrics.

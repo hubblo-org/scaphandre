@@ -1,4 +1,5 @@
-use clap::Arg;
+use clap::parser::ValueSource;
+use clap::{value_parser, Arg};
 
 use crate::exporters::*;
 use crate::sensors::{utils::IProcess, Sensor};
@@ -21,49 +22,59 @@ impl Exporter for StdoutExporter {
     }
 
     /// Returns options needed for that exporter, as a HashMap
-    fn get_options() -> Vec<clap::Arg<'static>> {
+    fn get_options() -> Vec<clap::Arg> {
         let mut options = Vec::new();
-        let arg = Arg::with_name("timeout")
+        let arg = Arg::new("timeout")
             .default_value("10")
             .help("Maximum time spent measuring, in seconds. 0 means continuous measurement.")
             .long("timeout")
             .short('t')
             .required(false)
-            .takes_value(true);
+            .value_parser(value_parser!(u64))
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("step_duration")
+        let arg = Arg::new("step_duration")
             .default_value("2")
             .help("Set measurement step duration in second.")
             .long("step")
             .short('s')
             .required(false)
-            .takes_value(true);
+            .value_parser(value_parser!(u64))
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("process_number")
+        let arg = Arg::new("process_number")
             .default_value("5")
             .help("Number of processes to display.")
             .long("process")
             .short('p')
             .required(false)
-            .takes_value(true);
+            .value_parser(value_parser!(u16))
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("regex_filter")
+        let arg = Arg::new("regex_filter")
             .help("Filter processes based on regular expressions (e.g: 'scaph\\w\\wd.e'). This option disable '-p' or '--process' one.")
             .long("regex")
             .short('r')
             .required(false)
-            .takes_value(true);
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("qemu")
+        let arg = Arg::new("qemu")
             .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
             .long("qemu")
             .short('q')
             .required(false)
-            .takes_value(false);
+            .action(clap::ArgAction::SetTrue);
+        options.push(arg);
+
+        let arg = Arg::new("containers")
+            .help("Monitor and apply labels for processes running as containers")
+            .long("containers")
+            .required(false)
+            .action(clap::ArgAction::SetTrue);
         options.push(arg);
 
         options
@@ -82,37 +93,24 @@ impl StdoutExporter {
         // All parameters have a default values so it is safe to unwrap them.
         // Panic if a non numerical value is passed except for regex_filter.
 
-        let timeout_secs: u64 = parameters
-            .value_of("timeout")
-            .unwrap()
-            .parse()
+        let timeout_secs: u64 = *parameters
+            .get_one("timeout")
             .expect("Wrong timeout value, should be a number of seconds");
 
-        let step_duration: u64 = parameters
-            .value_of("step_duration")
-            .unwrap()
-            .parse()
+        let step_duration: u64 = *parameters
+            .get_one("step_duration")
             .expect("Wrong step_duration value, should be a number of seconds");
 
-        let process_number: u16 = parameters
-            .value_of("process_number")
-            .unwrap()
-            .parse()
+        let process_number: u16 = *parameters
+            .get_one("process_number")
             .expect("Wrong process_number value, should be a number");
 
-        let regex_filter: Option<Regex> = if !parameters.is_present("regex_filter")
-            || parameters.value_of("regex_filter").unwrap().is_empty()
-        {
-            None
-        } else {
-            Some(
-                Regex::new(parameters.value_of("regex_filter").unwrap())
-                    .expect("Wrong regex_filter, regexp is invalid"),
-            )
-        };
+        let regex_filter: Option<Regex> = parameters
+            .get_one::<String>("regex_filter")
+            .map(|regex| Regex::new(regex).expect("Wrong regex_filter, regexp is invalid"));
 
-        if parameters.occurrences_of("regex_filter") == 1
-            && parameters.occurrences_of("process_number") == 1
+        if parameters.value_source("regex_filter") == Some(ValueSource::CommandLine)
+            && parameters.value_source("process_number") == Some(ValueSource::CommandLine)
         {
             let warning =
                 String::from("Warning: (-p / --process) and (-r / --regex) used at the same time. (-p / --process) disabled");
@@ -123,9 +121,8 @@ impl StdoutExporter {
         let mut metric_generator = MetricGenerator::new(
             topology,
             utils::get_hostname(),
-            parameters.is_present("qemu"),
-            parameters.is_present("containers"), // This broke clap as the parameter is not
-                                                 // defined
+            parameters.get_flag("qemu"),
+            parameters.get_flag("containers"),
         );
 
         println!("Measurement step is: {}s", step_duration);

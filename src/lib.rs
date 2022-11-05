@@ -28,36 +28,20 @@ use sensors::Sensor;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 
-/// Helper function to get an argument from ArgMatches
-fn get_argument(matches: &ArgMatches, arg: &'static str) -> String {
-    if let Some(value) = matches.value_of(arg) {
-        return String::from(value);
-    }
-    panic!("Couldn't get argument {}", arg);
-}
-
 /// Helper function to get a Sensor instance from ArgMatches
 fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
-    let sensor = match &get_argument(matches, "sensor")[..] {
+    let sensor = match matches.get_one::<String>("sensor").unwrap().as_str() {
         #[cfg(target_os = "linux")]
         "powercap_rapl" => PowercapRAPLSensor::new(
-            get_argument(matches, "sensor-buffer-per-socket-max-kB")
-                .parse()
-                .unwrap(),
-            get_argument(matches, "sensor-buffer-per-domain-max-kB")
-                .parse()
-                .unwrap(),
-            matches.is_present("vm"),
+            *matches.get_one("sensor-buffer-per-socket-max-kB").unwrap(),
+            *matches.get_one("sensor-buffer-per-domain-max-kB").unwrap(),
+            matches.get_flag("vm"),
         ),
         #[cfg(target_os = "linux")]
         _ => PowercapRAPLSensor::new(
-            get_argument(matches, "sensor-buffer-per-socket-max-kB")
-                .parse()
-                .unwrap(),
-            get_argument(matches, "sensor-buffer-per-domain-max-kB")
-                .parse()
-                .unwrap(),
-            matches.is_present("vm"),
+            *matches.get_one("sensor-buffer-per-socket-max-kB").unwrap(),
+            *matches.get_one("sensor-buffer-per-domain-max-kB").unwrap(),
+            matches.get_flag("vm"),
         ),
         #[cfg(not(target_os = "linux"))]
         _ => MsrRAPLSensor::new(),
@@ -70,13 +54,13 @@ fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
 /// the choosen exporter: run()
 /// This function should be updated to take new exporters into account.
 pub fn run(matches: ArgMatches) {
-    loggerv::init_with_verbosity(matches.occurrences_of("v")).unwrap();
+    loggerv::init_with_verbosity(u64::from(matches.get_count("v"))).unwrap();
 
     let sensor_boxed = get_sensor(&matches);
     let exporter_parameters;
 
     let mut header = true;
-    if matches.is_present("no-header") {
+    if matches.get_flag("no-header") {
         header = false;
     }
 
@@ -141,7 +125,7 @@ pub fn run(matches: ArgMatches) {
 
 /// Returns options needed for each exporter as a HashMap.
 /// This function has to be updated to enable a new exporter.
-pub fn get_exporters_options() -> HashMap<String, Vec<clap::Arg<'static>>> {
+pub fn get_exporters_options() -> HashMap<String, Vec<clap::Arg>> {
     let mut options = HashMap::new();
     options.insert(
         String::from("stdout"),
