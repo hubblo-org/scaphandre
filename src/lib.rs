@@ -172,6 +172,10 @@ pub fn get_exporters_options() -> HashMap<String, Vec<clap::Arg<'static, 'static
         String::from("warp10"),
         exporters::warpten::Warp10Exporter::get_options(),
     );
+    options.insert(
+        String::from("elastic"),
+        exporters::elastic::ElasticExporter::get_options(),
+    );
     options
 }
 
