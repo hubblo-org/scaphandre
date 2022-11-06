@@ -34,7 +34,7 @@ impl Exporter for QemuExporter {
         }
     }
 
-    fn get_options() -> Vec<clap::Arg<'static>> {
+    fn get_options() -> Vec<clap::Arg> {
         Vec::new()
     }
 }

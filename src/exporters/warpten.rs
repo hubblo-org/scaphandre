@@ -1,6 +1,6 @@
 use crate::exporters::*;
 use crate::sensors::{RecordGenerator, Sensor, Topology};
-use clap::Arg;
+use clap::{value_parser, Arg};
 use std::time::Duration;
 use std::{env, thread};
 use utils::get_scaphandre_version;
@@ -16,10 +16,10 @@ pub struct Warp10Exporter {
 impl Exporter for Warp10Exporter {
     /// Control loop for self.iteration()
     fn run(&mut self, parameters: clap::ArgMatches) {
-        let host = parameters.value_of("host").unwrap();
-        let scheme = parameters.value_of("scheme").unwrap();
-        let port = parameters.value_of("port").unwrap();
-        let write_token = if let Some(token) = parameters.value_of("write-token") {
+        let host = parameters.get_one::<String>("host").unwrap();
+        let scheme = parameters.get_one::<String>("scheme").unwrap();
+        let port = parameters.get_one::<String>("port").unwrap();
+        let write_token = if let Some(token) = parameters.get_one::<String>("write-token") {
             token.to_owned()
         } else {
             match env::var("SCAPH_WARP10_WRITE_TOKEN") {
@@ -30,8 +30,8 @@ impl Exporter for Warp10Exporter {
             }
         };
         //let read_token = parameters.value_of("read-token");
-        let step = parameters.value_of("step").unwrap();
-        let qemu = parameters.is_present("qemu");
+        let step: u64 = *parameters.get_one("step").unwrap();
+        let qemu = parameters.get_flag("qemu");
 
         loop {
             match self.iteration(
@@ -45,63 +45,64 @@ impl Exporter for Warp10Exporter {
                 Ok(res) => debug!("Result: {:?}", res),
                 Err(err) => error!("Failed ! {:?}", err),
             }
-            thread::sleep(Duration::new(step.parse::<u64>().unwrap(), 0));
+            thread::sleep(Duration::new(step, 0));
         }
     }
 
     /// Options for configuring the exporter.
-    fn get_options() -> Vec<clap::Arg<'static>> {
+    fn get_options() -> Vec<clap::Arg> {
         let mut options = Vec::new();
-        let arg = Arg::with_name("host")
+        let arg = Arg::new("host")
             .default_value("localhost")
             .help("Warp10 host's FQDN or IP address to send data to")
             .long("host")
             .short('H')
             .required(false)
-            .takes_value(true);
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("scheme")
+        let arg = Arg::new("scheme")
             .default_value("http")
             .help("Either 'http' or 'https'")
             .long("scheme")
             .short('s')
             .required(false)
-            .takes_value(true);
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("port")
+        let arg = Arg::new("port")
             .default_value("8080")
             .help("TCP port to join Warp10 on the host")
             .long("port")
             .short('p')
             .required(false)
-            .takes_value(true);
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("write-token")
+        let arg = Arg::new("write-token")
             .help("Auth. token to write on Warp10")
             .long("write-token")
             .short('t')
             .required(false)
-            .takes_value(true);
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("step")
+        let arg = Arg::new("step")
             .default_value("30")
             .help("Time step between measurements, in seconds.")
             .long("step")
             .short('S')
             .required(false)
-            .takes_value(true);
+            .value_parser(value_parser!(u64))
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("qemu")
+        let arg = Arg::new("qemu")
             .help("Tells scaphandre it is running on a Qemu hypervisor.")
             .long("qemu")
             .short('q')
             .required(false)
-            .takes_value(false);
+            .action(clap::ArgAction::SetTrue);
         options.push(arg);
 
         options
