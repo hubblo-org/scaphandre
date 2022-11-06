@@ -6,6 +6,7 @@ use crate::exporters::utils::get_hostname;
 use crate::exporters::*;
 use crate::sensors::Sensor;
 use chrono::Utc;
+use clap::value_parser;
 use clap::Arg;
 use riemann_client::proto::Attribute;
 use riemann_client::proto::Event;
@@ -32,16 +33,14 @@ struct RiemannClient {
 impl RiemannClient {
     /// Instanciate the Riemann client either with mTLS or using raw TCP.
     fn new(parameters: &ArgMatches) -> RiemannClient {
-        let address = String::from(parameters.value_of("address").unwrap());
-        let port = parameters
-            .value_of("port")
-            .unwrap()
-            .parse::<u16>()
+        let address = parameters.get_one::<String>("address").unwrap().to_string();
+        let port: u16 = *parameters
+            .get_one("port")
             .expect("Fail parsing port number");
-        let client: Client = if parameters.is_present("mtls") {
-            let cafile = parameters.value_of("cafile").unwrap();
-            let certfile = parameters.value_of("certfile").unwrap();
-            let keyfile = parameters.value_of("keyfile").unwrap();
+        let client: Client = if parameters.get_flag("mtls") {
+            let cafile = parameters.get_one::<String>("cafile").unwrap();
+            let certfile = parameters.get_one::<String>("certfile").unwrap();
+            let keyfile = parameters.get_one::<String>("keyfile").unwrap();
             Client::connect_tls(&address, port, cafile, certfile, keyfile)
                 .expect("Fail to connect to Riemann server using mTLS")
         } else {
@@ -121,10 +120,8 @@ impl RiemannExporter {
 impl Exporter for RiemannExporter {
     /// Entry point of the RiemannExporter.
     fn run(&mut self, parameters: ArgMatches) {
-        let dispatch_duration: u64 = parameters
-            .value_of("dispatch_duration")
-            .unwrap()
-            .parse()
+        let dispatch_duration: u64 = *parameters
+            .get_one("dispatch_duration")
             .expect("Wrong dispatch_duration value, should be a number of seconds");
 
         let hostname = get_hostname();
@@ -142,8 +139,8 @@ impl Exporter for RiemannExporter {
         let mut metric_generator = MetricGenerator::new(
             topology,
             hostname,
-            parameters.is_present("qemu"),
-            parameters.is_present("containers"),
+            parameters.get_flag("qemu"),
+            parameters.get_flag("containers"),
         );
 
         loop {
@@ -185,7 +182,7 @@ impl Exporter for RiemannExporter {
                 if let Some(cmdline_str) = cmdline {
                     attributes.insert("cmdline".to_string(), cmdline_str.replace('\"', "\\\""));
 
-                    if parameters.is_present("qemu") {
+                    if parameters.get_flag("qemu") {
                         if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
                             attributes.insert("vmname".to_string(), vmname);
                         }
@@ -230,74 +227,83 @@ impl Exporter for RiemannExporter {
     }
 
     /// Returns options understood by the exporter.
-    fn get_options() -> Vec<clap::Arg<'static>> {
+    fn get_options() -> Vec<clap::Arg> {
         let mut options = Vec::new();
-        let arg = Arg::with_name("address")
+        let arg = Arg::new("address")
             .default_value(DEFAULT_IP_ADDRESS)
             .help("Riemann ipv6 or ipv4 address. If mTLS is used then server fqdn must be provided")
             .long("address")
             .short('a')
             .required(false)
-            .takes_value(true);
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("port")
+        let arg = Arg::new("port")
             .default_value(DEFAULT_PORT)
             .help("Riemann TCP port number")
             .long("port")
             .short('p')
             .required(false)
-            .takes_value(true);
+            .value_parser(value_parser!(u16))
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("dispatch_duration")
+        let arg = Arg::new("dispatch_duration")
             .default_value("5")
             .help("Duration between metrics dispatch")
             .long("dispatch")
             .short('d')
             .required(false)
-            .takes_value(true);
+            .value_parser(value_parser!(u64))
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("qemu")
+        let arg = Arg::new("qemu")
             .help("Instruct that scaphandre is running on an hypervisor")
             .long("qemu")
             .short('q')
             .required(false)
-            .takes_value(false);
+            .action(clap::ArgAction::SetTrue);
         options.push(arg);
 
-        let arg = Arg::with_name("mtls")
+        let arg = Arg::new("containers")
+            .help("Monitor and apply labels for processes running as containers")
+            .long("containers")
+            .required(false)
+            .action(clap::ArgAction::SetTrue);
+        options.push(arg);
+
+        let arg = Arg::new("mtls")
             .help("Connect to a Riemann server using mTLS. Parameters address, ca, cert and key must be defined.")
             .long("mtls")
             .required(false)
-            .takes_value(false)
-            .requires_all(&["address","cafile", "certfile", "keyfile"]);
+            .requires_all(["address","cafile", "certfile", "keyfile"])
+            .action(clap::ArgAction::SetTrue);
         options.push(arg);
 
-        let arg = Arg::with_name("cafile")
+        let arg = Arg::new("cafile")
             .help("CA certificate file (.pem format)")
             .long("ca")
             .required(false)
-            .takes_value(true)
+            .action(clap::ArgAction::Set)
             .display_order(1000)
             .requires("mtls");
         options.push(arg);
 
-        let arg = Arg::with_name("certfile")
+        let arg = Arg::new("certfile")
             .help("Client certificate file (.pem format)")
             .long("cert")
             .required(false)
-            .takes_value(true)
+            .action(clap::ArgAction::Set)
             .display_order(1001)
             .requires("mtls");
         options.push(arg);
 
-        let arg = Arg::with_name("keyfile")
+        let arg = Arg::new("keyfile")
             .help("Client RSA key")
             .long("key")
             .required(false)
-            .takes_value(true)
+            .action(clap::ArgAction::Set)
             .display_order(1001)
             .requires("mtls");
         options.push(arg);
