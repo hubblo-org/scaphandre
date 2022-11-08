@@ -29,8 +29,9 @@ colored = "2.0.0"
 chrono = "0.4.19"
 docker-sync = { version = "0.1.2", optional = true }
 k8s-sync = { version = "0.2.3", optional = true }
-hyper = { version = "0.14", features = ["full"], optional = true }
+hyper = { version = "0.14.23", features = ["full"], optional = true }
 tokio = { version = "1", features = ["full"], optional = true}
+elasticsearch = "8.5.0-alpha.1"
 
 [target.'cfg(target_os="linux")'.dependencies]
 procfs = { version = "0.12.0" }
