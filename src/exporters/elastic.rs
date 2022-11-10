@@ -6,6 +6,12 @@
 use crate::exporters::Exporter;
 use crate::sensors::Sensor;
 use clap::{Arg, ArgMatches};
+use elasticsearch::{
+    auth::Credentials,
+    http::transport::{SingleNodeConnectionPool, Transport, TransportBuilder},
+    CreateParts, Elasticsearch, Error,
+};
+use url::Url;
 
 /// Default url for Elastic endpoint
 const DEFAULT_HOST: &str = "localhost";
@@ -22,8 +28,20 @@ pub struct ElasticExporter {
 }
 
 impl Exporter for ElasticExporter {
-    fn run(&mut self, _parameters: ArgMatches) {
-        // TODO
+    fn run(&mut self, parameters: ArgMatches) {
+        let client = match new_client(
+            parameters.value_of("scheme").unwrap(),
+            parameters.value_of("host").unwrap(),
+            parameters.value_of("port").unwrap(),
+            parameters.value_of("cloud_id"),
+            parameters.value_of("username"),
+            parameters.value_of("password"),
+        ) {
+            Ok(client) => client,
+            Err(e) => panic!("{}", e),
+        };
+
+        client.create(CreateParts::IndexId("test", "test")).send();
     }
 
     fn get_options() -> Vec<clap::Arg<'static, 'static>> {
@@ -90,4 +108,44 @@ impl Exporter for ElasticExporter {
             host, port, scheme, cloud_id, username, password, qemu, containers,
         ]
     }
+}
+
+impl ElasticExporter {
+    /// Instantiates and returns a new ElasticExporter
+    // TODO: make sensor mutable
+    pub fn new(sensor: Box<dyn Sensor>) -> ElasticExporter {
+        ElasticExporter { _sensor: sensor }
+    }
+}
+
+/// Elastic helper functions
+fn new_client(
+    scheme: &str,
+    host: &str,
+    port: &str,
+    cloud_id: Option<&str>,
+    username: Option<&str>,
+    password: Option<&str>,
+) -> Result<Elasticsearch, Error> {
+    let credentials = match (username, password) {
+        (Some(u), Some(p)) => Some(Credentials::Basic(u.to_string(), p.to_string())),
+        _ => None,
+    };
+
+    let transport = match (credentials, cloud_id) {
+        (Some(credentials), Some(cloud_id)) => Transport::cloud(cloud_id, credentials)?,
+        (Some(credentials), None) => {
+            let url = Url::parse(&format_url(scheme, host, port))?;
+            let conn = SingleNodeConnectionPool::new(url);
+            TransportBuilder::new(conn).auth(credentials).build()?
+        }
+        (None, None) => Transport::single_node(&format_url(scheme, host, port))?,
+        _ => unreachable!(),
+    };
+
+    Ok(Elasticsearch::new(transport))
+}
+
+fn format_url<'a>(scheme: &'a str, host: &'a str, port: &'a str) -> String {
+    format!("{scheme}://{host}:{port}")
 }

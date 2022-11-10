@@ -9,6 +9,7 @@ pub mod exporters;
 pub mod sensors;
 use clap::ArgMatches;
 use colored::*;
+use exporters::elastic::ElasticExporter;
 #[cfg(feature = "json")]
 use exporters::json::JSONExporter;
 #[cfg(feature = "prometheus")]
@@ -107,6 +108,13 @@ pub fn run(matches: ArgMatches) {
         }
         exporter_parameters = prometheus_exporter_parameters.clone();
         let mut exporter = PrometheusExporter::new(sensor_boxed);
+        exporter.run(exporter_parameters);
+    } else if let Some(elastic_exporter_parameters) = matches.subcommand_matches("elastic") {
+        if header {
+            scaphandre_header("elastic")
+        }
+        exporter_parameters = elastic_exporter_parameters.clone();
+        let mut exporter = ElasticExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else {
         #[cfg(target_os = "linux")]
