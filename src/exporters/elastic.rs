@@ -118,7 +118,7 @@ impl ElasticExporter {
     }
 }
 
-/// Elastic helper functions
+/// Inits a new elastic client
 fn new_client(
     scheme: &str,
     host: &str,
@@ -146,6 +146,7 @@ fn new_client(
     Ok(Elasticsearch::new(transport))
 }
 
+/// Format an url to an elastic endpoint
 fn format_url<'a>(scheme: &'a str, host: &'a str, port: &'a str) -> String {
     format!("{scheme}://{host}:{port}")
 }
