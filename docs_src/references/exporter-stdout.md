@@ -53,3 +53,4 @@ As always exporter's options can be displayed with `-h`:
         -t, --timeout <timeout>           Maximum time spent measuring, in seconds. 0 means continuous measurement.
                                           [default: 10]
 
+Stdout exporter is arbitrarily showing only some metrics among [those available](metrics.md). If your usage requires other metrics to be shown among them, feel free to open a pull request or ask for changes in the exporter's code.
