@@ -166,19 +166,6 @@ impl Warp10Exporter {
             ));
         }
 
-        if let Some(metric_value) = self
-            .topology
-            .get_process_cpu_consumption_percentage(procfs::process::Process::myself().unwrap().pid)
-        {
-            data.push(warp10::Data::new(
-                time::OffsetDateTime::now_utc(),
-                None,
-                String::from("scaph_self_cpu_usage_percent"),
-                labels.clone(),
-                warp10::Value::Int(metric_value.value.parse::<i32>().unwrap()),
-            ));
-        }
-
         if let Ok(metric_value) = procfs::process::Process::myself().unwrap().statm() {
             let value = metric_value.size * procfs::page_size().unwrap() as u64;
             data.push(warp10::Data::new(
