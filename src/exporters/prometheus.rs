@@ -190,12 +190,18 @@ async fn runner(
 }
 
 /// Returns a well formatted Prometheus metric string.
+/// In labels, it replaces quote by an underscore and escape backslashes.
 fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>>) -> String {
     let mut result = key.to_string();
     if let Some(labels) = labels {
         result.push('{');
         for (k, v) in labels.iter() {
-            let _ = write!(result, "{}=\"{}\",", k, v.replace('\"', "_"));
+            let _ = write!(
+                result,
+                "{}=\"{}\",",
+                k,
+                v.replace('\"', "_").replace('\\', "\\\\")
+            );
         }
         result.remove(result.len() - 1);
         result.push('}');
@@ -291,6 +297,27 @@ async fn show_metrics(
         let _ = write!(body, "<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{}\">/{}</a>", suffix, suffix);
     }
     Ok(Response::new(body.into()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_format_metric() {
+        let key: &str = "metric_key";
+        let value: &str = "42";
+        let labels = HashMap::from([
+            ("label1".to_string(), r#"one \ backslash"#.to_string()),
+            (
+                "label2".to_string(),
+                r#"quote " and 2 \\ backslashes"#.to_string(),
+            ),
+        ]);
+        let formatted = format_metric(key, value, Some(&labels));
+
+        let expected = "metric_key{label2=\"quote _ and 2 \\\\\\\\ backslashes\",label1=\"one \\\\ backslash\"} 42\n";
+        assert_eq!(formatted, expected, "Something failed to format");
+    }
 }
 
 //  Copyright 2020 The scaphandre authors.
