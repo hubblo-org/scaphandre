@@ -600,7 +600,7 @@ impl MetricGenerator {
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
                 description: String::from("Number of context switches since boot."),
-                metric_value: MetricValueType::IntUnsigned(metric_value as u64),
+                metric_value: MetricValueType::IntUnsigned(metric_value),
             });
         }
     }
