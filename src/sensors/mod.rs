@@ -598,7 +598,6 @@ impl Topology {
         let tracker = self.get_proc_tracker();
         if let Some(recs) = tracker.find_records(pid) {
             if recs.len() > 1 {
-<<<<<<< HEAD
                 #[cfg(target_os = "linux")]
                 {
                     let last = recs.first().unwrap();
@@ -629,16 +628,6 @@ impl Topology {
                     let last = recs.first().unwrap();
                     let process_cpu_percentage =
                         tracker.get_cpu_usage_percentage(pid as usize, tracker.nb_cores);
-=======
-                let last = recs.first().unwrap();
-                let previous = recs.get(1).unwrap();
-                if let Some(topo_stats_diff) = self.get_stats_diff() {
-                    //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
-                    let process_total_time =
-                        last.total_time_jiffies() - previous.total_time_jiffies();
-                    let topo_total_time = topo_stats_diff.total_time_jiffies();
-                    let usage_percent = process_total_time as f64 / topo_total_time as f64;
->>>>>>> main
                     let topo_conso = self.get_records_diff_power_microwatts();
                     if let Some(conso) = &topo_conso {
                         let conso_f64 = conso.value.parse::<f64>().unwrap();
