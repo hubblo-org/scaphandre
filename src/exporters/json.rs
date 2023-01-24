@@ -292,7 +292,7 @@ impl JSONExporter {
 
                     Some(Socket {
                         id: socket.id,
-                        consumption: (socket_power as f32),
+                        consumption: socket_power,
                         domains,
                         timestamp: metric.timestamp.as_secs_f64(),
                     })
@@ -322,7 +322,7 @@ impl JSONExporter {
                     let json: String =
                         serde_json::to_string(&self.reports).expect("Unable to parse report");
                     let _ = File::create(file_path);
-                    fs::write(file_path, &json).expect("Unable to write file");
+                    fs::write(file_path, json).expect("Unable to write file");
                 }
             }
             None => {

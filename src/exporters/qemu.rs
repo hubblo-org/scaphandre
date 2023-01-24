@@ -87,9 +87,7 @@ impl QemuExporter {
                         let uj_to_add = ratio * topo_rec_uj.value.parse::<u64>().unwrap();
                         trace!("Adding {} uJ", uj_to_add);
                         let complete_path = format!("{}/{}/intel-rapl:0", path, vm_name);
-                        if let Ok(result) =
-                            QemuExporter::add_or_create(&complete_path, uj_to_add as u64)
-                        {
+                        if let Ok(result) = QemuExporter::add_or_create(&complete_path, uj_to_add) {
                             trace!("{:?}", result);
                             debug!("Updated {}", complete_path);
                         }
