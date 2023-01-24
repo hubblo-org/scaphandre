@@ -2,7 +2,7 @@
 //!
 //! `PrometheusExporter` implementation, expose metrics to
 //! a [Prometheus](https://prometheus.io/) server.
-use super::utils::get_hostname;
+use super::utils::{get_hostname, get_common_options};
 use crate::current_system_time_since_epoch;
 use crate::exporters::{Exporter, MetricGenerator, MetricValueType};
 use crate::sensors::{Sensor, Topology};
@@ -55,12 +55,14 @@ impl Exporter for PrometheusExporter {
             parameters.value_of("suffix").unwrap().to_string(),
             parameters.is_present("qemu"),
             parameters.is_present("containers"),
+            parameters.is_present("resources"),
             get_hostname(),
         );
     }
     /// Returns options understood by the exporter.
     fn get_options() -> Vec<clap::Arg<'static, 'static>> {
         let mut options = Vec::new();
+        options.append(&mut get_common_options());
         let arg = Arg::with_name("address")
             .default_value(DEFAULT_IP_ADDRESS)
             .help("ipv6 or ipv4 address to expose the service to")
@@ -145,6 +147,7 @@ async fn runner(
     suffix: String,
     qemu: bool,
     watch_containers: bool,
+    watch_resources: bool,
     hostname: String,
 ) {
     if let Ok(addr) = address.parse::<IpAddr>() {
@@ -158,6 +161,7 @@ async fn runner(
                     hostname.clone(),
                     qemu,
                     watch_containers,
+                    watch_resources
                 )),
             };
             let context = Arc::new(power_metrics);

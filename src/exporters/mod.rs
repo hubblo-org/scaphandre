@@ -123,6 +123,8 @@ struct MetricGenerator {
     /// Tells MetricGenerator if it has to watch for qemu virtual machines.
     #[cfg(target_os = "linux")]
     qemu: bool,
+    /// Tells MetricGenerator if is has to watch IT resources consumption (cpu, ram , ...)
+    watch_resources: bool,
     /// Tells MetricGenerator if it has to watch for containers.
     #[cfg(feature = "containers")]
     watch_containers: bool,
@@ -166,6 +168,7 @@ impl MetricGenerator {
         hostname: String,
         _qemu: bool,
         _watch_containers: bool,
+        _watch_resources: bool
     ) -> MetricGenerator {
         let data = Vec::new();
         #[cfg(feature = "containers")]
@@ -207,6 +210,7 @@ impl MetricGenerator {
                 docker_version,
                 docker_client,
                 watch_containers: _watch_containers,
+                watch_resources: _watch_resources,
                 watch_docker: true,
                 kubernetes_client,
                 watch_kubernetes: true,
@@ -220,6 +224,7 @@ impl MetricGenerator {
             data,
             topology,
             hostname,
+            watch_resources: _watch_resources,
             #[cfg(target_os = "linux")]
             qemu,
         }
@@ -448,124 +453,126 @@ impl MetricGenerator {
             }
         }
 
-        if let Ok(mem) = self.topology.system.memory() {
-            self.data.push(Metric {
-                name: String::from("scaph_host_memory_used"),
-                metric_type: String::from("gauge"),
-                ttl: 60.0,
-                timestamp: current_system_time_since_epoch(),
-                hostname: self.hostname.clone(),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from(
-                    "Host memory used.",
-                ),
-                metric_value: MetricValueType::Text((saturating_sub_bytes(mem.total,mem.free)).to_string()),
-            });
-            self.data.push(Metric {
-                name: String::from("scaph_host_memory_free"),
-                metric_type: String::from("gauge"),
-                ttl: 60.0,
-                timestamp: current_system_time_since_epoch(),
-                hostname: self.hostname.clone(),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from(
-                    "Host memory total.",
-                ),
-                metric_value: MetricValueType::Text(mem.free.to_string()),
-            });
-        }
+        if self.watch_resources {
+            if let Ok(mem) = self.topology.system.memory() {
+                self.data.push(Metric {
+                    name: String::from("scaph_host_memory_used"),
+                    metric_type: String::from("gauge"),
+                    ttl: 60.0,
+                    timestamp: current_system_time_since_epoch(),
+                    hostname: self.hostname.clone(),
+                    state: String::from("ok"),
+                    tags: vec!["scaphandre".to_string()],
+                    attributes: HashMap::new(),
+                    description: String::from(
+                        "Host memory used.",
+                    ),
+                    metric_value: MetricValueType::Text((saturating_sub_bytes(mem.total,mem.free)).to_string()),
+                });
+                self.data.push(Metric {
+                    name: String::from("scaph_host_memory_free"),
+                    metric_type: String::from("gauge"),
+                    ttl: 60.0,
+                    timestamp: current_system_time_since_epoch(),
+                    hostname: self.hostname.clone(),
+                    state: String::from("ok"),
+                    tags: vec!["scaphandre".to_string()],
+                    attributes: HashMap::new(),
+                    description: String::from(
+                        "Host memory total.",
+                    ),
+                    metric_value: MetricValueType::Text(mem.free.to_string()),
+                });
+            }
 
-        if let Ok(cpu) = self.topology.system.cpu_load_aggregate() {
-            thread::sleep(Duration::from_secs(1));
-            let cpu = cpu.done().unwrap();
-            self.data.push(Metric {
-                    name: String::from("scaph_host_cpu_user_percentage"),
-                    metric_type: String::from("gauge"),
-                    ttl: 60.0,
-                    timestamp: current_system_time_since_epoch(),
-                    hostname: self.hostname.clone(),
-                    state: String::from("ok"),
-                    tags: vec!["scaphandre".to_string()],
-                    attributes: HashMap::new(),
-                    description: String::from(
-                        "Instantaneous CPU time used by user, as percents of the full capacity.",
-                    ),
-                    metric_value: MetricValueType::Text((cpu.user * 100.0).to_string()),
-                });
-            self.data.push(Metric {
-                    name: String::from("scaph_host_cpu_system_percentage"),
-                    metric_type: String::from("gauge"),
-                    ttl: 60.0,
-                    timestamp: current_system_time_since_epoch(),
-                    hostname: self.hostname.clone(),
-                    state: String::from("ok"),
-                    tags: vec!["scaphandre".to_string()],
-                    attributes: HashMap::new(),
-                    description: String::from(
-                        "Instantaneous CPU time used by system, as percents of the full capacity.",
-                    ),
-                    metric_value: MetricValueType::Text((cpu.system * 100.0).to_string()),
-                });
-            self.data.push(Metric {
-                    name: String::from("scaph_host_cpu_idle_percentage"),
-                    metric_type: String::from("gauge"),
-                    ttl: 60.0,
-                    timestamp: current_system_time_since_epoch(),
-                    hostname: self.hostname.clone(),
-                    state: String::from("ok"),
-                    tags: vec!["scaphandre".to_string()],
-                    attributes: HashMap::new(),
-                    description: String::from(
-                        "Instantaneous CPU time idle, as percents of the full capacity.",
-                    ),
-                    metric_value: MetricValueType::Text((cpu.idle * 100.0).to_string()),
-                });
-            self.data.push(Metric {
-                    name: String::from("scaph_host_cpu_intr_percentage"),
-                    metric_type: String::from("gauge"),
-                    ttl: 60.0,
-                    timestamp: current_system_time_since_epoch(),
-                    hostname: self.hostname.clone(),
-                    state: String::from("ok"),
-                    tags: vec!["scaphandre".to_string()],
-                    attributes: HashMap::new(),
-                    description: String::from(
-                        "Instantaneous CPU time intr, as percents of the full capacity.",
-                    ),
-                    metric_value: MetricValueType::Text((cpu.interrupt * 100.0).to_string()),
-                });
-            self.data.push(Metric {
-                    name: String::from("scaph_host_cpu_nice_percentage"),
-                    metric_type: String::from("gauge"),
-                    ttl: 60.0,
-                    timestamp: current_system_time_since_epoch(),
-                    hostname: self.hostname.clone(),
-                    state: String::from("ok"),
-                    tags: vec!["scaphandre".to_string()],
-                    attributes: HashMap::new(),
-                    description: String::from(
-                        "Instantaneous CPU time nice, as percents of the full capacity.",
-                    ),
-                    metric_value: MetricValueType::Text((cpu.nice * 100.0).to_string()),
-                });
-            self.data.push(Metric {
-                    name: String::from("scaph_host_cpu_total_active_percentage"),
-                    metric_type: String::from("gauge"),
-                    ttl: 60.0,
-                    timestamp: current_system_time_since_epoch(),
-                    hostname: self.hostname.clone(),
-                    state: String::from("ok"),
-                    tags: vec!["scaphandre".to_string()],
-                    attributes: HashMap::new(),
-                    description: String::from(
-                        "Instantaneous CPU time total active, as percents of the full capacity.",
-                    ),
-                    metric_value: MetricValueType::Text(((cpu.user+cpu.interrupt+cpu.system+cpu.nice) * 100.0).to_string()),
-                });
+            if let Ok(cpu) = self.topology.system.cpu_load_aggregate() {
+                thread::sleep(Duration::from_secs(1));
+                let cpu = cpu.done().unwrap();
+                self.data.push(Metric {
+                        name: String::from("scaph_host_cpu_user_percentage"),
+                        metric_type: String::from("gauge"),
+                        ttl: 60.0,
+                        timestamp: current_system_time_since_epoch(),
+                        hostname: self.hostname.clone(),
+                        state: String::from("ok"),
+                        tags: vec!["scaphandre".to_string()],
+                        attributes: HashMap::new(),
+                        description: String::from(
+                            "Instantaneous CPU time used by user, as percents of the full capacity.",
+                        ),
+                        metric_value: MetricValueType::Text((cpu.user * 100.0).to_string()),
+                    });
+                self.data.push(Metric {
+                        name: String::from("scaph_host_cpu_system_percentage"),
+                        metric_type: String::from("gauge"),
+                        ttl: 60.0,
+                        timestamp: current_system_time_since_epoch(),
+                        hostname: self.hostname.clone(),
+                        state: String::from("ok"),
+                        tags: vec!["scaphandre".to_string()],
+                        attributes: HashMap::new(),
+                        description: String::from(
+                            "Instantaneous CPU time used by system, as percents of the full capacity.",
+                        ),
+                        metric_value: MetricValueType::Text((cpu.system * 100.0).to_string()),
+                    });
+                self.data.push(Metric {
+                        name: String::from("scaph_host_cpu_idle_percentage"),
+                        metric_type: String::from("gauge"),
+                        ttl: 60.0,
+                        timestamp: current_system_time_since_epoch(),
+                        hostname: self.hostname.clone(),
+                        state: String::from("ok"),
+                        tags: vec!["scaphandre".to_string()],
+                        attributes: HashMap::new(),
+                        description: String::from(
+                            "Instantaneous CPU time idle, as percents of the full capacity.",
+                        ),
+                        metric_value: MetricValueType::Text((cpu.idle * 100.0).to_string()),
+                    });
+                self.data.push(Metric {
+                        name: String::from("scaph_host_cpu_intr_percentage"),
+                        metric_type: String::from("gauge"),
+                        ttl: 60.0,
+                        timestamp: current_system_time_since_epoch(),
+                        hostname: self.hostname.clone(),
+                        state: String::from("ok"),
+                        tags: vec!["scaphandre".to_string()],
+                        attributes: HashMap::new(),
+                        description: String::from(
+                            "Instantaneous CPU time intr, as percents of the full capacity.",
+                        ),
+                        metric_value: MetricValueType::Text((cpu.interrupt * 100.0).to_string()),
+                    });
+                self.data.push(Metric {
+                        name: String::from("scaph_host_cpu_nice_percentage"),
+                        metric_type: String::from("gauge"),
+                        ttl: 60.0,
+                        timestamp: current_system_time_since_epoch(),
+                        hostname: self.hostname.clone(),
+                        state: String::from("ok"),
+                        tags: vec!["scaphandre".to_string()],
+                        attributes: HashMap::new(),
+                        description: String::from(
+                            "Instantaneous CPU time nice, as percents of the full capacity.",
+                        ),
+                        metric_value: MetricValueType::Text((cpu.nice * 100.0).to_string()),
+                    });
+                self.data.push(Metric {
+                        name: String::from("scaph_host_cpu_total_active_percentage"),
+                        metric_type: String::from("gauge"),
+                        ttl: 60.0,
+                        timestamp: current_system_time_since_epoch(),
+                        hostname: self.hostname.clone(),
+                        state: String::from("ok"),
+                        tags: vec!["scaphandre".to_string()],
+                        attributes: HashMap::new(),
+                        description: String::from(
+                            "Instantaneous CPU time total active, as percents of the full capacity.",
+                        ),
+                        metric_value: MetricValueType::Text(((cpu.user+cpu.interrupt+cpu.system+cpu.nice) * 100.0).to_string()),
+                    });
+            }
         }
     }
 

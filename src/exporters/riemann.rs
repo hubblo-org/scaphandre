@@ -5,6 +5,7 @@
 use crate::exporters::utils::get_hostname;
 use crate::exporters::*;
 use crate::sensors::Sensor;
+use utils::get_common_options;
 use chrono::Utc;
 use clap::Arg;
 use riemann_client::proto::Attribute;
@@ -144,6 +145,7 @@ impl Exporter for RiemannExporter {
             hostname,
             parameters.is_present("qemu"),
             parameters.is_present("containers"),
+            parameters.is_present("resources")
         );
 
         loop {
@@ -232,6 +234,7 @@ impl Exporter for RiemannExporter {
     /// Returns options understood by the exporter.
     fn get_options() -> Vec<clap::Arg<'static, 'static>> {
         let mut options = Vec::new();
+        options.append(&mut get_common_options());
         let arg = Arg::with_name("address")
             .default_value(DEFAULT_IP_ADDRESS)
             .help("Riemann ipv6 or ipv4 address. If mTLS is used then server fqdn must be provided")

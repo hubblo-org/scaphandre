@@ -1,7 +1,7 @@
 //! # utils
 //!
 //! The utils module provides common functions used by the exporters.
-use clap::crate_version;
+use clap::{crate_version, Arg};
 #[cfg(feature = "containers")]
 use {
     docker_sync::Docker,
@@ -16,6 +16,18 @@ use {
 /// 2. Remove carriage return.
 pub fn filter_cmdline(cmdline: &str) -> String {
     cmdline.replace('\"', "\\\"").replace('\n', "")
+}
+
+/// Returns common clap arguments that are supposed to be implemented in all exporters
+pub fn get_common_options() -> Vec<Arg<'static, 'static>> {
+    let mut options = Vec::new();
+    let arg = Arg::with_name("resources")
+        .help("should scaphandre return IT resources metrics alonside power metrics ? (CPU,Ram,...)")
+        .long("resources")
+        .required(false)
+        .takes_value(false);
+    options.push(arg);
+    options
 }
 
 /// Returns an Option containing the VM name of a qemu process.

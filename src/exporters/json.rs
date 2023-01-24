@@ -1,5 +1,6 @@
 use crate::exporters::*;
 use crate::sensors::Sensor;
+use utils::get_common_options;
 use clap::Arg;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -25,6 +26,7 @@ impl Exporter for JSONExporter {
 
     fn get_options() -> Vec<clap::Arg<'static, 'static>> {
         let mut options = Vec::new();
+        options.append(&mut get_common_options());
         let arg = Arg::with_name("timeout")
             .help("Maximum time spent measuring, in seconds.")
             .long("timeout")
@@ -76,13 +78,6 @@ impl Exporter for JSONExporter {
             .takes_value(false);
         options.push(arg);
         
-        let arg = Arg::with_name("resources")
-            .help("Include IT resources consumption metrics in JSON data")
-            .long("resources")
-            .required(false)
-            .takes_value(false);
-        options.push(arg);
-
         // the resulting labels of this option are not yet used by this exporter, activate this option once we display something interesting about it
         //let arg = Arg::with_name("qemu")
         //    .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
@@ -173,6 +168,7 @@ impl JSONExporter {
             utils::get_hostname(),
             parameters.is_present("qemu"),
             parameters.is_present("containers"),
+            parameters.is_present("resources")
         );
 
         // We have a default value of 2s so it is safe to unwrap the option

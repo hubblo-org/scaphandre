@@ -125,6 +125,7 @@ impl StdoutExporter {
             utils::get_hostname(),
             parameters.is_present("qemu"),
             parameters.is_present("containers"),
+            parameters.is_present("resources")
         );
 
         println!("Measurement step is: {}s", step_duration);

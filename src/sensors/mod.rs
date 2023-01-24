@@ -701,12 +701,6 @@ impl Topology {
 
     pub fn get_host_resources_watcher(&self) -> &System {
         &self.system
-        //let metrics: Vec<Record> = vec![];
-        //if let Ok(cpu) = sys.cpu_load_aggregate() {
-        //    let cpu = cpu.done().unwrap();
-        //    metrics.append(other)
-        //}
-        //metrics
     }
 }
 
