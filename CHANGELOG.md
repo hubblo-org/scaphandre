@@ -21,7 +21,7 @@ Please check dev branch.
 - Enable JSON exporter to run as a daemon : [#169](https://github.com/hubblo-org/scaphandre/issues/169)
 - First building blocks for conditional compilation depending on the OS : [#148](https://github.com/hubblo-org/scaphandre/pull/148)
 - Mitigation for machines where powercap is not able to feed rapl domain folders, and only has socket ones : [#198](https://github.com/hubblo-org/scaphandre/pull/198)
-- Experimental support for Windows 10, 11, server 2019 : [#247](https://github.com/hubblo-org/scaphandre/issues/247)
+- Experimental support for Windows 10, 11, server 2019 : [#74](https://github.com/hubblo-org/scaphandre/issues/74) and [#247](https://github.com/hubblo-org/scaphandre/issues/247)
 - Added --containers option to JSON exporter : [#217](https://github.com/hubblo-org/scaphandre/issues/217)
 
 ### Fixed
