@@ -70,7 +70,7 @@ impl fmt::Display for Unit {
 impl Eq for Unit {}
 impl PartialEq for Unit {
     fn eq(&self, other: &Self) -> bool {
-        format!("{:?}", self) == format!("{:?}", other)
+        format!("{self:?}") == format!("{other:?}")
     }
 }
 

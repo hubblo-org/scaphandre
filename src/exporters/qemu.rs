@@ -73,7 +73,7 @@ impl QemuExporter {
                     );
                     let time_pdiff = last.total_time_jiffies() - previous.total_time_jiffies();
                     if let Some(time_tdiff) = &topo_stat_diff {
-                        let first_domain_path = format!("{}/{}/intel-rapl:0:0", path, vm_name);
+                        let first_domain_path = format!("{path}/{vm_name}/intel-rapl:0:0");
                         if fs::read_dir(&first_domain_path).is_err() {
                             match fs::create_dir_all(&first_domain_path) {
                                 Ok(_) => info!("Created {} folder.", &path),
@@ -86,7 +86,7 @@ impl QemuExporter {
                         trace!("Ratio is {}", ratio.to_string());
                         let uj_to_add = ratio * topo_rec_uj.value.parse::<u64>().unwrap();
                         trace!("Adding {} uJ", uj_to_add);
-                        let complete_path = format!("{}/{}/intel-rapl:0", path, vm_name);
+                        let complete_path = format!("{path}/{vm_name}/intel-rapl:0");
                         if let Ok(result) = QemuExporter::add_or_create(&complete_path, uj_to_add) {
                             trace!("{:?}", result);
                             debug!("Updated {}", complete_path);

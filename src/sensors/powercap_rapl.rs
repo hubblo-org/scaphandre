@@ -143,7 +143,7 @@ impl Sensor for PowercapRAPLSensor {
                         self.base_path, socket_id, domain_id
                     ),
                 );
-                if let Ok(domain_name) = &fs::read_to_string(format!("{}/name", folder_name)) {
+                if let Ok(domain_name) = &fs::read_to_string(format!("{folder_name}/name")) {
                     topo.safe_add_domain_to_socket(
                         socket_id,
                         domain_id,
