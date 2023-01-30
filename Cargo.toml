@@ -1,6 +1,6 @@
 [package]
 name = "scaphandre"
-version = "0.4.1"
+version = "0.5.0"
 authors = ["Benoit Petit <bpetit@hubblo.org>"]
 edition = "2018"
 license = "Apache-2.0"
@@ -16,26 +16,34 @@ loggerv = "0.7.2"
 log = "0.4"
 clap = "2.33.3"
 regex = "1"
-procfs = "0.12.0"
 riemann_client = { version = "0.9.0", optional = true }
 hostname = "0.3.1"
 protobuf = "2.20.0"
 serde = { version = "1.0", features = ["derive"], optional = true }
 serde_json = { version = "1.0", optional = true }
+ordered-float = "2.0"
 warp10 = { version = "1.0.0", optional = true }
+rand = { version = "0.7.3" }
 time = "0.2.25"
 colored = "2.0.0"
 chrono = "0.4.19"
 docker-sync = { version = "0.1.2", optional = true }
-#docker-sync = { path = "../rs-docker-sync", optional = true }
 k8s-sync = { version = "0.2.3", optional = true }
-#k8s-sync = { path = "../rs-k8s-sync", optional = true }
 hyper = { version = "0.14", features = ["full"], optional = true }
 tokio = { version = "1", features = ["full"], optional = true}
 
+[target.'cfg(target_os="linux")'.dependencies]
+procfs = { version = "0.12.0" }
+
+[target.'cfg(target_os="windows")'.dependencies]
+windows = { version = "0.27.0", features = ["alloc","Win32_Storage_FileSystem","Win32_Foundation","Win32_Security","Win32_System_IO","Win32_System_Ioctl"]}
+sysinfo = { version = "0.22.4"}
+
+
 [features]
-default = ["prometheus", "riemann", "warp10", "containers", "json"]
+default = ["prometheus", "riemann", "warpten", "json", "containers"]
 prometheus = ["hyper", "tokio"]
 riemann = ["riemann_client"]
 json = ["serde", "serde_json"]
 containers = ["docker-sync", "k8s-sync"]
+warpten = ["warp10"]

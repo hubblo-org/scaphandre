@@ -19,7 +19,7 @@ This project was born from a deep sense of duty from tech workers. Please refer 
 
 **Warning**: this is still a very early stage project. Any feedback or contribution will be highly appreciated. Please refer to the [contribution](https://hubblo-org.github.io/scaphandre-documentation/contributing.html) section.
 
-![Fmt+Clippy](https://github.com/hubblo-org/scaphandre/workflows/Rust/badge.svg?branch=main)
+![Fmt+Clippy](https://github.com/hubblo-org/scaphandre/workflows/Tests/badge.svg?branch=main)
 [![](https://img.shields.io/crates/v/scaphandre.svg?maxAge=25920)](https://crates.io/crates/scaphandre)
 <a href="https://gitter.im/hubblo-org/scaphandre?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg"></a>
 
@@ -47,8 +47,8 @@ Here is an example dashboard built thanks to scaphandre: [https://metrics.hubblo
 
 You'll find everything you may want to know about scaphandre in the [documentation](https://hubblo-org.github.io/scaphandre-documentation), like:
 
-- 🏁 [Getting started](https://hubblo-org.github.io/scaphandre-documentation/tutorials/quickstart.html)
-- 💻 [Installation & compilation](https://hubblo-org.github.io/scaphandre-documentation/tutorials/installation.html)
+- 🏁 [Getting started](https://hubblo-org.github.io/scaphandre-documentation/tutorials/getting_started.html)
+- 💻 [Installation & compilation on GNU/Linux](https://hubblo-org.github.io/scaphandre-documentation/tutorials/installation-linux.html) or [on Windows](https://hubblo-org.github.io/scaphandre-documentation/tutorials/installation-windows.html)
 - 👁️ [Give a virtual machine access to its power consumption metrics, and break the opacity of being on the computer of someone else](https://hubblo-org.github.io/scaphandre-documentation/how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html)
 - 🎉 [Contributing guide](https://hubblo-org.github.io/scaphandre-documentation/contributing.html)
 - [And much more](https://hubblo-org.github.io/scaphandre-documentation)

@@ -68,11 +68,12 @@ impl QemuExporter {
                 if qp.len() > 2 {
                     let last = qp.first().unwrap();
                     let previous = qp.get(1).unwrap();
-                    let vm_name =
-                        QemuExporter::get_vm_name_from_cmdline(&last.process.cmdline().unwrap());
+                    let vm_name = QemuExporter::get_vm_name_from_cmdline(
+                        &last.process.original.cmdline().unwrap(),
+                    );
                     let time_pdiff = last.total_time_jiffies() - previous.total_time_jiffies();
                     if let Some(time_tdiff) = &topo_stat_diff {
-                        let first_domain_path = format!("{}/{}/intel-rapl:0:0", path, vm_name);
+                        let first_domain_path = format!("{path}/{vm_name}/intel-rapl:0:0");
                         if fs::read_dir(&first_domain_path).is_err() {
                             match fs::create_dir_all(&first_domain_path) {
                                 Ok(_) => info!("Created {} folder.", &path),
@@ -85,10 +86,8 @@ impl QemuExporter {
                         trace!("Ratio is {}", ratio.to_string());
                         let uj_to_add = ratio * topo_rec_uj.value.parse::<u64>().unwrap();
                         trace!("Adding {} uJ", uj_to_add);
-                        let complete_path = format!("{}/{}/intel-rapl:0", path, vm_name);
-                        if let Ok(result) =
-                            QemuExporter::add_or_create(&complete_path, uj_to_add as u64)
-                        {
+                        let complete_path = format!("{path}/{vm_name}/intel-rapl:0");
+                        if let Ok(result) = QemuExporter::add_or_create(&complete_path, uj_to_add) {
                             trace!("{:?}", result);
                             debug!("Updated {}", complete_path);
                         }
@@ -138,7 +137,7 @@ impl QemuExporter {
         for vecp in processes.iter() {
             if !vecp.is_empty() {
                 if let Some(pr) = vecp.get(0) {
-                    if let Ok(cmdline) = pr.process.cmdline() {
+                    if let Ok(cmdline) = pr.process.original.cmdline() {
                         if let Some(res) = cmdline.iter().find(|x| x.contains("qemu-system")) {
                             debug!("Found a process with {}", res);
                             let mut tmp: Vec<ProcessRecord> = vec![];

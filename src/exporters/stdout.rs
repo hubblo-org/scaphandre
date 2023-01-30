@@ -1,9 +1,10 @@
 use clap::Arg;
 
 use crate::exporters::*;
-use crate::sensors::Sensor;
+use crate::sensors::{utils::IProcess, Sensor};
 use colored::*;
 use regex::Regex;
+use std::fmt::Write as _;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -126,7 +127,7 @@ impl StdoutExporter {
             parameters.is_present("containers"),
         );
 
-        println!("Measurement step is: {}s", step_duration);
+        println!("Measurement step is: {step_duration}s");
         if timeout_secs == 0 {
             loop {
                 self.iterate(&regex_filter, process_number, &mut metric_generator);
@@ -171,14 +172,19 @@ impl StdoutExporter {
             None => MetricValueType::Text("0".to_string()),
         };
 
-        let domain_names = metric_generator.topology.domains_names.as_ref().unwrap();
-        info!("domain_name: {:?}", domain_names);
+        let domain_names = metric_generator.topology.domains_names.as_ref();
+        if domain_names.is_some() {
+            info!("domain_names: {:?}", domain_names.unwrap());
+        }
 
         println!(
             "Host:\t{} W",
-            (format!("{}", host_power).parse::<f64>().unwrap() / 1000000.0)
+            (format!("{host_power}").parse::<f64>().unwrap() / 1000000.0)
         );
-        println!("\tpackage \t{}", domain_names.join("\t\t"));
+
+        if domain_names.is_some() {
+            println!("\tpackage \t{}", domain_names.unwrap().join("\t\t"));
+        }
 
         for s in metrics
             .iter()
@@ -191,57 +197,59 @@ impl StdoutExporter {
             }
             let socket_id = s.attributes.get("socket_id").unwrap().clone();
 
-            let mut to_print = format!("Socket{}\t{} W |\t", socket_id, power_str);
+            let mut to_print = format!("Socket{socket_id}\t{power_str} W |\t");
 
             let domains = metrics.iter().filter(|x| {
                 x.name == "scaph_domain_power_microwatts"
                     && x.attributes.get("socket_id").unwrap() == &socket_id
             });
 
-            for d in domain_names {
-                info!("current domain : {}", d);
-                info!("domains size : {}", &domains.clone().count());
-                if let Some(current_domain) = domains.clone().find(|x| {
-                    info!("looking for domain metrics for d == {}", d);
-                    info!("current metric analyzed : {:?}", x);
-                    if let Some(domain_name_result) = x.attributes.get("domain_name") {
-                        if domain_name_result == d {
-                            return true;
+            if let Some(domain_names) = domain_names {
+                for d in domain_names {
+                    info!("current domain : {}", d);
+                    info!("domains size : {}", &domains.clone().count());
+                    if let Some(current_domain) = domains.clone().find(|x| {
+                        info!("looking for domain metrics for d == {}", d);
+                        info!("current metric analyzed : {:?}", x);
+                        if let Some(domain_name_result) = x.attributes.get("domain_name") {
+                            if domain_name_result == d {
+                                return true;
+                            }
                         }
+                        false
+                    }) {
+                        let _ = write!(
+                            to_print,
+                            "{} W\t",
+                            current_domain
+                                .metric_value
+                                .to_string()
+                                .parse::<f32>()
+                                .unwrap()
+                                / 1000000.0
+                        );
+                    } else {
+                        to_print.push_str("---");
                     }
-                    false
-                }) {
-                    to_print.push_str(&format!(
-                        "{} W\t",
-                        current_domain
-                            .metric_value
-                            .to_string()
-                            .parse::<f32>()
-                            .unwrap()
-                            / 1000000.0
-                    ));
-                } else {
-                    to_print.push_str("---");
                 }
+                println!("{to_print}\n");
             }
-
-            println!("{}\n", to_print);
         }
 
-        let consumers: Vec<(procfs::process::Process, u64)> =
-            if let Some(regex_filter) = regex_filter {
-                println!("Processes filtered by '{}':", regex_filter.as_str());
-                metric_generator
-                    .topology
-                    .proc_tracker
-                    .get_filtered_processes(regex_filter)
-            } else {
-                println!("Top {} consumers:", process_number);
-                metric_generator
-                    .topology
-                    .proc_tracker
-                    .get_top_consumers(process_number)
-            };
+        let consumers: Vec<(IProcess, f64)>;
+        if let Some(regex_filter) = regex_filter {
+            println!("Processes filtered by '{}':", regex_filter.as_str());
+            consumers = metric_generator
+                .topology
+                .proc_tracker
+                .get_filtered_processes(regex_filter);
+        } else {
+            println!("Top {process_number} consumers:");
+            consumers = metric_generator
+                .topology
+                .proc_tracker
+                .get_top_consumers(process_number);
+        }
 
         info!("consumers : {:?}", consumers);
         println!("Power\t\tPID\tExe");

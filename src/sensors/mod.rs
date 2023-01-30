@@ -3,16 +3,22 @@
 //! `Sensor` is the root for all sensors. It defines the [Sensor] trait
 //! needed to implement a sensor.
 
+#[cfg(not(target_os = "linux"))]
+pub mod msr_rapl;
+#[cfg(target_os = "linux")]
 pub mod powercap_rapl;
 pub mod units;
 pub mod utils;
+#[cfg(target_os = "linux")]
 use procfs::{process, CpuInfo, CpuTime, KernelStats};
 use std::collections::HashMap;
 use std::error::Error;
+use std::fmt;
 use std::mem::size_of_val;
 use std::time::Duration;
-use std::{fmt, fs};
-use utils::{current_system_time_since_epoch, ProcessTracker};
+#[cfg(not(target_os = "linux"))]
+use sysinfo::{ProcessorExt, System, SystemExt};
+use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
 /// Sensor trait, the Sensor API.
@@ -27,6 +33,10 @@ pub trait RecordGenerator {
     fn refresh_record(&mut self);
     fn get_records_passive(&self) -> Vec<Record>;
     fn clean_old_records(&mut self);
+}
+
+pub trait RecordReader {
+    fn read_record(&self) -> Result<Record, Box<dyn Error>>;
 }
 
 // !!!!!!!!!!!!!!!!! Topology !!!!!!!!!!!!!!!!!!!!!!!
@@ -48,6 +58,10 @@ pub struct Topology {
     pub buffer_max_kbytes: u16,
     /// Sorted list of all domains names
     pub domains_names: Option<Vec<String>>,
+    ///
+    #[cfg(target_os = "windows")]
+    #[allow(dead_code)]
+    sensor_data: HashMap<String, String>,
 }
 
 impl RecordGenerator for Topology {
@@ -71,6 +85,7 @@ impl RecordGenerator for Topology {
                 }
             }
         }
+        debug!("Record value from topo (addition of sockets) : {}", value);
         let record = Record::new(last_timestamp, value.to_string(), units::Unit::MicroJoule);
 
         self.record_buffer.push(record);
@@ -126,12 +141,32 @@ impl RecordGenerator for Topology {
 
 impl Default for Topology {
     fn default() -> Self {
+        #[cfg(target_os = "windows")]
+        {
+            Self::new(HashMap::new())
+        }
+
+        #[cfg(target_os = "linux")]
         Self::new()
     }
 }
 
 impl Topology {
     /// Instanciates Topology and returns the instance
+    #[cfg(target_os = "windows")]
+    pub fn new(sensor_data: HashMap<String, String>) -> Topology {
+        Topology {
+            sockets: vec![],
+            proc_tracker: ProcessTracker::new(5),
+            stat_buffer: vec![],
+            record_buffer: vec![],
+            buffer_max_kbytes: 1,
+            domains_names: None,
+            sensor_data,
+        }
+    }
+    /// Instanciates Topology and returns the instance
+    #[cfg(target_os = "linux")]
     pub fn new() -> Topology {
         Topology {
             sockets: vec![],
@@ -150,24 +185,42 @@ impl Topology {
     /// ```
     /// use scaphandre::sensors::Topology;
     ///
-    /// if let Ok(cores) = Topology::generate_cpu_cores() {
+    /// if let Some(cores) = Topology::generate_cpu_cores() {
     ///     println!("There are {} cores on this host.", cores.len());
     ///     for c in &cores {
     ///         println!("Here is CPU Core number {}", c.attributes.get("processor").unwrap());
     ///     }
     /// }
     /// ```
-    pub fn generate_cpu_cores() -> Result<Vec<CPUCore>, String> {
-        let cpuinfo = CpuInfo::new().unwrap();
+    pub fn generate_cpu_cores() -> Option<Vec<CPUCore>> {
         let mut cores = vec![];
-        for id in 0..(cpuinfo.num_cores() - 1) {
-            let mut info = HashMap::new();
-            for (k, v) in cpuinfo.get_info(id).unwrap().iter() {
-                info.insert(String::from(*k), String::from(*v));
+
+        #[cfg(target_os = "linux")]
+        {
+            let cpuinfo = CpuInfo::new().unwrap();
+            for id in 0..(cpuinfo.num_cores() - 1) {
+                let mut info = HashMap::new();
+                for (k, v) in cpuinfo.get_info(id).unwrap().iter() {
+                    info.insert(String::from(*k), String::from(*v));
+                }
+                cores.push(CPUCore::new(id as u16, info));
             }
-            cores.push(CPUCore::new(id as u16, info));
         }
-        Ok(cores)
+        #[cfg(target_os = "windows")]
+        {
+            warn!("generate_cpu_info is not implemented yet on this OS.");
+            let sysinfo_system = System::new_all();
+            let sysinfo_cores = sysinfo_system.processors();
+            for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
+                let mut info = HashMap::new();
+                info.insert(String::from("frequency"), c.frequency().to_string());
+                info.insert(String::from("name"), c.name().to_string());
+                info.insert(String::from("vendor_id"), c.vendor_id().to_string());
+                info.insert(String::from("brand"), c.brand().to_string());
+                cores.push(CPUCore::new(id, info));
+            }
+        }
+        Some(cores)
     }
 
     /// Adds a Socket instance to self.sockets if and only if the
@@ -179,6 +232,7 @@ impl Topology {
         attributes: Vec<Vec<HashMap<String, String>>>,
         counter_uj_path: String,
         buffer_max_kbytes: u16,
+        sensor_data: HashMap<String, String>,
     ) {
         if !self.sockets.iter().any(|s| s.id == socket_id) {
             let socket = CPUSocket::new(
@@ -187,6 +241,7 @@ impl Topology {
                 attributes,
                 counter_uj_path,
                 buffer_max_kbytes,
+                sensor_data,
             );
             self.sockets.push(socket);
         }
@@ -229,6 +284,7 @@ impl Topology {
         name: &str,
         uj_counter: &str,
         buffer_max_kbytes: u16,
+        sensor_data: HashMap<String, String>,
     ) {
         let iterator = self.sockets.iter_mut();
         for socket in iterator {
@@ -238,6 +294,7 @@ impl Topology {
                     String::from(name),
                     String::from(uj_counter),
                     buffer_max_kbytes,
+                    sensor_data.clone(),
                 ));
             }
         }
@@ -247,23 +304,26 @@ impl Topology {
     /// Generates CPUCore instances for the host and adds them
     /// to appropriate CPUSocket instance from self.sockets
     pub fn add_cpu_cores(&mut self) {
-        let mut cores = Topology::generate_cpu_cores().unwrap();
-        while !cores.is_empty() {
-            let c = cores.pop().unwrap();
-            let socket_id = &c
-                .attributes
-                .get("physical id")
-                .unwrap()
-                .parse::<u16>()
-                .unwrap();
-            let socket = self
-                .sockets
-                .iter_mut()
-                .find(|x| &x.id == socket_id)
-                .expect("Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line");
-            if socket_id == &socket.id {
-                socket.add_cpu_core(c);
+        if let Some(mut cores) = Topology::generate_cpu_cores() {
+            while !cores.is_empty() {
+                let c = cores.pop().unwrap();
+                let socket_id = &c
+                    .attributes
+                    .get("physical id")
+                    .unwrap()
+                    .parse::<u16>()
+                    .unwrap();
+                let socket = self
+                    .sockets
+                    .iter_mut()
+                    .find(|x| &x.id == socket_id)
+                    .expect("Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line");
+                if socket_id == &socket.id {
+                    socket.add_cpu_core(c);
+                }
             }
+        } else {
+            warn!("Couldn't retrieve any CPU Core from the topology. (generate_cpu_cores)");
         }
     }
 
@@ -293,24 +353,57 @@ impl Topology {
     /// Gets currently running processes (as procfs::Process instances) and stores
     /// them in self.proc_tracker
     fn refresh_procs(&mut self) {
-        //! current_procs is the up to date list of processus running on the host
-        let current_procs = process::all_processes().unwrap();
-
-        for p in current_procs {
-            let pid = p.pid;
-            let res = self.proc_tracker.add_process_record(p);
-            match res {
-                Ok(_) => {}
-                Err(msg) => panic!("Failed to track process with pid {} !\nGot: {}", pid, msg),
+        #[cfg(target_os = "linux")]
+        {
+            //current_procs is the up to date list of processus running on the host
+            if let Ok(procs) = process::all_processes() {
+                info!("Before refresh procs init.");
+                procs
+                    .iter()
+                    .map(IProcess::from_linux_process)
+                    .for_each(|p| {
+                        let pid = p.pid;
+                        let res = self.proc_tracker.add_process_record(p);
+                        match res {
+                            Ok(_) => {}
+                            Err(msg) => {
+                                panic!("Failed to track process with pid {} !\nGot: {}", pid, msg)
+                            }
+                        }
+                    });
+            }
+        }
+        #[cfg(target_os = "windows")]
+        {
+            let pt = &mut self.proc_tracker;
+            pt.sysinfo.refresh_processes();
+            pt.sysinfo.refresh_cpu();
+            let current_procs = pt
+                .sysinfo
+                .processes()
+                .values()
+                .map(IProcess::from_windows_process)
+                .collect::<Vec<_>>();
+            for p in current_procs {
+                match pt.add_process_record(p) {
+                    Ok(_) => {}
+                    Err(msg) => {
+                        panic!("Failed to track process !\nGot: {}", msg)
+                    }
+                }
             }
         }
     }
 
     /// Gets currents stats and stores them as a CPUStat instance in self.stat_buffer
     pub fn refresh_stats(&mut self) {
-        self.stat_buffer.insert(0, self.read_stats().unwrap());
-        if !self.stat_buffer.is_empty() {
-            self.clean_old_stats();
+        if let Some(stats) = self.read_stats() {
+            self.stat_buffer.insert(0, stats);
+            if !self.stat_buffer.is_empty() {
+                self.clean_old_stats();
+            }
+        } else {
+            debug!("read_stats() is None");
         }
     }
 
@@ -433,54 +526,69 @@ impl Topology {
 
     /// Reads content from /proc/stat and extracts the stats of the whole CPU topology.
     pub fn read_stats(&self) -> Option<CPUStat> {
-        let kernelstats_or_not = KernelStats::new();
-        if let Ok(res_cputime) = kernelstats_or_not {
-            return Some(CPUStat {
-                user: res_cputime.total.user,
-                guest: res_cputime.total.guest,
-                guest_nice: res_cputime.total.guest_nice,
-                idle: res_cputime.total.idle,
-                iowait: res_cputime.total.iowait,
-                irq: res_cputime.total.irq,
-                nice: res_cputime.total.nice,
-                softirq: res_cputime.total.softirq,
-                steal: res_cputime.total.steal,
-                system: res_cputime.total.system,
-            });
+        #[cfg(target_os = "linux")]
+        {
+            let kernelstats_or_not = KernelStats::new();
+            if let Ok(res_cputime) = kernelstats_or_not {
+                return Some(CPUStat {
+                    user: res_cputime.total.user,
+                    guest: res_cputime.total.guest,
+                    guest_nice: res_cputime.total.guest_nice,
+                    idle: res_cputime.total.idle,
+                    iowait: res_cputime.total.iowait,
+                    irq: res_cputime.total.irq,
+                    nice: res_cputime.total.nice,
+                    softirq: res_cputime.total.softirq,
+                    steal: res_cputime.total.steal,
+                    system: res_cputime.total.system,
+                });
+            }
         }
         None
     }
 
     /// Returns the number of processes currently available
     pub fn read_nb_process_total_count(&self) -> Option<u64> {
-        if let Ok(result) = KernelStats::new() {
-            return Some(result.processes);
+        #[cfg(target_os = "linux")]
+        {
+            if let Ok(result) = KernelStats::new() {
+                return Some(result.processes);
+            }
         }
         None
     }
 
     /// Returns the number of processes currently in a running state
     pub fn read_nb_process_running_current(&self) -> Option<u32> {
-        if let Ok(result) = KernelStats::new() {
-            if let Some(procs_running) = result.procs_running {
-                return Some(procs_running);
+        #[cfg(target_os = "linux")]
+        {
+            if let Ok(result) = KernelStats::new() {
+                if let Some(procs_running) = result.procs_running {
+                    return Some(procs_running);
+                }
             }
         }
         None
     }
     /// Returns the number of processes currently blocked waiting
     pub fn read_nb_process_blocked_current(&self) -> Option<u32> {
-        if let Ok(result) = KernelStats::new() {
-            if let Some(procs_blocked) = result.procs_blocked {
-                return Some(procs_blocked);
+        #[cfg(target_os = "linux")]
+        {
+            if let Ok(result) = KernelStats::new() {
+                if let Some(procs_blocked) = result.procs_blocked {
+                    return Some(procs_blocked);
+                }
             }
         }
         None
     }
     /// Returns the current number of context switches
     pub fn read_nb_context_switches_total_count(&self) -> Option<u64> {
-        if let Ok(result) = KernelStats::new() {
-            return Some(result.ctxt);
+        #[cfg(target_os = "linux")]
+        {
+            if let Ok(result) = KernelStats::new() {
+                return Some(result.ctxt);
+            }
         }
         None
     }
@@ -490,21 +598,40 @@ impl Topology {
         let tracker = self.get_proc_tracker();
         if let Some(recs) = tracker.find_records(pid) {
             if recs.len() > 1 {
-                let last = recs.first().unwrap();
-                let previous = recs.get(1).unwrap();
-                if let Some(topo_stats_diff) = self.get_stats_diff() {
-                    //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
-                    let process_total_time =
-                        last.total_time_jiffies() - previous.total_time_jiffies();
-                    let topo_total_time = topo_stats_diff.total_time_jiffies();
-                    let usage_percent = process_total_time as f64 / topo_total_time as f64;
+                #[cfg(target_os = "linux")]
+                {
+                    let last = recs.first().unwrap();
+                    let previous = recs.get(1).unwrap();
+                    if let Some(topo_stats_diff) = self.get_stats_diff() {
+                        //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
+                        let process_total_time =
+                            last.total_time_jiffies() - previous.total_time_jiffies();
+                        let topo_total_time = topo_stats_diff.total_time_jiffies();
+                        let usage_percent = process_total_time as f64 / topo_total_time as f64;
+                        let topo_conso = self.get_records_diff_power_microwatts();
+                        if let Some(val) = &topo_conso {
+                            //trace!("topo conso: {}", val);
+                            let val_f64 = val.value.parse::<f64>().unwrap();
+                            //trace!("val f64: {}", val_f64);
+                            let result = (val_f64 * usage_percent) as u64;
+                            //trace!("result: {}", result);
+                            return Some(Record::new(
+                                last.timestamp,
+                                result.to_string(),
+                                units::Unit::MicroWatt,
+                            ));
+                        }
+                    }
+                }
+                #[cfg(target_os = "windows")]
+                {
+                    let last = recs.first().unwrap();
+                    let process_cpu_percentage =
+                        tracker.get_cpu_usage_percentage(pid as usize, tracker.nb_cores);
                     let topo_conso = self.get_records_diff_power_microwatts();
-                    if let Some(val) = &topo_conso {
-                        //trace!("topo conso: {}", val);
-                        let val_f64 = val.value.parse::<f64>().unwrap();
-                        //trace!("val f64: {}", val_f64);
-                        let result = (val_f64 * usage_percent) as u64;
-                        //trace!("result: {}", result);
+                    if let Some(conso) = &topo_conso {
+                        let conso_f64 = conso.value.parse::<f64>().unwrap();
+                        let result = (conso_f64 * process_cpu_percentage as f64) / 100.0_f64;
                         return Some(Record::new(
                             last.timestamp,
                             result.to_string(),
@@ -566,13 +693,17 @@ pub struct CPUSocket {
     pub cpu_cores: Vec<CPUCore>,
     /// Usage statistics records stored for this socket.
     pub stat_buffer: Vec<CPUStat>,
+    ///
+    #[allow(dead_code)]
+    sensor_data: HashMap<String, String>,
 }
 
 impl RecordGenerator for CPUSocket {
     /// Generates a new record of the socket energy consumption and stores it in the record_buffer.
     /// Returns a clone of this Record instance.
     fn refresh_record(&mut self) {
-        if let Ok(record) = self.read_record_uj() {
+        //if let Ok(record) = self.read_record_uj() {
+        if let Ok(record) = self.read_record() {
             self.record_buffer.push(record);
         }
 
@@ -636,6 +767,7 @@ impl CPUSocket {
         attributes: Vec<Vec<HashMap<String, String>>>,
         counter_uj_path: String,
         buffer_max_kbytes: u16,
+        sensor_data: HashMap<String, String>,
     ) -> CPUSocket {
         CPUSocket {
             id,
@@ -646,6 +778,7 @@ impl CPUSocket {
             buffer_max_kbytes,
             cpu_cores: vec![], // cores are instantiated on a later step
             stat_buffer: vec![],
+            sensor_data,
         }
     }
 
@@ -653,25 +786,6 @@ impl CPUSocket {
     fn safe_add_domain(&mut self, domain: Domain) {
         if !self.domains.iter().any(|d| d.id == domain.id) {
             self.domains.push(domain);
-        }
-    }
-
-    /// Returns the content of the energy consumption counter file, as a String
-    /// value of microjoules.
-    pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
-        match fs::read_to_string(&self.counter_uj_path) {
-            Ok(result) => Ok(result),
-            Err(error) => Err(Box::new(error)),
-        }
-    }
-    pub fn read_record_uj(&self) -> Result<Record, Box<dyn Error>> {
-        match fs::read_to_string(&self.counter_uj_path) {
-            Ok(result) => Ok(Record::new(
-                current_system_time_since_epoch(),
-                result,
-                units::Unit::MicroJoule,
-            )),
-            Err(error) => Err(Box::new(error)),
         }
     }
 
@@ -752,7 +866,7 @@ impl CPUSocket {
     }
 
     /// Combines stats from all CPU cores owned byu the socket and returns
-    /// a CpuTime struct containing stats for the whole socket.
+    /// a CpuStat struct containing stats for the whole socket.
     pub fn read_stats(&self) -> Option<CPUStat> {
         let mut stats = CPUStat {
             user: 0,
@@ -892,9 +1006,14 @@ impl CPUCore {
     }
 
     /// Reads content from /proc/stat and extracts the stats of the CPU core
-    fn read_stats(&self) -> Option<CpuTime> {
-        if let Ok(mut kernelstats) = KernelStats::new() {
-            return Some(kernelstats.cpu_time.remove(self.id as usize));
+    fn read_stats(&self) -> Option<CPUStat> {
+        #[cfg(target_os = "linux")]
+        {
+            if let Ok(mut kernelstats) = KernelStats::new() {
+                return Some(CPUStat::from_procfs_cputime(
+                    kernelstats.cpu_time.remove(self.id as usize),
+                ));
+            }
         }
         None
     }
@@ -915,12 +1034,16 @@ pub struct Domain {
     pub record_buffer: Vec<Record>,
     /// Maximum size of record_buffer, in kilobytes
     pub buffer_max_kbytes: u16,
+    ///
+    #[allow(dead_code)]
+    sensor_data: HashMap<String, String>,
 }
 impl RecordGenerator for Domain {
     /// Computes a measurement of energy comsumption for this CPU domain,
     /// stores a copy in self.record_buffer and returns it.
     fn refresh_record(&mut self) {
-        if let Ok(record) = self.read_record_uj() {
+        //if let Ok(record) = self.read_record_uj() {
+        if let Ok(record) = self.read_record() {
             self.record_buffer.push(record);
         }
 
@@ -963,31 +1086,20 @@ impl RecordGenerator for Domain {
 }
 impl Domain {
     /// Instanciates Domain and returns the instance
-    fn new(id: u16, name: String, counter_uj_path: String, buffer_max_kbytes: u16) -> Domain {
+    fn new(
+        id: u16,
+        name: String,
+        counter_uj_path: String,
+        buffer_max_kbytes: u16,
+        sensor_data: HashMap<String, String>,
+    ) -> Domain {
         Domain {
             id,
             name,
             counter_uj_path,
             record_buffer: vec![],
             buffer_max_kbytes,
-        }
-    }
-    /// Reads content of this domain's energy_uj file
-    pub fn read_counter_uj(&self) -> Result<String, Box<dyn Error>> {
-        match fs::read_to_string(&self.counter_uj_path) {
-            Ok(result) => Ok(result),
-            Err(error) => Err(Box::new(error)),
-        }
-    }
-
-    pub fn read_record_uj(&self) -> Result<Record, Box<dyn Error>> {
-        match fs::read_to_string(&self.counter_uj_path) {
-            Ok(result) => Ok(Record {
-                timestamp: current_system_time_since_epoch(),
-                unit: units::Unit::MicroJoule,
-                value: result,
-            }),
-            Err(error) => Err(Box::new(error)),
+            sensor_data,
         }
     }
 
@@ -1075,6 +1187,22 @@ pub struct CPUStat {
 }
 
 impl CPUStat {
+    #[cfg(target_os = "linux")]
+    pub fn from_procfs_cputime(cpu_time: CpuTime) -> CPUStat {
+        CPUStat {
+            user: cpu_time.user,
+            nice: cpu_time.nice,
+            system: cpu_time.system,
+            idle: cpu_time.idle,
+            irq: cpu_time.irq,
+            iowait: cpu_time.iowait,
+            softirq: cpu_time.softirq,
+            steal: cpu_time.steal,
+            guest: cpu_time.guest,
+            guest_nice: cpu_time.guest_nice,
+        }
+    }
+
     /// Returns the total of active CPU time spent, for this stat measurement
     /// (not iowait, idle, irq or softirq)
     pub fn total_time_jiffies(&self) -> u64 {
@@ -1137,14 +1265,20 @@ mod tests {
 
     #[test]
     fn read_topology_stats() {
+        #[cfg(target_os = "linux")]
         let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
+        #[cfg(not(target_os = "linux"))]
+        let mut sensor = msr_rapl::MsrRAPLSensor::new();
         let topo = (*sensor.get_topology()).unwrap();
         println!("{:?}", topo.read_stats());
     }
 
     #[test]
     fn read_core_stats() {
+        #[cfg(target_os = "linux")]
         let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
+        #[cfg(not(target_os = "linux"))]
+        let mut sensor = msr_rapl::MsrRAPLSensor::new();
         let mut topo = (*sensor.get_topology()).unwrap();
         for s in topo.get_sockets() {
             for c in s.get_cores() {
@@ -1155,7 +1289,10 @@ mod tests {
 
     #[test]
     fn read_socket_stats() {
+        #[cfg(target_os = "linux")]
         let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
+        #[cfg(not(target_os = "linux"))]
+        let mut sensor = msr_rapl::MsrRAPLSensor::new();
         let mut topo = (*sensor.get_topology()).unwrap();
         for s in topo.get_sockets() {
             println!("{:?}", s.read_stats());

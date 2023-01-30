@@ -131,7 +131,7 @@ impl Warp10Exporter {
         //read_token: Option<&str>,
         qemu: bool,
     ) -> Result<Vec<warp10::Warp10Response>, warp10::Error> {
-        let client = warp10::Client::new(&format!("{}://{}:{}", scheme, host, port))?;
+        let client = warp10::Client::new(&format!("{scheme}://{host}:{port}"))?;
         let writer = client.get_writer(write_token.to_string());
         self.topology
             .proc_tracker

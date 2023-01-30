@@ -69,6 +69,13 @@ impl Exporter for JSONExporter {
             .takes_value(true);
         options.push(arg);
 
+        let arg = Arg::with_name("containers")
+            .help("Monitor and apply labels for processes running as containers")
+            .long("containers")
+            .required(false)
+            .takes_value(false);
+        options.push(arg);
+
         // the resulting labels of this option are not yet used by this exporter, activate this option once we display something interesting about it
         //let arg = Arg::with_name("qemu")
         //    .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
@@ -102,6 +109,13 @@ struct Consumer {
     pid: i32,
     consumption: f32,
     timestamp: f64,
+    container: Option<Container>,
+}
+#[derive(Serialize, Deserialize)]
+struct Container {
+    id: String,
+    runtime: String,
+    scheduler: String,
 }
 #[derive(Serialize, Deserialize)]
 struct Host {
@@ -214,6 +228,26 @@ impl JSONExporter {
                         pid: process.pid,
                         consumption: format!("{}", metric.metric_value).parse::<f32>().unwrap(),
                         timestamp: metric.timestamp.as_secs_f64(),
+                        container: match parameters.is_present("containers") {
+                            true => metric.attributes.get("container_id").map(|container_id| {
+                                Container {
+                                    id: String::from(container_id),
+                                    runtime: String::from(
+                                        metric
+                                            .attributes
+                                            .get("container_runtime")
+                                            .unwrap_or(&String::from("unknown")),
+                                    ),
+                                    scheduler: String::from(
+                                        metric
+                                            .attributes
+                                            .get("container_scheduler")
+                                            .unwrap_or(&String::from("unknown")),
+                                    ),
+                                }
+                            }),
+                            false => None,
+                        },
                     })
             })
             .collect::<Vec<_>>();
@@ -258,7 +292,7 @@ impl JSONExporter {
 
                     Some(Socket {
                         id: socket.id,
-                        consumption: (socket_power as f32),
+                        consumption: socket_power,
                         domains,
                         timestamp: metric.timestamp.as_secs_f64(),
                     })
@@ -288,7 +322,7 @@ impl JSONExporter {
                     let json: String =
                         serde_json::to_string(&self.reports).expect("Unable to parse report");
                     let _ = File::create(file_path);
-                    fs::write(file_path, &json).expect("Unable to write file");
+                    fs::write(file_path, json).expect("Unable to write file");
                 }
             }
             None => {

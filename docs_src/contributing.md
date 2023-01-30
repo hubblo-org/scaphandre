@@ -22,6 +22,8 @@ Discussions and questions about the project are welcome on [gitter](https://gitt
 
 This project intends to use [conventional commit messages](https://conventionalcommits.org/) and the [gitflow](https://nvie.com/posts/a-successful-git-branching-model/) workflow.
 
+Please open your pull requests on the **dev** branch :)
+
 Scaphandre is a not only a tool, but a framework. Modules dedicated to collect energy consumption data from the host are called [**Sensors**](docs/sensors).
 Modules that are dedicated to send this data to a given channel or remote system are called [**Exporters**](docs/exporters). New Sensors and Exporters are going to be created and all contributions are welcome. For more on the internal structure please jump [here](explanations/internal-structure.md).
 

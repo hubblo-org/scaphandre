@@ -11,6 +11,7 @@ use clap::{Arg, ArgMatches};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
 use std::convert::Infallible;
+use std::fmt::Write as _;
 use std::{
     collections::HashMap,
     net::{IpAddr, SocketAddr},
@@ -194,12 +195,12 @@ fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>
     if let Some(labels) = labels {
         result.push('{');
         for (k, v) in labels.iter() {
-            result.push_str(&format!("{}=\"{}\",", k, v.replace('\"', "_")));
+            let _ = write!(result, "{}=\"{}\",", k, v.replace('\"', "_"));
         }
         result.remove(result.len() - 1);
         result.push('}');
     }
-    result.push_str(&format!(" {}\n", value));
+    let _ = writeln!(result, " {value}");
     result
 }
 
@@ -210,9 +211,12 @@ fn push_metric(
     metric_type: String,
     metric_name: String,
     metric_line: String,
+    add_help: bool,
 ) -> String {
-    body.push_str(&format!("# HELP {} {}", metric_name, help));
-    body.push_str(&format!("\n# TYPE {} {}\n", metric_name, metric_type));
+    if add_help {
+        let _ = write!(body, "# HELP {metric_name} {help}");
+        let _ = write!(body, "\n# TYPE {metric_name} {metric_type}\n");
+    }
     body.push_str(&metric_line);
     body
 }
@@ -249,6 +253,8 @@ async fn show_metrics(
 
         metric_generator.gen_all_metrics();
 
+        let mut metrics_pushed: Vec<String> = vec![];
+
         // Send all data
         for msg in metric_generator.pop_metrics() {
             let mut attributes: Option<&HashMap<String, String>> = None;
@@ -263,16 +269,26 @@ async fn show_metrics(
                 MetricValueType::IntUnsigned(value) => value.to_string(),
                 MetricValueType::Text(ref value) => value.to_string(),
             };
+
+            let mut should_i_add_help = true;
+
+            if metrics_pushed.contains(&msg.name) {
+                should_i_add_help = false;
+            } else {
+                metrics_pushed.insert(0, msg.name.clone());
+            }
+
             body = push_metric(
                 body,
                 msg.description.clone(),
                 msg.metric_type.clone(),
                 msg.name.clone(),
                 format_metric(&msg.name, &value, attributes),
+                should_i_add_help,
             );
         }
     } else {
-        body.push_str(&format!("<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{}\">/{}</a>", suffix, suffix));
+        let _ = write!(body, "<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{suffix}\">/{suffix}</a>");
     }
     Ok(Response::new(body.into()))
 }

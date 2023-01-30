@@ -2,8 +2,21 @@
 //!
 //! The utils module provides common functions used by the exporters.
 use clap::crate_version;
-use docker_sync::Docker;
-use k8s_sync::{errors::KubernetesError, kubernetes::Kubernetes};
+#[cfg(feature = "containers")]
+use {
+    docker_sync::Docker,
+    k8s_sync::{errors::KubernetesError, kubernetes::Kubernetes},
+};
+
+/// Returns a cmdline String filtered from potential characters that
+/// could break exporters output.
+///
+/// Here we replace:
+/// 1. Double quote by backslash double quote.
+/// 2. Remove carriage return.
+pub fn filter_cmdline(cmdline: &str) -> String {
+    cmdline.replace('\"', "\\\"").replace('\n', "")
+}
 
 /// Returns an Option containing the VM name of a qemu process.
 ///
@@ -30,7 +43,7 @@ pub fn get_scaphandre_version() -> String {
     let major_version = version_parts.next().unwrap();
     let patch_version = version_parts.next().unwrap();
     let minor_version = version_parts.next().unwrap();
-    format!("{}.{}{}", major_version, patch_version, minor_version)
+    format!("{major_version}.{patch_version}{minor_version}")
 }
 
 /// Returns the hostname of the system running Scaphandre.
@@ -83,6 +96,7 @@ mod tests {
     }
 }
 
+#[cfg(feature = "containers")]
 pub fn get_docker_client() -> Result<Docker, std::io::Error> {
     let docker = match Docker::connect() {
         Ok(docker) => docker,
@@ -91,6 +105,7 @@ pub fn get_docker_client() -> Result<Docker, std::io::Error> {
     Ok(docker)
 }
 
+#[cfg(feature = "containers")]
 pub fn get_kubernetes_client() -> Result<Kubernetes, KubernetesError> {
     match Kubernetes::connect(
         Some(String::from("/root/.kube/config")),
@@ -101,10 +116,20 @@ pub fn get_kubernetes_client() -> Result<Kubernetes, KubernetesError> {
     ) {
         Ok(kubernetes) => Ok(kubernetes),
         Err(err) => {
-            eprintln!("Got Kubernetes error: {} | {:?}", err, err);
+            eprintln!("Got Kubernetes error: {err} | {err:?}");
             Err(err)
         }
     }
+}
+
+#[test]
+// Fix bug https://github.com/hubblo-org/scaphandre/issues/175
+fn test_filter_cmdline_with_carriage_return() {
+    let cmdline = "bash-csleep infinity;\n> echo plop";
+    assert_eq!(
+        filter_cmdline(cmdline),
+        String::from("bash-csleep infinity;> echo plop")
+    );
 }
 
 //  Copyright 2020 The scaphandre authors.

@@ -3,22 +3,33 @@
 //! `Exporter` is the root for all exporters. It defines the [Exporter] trait
 //! needed to implement an exporter.
 pub mod json;
+#[cfg(feature = "prometheus")]
 pub mod prometheus;
+#[cfg(target_os = "linux")]
 pub mod qemu;
+#[cfg(feature = "riemann")]
 pub mod riemann;
 pub mod stdout;
 pub mod utils;
+#[cfg(feature = "warpten")]
 pub mod warpten;
-use crate::sensors::{utils::current_system_time_since_epoch, RecordGenerator, Topology};
+use crate::sensors::{
+    utils::{current_system_time_since_epoch, page_size, IProcess},
+    RecordGenerator, Topology,
+};
 use chrono::Utc;
 use clap::ArgMatches;
-use docker_sync::{container::Container, Docker};
-use k8s_sync::kubernetes::Kubernetes;
-use k8s_sync::Pod;
 use std::collections::HashMap;
 use std::fmt;
 use std::time::Duration;
-use utils::{get_docker_client, get_kubernetes_client, get_scaphandre_version};
+use utils::get_scaphandre_version;
+#[cfg(feature = "containers")]
+use {
+    docker_sync::{container::Container, Docker},
+    k8s_sync::kubernetes::Kubernetes,
+    k8s_sync::Pod,
+    utils::{get_docker_client, get_kubernetes_client},
+};
 
 /// General metric definition.
 #[derive(Debug)]
@@ -62,9 +73,9 @@ impl fmt::Display for MetricValueType {
         match &self {
             // MetricValueType::IntSigned(value) => write!(f, "{}", value),
             // MetricValueType::Float(value) => write!(f, "{}", value),
-            MetricValueType::Text(text) => write!(f, "{}", text),
-            MetricValueType::FloatDouble(value) => write!(f, "{}", value),
-            MetricValueType::IntUnsigned(value) => write!(f, "{}", value),
+            MetricValueType::Text(text) => write!(f, "{text}"),
+            MetricValueType::FloatDouble(value) => write!(f, "{value}"),
+            MetricValueType::IntUnsigned(value) => write!(f, "{value}"),
         }
     }
 }
@@ -74,9 +85,9 @@ impl fmt::Debug for MetricValueType {
         match &self {
             // MetricValueType::IntSigned(value) => write!(f, "{}", value),
             // MetricValueType::Float(value) => write!(f, "{}", value),
-            MetricValueType::Text(text) => write!(f, "{}", text),
-            MetricValueType::FloatDouble(value) => write!(f, "{}", value),
-            MetricValueType::IntUnsigned(value) => write!(f, "{}", value),
+            MetricValueType::Text(text) => write!(f, "{text}"),
+            MetricValueType::FloatDouble(value) => write!(f, "{value}"),
+            MetricValueType::IntUnsigned(value) => write!(f, "{value}"),
         }
     }
 }
@@ -108,29 +119,38 @@ struct MetricGenerator {
     /// `hostname` is the system name where the metrics belongs.
     hostname: String,
     /// Tells MetricGenerator if it has to watch for qemu virtual machines.
+    #[cfg(target_os = "linux")]
     qemu: bool,
     /// Tells MetricGenerator if it has to watch for containers.
+    #[cfg(feature = "containers")]
     watch_containers: bool,
     ///
+    #[cfg(feature = "containers")]
     containers_last_check: String,
     /// `containers` contains the containers descriptions when --containers is true
+    #[cfg(feature = "containers")]
     containers: Vec<Container>,
     /// docker_version contains the version number of local docker daemon
+    #[cfg(feature = "containers")]
     docker_version: String,
     /// docker_client holds the opened docker socket
+    #[cfg(feature = "containers")]
     docker_client: Option<Docker>,
     /// watch Docker
+    #[cfg(feature = "containers")]
     watch_docker: bool,
     /// watch Kubernetes
+    #[cfg(feature = "containers")]
     watch_kubernetes: bool,
     /// kubernetes socket
+    #[cfg(feature = "containers")]
     kubernetes_client: Option<Kubernetes>,
     /// Kubernetes pods
+    #[cfg(feature = "containers")]
     pods: Vec<Pod>,
     ///
+    #[cfg(feature = "containers")]
     pods_last_check: String,
-    // kubernetes cluster version
-    //kubernetes_version: String,
 }
 
 /// This is not mandatory to use MetricGenerator methods. Exporter can use dedicated
@@ -142,58 +162,74 @@ impl MetricGenerator {
     fn new(
         topology: Topology,
         hostname: String,
-        qemu: bool,
-        watch_containers: bool,
+        _qemu: bool,
+        _watch_containers: bool,
     ) -> MetricGenerator {
         let data = Vec::new();
-        let containers = vec![];
-        let pods = vec![];
-        let docker_version = String::from("");
-        let mut docker_client = None;
-        //let kubernetes_version = String::from("");
-        let mut kubernetes_client = None;
-        if watch_containers {
+        #[cfg(feature = "containers")]
+        {
+            let containers = vec![];
+            let pods = vec![];
+            let docker_version = String::from("");
+            let mut docker_client = None;
+            let mut kubernetes_client = None;
             let mut container_runtime = false;
-            match get_docker_client() {
-                Ok(docker) => {
-                    docker_client = Some(docker);
+            if _watch_containers {
+                match get_docker_client() {
+                    Ok(docker) => {
+                        docker_client = Some(docker);
+                        container_runtime = true;
+                    }
+                    Err(err) => {
+                        info!("Couldn't connect to docker socket. Error: {}", err);
+                    }
+                }
+                if let Ok(kubernetes) = get_kubernetes_client() {
+                    kubernetes_client = Some(kubernetes);
                     container_runtime = true;
+                } else {
+                    info!("Couldn't connect to kubernetes API.");
                 }
-                Err(err) => {
-                    info!("Couldn't connect to docker socket. Error: {}", err);
+                if !container_runtime {
+                    warn!("--containers was used but scaphandre couldn't connect to any container runtime.");
                 }
             }
-            if let Ok(kubernetes) = get_kubernetes_client() {
-                kubernetes_client = Some(kubernetes);
-                container_runtime = true;
-            } else {
-                info!("Couldn't connect to kubernetes API.");
-            }
-            if !container_runtime {
-                warn!("--containers was used but scaphandre couldn't connect to any container runtime.");
+            MetricGenerator {
+                data,
+                topology,
+                hostname,
+                containers,
+                #[cfg(target_os = "linux")]
+                qemu: _qemu,
+                containers_last_check: String::from(""),
+                docker_version,
+                docker_client,
+                watch_containers: _watch_containers,
+                watch_docker: true,
+                kubernetes_client,
+                watch_kubernetes: true,
+                pods,
+                pods_last_check: String::from(""),
+                //kubernetes_version,
             }
         }
+        #[cfg(not(feature = "containers"))]
         MetricGenerator {
             data,
             topology,
             hostname,
-            containers,
+            #[cfg(target_os = "linux")]
             qemu,
-            containers_last_check: String::from(""),
-            docker_version,
-            docker_client,
-            watch_containers,
-            watch_docker: true,
-            kubernetes_client,
-            watch_kubernetes: true,
-            pods,
-            pods_last_check: String::from(""),
-            //kubernetes_version,
         }
     }
 
     /// Generate all scaphandre internal metrics.
     fn gen_self_metrics(&mut self) {
+        #[cfg(target_os = "linux")]
+        let myself = IProcess::myself().unwrap();
+        #[cfg(target_os = "windows")]
+        let myself = IProcess::myself(self.topology.get_proc_tracker()).unwrap();
+
         let default_timestamp = current_system_time_since_epoch();
         self.data.push(Metric {
             name: String::from("scaph_self_version"),
@@ -210,7 +246,7 @@ impl MetricGenerator {
 
         if let Some(metric_value) = self
             .topology
-            .get_process_cpu_consumption_percentage(procfs::process::Process::myself().unwrap().pid)
+            .get_process_cpu_consumption_percentage(myself.pid)
         {
             self.data.push(Metric {
                 name: String::from("scaph_self_cpu_usage_percent"),
@@ -228,8 +264,8 @@ impl MetricGenerator {
             });
         }
 
-        if let Ok(metric_value) = procfs::process::Process::myself().unwrap().statm() {
-            let value = metric_value.size * procfs::page_size().unwrap() as u64;
+        if let Ok(metric_value) = myself.statm() {
+            let value = metric_value.size * page_size().unwrap() as u64;
             self.data.push(Metric {
                 name: String::from("scaph_self_mem_total_program_size"),
                 metric_type: String::from("gauge"),
@@ -243,7 +279,7 @@ impl MetricGenerator {
                 metric_value: MetricValueType::IntUnsigned(value),
             });
 
-            let value = metric_value.resident * procfs::page_size().unwrap() as u64;
+            let value = metric_value.resident * page_size().unwrap() as u64;
             self.data.push(Metric {
                 name: String::from("scaph_self_mem_resident_set_size"),
                 metric_type: String::from("gauge"),
@@ -257,7 +293,7 @@ impl MetricGenerator {
                 metric_value: MetricValueType::IntUnsigned(value),
             });
 
-            let value = metric_value.shared * procfs::page_size().unwrap() as u64;
+            let value = metric_value.shared * page_size().unwrap() as u64;
             self.data.push(Metric {
                 name: String::from("scaph_self_mem_shared_resident_size"),
                 metric_type: String::from("gauge"),
@@ -564,7 +600,7 @@ impl MetricGenerator {
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
                 description: String::from("Number of context switches since boot."),
-                metric_value: MetricValueType::IntUnsigned(metric_value as u64),
+                metric_value: MetricValueType::IntUnsigned(metric_value),
             });
         }
     }
@@ -574,6 +610,7 @@ impl MetricGenerator {
     /// to *self.docker_client*. Stores the resulting vector as *self.containers*.
     /// Updates *self.containers_last_check* to the current timestamp, if the
     /// operation is successful.
+    #[cfg(feature = "containers")]
     fn gen_docker_containers_basic_metadata(&mut self) {
         if self.watch_docker && self.docker_client.is_some() {
             if let Some(docker) = self.docker_client.as_mut() {
@@ -592,6 +629,7 @@ impl MetricGenerator {
     /// queries the local kubernetes API (if this is a kubernetes cluster node)
     /// and retrieves the list of pods running on this node, thanks to *self.kubernetes_client*.
     /// Stores the result as *self.pods* and updates *self.pods_last_check* if the operation is successfull.
+    #[cfg(feature = "containers")]
     fn gen_kubernetes_pods_basic_metadata(&mut self) {
         if self.watch_kubernetes {
             if let Some(kubernetes) = self.kubernetes_client.as_mut() {
@@ -610,6 +648,8 @@ impl MetricGenerator {
 
     /// Generate process metrics.
     fn gen_process_metrics(&mut self) {
+        debug!("In gen_process_metrics.");
+        #[cfg(feature = "containers")]
         if self.watch_containers {
             let now = current_system_time_since_epoch().as_secs().to_string();
             if self.watch_docker && self.docker_client.is_some() {
@@ -661,13 +701,16 @@ impl MetricGenerator {
                 }
             }
         }
+        debug!("Before loop.");
 
         for pid in self.topology.proc_tracker.get_alive_pids() {
             let exe = self.topology.proc_tracker.get_process_name(pid);
             let cmdline = self.topology.proc_tracker.get_process_cmdline(pid);
 
             let mut attributes = HashMap::new();
+            debug!("Working on {}: {}", pid, exe);
 
+            #[cfg(feature = "containers")]
             if self.watch_containers && (!self.containers.is_empty() || !self.pods.is_empty()) {
                 let container_data = self
                     .topology
@@ -692,8 +735,9 @@ impl MetricGenerator {
             attributes.insert("exe".to_string(), exe.clone());
 
             if let Some(cmdline_str) = cmdline {
-                attributes.insert("cmdline".to_string(), cmdline_str.replace('\"', "\\\""));
+                attributes.insert("cmdline".to_string(), utils::filter_cmdline(&cmdline_str));
 
+                #[cfg(target_os = "linux")]
                 if self.qemu {
                     if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
                         attributes.insert("vmname".to_string(), vmname);

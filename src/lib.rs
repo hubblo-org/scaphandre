@@ -9,11 +9,22 @@ pub mod exporters;
 pub mod sensors;
 use clap::ArgMatches;
 use colored::*;
-use exporters::{
-    json::JSONExporter, prometheus::PrometheusExporter, qemu::QemuExporter,
-    riemann::RiemannExporter, stdout::StdoutExporter, warpten::Warp10Exporter, Exporter,
-};
-use sensors::{powercap_rapl::PowercapRAPLSensor, Sensor};
+#[cfg(feature = "json")]
+use exporters::json::JSONExporter;
+#[cfg(feature = "prometheus")]
+use exporters::prometheus::PrometheusExporter;
+#[cfg(all(target_os = "linux", not(feature = "warpten")))]
+use exporters::qemu::QemuExporter;
+#[cfg(feature = "riemann")]
+use exporters::riemann::RiemannExporter;
+#[cfg(feature = "warpten")]
+use exporters::warpten::Warp10Exporter;
+use exporters::{stdout::StdoutExporter, Exporter};
+#[cfg(target_os = "windows")]
+use sensors::msr_rapl::MsrRAPLSensor;
+#[cfg(target_os = "linux")]
+use sensors::powercap_rapl::PowercapRAPLSensor;
+use sensors::Sensor;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 
@@ -28,6 +39,7 @@ fn get_argument(matches: &ArgMatches, arg: &'static str) -> String {
 /// Helper function to get a Sensor instance from ArgMatches
 fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
     let sensor = match &get_argument(matches, "sensor")[..] {
+        #[cfg(target_os = "linux")]
         "powercap_rapl" => PowercapRAPLSensor::new(
             get_argument(matches, "sensor-buffer-per-socket-max-kB")
                 .parse()
@@ -37,6 +49,7 @@ fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
                 .unwrap(),
             matches.is_present("vm"),
         ),
+        #[cfg(target_os = "linux")]
         _ => PowercapRAPLSensor::new(
             get_argument(matches, "sensor-buffer-per-socket-max-kB")
                 .parse()
@@ -46,6 +59,8 @@ fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
                 .unwrap(),
             matches.is_present("vm"),
         ),
+        #[cfg(not(target_os = "linux"))]
+        _ => MsrRAPLSensor::new(),
     };
     Box::new(sensor)
 }
@@ -93,22 +108,34 @@ pub fn run(matches: ArgMatches) {
         exporter_parameters = prometheus_exporter_parameters.clone();
         let mut exporter = PrometheusExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
-    } else if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
-        if header {
-            scaphandre_header("qemu");
-        }
-        exporter_parameters = qemu_exporter_parameters.clone();
-        let mut exporter = QemuExporter::new(sensor_boxed);
-        exporter.run(exporter_parameters);
-    } else if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
-        if header {
-            scaphandre_header("warp10");
-        }
-        exporter_parameters = warp10_exporter_parameters.clone();
-        let mut exporter = Warp10Exporter::new(sensor_boxed);
-        exporter.run(exporter_parameters);
     } else {
-        error!("Couldn't determine which exporter has been chosen.");
+        #[cfg(target_os = "linux")]
+        {
+            #[cfg(feature = "warpten")]
+            {
+                if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
+                    if header {
+                        scaphandre_header("warp10");
+                    }
+                    exporter_parameters = warp10_exporter_parameters.clone();
+                    let mut exporter = Warp10Exporter::new(sensor_boxed);
+                    exporter.run(exporter_parameters);
+                }
+            }
+            #[cfg(not(feature = "warpten"))]
+            {
+                if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
+                    if header {
+                        scaphandre_header("qemu");
+                    }
+                    exporter_parameters = qemu_exporter_parameters.clone();
+                    let mut exporter = QemuExporter::new(sensor_boxed);
+                    exporter.run(exporter_parameters);
+                }
+                error!("Warp10 exporter feature was not included in this build.");
+            }
+        }
+        error!("Couldn't determine which exporter to run.");
     }
 }
 
@@ -120,22 +147,27 @@ pub fn get_exporters_options() -> HashMap<String, Vec<clap::Arg<'static, 'static
         String::from("stdout"),
         exporters::stdout::StdoutExporter::get_options(),
     );
+    #[cfg(feature = "json")]
     options.insert(
         String::from("json"),
         exporters::json::JSONExporter::get_options(),
     );
+    #[cfg(feature = "prometheus")]
     options.insert(
         String::from("prometheus"),
         exporters::prometheus::PrometheusExporter::get_options(),
     );
+    #[cfg(feature = "riemann")]
     options.insert(
         String::from("riemann"),
         exporters::riemann::RiemannExporter::get_options(),
     );
+    #[cfg(target_os = "linux")]
     options.insert(
         String::from("qemu"),
         exporters::qemu::QemuExporter::get_options(),
     );
+    #[cfg(feature = "warp10")]
     options.insert(
         String::from("warp10"),
         exporters::warpten::Warp10Exporter::get_options(),
@@ -150,7 +182,7 @@ fn current_system_time_since_epoch() -> Duration {
 }
 
 pub fn scaphandre_header(exporter_name: &str) {
-    let title = format!("Scaphandre {} exporter", exporter_name);
+    let title = format!("Scaphandre {exporter_name} exporter");
     println!("{}", title.red().bold());
     println!("Sending ⚡ metrics");
 }

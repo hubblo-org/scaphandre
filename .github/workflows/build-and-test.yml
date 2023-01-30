@@ -1,4 +1,4 @@
-name: build_and_test
+name: Tests
 
 on:
   push:
@@ -12,6 +12,12 @@ on:
       - 'CONTRIBUTING.md'
   pull_request:
     branches: [ main, dev ]
+    paths-ignore:
+      - 'docs_src/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'CITATION'
+      - 'book.toml'
 
 env:
   CARGO_TERM_COLOR: always
@@ -20,9 +26,71 @@ env:
   AWX_HOST: "https://cd.hubblo.org"
 
 jobs:
-  build:
-    name: build_and_test_x86_64
+  check_pr_is_on_the_right_branch:
+    name: Check PR is open on the right branch
     runs-on: ubuntu-latest
+    steps:
+      - name: Display warning and kill pipeline if needed
+        run: |
+          if [ ${GITHUB_BASE_REF} == "main" && ${GITHUB_HEAD_REF} != "dev" ]; then
+            echo "PR has been opened on the main branch, from another branch than dev. Please consider opening it on the dev branch instead !"            
+            exit 1
+          fi
+  fmt_and_clippy_linux:
+    name: Cargo Fmt and Clippy - Linux
+    runs-on: ubuntu-latest
+    needs: check_pr_is_on_the_right_branch
+    steps:
+      - name: Cancel Previous Runs
+        uses: ambimax/action-cancel-previous-runs@v1
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+          components: rustfmt
+      - name: Check formatting
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+      - name: Clippy Check
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -A clippy::upper_case_acronyms -D warnings
+  fmt_and_clippy_windows:
+    name: Cargo Fmt and Clippy - Windows
+    runs-on: windows-latest
+    needs: fmt_and_clippy_linux
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Rustup
+        uses: crazy-max/ghaction-chocolatey@v2
+        with:
+          args: install rustup.install --ignore-checksums
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install stable-x86_64-pc-windows-msvc
+      - name: Check formatting
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+      - name: Clippy Check
+        uses: actions-rs/cargo@v1
+        with:
+          command : clippy
+          args: --no-default-features --features "prometheus json riemann"
+
+  test_linux_x86_64:
+    name: Test on GNU/Linux x86_64 (Bare metal worker)
+    runs-on: ubuntu-latest
+    needs: fmt_and_clippy_linux
     steps:
       - name: Install dependencies (awxkit)
         uses: actions/setup-python@v2
@@ -37,7 +105,58 @@ jobs:
         run: |
           export AWX_TOKEN=$(awx --conf.host "${{env.AWX_HOST}}" --conf.username "${{env.AWX_PUBLIC_USER}}" --conf.password "${{env.AWX_PUBLIC_ACCESS}}" login | jq .token | tr -d '"')
           echo "::set-output name=awx_token::${AWX_TOKEN}"
-      - name: Launch job
-        id: launch
+      - name: Prepare Rust environment on bare metal worker
+        id: rust
         run: |
-          awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 9 --monitor
+          awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"$GITHUB_REPOSITORY\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 12 --monitor
+      - name: Clone Scaphandre repository
+        id: clone
+        run: |
+          awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 13 --monitor
+      - name: Run Unit Tests
+        id: unittests
+        run: |
+          awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 14 --monitor
+  build_linux_x86_64:
+    name: Build on GNU/Linux x86_64 (Bare metal worker)
+    runs-on: ubuntu-latest
+    needs: test_linux_x86_64
+    steps:
+      - name: Install dependencies (awxkit)
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Install python requirements (awxkit)
+        run: |
+          python -m pip install --upgrade pip
+          pip install awxkit
+      - name: Log on AWX 
+        id: login
+        run: |
+          export AWX_TOKEN=$(awx --conf.host "${{env.AWX_HOST}}" --conf.username "${{env.AWX_PUBLIC_USER}}" --conf.password "${{env.AWX_PUBLIC_ACCESS}}" login | jq .token | tr -d '"')
+          echo "::set-output name=awx_token::${AWX_TOKEN}"
+      - name: Build Docker image
+        id: dockerbuild
+        run: |
+          awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 15 --monitor
+      - name: Test Scaphandre + Prometheus in docker-compose
+        id: promtest
+        run: |
+          awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ env.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 16 --monitor
+  test_windows_x86_64:
+    name: Test on Windows x86_64 (Virtual machine worker)
+    runs-on: "windows-2019"
+    needs: fmt_and_clippy_windows
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Rustup
+        uses: crazy-max/ghaction-chocolatey@v2
+        with:
+          args: install rustup.install --ignore-checksums
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install stable-x86_64-pc-windows-msvc
+      - name: Build (debug mode)
+        run: |
+          cargo build --no-default-features --features "prometheus json riemann"
