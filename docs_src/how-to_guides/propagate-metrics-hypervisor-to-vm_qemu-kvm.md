@@ -25,7 +25,7 @@ For each virtual machine you want to give access to its metrics, create a [tmpfs
 
      mount -t tmpfs tmpfs_DOMAIN_NAME /var/lib/libvirt/scaphandre/DOMAIN_NAME -o size=5m
 
-In the definition of the virtual machine (ehre we are using libvirt), ensure you have a filesystem configuration to give access to the mountpoint:
+In the definition of the virtual machine (here we are using libvirt), ensure you have a filesystem configuration to give access to the mountpoint:
 
     virsh edit DOMAIN_NAME
 

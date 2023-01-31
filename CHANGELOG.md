@@ -3,9 +3,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/hubblo-org/scaphandre/commits/main)
+## [Unreleased](https://github.com/hubblo-org/scaphandre/commits/dev)
 
-This may be not up to date, please check main branch.
+Please check dev branch.
+
+## [0.5.0](https://github.com/hubblo-org/scaphandre/releases/tag/v0.5.0)
+
+### Changed
+
+- Upgraded procfs to 0.12 : [#144](https://github.com/hubblo-org/scaphandre/pull/144)
+- Rollbacked to ubuntu 20.04 as the base docker image : [#151](https://github.com/hubblo-org/scaphandre/pull/151), thanks to @demeringo
+- Using github action to tag docker image : [#160](https://github.com/hubblo-org/scaphandre/pull/160), thanks to @rossf7
+
+### Added
+
+- New level of abstraction regarding structs managed by Sensors, so we could implement more sensors in an easier way : [#149](https://github.com/hubblo-org/scaphandre/pull/149)
+- Enable JSON exporter to run as a daemon : [#169](https://github.com/hubblo-org/scaphandre/issues/169)
+- First building blocks for conditional compilation depending on the OS : [#148](https://github.com/hubblo-org/scaphandre/pull/148)
+- Mitigation for machines where powercap is not able to feed rapl domain folders, and only has socket ones : [#198](https://github.com/hubblo-org/scaphandre/pull/198)
+- Experimental support for Windows 10, 11, server 2019 : [#74](https://github.com/hubblo-org/scaphandre/issues/74) and [#247](https://github.com/hubblo-org/scaphandre/issues/247)
+- Added --containers option to JSON exporter : [#217](https://github.com/hubblo-org/scaphandre/issues/217)
+
+### Fixed
+
+- Kubernetes pods using containerd are now supported : [#130](https://github.com/hubblo-org/scaphandre/pull/130), thanks to @rossf7
+- Excluded unrelevant procfs metrics from calculation of cpu cycles consumed by processes : [#132](https://github.com/hubblo-org/scaphandre/pull/132)
+- Mitigated possible decrepancies between host (rapl) total power usage metric and the sum of per-process power usage metrics : [#20](https://github.com/hubblo-org/scaphandre/issues/20), note that some issues show remaining issues on this topic. Further investigation and work needed.
+- Documentation fix for helm install : [#136](https://github.com/hubblo-org/scaphandre/pull/136), thanks to @arthurzenika
+- New helm chart values: arguments and backtrace : [#139](https://github.com/hubblo-org/scaphandre/pull/139), thanks to @jotak
+- Some documentation typos : [#157](https://github.com/hubblo-org/scaphandre/pull/157), thanks to @metacosm
+- Aligning on new clippy rules : [#162](https://github.com/hubblo-org/scaphandre/pull/162), thanks to @demeringo
+- Always set last pods check timestamp : [#173](https://github.com/hubblo-org/scaphandre/pull/173), thanks to @rossf7
+- Support kubelets using systemd cgroup driver: [#146](https://github.com/hubblo-org/scaphandre/pull/146), thanks to @rossf7
+- Fix missing volume in psp (helm chart): [#168](https://github.com/hubblo-org/scaphandre/pull/168), thanks to @olevitt
+- Spelling check in documentation : [#183](https://github.com/hubblo-org/scaphandre/pull/183), thanks to @irishgordo
+- No more duplicated HELP and TYPE lines in prometheus exporter: [#165](https://github.com/hubblo-org/scaphandre/issues/165) and [#192](https://github.com/hubblo-org/scaphandre/pull/192)
+- Escaping newlines in cmdline: [#175](https://github.com/hubblo-org/scaphandre/issues/175), thanks to @uggla
 
 ## [0.4.1](https://github.com/hubblo-org/scaphandre/releases/tag/v0.4.0)
 

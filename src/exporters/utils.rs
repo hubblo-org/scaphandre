@@ -43,7 +43,7 @@ pub fn get_scaphandre_version() -> String {
     let major_version = version_parts.next().unwrap();
     let patch_version = version_parts.next().unwrap();
     let minor_version = version_parts.next().unwrap();
-    format!("{}.{}{}", major_version, patch_version, minor_version)
+    format!("{major_version}.{patch_version}{minor_version}")
 }
 
 /// Returns the hostname of the system running Scaphandre.
@@ -116,7 +116,7 @@ pub fn get_kubernetes_client() -> Result<Kubernetes, KubernetesError> {
     ) {
         Ok(kubernetes) => Ok(kubernetes),
         Err(err) => {
-            eprintln!("Got Kubernetes error: {} | {:?}", err, err);
+            eprintln!("Got Kubernetes error: {err} | {err:?}");
             Err(err)
         }
     }

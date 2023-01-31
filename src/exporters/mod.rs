@@ -73,9 +73,9 @@ impl fmt::Display for MetricValueType {
         match &self {
             // MetricValueType::IntSigned(value) => write!(f, "{}", value),
             // MetricValueType::Float(value) => write!(f, "{}", value),
-            MetricValueType::Text(text) => write!(f, "{}", text),
-            MetricValueType::FloatDouble(value) => write!(f, "{}", value),
-            MetricValueType::IntUnsigned(value) => write!(f, "{}", value),
+            MetricValueType::Text(text) => write!(f, "{text}"),
+            MetricValueType::FloatDouble(value) => write!(f, "{value}"),
+            MetricValueType::IntUnsigned(value) => write!(f, "{value}"),
         }
     }
 }
@@ -85,9 +85,9 @@ impl fmt::Debug for MetricValueType {
         match &self {
             // MetricValueType::IntSigned(value) => write!(f, "{}", value),
             // MetricValueType::Float(value) => write!(f, "{}", value),
-            MetricValueType::Text(text) => write!(f, "{}", text),
-            MetricValueType::FloatDouble(value) => write!(f, "{}", value),
-            MetricValueType::IntUnsigned(value) => write!(f, "{}", value),
+            MetricValueType::Text(text) => write!(f, "{text}"),
+            MetricValueType::FloatDouble(value) => write!(f, "{value}"),
+            MetricValueType::IntUnsigned(value) => write!(f, "{value}"),
         }
     }
 }
@@ -600,7 +600,7 @@ impl MetricGenerator {
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
                 description: String::from("Number of context switches since boot."),
-                metric_value: MetricValueType::IntUnsigned(metric_value as u64),
+                metric_value: MetricValueType::IntUnsigned(metric_value),
             });
         }
     }

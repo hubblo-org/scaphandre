@@ -32,8 +32,8 @@ jobs:
     steps:
       - name: Display warning and kill pipeline if needed
         run: |
-          if [ ${GITHUB_BASE_REF} == "main" ]; then
-            echo "PR has been opened on the main branch. Please consider opening it on the dev branch instead !"            
+          if [ ${GITHUB_BASE_REF} == "main" && ${GITHUB_HEAD_REF} != "dev" ]; then
+            echo "PR has been opened on the main branch, from another branch than dev. Please consider opening it on the dev branch instead !"            
             exit 1
           fi
   fmt_and_clippy_linux:
