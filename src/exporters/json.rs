@@ -292,7 +292,7 @@ impl JSONExporter {
 
                     Some(Socket {
                         id: socket.id,
-                        consumption: (socket_power),
+                        consumption: socket_power,
                         domains,
                         timestamp: metric.timestamp.as_secs_f64(),
                     })

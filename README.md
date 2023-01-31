@@ -47,8 +47,8 @@ Here is an example dashboard built thanks to scaphandre: [https://metrics.hubblo
 
 You'll find everything you may want to know about scaphandre in the [documentation](https://hubblo-org.github.io/scaphandre-documentation), like:
 
-- 🏁 [Getting started](https://hubblo-org.github.io/scaphandre-documentation/tutorials/quickstart.html)
-- 💻 [Installation & compilation](https://hubblo-org.github.io/scaphandre-documentation/tutorials/installation.html)
+- 🏁 [Getting started](https://hubblo-org.github.io/scaphandre-documentation/tutorials/getting_started.html)
+- 💻 [Installation & compilation on GNU/Linux](https://hubblo-org.github.io/scaphandre-documentation/tutorials/installation-linux.html) or [on Windows](https://hubblo-org.github.io/scaphandre-documentation/tutorials/installation-windows.html)
 - 👁️ [Give a virtual machine access to its power consumption metrics, and break the opacity of being on the computer of someone else](https://hubblo-org.github.io/scaphandre-documentation/how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html)
 - 🎉 [Contributing guide](https://hubblo-org.github.io/scaphandre-documentation/contributing.html)
 - [And much more](https://hubblo-org.github.io/scaphandre-documentation)

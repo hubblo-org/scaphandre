@@ -200,7 +200,7 @@ fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>
         result.remove(result.len() - 1);
         result.push('}');
     }
-    let _ = writeln!(result, " {}", value);
+    let _ = writeln!(result, " {value}");
     result
 }
 
@@ -214,8 +214,8 @@ fn push_metric(
     add_help: bool,
 ) -> String {
     if add_help {
-        let _ = write!(body, "# HELP {} {}", metric_name, help);
-        let _ = write!(body, "\n# TYPE {} {}\n", metric_name, metric_type);
+        let _ = write!(body, "# HELP {metric_name} {help}");
+        let _ = write!(body, "\n# TYPE {metric_name} {metric_type}\n");
     }
     body.push_str(&metric_line);
     body
@@ -288,7 +288,7 @@ async fn show_metrics(
             );
         }
     } else {
-        let _ = write!(body, "<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{}\">/{}</a>", suffix, suffix);
+        let _ = write!(body, "<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{suffix}\">/{suffix}</a>");
     }
     Ok(Response::new(body.into()))
 }

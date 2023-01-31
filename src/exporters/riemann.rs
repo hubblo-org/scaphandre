@@ -136,7 +136,7 @@ impl Exporter for RiemannExporter {
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
         );
         println!("Press CTRL-C to stop scaphandre");
-        println!("Measurement step is: {}s", dispatch_duration);
+        println!("Measurement step is: {dispatch_duration}s");
 
         let topology = self.sensor.get_topology().unwrap();
         let mut metric_generator = MetricGenerator::new(

@@ -127,7 +127,7 @@ impl StdoutExporter {
             parameters.is_present("containers"),
         );
 
-        println!("Measurement step is: {}s", step_duration);
+        println!("Measurement step is: {step_duration}s");
         if timeout_secs == 0 {
             loop {
                 self.iterate(&regex_filter, process_number, &mut metric_generator);
@@ -179,7 +179,7 @@ impl StdoutExporter {
 
         println!(
             "Host:\t{} W",
-            (format!("{}", host_power).parse::<f64>().unwrap() / 1000000.0)
+            (format!("{host_power}").parse::<f64>().unwrap() / 1000000.0)
         );
 
         if domain_names.is_some() {
@@ -197,7 +197,7 @@ impl StdoutExporter {
             }
             let socket_id = s.attributes.get("socket_id").unwrap().clone();
 
-            let mut to_print = format!("Socket{}\t{} W |\t", socket_id, power_str);
+            let mut to_print = format!("Socket{socket_id}\t{power_str} W |\t");
 
             let domains = metrics.iter().filter(|x| {
                 x.name == "scaph_domain_power_microwatts"
@@ -232,7 +232,7 @@ impl StdoutExporter {
                         to_print.push_str("---");
                     }
                 }
-                println!("{}\n", to_print);
+                println!("{to_print}\n");
             }
         }
 
@@ -244,7 +244,7 @@ impl StdoutExporter {
                 .proc_tracker
                 .get_filtered_processes(regex_filter);
         } else {
-            println!("Top {} consumers:", process_number);
+            println!("Top {process_number} consumers:");
             consumers = metric_generator
                 .topology
                 .proc_tracker

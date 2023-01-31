@@ -73,9 +73,9 @@ impl fmt::Display for MetricValueType {
         match &self {
             // MetricValueType::IntSigned(value) => write!(f, "{}", value),
             // MetricValueType::Float(value) => write!(f, "{}", value),
-            MetricValueType::Text(text) => write!(f, "{}", text),
-            MetricValueType::FloatDouble(value) => write!(f, "{}", value),
-            MetricValueType::IntUnsigned(value) => write!(f, "{}", value),
+            MetricValueType::Text(text) => write!(f, "{text}"),
+            MetricValueType::FloatDouble(value) => write!(f, "{value}"),
+            MetricValueType::IntUnsigned(value) => write!(f, "{value}"),
         }
     }
 }
@@ -85,9 +85,9 @@ impl fmt::Debug for MetricValueType {
         match &self {
             // MetricValueType::IntSigned(value) => write!(f, "{}", value),
             // MetricValueType::Float(value) => write!(f, "{}", value),
-            MetricValueType::Text(text) => write!(f, "{}", text),
-            MetricValueType::FloatDouble(value) => write!(f, "{}", value),
-            MetricValueType::IntUnsigned(value) => write!(f, "{}", value),
+            MetricValueType::Text(text) => write!(f, "{text}"),
+            MetricValueType::FloatDouble(value) => write!(f, "{value}"),
+            MetricValueType::IntUnsigned(value) => write!(f, "{value}"),
         }
     }
 }

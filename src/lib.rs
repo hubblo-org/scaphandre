@@ -182,7 +182,7 @@ fn current_system_time_since_epoch() -> Duration {
 }
 
 pub fn scaphandre_header(exporter_name: &str) {
-    let title = format!("Scaphandre {} exporter", exporter_name);
+    let title = format!("Scaphandre {exporter_name} exporter");
     println!("{}", title.red().bold());
     println!("Sending ⚡ metrics");
 }

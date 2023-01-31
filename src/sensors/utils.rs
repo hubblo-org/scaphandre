@@ -656,7 +656,7 @@ impl ProcessTracker {
                                             key = key.replace(e, "_");
                                         }
                                         description.insert(
-                                            format!("container_label_{}", key),
+                                            format!("container_label_{key}"),
                                             v.to_string(),
                                         );
                                     }
