@@ -122,6 +122,9 @@ const ES_INDEX_NAME: &str = "scaphandre";
 pub struct ScaphandreData {
     pub scaphandre_version: String,
     pub scaphandre_cpu_usage_percentage: Option<u32>,
+    pub scaphandre_mem_total_program_size: Option<u64>,
+    pub scaphrandre_mem_resident_set_size: Option<u64>,
+    pub scaphandre_mem_shared_resident_size: Option<u64>,
 }
 
 impl ElasticExporter {
@@ -153,6 +156,10 @@ impl ElasticExporter {
                 .body(ScaphandreData {
                     scaphandre_version: get_scaphandre_version(),
                     scaphandre_cpu_usage_percentage: self.get_scaphandre_cpu_usage_percentage(),
+                    scaphandre_mem_total_program_size: self.get_scaphandre_mem_total_program_size(),
+                    scaphrandre_mem_resident_set_size: self.get_scaphandre_mem_resident_set_size(),
+                    scaphandre_mem_shared_resident_size: self
+                        .get_scaphandre_mem_shared_resident_size(),
                 })
                 .send()
                 .await
@@ -174,6 +181,27 @@ impl ElasticExporter {
             .value
             .parse::<u32>()
             .ok()
+    }
+
+    fn get_scaphandre_mem_total_program_size(&self) -> Option<u64> {
+        let statm_value = procfs::process::Process::myself().ok()?.statm().ok()?;
+        let page_size = procfs::page_size().ok()?;
+
+        Some(statm_value.size * page_size as u64)
+    }
+
+    fn get_scaphandre_mem_resident_set_size(&self) -> Option<u64> {
+        let statm_value = procfs::process::Process::myself().ok()?.statm().ok()?;
+        let page_size = procfs::page_size().ok()?;
+
+        Some(statm_value.resident * page_size as u64)
+    }
+
+    fn get_scaphandre_mem_shared_resident_size(&self) -> Option<u64> {
+        let statm_value = procfs::process::Process::myself().ok()?.statm().ok()?;
+        let page_size = procfs::page_size().ok()?;
+
+        Some(statm_value.shared * page_size as u64)
     }
 
     async fn ensure_index(&self, client: &Elasticsearch) -> Result<(), Error> {
