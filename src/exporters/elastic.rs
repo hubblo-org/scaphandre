@@ -121,6 +121,7 @@ const ES_INDEX_NAME: &str = "scaphandre";
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct ScaphandreData {
     pub scaphandre_version: String,
+    pub scaphandre_cpu_usage_percentage: Option<u32>,
 }
 
 impl ElasticExporter {
@@ -151,6 +152,7 @@ impl ElasticExporter {
                 ))
                 .body(ScaphandreData {
                     scaphandre_version: get_scaphandre_version(),
+                    scaphandre_cpu_usage_percentage: self.get_scaphandre_cpu_usage_percentage(),
                 })
                 .send()
                 .await
@@ -164,6 +166,14 @@ impl ElasticExporter {
             // TODO @papey: add custom duration
             thread::sleep(Duration::new(2, 0));
         }
+    }
+
+    fn get_scaphandre_cpu_usage_percentage(&self) -> Option<u32> {
+        self.topology
+            .get_process_cpu_consumption_percentage(procfs::process::Process::myself().ok()?.pid())?
+            .value
+            .parse::<u32>()
+            .ok()
     }
 
     async fn ensure_index(&self, client: &Elasticsearch) -> Result<(), Error> {
