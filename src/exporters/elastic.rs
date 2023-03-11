@@ -121,6 +121,9 @@ const ES_INDEX_NAME: &str = "scaphandre";
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct ScaphandreData {
     pub scaphandre_version: String,
+    pub scaphandre_topo_stats_nb: i32,
+    pub scaphandre_topo_records_nb: i32,
+    pub scaphandre_topo_procs_nb: i32,
     pub scaphandre_cpu_usage_percentage: Option<u32>,
     pub scaphandre_mem_total_program_size: Option<u64>,
     pub scaphrandre_mem_resident_set_size: Option<u64>,
@@ -155,6 +158,9 @@ impl ElasticExporter {
                 ))
                 .body(ScaphandreData {
                     scaphandre_version: get_scaphandre_version(),
+                    scaphandre_topo_stats_nb: self.topology.stat_buffer.len() as i32,
+                    scaphandre_topo_records_nb: self.topology.record_buffer.len() as i32,
+                    scaphandre_topo_procs_nb: self.topology.proc_tracker.procs.len() as i32,
                     scaphandre_cpu_usage_percentage: self.get_scaphandre_cpu_usage_percentage(),
                     scaphandre_mem_total_program_size: self.get_scaphandre_mem_total_program_size(),
                     scaphrandre_mem_resident_set_size: self.get_scaphandre_mem_resident_set_size(),
