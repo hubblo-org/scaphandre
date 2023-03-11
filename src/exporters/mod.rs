@@ -2,6 +2,7 @@
 //!
 //! `Exporter` is the root for all exporters. It defines the [Exporter] trait
 //! needed to implement an exporter.
+pub mod elastic;
 pub mod json;
 #[cfg(feature = "prometheus")]
 pub mod prometheus;
