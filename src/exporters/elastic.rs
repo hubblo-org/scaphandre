@@ -125,7 +125,6 @@ pub struct ScaphandreData {
 
 impl ElasticExporter {
     /// Instantiates and returns a new ElasticExporter
-    // TODO: make sensor mutable
     pub fn new(mut sensor: Box<dyn Sensor>) -> ElasticExporter {
         ElasticExporter {
             topology: sensor
