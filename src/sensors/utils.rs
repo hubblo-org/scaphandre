@@ -1,12 +1,12 @@
+use ordered_float::*;
 #[cfg(target_os = "linux")]
 use procfs::{self, process::Process};
 use regex::Regex;
 #[cfg(feature = "containers")]
 use std::collections::HashMap;
-use sysinfo::{get_current_pid, Process as SysinfoProcess, ProcessExt, System, SystemExt};
-use ordered_float::*;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
+use sysinfo::{get_current_pid, Process as SysinfoProcess, ProcessExt, System, SystemExt};
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
 
@@ -1002,7 +1002,12 @@ mod tests {
         topo.refresh();
         let self_process_by_scaph = IProcess::myself().unwrap();
 
-        assert_eq!(self_process_by_sysinfo.cmd().concat(), topo.proc_tracker.get_process_cmdline(self_process_by_scaph.pid).unwrap());
+        assert_eq!(
+            self_process_by_sysinfo.cmd().concat(),
+            topo.proc_tracker
+                .get_process_cmdline(self_process_by_scaph.pid)
+                .unwrap()
+        );
     }
 
     #[cfg(all(test, target_os = "linux"))]
