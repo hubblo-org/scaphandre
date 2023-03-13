@@ -31,13 +31,13 @@ docker-sync = { version = "0.1.2", optional = true }
 k8s-sync = { version = "0.2.3", optional = true }
 hyper = { version = "0.14", features = ["full"], optional = true }
 tokio = { version = "1", features = ["full"], optional = true}
+sysinfo = { version = "0.28.2"}
 
 [target.'cfg(target_os="linux")'.dependencies]
 procfs = { version = "0.12.0" }
 
 [target.'cfg(target_os="windows")'.dependencies]
 windows = { version = "0.27.0", features = ["alloc","Win32_Storage_FileSystem","Win32_Foundation","Win32_Security","Win32_System_IO","Win32_System_Ioctl"]}
-sysinfo = { version = "0.22.4"}
 
 
 [features]
