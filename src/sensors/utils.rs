@@ -85,7 +85,7 @@ impl IProcess {
         let mut utime = 0;
         #[cfg(target_os = "linux")]
         {
-            if let Ok(procfs_process) = 
+            if let Ok(procfs_process) =
                 procfs::process::Process::new(process.pid().to_string().parse::<i32>().unwrap())
             {
                 if let Ok(stat) = procfs_process.stat() {
