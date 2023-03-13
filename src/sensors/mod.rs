@@ -191,7 +191,7 @@ impl Topology {
         {
             warn!("generate_cpu_info is not implemented yet on this OS.");
             let sysinfo_system = System::new_all();
-            let sysinfo_cores = sysinfo_system.processors();
+            let sysinfo_cores = sysinfo_system.cpus();
             for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
                 let mut info = HashMap::new();
                 info.insert(String::from("frequency"), c.frequency().to_string());
