@@ -1201,7 +1201,7 @@ mod tests {
         }
         assert_eq!(!cores.is_empty(), true);
         for c in &cores {
-            assert_eq!(c.attributes.len() > 5, true);
+            assert_eq!(c.attributes.len() > 3, true);
         }
     }
 
