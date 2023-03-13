@@ -17,7 +17,7 @@ use std::fmt;
 use std::mem::size_of_val;
 use std::time::Duration;
 #[allow(unused_imports)]
-use sysinfo::{Pid, System, SystemExt};
+use sysinfo::{Pid, System, SystemExt, CpuExt};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
@@ -186,6 +186,7 @@ impl Topology {
                 }
                 cores.push(CPUCore::new(id as u16, info));
             }
+
         }
         #[cfg(target_os = "windows")]
         {
@@ -193,7 +194,7 @@ impl Topology {
             let sysinfo_system = System::new_all();
             let sysinfo_cores = sysinfo_system.cpus();
             for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
-                let mut info = HashMap::new();
+                let mut info = HashMap::<String, String>::new();
                 info.insert(String::from("frequency"), c.frequency().to_string());
                 info.insert(String::from("name"), c.name().to_string());
                 info.insert(String::from("vendor_id"), c.vendor_id().to_string());
