@@ -1197,7 +1197,7 @@ mod tests {
             cores[0].attributes.len()
         );
         for c in &cores {
-            println!("{:?}", c.attributes.get("processor"));
+            println!("{:?}", c.attributes);
         }
         assert_eq!(!cores.is_empty(), true);
         for c in &cores {
