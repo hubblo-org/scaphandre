@@ -2,6 +2,7 @@ use ordered_float::*;
 #[cfg(target_os = "linux")]
 use procfs;
 use regex::Regex;
+#[allow(unused_imports)]
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
