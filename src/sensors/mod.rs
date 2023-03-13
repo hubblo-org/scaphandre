@@ -17,7 +17,7 @@ use std::fmt;
 use std::mem::size_of_val;
 use std::time::Duration;
 #[allow(unused_imports)]
-use sysinfo::{System, Pid, SystemExt};
+use sysinfo::{Pid, System, SystemExt};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
