@@ -219,7 +219,7 @@ impl MetricGenerator {
             topology,
             hostname,
             #[cfg(target_os = "linux")]
-            qemu,
+            qemu: _qemu,
         }
     }
 
