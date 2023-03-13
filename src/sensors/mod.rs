@@ -17,7 +17,7 @@ use std::fmt;
 use std::mem::size_of_val;
 use std::time::Duration;
 #[allow(unused_imports)]
-use sysinfo::{Pid, System, SystemExt, CpuExt};
+use sysinfo::{CpuExt, Pid, System, SystemExt};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
@@ -186,7 +186,6 @@ impl Topology {
                 }
                 cores.push(CPUCore::new(id as u16, info));
             }
-
         }
         #[cfg(target_os = "windows")]
         {
