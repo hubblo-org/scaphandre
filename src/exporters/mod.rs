@@ -14,7 +14,7 @@ pub mod utils;
 #[cfg(feature = "warpten")]
 pub mod warpten;
 use crate::sensors::{
-    utils::{current_system_time_since_epoch, page_size, IProcess},
+    utils::{current_system_time_since_epoch, IProcess},
     RecordGenerator, Topology,
 };
 use chrono::Utc;
@@ -225,9 +225,6 @@ impl MetricGenerator {
 
     /// Generate all scaphandre internal metrics.
     fn gen_self_metrics(&mut self) {
-        #[cfg(target_os = "linux")]
-        let myself = IProcess::myself().unwrap();
-        #[cfg(target_os = "windows")]
         let myself = IProcess::myself(self.topology.get_proc_tracker()).unwrap();
 
         let default_timestamp = current_system_time_since_epoch();
@@ -244,10 +241,7 @@ impl MetricGenerator {
             metric_value: MetricValueType::Text(get_scaphandre_version()),
         });
 
-        if let Some(metric_value) = self
-            .topology
-            .get_process_cpu_consumption_percentage(myself.pid)
-        {
+        if let Some(metric_value) = self.topology.get_process_cpu_usage_percentage(myself.pid) {
             self.data.push(Metric {
                 name: String::from("scaph_self_cpu_usage_percent"),
                 metric_type: String::from("gauge"),
@@ -257,17 +251,16 @@ impl MetricGenerator {
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
-                description: String::from("CPU % consumed by scaphandre."),
+                description: format!("CPU time consumed by scaphandre, as {}", metric_value.unit),
                 metric_value: MetricValueType::FloatDouble(
                     metric_value.value.parse::<f64>().unwrap(),
                 ),
             });
         }
 
-        if let Ok(metric_value) = myself.statm() {
-            let value = metric_value.size * page_size().unwrap() as u64;
+        if let Some(metric_value) = self.topology.get_process_virtual_memory_bytes(myself.pid) {
             self.data.push(Metric {
-                name: String::from("scaph_self_mem_total_program_size"),
+                name: String::from("scaph_self_memory_virtual_bytes"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
                 timestamp: default_timestamp,
@@ -275,13 +268,16 @@ impl MetricGenerator {
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
-                description: String::from("Total program size, measured in bytes."),
-                metric_value: MetricValueType::IntUnsigned(value),
+                description: format!("Total program size, measured in {}.", metric_value.unit),
+                metric_value: MetricValueType::IntUnsigned(
+                    metric_value.value.parse::<u64>().unwrap(),
+                ),
             });
+        }
 
-            let value = metric_value.resident * page_size().unwrap() as u64;
+        if let Some(metric_value) = self.topology.get_process_memory_bytes(myself.pid) {
             self.data.push(Metric {
-                name: String::from("scaph_self_mem_resident_set_size"),
+                name: String::from("scaph_self_memory_bytes"),
                 metric_type: String::from("gauge"),
                 ttl: 60.0,
                 hostname: self.hostname.clone(),
@@ -290,23 +286,9 @@ impl MetricGenerator {
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
                 description: String::from("Resident set size, measured in bytes."),
-                metric_value: MetricValueType::IntUnsigned(value),
-            });
-
-            let value = metric_value.shared * page_size().unwrap() as u64;
-            self.data.push(Metric {
-                name: String::from("scaph_self_mem_shared_resident_size"),
-                metric_type: String::from("gauge"),
-                ttl: 60.0,
-                timestamp: default_timestamp,
-                hostname: self.hostname.clone(),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from(
-                    "Number of resident shared bytes (i.e., backed by a file).",
+                metric_value: MetricValueType::IntUnsigned(
+                    metric_value.value.parse::<u64>().unwrap(),
                 ),
-                metric_value: MetricValueType::IntUnsigned(value),
             });
         }
 

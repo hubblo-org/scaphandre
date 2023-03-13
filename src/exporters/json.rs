@@ -220,12 +220,11 @@ impl JSONExporter {
                     .iter()
                     .find(|x| {
                         x.name == "scaph_process_power_consumption_microwatts"
-                            && process.pid
-                                == x.attributes.get("pid").unwrap().parse::<i32>().unwrap()
+                            && &process.pid.to_string() == x.attributes.get("pid").unwrap()
                     })
                     .map(|metric| Consumer {
                         exe: PathBuf::from(metric.attributes.get("exe").unwrap()),
-                        pid: process.pid,
+                        pid: process.pid.to_string().parse::<i32>().unwrap(),
                         consumption: format!("{}", metric.metric_value).parse::<f32>().unwrap(),
                         timestamp: metric.timestamp.as_secs_f64(),
                         container: match parameters.is_present("containers") {
