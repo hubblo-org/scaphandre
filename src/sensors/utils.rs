@@ -3,9 +3,7 @@ use procfs::{self, process::Process};
 use regex::Regex;
 #[cfg(feature = "containers")]
 use std::collections::HashMap;
-#[cfg(target_os = "windows")]
-use sysinfo::{get_current_pid, Process, ProcessExt, ProcessorExt, System, SystemExt};
-//use std::error::Error;
+use sysinfo::{get_current_pid, Process as SysinfoProcess, ProcessExt, System, SystemExt};
 use ordered_float::*;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
@@ -33,48 +31,24 @@ pub struct IStat {
     pub tty_nr: i32,
     pub tpgid: i32,
     pub flags: u32,
-    //pub minflt: u64,
-    //pub cminflt: u64,
-    //pub majflt: u64,
-    //pub cmajflt: u64,
     pub utime: u64,
     pub stime: u64,
     pub cutime: i64,
     pub cstime: i64,
-    //pub priority: i64,
     pub nice: i64,
     pub num_threads: i64,
     pub itrealvalue: i64,
     pub starttime: u64,
     pub vsize: u64,
-    //pub rss: i64,
-    //pub rsslim: u64,
-    //pub startcode: u64,
-    //pub endcode: u64,
-    //pub startstack: u64,
-    //pub kstkesp: u64,
-    //pub kstkeip: u64,
     pub signal: u64,
     pub blocked: u64,
-    //pub sigignore: u64,
-    //pub sigcatch: u64,
-    //pub wchan: u64,
-    //pub nswap: u64,
-    //pub cnswap: u64,
     pub exit_signal: Option<i32>,
     pub processor: Option<i32>,
-    //pub rt_priority: Option<u32>,
-    //pub policy: Option<u32>,
     pub delayacct_blkio_ticks: Option<u64>,
     pub guest_time: Option<u64>,
     pub cguest_time: Option<i64>,
     pub start_data: Option<u64>,
     pub end_data: Option<u64>,
-    //pub start_brk: Option<u64>,
-    //pub arg_start: Option<u64>,
-    //pub arg_end: Option<u64>,
-    //pub env_start: Option<u64>,
-    //pub env_end: Option<u64>,
     pub exit_code: Option<i32>,
 }
 
@@ -153,64 +127,8 @@ pub struct IStatus {
     pub name: String,
     pub umask: Option<u32>,
     pub state: String,
-    //pub tgid: i32,
-    //pub ngid: Option<i32>,
     pub pid: i32,
     pub ppid: i32,
-    //pub tracerpid: i32,
-    //pub ruid: u32,
-    //pub euid: u32,
-    //pub suid: u32,
-    //pub fuid: u32,
-    //pub rgid: u32,
-    //pub egid: u32,
-    //pub sgid: u32,
-    //pub fgid: u32,
-    //pub fdsize: u32,
-    //pub groups: Vec<i32>,
-    //pub nstgid: Option<Vec<i32>>,
-    //pub nspid: Option<Vec<i32>>,
-    //pub nspgid: Option<Vec<i32>>,
-    //pub nssid: Option<Vec<i32>>,
-    //pub vmpeak: Option<u64>,
-    //pub vmsize: Option<u64>,
-    //pub vmlck: Option<u64>,
-    //pub vmpin: Option<u64>,
-    //pub vmhwm: Option<u64>,
-    //pub vmrss: Option<u64>,
-    //pub rssanon: Option<u64>,
-    //pub rssfile: Option<u64>,
-    //pub rssshmem: Option<u64>,
-    //pub vmdata: Option<u64>,
-    //pub vmstk: Option<u64>,
-    //pub vmexe: Option<u64>,
-    //pub vmlib: Option<u64>,
-    //pub vmpte: Option<u64>,
-    //pub vmswap: Option<u64>,
-    //pub hugetlbpages: Option<u64>,
-    //pub threads: u64,
-    //pub sigq: (u64, u64),
-    //pub sigpnd: u64,
-    //pub shdpnd: u64,
-    //pub sigblk: u64,
-    //pub sigign: u64,
-    //pub sigcgt: u64,
-    //pub capinh: u64,
-    //pub capprm: u64,
-    //pub capeff: u64,
-    //pub capbnd: Option<u64>,
-    //pub capamb: Option<u64>,
-    //pub nonewprivs: Option<u64>,
-    //pub seccomp: Option<u32>,
-    //pub speculation_store_bypass: Option<String>,
-    //pub cpus_allowed: Option<Vec<u32>>,
-    //pub cpus_allowed_list: Option<Vec<(u32, u32)>>,
-    //pub mems_allowed: Option<Vec<u32>>,
-    //pub mems_allowed_list: Option<Vec<(u32, u32)>>,
-    //pub voluntary_ctxt_switches: Option<u64>,
-    //pub nonvoluntary_ctxt_switches: Option<u64>,
-    //pub core_dumping: Option<bool>,
-    //pub thp_enabled: Option<bool>,
 }
 
 #[derive(Debug, Clone)]
@@ -377,7 +295,7 @@ pub struct ProcessTracker {
     /// Maximum number of ProcessRecord instances that scaphandre is allowed to
     /// store, per PID (thus, for each subvector).
     pub max_records_per_process: u16,
-    #[cfg(target_os = "windows")]
+    /// Sysinfo system for resources monitoring
     pub sysinfo: System,
     #[cfg(feature = "containers")]
     pub regex_cgroup_docker: Regex,
@@ -392,7 +310,6 @@ impl Clone for ProcessTracker {
         ProcessTracker {
             procs: self.procs.clone(),
             max_records_per_process: self.max_records_per_process,
-            #[cfg(target_os = "windows")]
             sysinfo: System::new_all(),
             #[cfg(feature = "containers")]
             regex_cgroup_docker: self.regex_cgroup_docker.clone(),
@@ -426,7 +343,6 @@ impl ProcessTracker {
         ProcessTracker {
             procs: vec![],
             max_records_per_process,
-            #[cfg(target_os = "windows")]
             sysinfo: System::new_all(),
             #[cfg(feature = "containers")]
             regex_cgroup_docker,
@@ -1067,9 +983,29 @@ pub fn current_system_time_since_epoch() -> Duration {
         .unwrap()
 }
 
-#[cfg(all(test, target_os = "linux"))]
 mod tests {
+    use crate::sensors::Topology;
+
     use super::*;
+
+    #[test]
+    fn process_cmdline() {
+        // find the cmdline of current proc thanks to sysinfo
+        // do the same with processtracker
+        // assert
+        let mut system = System::new();
+        system.refresh_all();
+        let self_pid_by_sysinfo = get_current_pid();
+        let self_process_by_sysinfo = system.process(self_pid_by_sysinfo.unwrap()).unwrap();
+
+        let mut topo = Topology::new();
+        topo.refresh();
+        let self_process_by_scaph = IProcess::myself().unwrap();
+
+        assert_eq!(self_process_by_sysinfo.cmd().concat(), topo.proc_tracker.get_process_cmdline(self_process_by_scaph.pid).unwrap());
+    }
+
+    #[cfg(all(test, target_os = "linux"))]
     #[test]
     fn process_records_added() {
         let proc = Process::myself().unwrap();
@@ -1086,6 +1022,7 @@ mod tests {
         assert_eq!(tracker.procs[0].len(), 3);
     }
 
+    #[cfg(all(test, target_os = "linux"))]
     #[test]
     fn process_records_cleaned() {
         let proc = Process::myself().unwrap();
