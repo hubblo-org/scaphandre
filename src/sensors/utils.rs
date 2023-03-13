@@ -85,7 +85,7 @@ impl IProcess {
         let mut utime = 0;
         #[cfg(target_os = "linux")]
         {
-            if let Ok(procfs_process) =
+            if let Ok(procfs_process) = 
                 procfs::process::Process::new(process.pid().to_string().parse::<i32>().unwrap())
             {
                 if let Ok(stat) = procfs_process.stat() {
@@ -270,14 +270,26 @@ impl ProcessTracker {
     /// states during all the lifecycle of the exporter.
     /// # Linux Example:
     /// ```
-    /// use procfs::process::Process;
     /// use scaphandre::sensors::utils::{ProcessTracker, IProcess};
-    /// let mut tracker = ProcessTracker::new(5);
-    /// let pid = 1;
-    /// if let Ok(result) = tracker.add_process_record(
-    ///     IProcess::from_linux_process(&Process::new(pid).unwrap())
-    /// ){
-    ///     println!("ProcessRecord stored successfully: {}", result);
+    /// use scaphandre::sensors::Topology;
+    /// use std::collections::HashMap;
+    /// use sysinfo::SystemExt;
+    /// let mut pt = ProcessTracker::new(5);
+    /// pt.sysinfo.refresh_processes();
+    /// pt.sysinfo.refresh_cpu();
+    /// let current_procs = pt
+    ///     .sysinfo
+    ///     .processes()
+    ///     .values()
+    ///     .map(IProcess::new)
+    ///     .collect::<Vec<_>>();
+    /// for p in current_procs {
+    ///     match pt.add_process_record(p) {
+    ///         Ok(result) => { println!("ProcessRecord stored successfully: {}", result); }
+    ///         Err(msg) => {
+    ///             panic!("Failed to track process !\nGot: {}", msg)
+    ///         }
+    ///     }
     /// }
     /// ```
     pub fn add_process_record(&mut self, process: IProcess) -> Result<String, String> {
