@@ -260,7 +260,7 @@ impl StdoutExporter {
                 if let Some(process) = metrics.iter().find(|x| {
                     if x.name == "scaph_process_power_consumption_microwatts" {
                         let pid = x.attributes.get("pid").unwrap();
-                        pid.parse::<i32>().unwrap() == c.0.pid
+                        pid == &c.0.pid.to_string()
                     } else {
                         false
                     }

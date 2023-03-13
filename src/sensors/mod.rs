@@ -10,14 +10,13 @@ pub mod powercap_rapl;
 pub mod units;
 pub mod utils;
 #[cfg(target_os = "linux")]
-use procfs::{process, CpuInfo, CpuTime, KernelStats};
+use procfs::{CpuInfo, CpuTime, KernelStats};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
 use std::mem::size_of_val;
 use std::time::Duration;
-#[cfg(not(target_os = "linux"))]
-use sysinfo::{ProcessorExt, System, SystemExt};
+use sysinfo::{Pid, SystemExt};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
@@ -58,10 +57,8 @@ pub struct Topology {
     pub buffer_max_kbytes: u16,
     /// Sorted list of all domains names
     pub domains_names: Option<Vec<String>>,
-    ///
-    #[cfg(target_os = "windows")]
-    #[allow(dead_code)]
-    sensor_data: HashMap<String, String>,
+    /// Sensor-specific data needed in the topology
+    _sensor_data: HashMap<String, String>,
 }
 
 impl RecordGenerator for Topology {
@@ -141,19 +138,14 @@ impl RecordGenerator for Topology {
 
 impl Default for Topology {
     fn default() -> Self {
-        #[cfg(target_os = "windows")]
         {
             Self::new(HashMap::new())
         }
-
-        #[cfg(target_os = "linux")]
-        Self::new()
     }
 }
 
 impl Topology {
     /// Instanciates Topology and returns the instance
-    #[cfg(target_os = "windows")]
     pub fn new(sensor_data: HashMap<String, String>) -> Topology {
         Topology {
             sockets: vec![],
@@ -162,19 +154,7 @@ impl Topology {
             record_buffer: vec![],
             buffer_max_kbytes: 1,
             domains_names: None,
-            sensor_data,
-        }
-    }
-    /// Instanciates Topology and returns the instance
-    #[cfg(target_os = "linux")]
-    pub fn new() -> Topology {
-        Topology {
-            sockets: vec![],
-            proc_tracker: ProcessTracker::new(5),
-            stat_buffer: vec![],
-            record_buffer: vec![],
-            buffer_max_kbytes: 1,
-            domains_names: None,
+            _sensor_data: sensor_data,
         }
     }
 
@@ -353,27 +333,6 @@ impl Topology {
     /// Gets currently running processes (as procfs::Process instances) and stores
     /// them in self.proc_tracker
     fn refresh_procs(&mut self) {
-        #[cfg(target_os = "linux")]
-        {
-            //current_procs is the up to date list of processus running on the host
-            if let Ok(procs) = process::all_processes() {
-                info!("Before refresh procs init.");
-                procs
-                    .iter()
-                    .map(IProcess::from_linux_process)
-                    .for_each(|p| {
-                        let pid = p.pid;
-                        let res = self.proc_tracker.add_process_record(p);
-                        match res {
-                            Ok(_) => {}
-                            Err(msg) => {
-                                panic!("Failed to track process with pid {} !\nGot: {}", pid, msg)
-                            }
-                        }
-                    });
-            }
-        }
-        #[cfg(target_os = "windows")]
         {
             let pt = &mut self.proc_tracker;
             pt.sysinfo.refresh_processes();
@@ -382,7 +341,7 @@ impl Topology {
                 .sysinfo
                 .processes()
                 .values()
-                .map(IProcess::from_windows_process)
+                .map(IProcess::new)
                 .collect::<Vec<_>>();
             for p in current_procs {
                 match pt.add_process_record(p) {
@@ -594,50 +553,22 @@ impl Topology {
     }
 
     /// Returns the power consumed between last and previous measurement for a given process ID, in microwatts
-    pub fn get_process_power_consumption_microwatts(&self, pid: i32) -> Option<Record> {
+    pub fn get_process_power_consumption_microwatts(&self, pid: Pid) -> Option<Record> {
         let tracker = self.get_proc_tracker();
         if let Some(recs) = tracker.find_records(pid) {
             if recs.len() > 1 {
-                #[cfg(target_os = "linux")]
-                {
-                    let last = recs.first().unwrap();
-                    let previous = recs.get(1).unwrap();
-                    if let Some(topo_stats_diff) = self.get_stats_diff() {
-                        //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
-                        let process_total_time =
-                            last.total_time_jiffies() - previous.total_time_jiffies();
-                        let topo_total_time = topo_stats_diff.total_time_jiffies();
-                        let usage_percent = process_total_time as f64 / topo_total_time as f64;
-                        let topo_conso = self.get_records_diff_power_microwatts();
-                        if let Some(val) = &topo_conso {
-                            //trace!("topo conso: {}", val);
-                            let val_f64 = val.value.parse::<f64>().unwrap();
-                            //trace!("val f64: {}", val_f64);
-                            let result = (val_f64 * usage_percent) as u64;
-                            //trace!("result: {}", result);
-                            return Some(Record::new(
-                                last.timestamp,
-                                result.to_string(),
-                                units::Unit::MicroWatt,
-                            ));
-                        }
-                    }
-                }
-                #[cfg(target_os = "windows")]
-                {
-                    let last = recs.first().unwrap();
-                    let process_cpu_percentage =
-                        tracker.get_cpu_usage_percentage(pid as usize, tracker.nb_cores);
-                    let topo_conso = self.get_records_diff_power_microwatts();
-                    if let Some(conso) = &topo_conso {
-                        let conso_f64 = conso.value.parse::<f64>().unwrap();
-                        let result = (conso_f64 * process_cpu_percentage as f64) / 100.0_f64;
-                        return Some(Record::new(
-                            last.timestamp,
-                            result.to_string(),
-                            units::Unit::MicroWatt,
-                        ));
-                    }
+                let last = recs.first().unwrap();
+                let process_cpu_percentage =
+                    tracker.get_cpu_usage_percentage(pid, tracker.nb_cores);
+                let topo_conso = self.get_records_diff_power_microwatts();
+                if let Some(conso) = &topo_conso {
+                    let conso_f64 = conso.value.parse::<f64>().unwrap();
+                    let result = (conso_f64 * process_cpu_percentage as f64) / 100.0_f64;
+                    return Some(Record::new(
+                        last.timestamp,
+                        result.to_string(),
+                        units::Unit::MicroWatt,
+                    ));
                 }
             }
         } else {
@@ -646,27 +577,37 @@ impl Topology {
         None
     }
 
-    pub fn get_process_cpu_consumption_percentage(&self, pid: i32) -> Option<Record> {
-        let tracker = self.get_proc_tracker();
-        if let Some(recs) = tracker.find_records(pid) {
-            if recs.len() > 1 {
-                let last = recs.first().unwrap();
-                let previous = recs.get(1).unwrap();
-                if let Some(topo_stats_diff) = self.get_stats_diff() {
-                    let process_total_time =
-                        last.total_time_jiffies() - previous.total_time_jiffies();
+    // Per process metrics, from ProcessRecord during last refresh, returned in Record structs
 
-                    let topo_total_time = topo_stats_diff.total_time_jiffies();
+    pub fn get_process_cpu_usage_percentage(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            return Some(Record::new(
+                record.timestamp,
+                record.process.cpu_usage_percentage.to_string(),
+                units::Unit::Percentage,
+            ));
+        }
+        None
+    }
 
-                    let usage = process_total_time as f64 / topo_total_time as f64;
+    pub fn get_process_virtual_memory_bytes(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            return Some(Record::new(
+                record.timestamp,
+                record.process.virtual_memory.to_string(),
+                units::Unit::Bytes,
+            ));
+        }
+        None
+    }
 
-                    return Some(Record::new(
-                        current_system_time_since_epoch(),
-                        usage.to_string(),
-                        units::Unit::Percentage,
-                    ));
-                }
-            }
+    pub fn get_process_memory_bytes(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            return Some(Record::new(
+                record.timestamp,
+                record.process.memory.to_string(),
+                units::Unit::Bytes,
+            ));
         }
         None
     }

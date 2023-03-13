@@ -69,9 +69,10 @@ impl QemuExporter {
                     let last = qp.first().unwrap();
                     let previous = qp.get(1).unwrap();
                     let vm_name = QemuExporter::get_vm_name_from_cmdline(
-                        &last.process.original.cmdline().unwrap(),
+                        &last.process.cmdline(proc_tracker).unwrap(),
                     );
-                    let time_pdiff = last.total_time_jiffies() - previous.total_time_jiffies();
+                    let time_pdiff = last.process.total_time_jiffies(proc_tracker)
+                        - previous.process.total_time_jiffies(proc_tracker);
                     if let Some(time_tdiff) = &topo_stat_diff {
                         let first_domain_path = format!("{path}/{vm_name}/intel-rapl:0:0");
                         if fs::read_dir(&first_domain_path).is_err() {
@@ -137,15 +138,18 @@ impl QemuExporter {
         for vecp in processes.iter() {
             if !vecp.is_empty() {
                 if let Some(pr) = vecp.get(0) {
-                    if let Ok(cmdline) = pr.process.original.cmdline() {
-                        if let Some(res) = cmdline.iter().find(|x| x.contains("qemu-system")) {
-                            debug!("Found a process with {}", res);
-                            let mut tmp: Vec<ProcessRecord> = vec![];
-                            for p in vecp.iter() {
-                                tmp.push(p.clone());
-                            }
-                            qemu_processes.push(tmp);
+                    if let Some(res) = pr
+                        .process
+                        .cmdline
+                        .iter()
+                        .find(|x| x.contains("qemu-system"))
+                    {
+                        debug!("Found a process with {}", res);
+                        let mut tmp: Vec<ProcessRecord> = vec![];
+                        for p in vecp.iter() {
+                            tmp.push(p.clone());
                         }
+                        qemu_processes.push(tmp);
                     }
                 }
             }

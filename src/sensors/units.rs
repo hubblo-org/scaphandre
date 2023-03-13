@@ -12,6 +12,10 @@ pub enum Unit {
     MilliWatt,
     MicroWatt,
     Percentage,
+    Bytes,
+    KiloBytes,
+    MegaBytes,
+    GigaBytes,
 }
 
 impl Unit {
@@ -35,7 +39,7 @@ impl Unit {
         } else if let (Some(pos_source), Some(pos_dest)) = (pos_source_power, pos_dest_power) {
             Ok(measure * Unit::get_mult(pos_source, pos_dest))
         } else {
-            panic!("Impossible conversion asked from energy value to power value (without time dimension).");
+            panic!("Unimplemented or impossible conversion (if asked from energy value to power value without time dimension).");
         }
     }
 
@@ -63,6 +67,10 @@ impl fmt::Display for Unit {
             Unit::KiloWatt => write!(f, "KiloWatts"),
             Unit::MegaWatt => write!(f, "MegaWatts"),
             Unit::Percentage => write!(f, "Percentage"),
+            Unit::Bytes => write!(f, "Bytes"),
+            Unit::KiloBytes => write!(f, "KiloBytes"),
+            Unit::MegaBytes => write!(f, "MegaBytes"),
+            Unit::GigaBytes => write!(f, "GigaBytes"),
         }
     }
 }
