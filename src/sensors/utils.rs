@@ -650,10 +650,10 @@ impl ProcessTracker {
     }
 
     pub fn get_cpu_usage_percentage(&self, pid: Pid, nb_cores: usize) -> f32 {
+        info!("CALL FOR CPU USAGE");
         let cpu_current_usage = self.sysinfo.global_cpu_info().cpu_usage();
         if let Some(p) = self.sysinfo.process(pid) {
-            (p.cpu_usage() + (100.0 - cpu_current_usage / nb_cores as f32) * p.cpu_usage() / 100.0)
-                / nb_cores as f32
+            (cpu_current_usage * p.cpu_usage() / 100.0) / nb_cores as f32
         } else {
             0.0
         }

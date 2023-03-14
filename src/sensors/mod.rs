@@ -326,6 +326,11 @@ impl Topology {
             //
             //}
         }
+        let pt = &mut self.proc_tracker;
+        info!("REFRESH CPU");
+        pt.sysinfo.refresh_cpu();
+        pt.sysinfo.refresh_components();
+        pt.sysinfo.refresh_memory();
         self.refresh_procs();
         self.refresh_record();
         self.refresh_stats();
@@ -337,7 +342,6 @@ impl Topology {
         {
             let pt = &mut self.proc_tracker;
             pt.sysinfo.refresh_processes();
-            pt.sysinfo.refresh_cpu();
             let current_procs = pt
                 .sysinfo
                 .processes()
@@ -584,7 +588,7 @@ impl Topology {
         if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
             return Some(Record::new(
                 record.timestamp,
-                record.process.cpu_usage_percentage.to_string(),
+                (record.process.cpu_usage_percentage / self.proc_tracker.nb_cores as f32).to_string(),
                 units::Unit::Percentage,
             ));
         }
