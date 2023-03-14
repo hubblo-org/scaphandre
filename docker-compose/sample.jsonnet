@@ -70,7 +70,7 @@ dashboard.new(
             title='Socket power consumption',
             datasource='${PROMETHEUS_DS}',
             format='W',
-            span=6,
+            span=4,
             min=0
         )
         .addTarget(
@@ -80,28 +80,52 @@ dashboard.new(
             )
         )
     )
+    .addPanel(
+        grafana.graphPanel.new(
+            title='scaph_self_cpu',
+            datasource='${PROMETHEUS_DS}',
+            format='%',
+            span=4,
+            min=0
+        )
+        .addTarget(
+            grafana.prometheus.target(
+                'scaph_self_cpu_usage_percent',
+                legendFormat='{{__name__}}',
+            )
+        )
+    )
+    .addPanel(
+        grafana.graphPanel.new(
+            title='Socket power consumption',
+            datasource='${PROMETHEUS_DS}',
+            format='Bytes',
+            span=4,
+            min=0
+        )
+        .addTarget(
+            grafana.prometheus.target(
+                'scaph_self_memory_bytes',
+                legendFormat='{{__name__}}',
+            )
+        )
+        .addTarget(
+            grafana.prometheus.target(
+                'scaph_self_memory_virtual_bytes',
+                legendFormat='{{__name__}}',
+            )
+        )
+    )
 ) 
 .addRow(
     row.new(
         title='Per process',
     )
     .addPanel(
-        grafana.statPanel.new(
-            title='Top process consumers',
-            datasource='${PROMETHEUS_DS}',
-        )
-        .addTarget(
-            grafana.prometheus.target(
-                'sort_desc(topk(3, sum by (exe) (scaph_process_power_consumption_microwatts/1000000)))',
-                legendFormat='{{exe}}',
-            )
-        )
-    )
-    .addPanel(
         grafana.graphPanel.new(
             title='Filtered process (process_filter) power, by exe',
             datasource='${PROMETHEUS_DS}',
-            span=8,
+            span=6,
             format='W',
             legend_rightSide=false,
             legend_alignAsTable=true,
@@ -112,6 +136,25 @@ dashboard.new(
         .addTarget(
             grafana.prometheus.target(
                 'scaph_process_power_consumption_microwatts{exe=~".*${process_filter}.*"}/1000000',
+                legendFormat='{{ cmdline }}',
+            )
+        )
+    )
+    .addPanel(
+        grafana.graphPanel.new(
+            title='scaph_process_cpu',
+            datasource='${PROMETHEUS_DS}',
+            span=6,
+            format='%',
+            legend_rightSide=false,
+            legend_alignAsTable=true,
+            legend_sideWidth='30%',
+            stack=true,
+            min=0
+        )
+        .addTarget(
+            grafana.prometheus.target(
+                'scaph_process_cpu_usage_percentage{exe=~".*${process_filter}.*"}',
                 legendFormat='{{ cmdline }}',
             )
         )
