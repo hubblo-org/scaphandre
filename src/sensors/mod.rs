@@ -559,12 +559,12 @@ impl Topology {
         if let Some(recs) = tracker.find_records(pid) {
             if recs.len() > 1 {
                 let last = recs.first().unwrap();
-                let process_cpu_percentage =
-                    self.get_process_cpu_usage_percentage(pid).unwrap();
+                let process_cpu_percentage = self.get_process_cpu_usage_percentage(pid).unwrap();
                 let topo_conso = self.get_records_diff_power_microwatts();
                 if let Some(conso) = &topo_conso {
                     let conso_f64 = conso.value.parse::<f64>().unwrap();
-                    let result = (conso_f64 * process_cpu_percentage.value.parse::<f64>().unwrap()) / 100.0_f64;
+                    let result = (conso_f64 * process_cpu_percentage.value.parse::<f64>().unwrap())
+                        / 100.0_f64;
                     return Some(Record::new(
                         last.timestamp,
                         result.to_string(),

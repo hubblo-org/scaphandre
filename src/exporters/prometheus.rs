@@ -292,7 +292,7 @@ async fn show_metrics(
                         should_i_add_help,
                     );
                 }
-            },
+            }
             Err(e) => {
                 panic!("Error from lock(): {}", e);
             }
