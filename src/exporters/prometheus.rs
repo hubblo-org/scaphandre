@@ -230,10 +230,12 @@ async fn show_metrics(
     trace!("{}", req.uri());
     let mut body = String::new();
     if req.uri().path() == format!("/{}", &suffix) {
-        trace!("in metrics !");
+        debug!("in metrics !");
         let now = current_system_time_since_epoch();
         let mut last_request = context.last_request.lock().unwrap();
+        debug!("stored last request !");
         let mut metric_generator = context.metric_generator.lock().unwrap();
+        debug!("stored metric generator !");
         if now - (*last_request) > Duration::from_secs(2) {
             {
                 info!(
@@ -247,6 +249,7 @@ async fn show_metrics(
                 metric_generator.topology.refresh();
             }
         }
+        debug!("refreshed topology !");
         *last_request = now;
 
         info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
@@ -255,6 +258,7 @@ async fn show_metrics(
 
         let mut metrics_pushed: Vec<String> = vec![];
 
+        debug!("popping metrics !");
         // Send all data
         for msg in metric_generator.pop_metrics() {
             let mut attributes: Option<&HashMap<String, String>> = None;
