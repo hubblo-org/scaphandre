@@ -588,7 +588,8 @@ impl Topology {
         if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
             return Some(Record::new(
                 record.timestamp,
-                (record.process.cpu_usage_percentage / self.proc_tracker.nb_cores as f32).to_string(),
+                (record.process.cpu_usage_percentage / self.proc_tracker.nb_cores as f32)
+                    .to_string(),
                 units::Unit::Percentage,
             ));
         }
