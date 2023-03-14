@@ -169,7 +169,7 @@ impl Topology {
     /// if let Some(cores) = Topology::generate_cpu_cores() {
     ///     println!("There are {} cores on this host.", cores.len());
     ///     for c in &cores {
-    ///         println!("Here is CPU Core number {}", c.attributes.get("processor").unwrap());
+    ///         println!("CPU info {:?}", c.attributes);
     ///     }
     /// }
     /// ```
