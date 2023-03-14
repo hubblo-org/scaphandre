@@ -737,9 +737,25 @@ impl MetricGenerator {
                     hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
-                    attributes,
+                    attributes: attributes.clone(),
                     description: String::from("Power consumption due to the process, measured on at the topology level, in microwatts"),
                     metric_value: MetricValueType::Text(power.value),
+                });
+            }
+
+            let metric_name = String::from("scaph_process_cpu_usage_percentage");
+            if let Some(metric_value) = self.topology.get_process_cpu_usage_percentage(pid) {
+                self.data.push(Metric {
+                    name: metric_name,
+                    metric_type: String::from("gauge"),
+                    ttl: 60.0,
+                    timestamp: metric_value.timestamp,
+                    hostname: self.hostname.clone(),
+                    state: String::from("ok"),
+                    tags: vec!["scaphandre".to_string()],
+                    attributes,
+                    description: String::from("CPU time consumed by the process, as a percentage of the capacity of all the CPU Cores"),
+                    metric_value: MetricValueType::Text(metric_value.value)
                 });
             }
         }
