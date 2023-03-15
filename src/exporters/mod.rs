@@ -438,7 +438,7 @@ impl MetricGenerator {
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
                 description: String::from("Load average on 1 minute."),
-                metric_value: MetricValueType::Text(metric_value[0].value.clone())
+                metric_value: MetricValueType::Text(metric_value[0].value.clone()),
             });
             self.data.push(Metric {
                 name: String::from("scaph_host_load_avg_five"),
@@ -450,7 +450,7 @@ impl MetricGenerator {
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
                 description: String::from("Load average on 5 minutes."),
-                metric_value: MetricValueType::Text(metric_value[1].value.clone())
+                metric_value: MetricValueType::Text(metric_value[1].value.clone()),
             });
             self.data.push(Metric {
                 name: String::from("scaph_host_load_avg_fifteen"),
@@ -462,7 +462,7 @@ impl MetricGenerator {
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
                 description: String::from("Load average on 15 minutes."),
-                metric_value: MetricValueType::Text(metric_value[2].value.clone())
+                metric_value: MetricValueType::Text(metric_value[2].value.clone()),
             });
         }
     }
@@ -623,7 +623,6 @@ impl MetricGenerator {
                 metric_value: MetricValueType::IntUnsigned(metric_value),
             });
         }
-
     }
 
     /// If *self.watch_docker* is true and *self.docker_client* is Some
@@ -810,7 +809,7 @@ impl MetricGenerator {
                     tags: vec!["scaphandre".to_string()],
                     attributes: attributes.clone(),
                     description: String::from("Physical RAM usage by the process, in bytes"),
-                    metric_value: MetricValueType::Text(metric_value.value)
+                    metric_value: MetricValueType::Text(metric_value.value),
                 });
             }
             let metric_name = String::from("scaph_process_memory_virtual_bytes");
@@ -825,7 +824,7 @@ impl MetricGenerator {
                     tags: vec!["scaphandre".to_string()],
                     attributes,
                     description: String::from("Physical RAM usage by the process, in bytes"),
-                    metric_value: MetricValueType::Text(metric_value.value)
+                    metric_value: MetricValueType::Text(metric_value.value),
                 });
             }
         }
