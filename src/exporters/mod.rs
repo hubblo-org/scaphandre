@@ -427,6 +427,44 @@ impl MetricGenerator {
                 });
             }
         }
+        if let Some(metric_value) = self.topology.get_load_avg() {
+            self.data.push(Metric {
+                name: String::from("scaph_host_load_avg_one"),
+                metric_type: String::from("gauge"),
+                ttl: 60.0,
+                timestamp: metric_value[0].timestamp,
+                hostname: self.hostname.clone(),
+                state: String::from("ok"),
+                tags: vec!["scaphandre".to_string()],
+                attributes: HashMap::new(),
+                description: String::from("Load average on 1 minute."),
+                metric_value: MetricValueType::Text(metric_value[0].value.clone())
+            });
+            self.data.push(Metric {
+                name: String::from("scaph_host_load_avg_five"),
+                metric_type: String::from("gauge"),
+                ttl: 60.0,
+                timestamp: metric_value[1].timestamp,
+                hostname: self.hostname.clone(),
+                state: String::from("ok"),
+                tags: vec!["scaphandre".to_string()],
+                attributes: HashMap::new(),
+                description: String::from("Load average on 5 minutes."),
+                metric_value: MetricValueType::Text(metric_value[1].value.clone())
+            });
+            self.data.push(Metric {
+                name: String::from("scaph_host_load_avg_fifteen"),
+                metric_type: String::from("gauge"),
+                ttl: 60.0,
+                timestamp: metric_value[2].timestamp,
+                hostname: self.hostname.clone(),
+                state: String::from("ok"),
+                tags: vec!["scaphandre".to_string()],
+                attributes: HashMap::new(),
+                description: String::from("Load average on 15 minutes."),
+                metric_value: MetricValueType::Text(metric_value[2].value.clone())
+            });
+        }
     }
 
     /// Generate socket metrics.
@@ -585,6 +623,7 @@ impl MetricGenerator {
                 metric_value: MetricValueType::IntUnsigned(metric_value),
             });
         }
+
     }
 
     /// If *self.watch_docker* is true and *self.docker_client* is Some
