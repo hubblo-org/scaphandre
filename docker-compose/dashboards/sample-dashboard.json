@@ -49,7 +49,7 @@
                "repeat": null,
                "seriesOverrides": [ ],
                "spaceLength": 10,
-               "span": 6,
+               "span": 4,
                "stack": false,
                "steppedLine": false,
                "targets": [
@@ -180,6 +180,101 @@
                      "show": true
                   }
                ]
+            },
+            {
+               "aliasColors": { },
+               "bars": false,
+               "dashLength": 10,
+               "dashes": false,
+               "datasource": "${PROMETHEUS_DS}",
+               "fill": 1,
+               "fillGradient": 0,
+               "gridPos": { },
+               "id": 4,
+               "legend": {
+                  "alignAsTable": false,
+                  "avg": false,
+                  "current": false,
+                  "max": false,
+                  "min": false,
+                  "rightSide": false,
+                  "show": true,
+                  "sideWidth": null,
+                  "total": false,
+                  "values": false
+               },
+               "lines": true,
+               "linewidth": 1,
+               "links": [ ],
+               "nullPointMode": "null",
+               "percentage": false,
+               "pointradius": 5,
+               "points": false,
+               "renderer": "flot",
+               "repeat": null,
+               "seriesOverrides": [ ],
+               "spaceLength": 10,
+               "span": 4,
+               "stack": false,
+               "steppedLine": false,
+               "targets": [
+                  {
+                     "expr": "scaph_host_load_avg_one",
+                     "format": "time_series",
+                     "intervalFactor": 2,
+                     "legendFormat": "load_avg_1",
+                     "refId": "A"
+                  },
+                  {
+                     "expr": "scaph_host_load_avg_five",
+                     "format": "time_series",
+                     "intervalFactor": 2,
+                     "legendFormat": "load_avg_5",
+                     "refId": "B"
+                  },
+                  {
+                     "expr": "scaph_host_load_avg_fifteen",
+                     "format": "time_series",
+                     "intervalFactor": 2,
+                     "legendFormat": "load_avg_15",
+                     "refId": "C"
+                  }
+               ],
+               "thresholds": [ ],
+               "timeFrom": null,
+               "timeShift": null,
+               "title": "Host load average",
+               "tooltip": {
+                  "shared": true,
+                  "sort": 0,
+                  "value_type": "individual"
+               },
+               "type": "graph",
+               "xaxis": {
+                  "buckets": null,
+                  "mode": "time",
+                  "name": null,
+                  "show": true,
+                  "values": [ ]
+               },
+               "yaxes": [
+                  {
+                     "format": "",
+                     "label": null,
+                     "logBase": 1,
+                     "max": null,
+                     "min": 0,
+                     "show": true
+                  },
+                  {
+                     "format": "",
+                     "label": null,
+                     "logBase": 1,
+                     "max": null,
+                     "min": 0,
+                     "show": true
+                  }
+               ]
             }
          ],
          "repeat": null,
@@ -203,7 +298,7 @@
                "fill": 1,
                "fillGradient": 0,
                "gridPos": { },
-               "id": 4,
+               "id": 5,
                "legend": {
                   "alignAsTable": false,
                   "avg": false,
@@ -284,7 +379,7 @@
                "fill": 1,
                "fillGradient": 0,
                "gridPos": { },
-               "id": 5,
+               "id": 6,
                "legend": {
                   "alignAsTable": false,
                   "avg": false,
@@ -365,7 +460,7 @@
                "fill": 1,
                "fillGradient": 0,
                "gridPos": { },
-               "id": 6,
+               "id": 7,
                "legend": {
                   "alignAsTable": false,
                   "avg": false,
@@ -466,7 +561,7 @@
                "fill": 1,
                "fillGradient": 0,
                "gridPos": { },
-               "id": 7,
+               "id": 8,
                "legend": {
                   "alignAsTable": true,
                   "avg": false,
@@ -490,7 +585,7 @@
                "repeat": null,
                "seriesOverrides": [ ],
                "spaceLength": 10,
-               "span": 6,
+               "span": 3,
                "stack": true,
                "steppedLine": false,
                "targets": [
@@ -547,7 +642,7 @@
                "fill": 1,
                "fillGradient": 0,
                "gridPos": { },
-               "id": 8,
+               "id": 9,
                "legend": {
                   "alignAsTable": true,
                   "avg": false,
@@ -571,7 +666,7 @@
                "repeat": null,
                "seriesOverrides": [ ],
                "spaceLength": 10,
-               "span": 6,
+               "span": 3,
                "stack": true,
                "steppedLine": false,
                "targets": [
@@ -611,6 +706,168 @@
                   },
                   {
                      "format": "%",
+                     "label": null,
+                     "logBase": 1,
+                     "max": null,
+                     "min": 0,
+                     "show": true
+                  }
+               ]
+            },
+            {
+               "aliasColors": { },
+               "bars": false,
+               "dashLength": 10,
+               "dashes": false,
+               "datasource": "${PROMETHEUS_DS}",
+               "fill": 1,
+               "fillGradient": 0,
+               "gridPos": { },
+               "id": 10,
+               "legend": {
+                  "alignAsTable": true,
+                  "avg": false,
+                  "current": false,
+                  "max": false,
+                  "min": false,
+                  "rightSide": false,
+                  "show": true,
+                  "sideWidth": "30%",
+                  "total": false,
+                  "values": false
+               },
+               "lines": true,
+               "linewidth": 1,
+               "links": [ ],
+               "nullPointMode": "null",
+               "percentage": false,
+               "pointradius": 5,
+               "points": false,
+               "renderer": "flot",
+               "repeat": null,
+               "seriesOverrides": [ ],
+               "spaceLength": 10,
+               "span": 3,
+               "stack": true,
+               "steppedLine": false,
+               "targets": [
+                  {
+                     "expr": "scaph_process_memory_bytes{exe=~\".*${process_filter}.*\"}",
+                     "format": "time_series",
+                     "intervalFactor": 2,
+                     "legendFormat": "{{ cmdline }}",
+                     "refId": "A"
+                  }
+               ],
+               "thresholds": [ ],
+               "timeFrom": null,
+               "timeShift": null,
+               "title": "scaph_process_mem",
+               "tooltip": {
+                  "shared": true,
+                  "sort": 0,
+                  "value_type": "individual"
+               },
+               "type": "graph",
+               "xaxis": {
+                  "buckets": null,
+                  "mode": "time",
+                  "name": null,
+                  "show": true,
+                  "values": [ ]
+               },
+               "yaxes": [
+                  {
+                     "format": "bytes",
+                     "label": null,
+                     "logBase": 1,
+                     "max": null,
+                     "min": 0,
+                     "show": true
+                  },
+                  {
+                     "format": "bytes",
+                     "label": null,
+                     "logBase": 1,
+                     "max": null,
+                     "min": 0,
+                     "show": true
+                  }
+               ]
+            },
+            {
+               "aliasColors": { },
+               "bars": false,
+               "dashLength": 10,
+               "dashes": false,
+               "datasource": "${PROMETHEUS_DS}",
+               "fill": 1,
+               "fillGradient": 0,
+               "gridPos": { },
+               "id": 11,
+               "legend": {
+                  "alignAsTable": true,
+                  "avg": false,
+                  "current": false,
+                  "max": false,
+                  "min": false,
+                  "rightSide": false,
+                  "show": true,
+                  "sideWidth": "30%",
+                  "total": false,
+                  "values": false
+               },
+               "lines": true,
+               "linewidth": 1,
+               "links": [ ],
+               "nullPointMode": "null",
+               "percentage": false,
+               "pointradius": 5,
+               "points": false,
+               "renderer": "flot",
+               "repeat": null,
+               "seriesOverrides": [ ],
+               "spaceLength": 10,
+               "span": 3,
+               "stack": true,
+               "steppedLine": false,
+               "targets": [
+                  {
+                     "expr": "scaph_process_memory_virtual_bytes{exe=~\".*${process_filter}.*\"}",
+                     "format": "time_series",
+                     "intervalFactor": 2,
+                     "legendFormat": "{{ cmdline }}",
+                     "refId": "A"
+                  }
+               ],
+               "thresholds": [ ],
+               "timeFrom": null,
+               "timeShift": null,
+               "title": "scaph_process_mem_virtual",
+               "tooltip": {
+                  "shared": true,
+                  "sort": 0,
+                  "value_type": "individual"
+               },
+               "type": "graph",
+               "xaxis": {
+                  "buckets": null,
+                  "mode": "time",
+                  "name": null,
+                  "show": true,
+                  "values": [ ]
+               },
+               "yaxes": [
+                  {
+                     "format": "bytes",
+                     "label": null,
+                     "logBase": 1,
+                     "max": null,
+                     "min": 0,
+                     "show": true
+                  },
+                  {
+                     "format": "bytes",
                      "label": null,
                      "logBase": 1,
                      "max": null,
