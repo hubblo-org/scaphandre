@@ -176,30 +176,23 @@ impl Topology {
     pub fn generate_cpu_cores() -> Option<Vec<CPUCore>> {
         let mut cores = vec![];
 
-        #[cfg(target_os = "linux")]
-        {
-            let cpuinfo = CpuInfo::new().unwrap();
-            for id in 0..(cpuinfo.num_cores() - 1) {
-                let mut info = HashMap::new();
-                for (k, v) in cpuinfo.get_info(id).unwrap().iter() {
+        let sysinfo_system = System::new_all();
+        let sysinfo_cores = sysinfo_system.cpus();
+        #[cfg(target_os="linux")]
+        let cpuinfo = CpuInfo::new().unwrap();
+        for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
+            let mut info = HashMap::<String, String>::new();
+            #[cfg(target_os="linux")]
+            {
+                for (k, v) in cpuinfo.get_info(id as usize).unwrap().iter() {
                     info.insert(String::from(*k), String::from(*v));
                 }
-                cores.push(CPUCore::new(id as u16, info));
             }
-        }
-        #[cfg(target_os = "windows")]
-        {
-            warn!("generate_cpu_info is not implemented yet on this OS.");
-            let sysinfo_system = System::new_all();
-            let sysinfo_cores = sysinfo_system.cpus();
-            for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
-                let mut info = HashMap::<String, String>::new();
-                info.insert(String::from("frequency"), c.frequency().to_string());
-                info.insert(String::from("name"), c.name().to_string());
-                info.insert(String::from("vendor_id"), c.vendor_id().to_string());
-                info.insert(String::from("brand"), c.brand().to_string());
-                cores.push(CPUCore::new(id, info));
-            }
+            info.insert(String::from("frequency"), c.frequency().to_string());
+            info.insert(String::from("name"), c.name().to_string());
+            info.insert(String::from("vendor_id"), c.vendor_id().to_string());
+            info.insert(String::from("brand"), c.brand().to_string());
+            cores.push(CPUCore::new(id, info));
         }
         Some(cores)
     }
@@ -555,6 +548,29 @@ impl Topology {
             }
         }
         None
+    }
+
+    pub fn get_load_avg(&self) -> Option<Vec<Record>> {
+        let load = self.get_proc_tracker().sysinfo.load_average();
+        let timestamp = current_system_time_since_epoch();
+        Some(
+            vec![
+                Record::new(
+                    timestamp,
+                    load.one.to_string(),
+                    units::Unit::Numeric
+                ),
+                Record::new(
+                    timestamp,
+                    load.five.to_string(),
+                    units::Unit::Numeric
+                ),
+                Record::new(
+                    timestamp,
+                    load.five.to_string(),
+                    units::Unit::Numeric
+                )
+        ])
     }
 
     /// Returns the power consumed between last and previous measurement for a given process ID, in microwatts
