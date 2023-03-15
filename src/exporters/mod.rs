@@ -258,7 +258,7 @@ impl MetricGenerator {
             });
         }
 
-        if let Some(metric_value) = self.topology.get_process_virtual_memory_bytes(myself.pid) {
+        if let Some(metric_value) = self.topology.get_process_memory_virtual_bytes(myself.pid) {
             self.data.push(Metric {
                 name: String::from("scaph_self_memory_virtual_bytes"),
                 metric_type: String::from("gauge"),
@@ -753,8 +753,39 @@ impl MetricGenerator {
                     hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
-                    attributes,
+                    attributes: attributes.clone(),
                     description: String::from("CPU time consumed by the process, as a percentage of the capacity of all the CPU Cores"),
+                    metric_value: MetricValueType::Text(metric_value.value)
+                });
+            }
+
+            let metric_name = String::from("scaph_process_memory_bytes");
+            if let Some(metric_value) = self.topology.get_process_memory_bytes(pid) {
+                self.data.push(Metric {
+                    name: metric_name,
+                    metric_type: String::from("gauge"),
+                    ttl: 60.0,
+                    timestamp: metric_value.timestamp,
+                    hostname: self.hostname.clone(),
+                    state: String::from("ok"),
+                    tags: vec!["scaphandre".to_string()],
+                    attributes: attributes.clone(),
+                    description: String::from("Physical RAM usage by the process, in bytes"),
+                    metric_value: MetricValueType::Text(metric_value.value)
+                });
+            }
+            let metric_name = String::from("scaph_process_memory_virtual_bytes");
+            if let Some(metric_value) = self.topology.get_process_memory_virtual_bytes(pid) {
+                self.data.push(Metric {
+                    name: metric_name,
+                    metric_type: String::from("gauge"),
+                    ttl: 60.0,
+                    timestamp: metric_value.timestamp,
+                    hostname: self.hostname.clone(),
+                    state: String::from("ok"),
+                    tags: vec!["scaphandre".to_string()],
+                    attributes,
+                    description: String::from("Physical RAM usage by the process, in bytes"),
                     metric_value: MetricValueType::Text(metric_value.value)
                 });
             }
