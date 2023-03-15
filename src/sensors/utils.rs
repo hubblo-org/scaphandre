@@ -7,7 +7,9 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
-use sysinfo::{get_current_pid, CpuExt, Pid, Process, ProcessExt, System, SystemExt};
+use sysinfo::{
+    get_current_pid, CpuExt, Pid, Process, ProcessExt, ProcessStatus, System, SystemExt,
+};
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
 
@@ -129,33 +131,6 @@ impl IProcess {
             Ok(PathBuf::from(p.exe().to_str().unwrap()))
         } else {
             Err(String::from("Couldn't get process."))
-        }
-    }
-
-    pub fn status(&self) -> Result<IStatus, String> {
-        //#[cfg(target_os = "linux")]
-        //{
-        //    if let Ok(original_status) = self.original.status() {
-        //        let status = IStatus {
-        //            name: original_status.name,
-        //            pid: original_status.pid,
-        //            ppid: original_status.ppid,
-        //            state: original_status.state,
-        //            umask: original_status.umask,
-        //        };
-        //        Ok(status)
-        //    } else {
-        //        Err(format!("Couldn't get status for {}", self.pid))
-        //    }
-        //}
-        {
-            Ok(IStatus {
-                name: String::from("Not implemented yet !"),
-                pid: 42,
-                ppid: 42,
-                state: String::from("X"),
-                umask: None,
-            })
         }
     }
 
@@ -724,44 +699,28 @@ impl ProcessTracker {
     /// (if the process is not running anymore)
     pub fn clean_terminated_process_records_vectors(&mut self) {
         //TODO get stats from processes to know what is hapening !
-        let mut d_unint_sleep = 0;
-        let mut r_running = 0;
-        let mut s_int_sleep = 0;
-        let mut t_stopped = 0;
-        let mut z_defunct_zombie = 0;
-        let mut w_no_resident_high_prio = 0;
-        let mut n_low_prio = 0;
-        let mut l_pages_locked = 0;
-        let mut i_idle = 0;
-        let mut unknown = 0;
         for v in &mut self.procs {
             if !v.is_empty() {
                 if let Some(first) = v.first() {
-                    if let Ok(status) = first.process.status() {
-                        if status.state.contains('T') {
-                            while !v.is_empty() {
-                                v.pop();
+                    if let Some(p) = self.sysinfo.process(first.process.pid) {
+                        match p.status() {
+                            ProcessStatus::Idle => {}
+                            ProcessStatus::Dead => {}
+                            ProcessStatus::Stop => {
+                                while !v.is_empty() {
+                                    v.pop();
+                                }
                             }
-                            t_stopped += 1;
-                        } else if status.state.contains('D') {
-                            d_unint_sleep += 1;
-                        } else if status.state.contains('R') {
-                            r_running += 1;
-                        } else if status.state.contains('S') {
-                            s_int_sleep += 1;
-                        } else if status.state.contains('Z') {
-                            z_defunct_zombie += 1;
-                        } else if status.state.contains('W') {
-                            w_no_resident_high_prio += 1;
-                        } else if status.state.contains('N') {
-                            n_low_prio += 1;
-                        } else if status.state.contains('L') {
-                            l_pages_locked += 1;
-                        } else if status.state.contains('I') {
-                            i_idle += 1;
-                        } else {
-                            unknown += 1;
-                            debug!("unkown state: {} name: {}", status.state, status.name);
+                            ProcessStatus::Run => {}
+                            ProcessStatus::LockBlocked => {}
+                            ProcessStatus::Waking => {}
+                            ProcessStatus::Wakekill => {}
+                            ProcessStatus::Tracing => {}
+                            ProcessStatus::Zombie => {}
+                            ProcessStatus::Sleep => {}
+                            ProcessStatus::Parked => {}
+                            ProcessStatus::UninterruptibleDiskSleep => {}
+                            ProcessStatus::Unknown(_code) => {}
                         }
                     } else {
                         while !v.is_empty() {
@@ -771,19 +730,6 @@ impl ProcessTracker {
                 }
             }
         }
-        debug!(
-            "d:{} r:{} s:{} t:{} z:{} w:{} n:{} l:{} i:{} u:{}",
-            d_unint_sleep,
-            r_running,
-            s_int_sleep,
-            t_stopped,
-            z_defunct_zombie,
-            w_no_resident_high_prio,
-            n_low_prio,
-            l_pages_locked,
-            i_idle,
-            unknown
-        );
         self.drop_empty_process_records_vectors();
     }
 
