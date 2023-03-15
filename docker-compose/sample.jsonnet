@@ -32,7 +32,7 @@ dashboard.new(
           title='Hosts power consumption',
           datasource='${PROMETHEUS_DS}',
           format='W',
-          span=6,
+          span=4,
           min=0
       )
       .addTarget(
@@ -57,6 +57,33 @@ dashboard.new(
               'sum(avg_over_time(scaph_host_power_microwatts[1h]))/1000000',
               legendFormat='total of hosts, during displayed time window',
               interval='1h'
+          )
+      )
+   )
+  .addPanel(
+      grafana.graphPanel.new(
+          title='Host load average',
+          datasource='${PROMETHEUS_DS}',
+          span=4,
+          format='',
+          min=0
+      )
+      .addTarget(
+          grafana.prometheus.target(
+              'scaph_host_load_avg_one',
+              legendFormat='load_avg_1',
+          )
+      )
+      .addTarget(
+          grafana.prometheus.target(
+              'scaph_host_load_avg_five',
+              legendFormat='load_avg_5',
+          )
+      )
+      .addTarget(
+          grafana.prometheus.target(
+              'scaph_host_load_avg_fifteen',
+              legendFormat='load_avg_15',
           )
       )
    )
@@ -125,7 +152,7 @@ dashboard.new(
         grafana.graphPanel.new(
             title='Filtered process (process_filter) power, by exe',
             datasource='${PROMETHEUS_DS}',
-            span=6,
+            span=3,
             format='W',
             legend_rightSide=false,
             legend_alignAsTable=true,
@@ -144,7 +171,7 @@ dashboard.new(
         grafana.graphPanel.new(
             title='scaph_process_cpu',
             datasource='${PROMETHEUS_DS}',
-            span=6,
+            span=3,
             format='%',
             legend_rightSide=false,
             legend_alignAsTable=true,
@@ -155,6 +182,44 @@ dashboard.new(
         .addTarget(
             grafana.prometheus.target(
                 'scaph_process_cpu_usage_percentage{exe=~".*${process_filter}.*"}',
+                legendFormat='{{ cmdline }}',
+            )
+        )
+    )
+    .addPanel(
+        grafana.graphPanel.new(
+            title='scaph_process_mem',
+            datasource='${PROMETHEUS_DS}',
+            span=3,
+            format='bytes',
+            legend_rightSide=false,
+            legend_alignAsTable=true,
+            legend_sideWidth='30%',
+            stack=true,
+            min=0
+        )
+        .addTarget(
+            grafana.prometheus.target(
+                'scaph_process_memory_bytes{exe=~".*${process_filter}.*"}',
+                legendFormat='{{ cmdline }}',
+            )
+        )
+    )
+    .addPanel(
+        grafana.graphPanel.new(
+            title='scaph_process_mem_virtual',
+            datasource='${PROMETHEUS_DS}',
+            span=3,
+            format='bytes',
+            legend_rightSide=false,
+            legend_alignAsTable=true,
+            legend_sideWidth='30%',
+            stack=true,
+            min=0
+        )
+        .addTarget(
+            grafana.prometheus.target(
+                'scaph_process_memory_virtual_bytes{exe=~".*${process_filter}.*"}',
                 legendFormat='{{ cmdline }}',
             )
         )
