@@ -3,6 +3,7 @@ use std::{cmp::Ordering, fmt};
 // !!!!!!!!!!!!!!!!! Unit !!!!!!!!!!!!!!!!!!!!!!!
 #[derive(Debug)]
 pub enum Unit {
+    Numeric,
     Joule,
     MilliJoule,
     MicroJoule,
@@ -71,6 +72,7 @@ impl fmt::Display for Unit {
             Unit::KiloBytes => write!(f, "KiloBytes"),
             Unit::MegaBytes => write!(f, "MegaBytes"),
             Unit::GigaBytes => write!(f, "GigaBytes"),
+            Unit::Numeric => write!(f, ""),
         }
     }
 }
