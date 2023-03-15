@@ -596,7 +596,7 @@ impl Topology {
         None
     }
 
-    pub fn get_process_virtual_memory_bytes(&self, pid: Pid) -> Option<Record> {
+    pub fn get_process_memory_virtual_bytes(&self, pid: Pid) -> Option<Record> {
         if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
             return Some(Record::new(
                 record.timestamp,
