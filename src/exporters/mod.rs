@@ -465,6 +465,23 @@ impl MetricGenerator {
                 metric_value: MetricValueType::Text(metric_value[2].value.clone()),
             });
         }
+        let freq = self.topology.get_cpu_frequency();
+        self.data.push(Metric {
+            name: String::from("scaph_host_cpu_frequency"),
+            metric_type: String::from("gauge"),
+            ttl: 60.0,
+            timestamp: freq.timestamp,
+            hostname: self.hostname.clone(),
+            state: String::from("ok"),
+            tags: vec!["scaphandre".to_string()],
+            attributes: HashMap::new(),
+            description: format!("Global frequency of all the cpus. In {}", freq.unit),
+            metric_value: MetricValueType::Text(freq.value),
+        });
+        //for c in self.topology.proc_tracker.components() {
+        //    println!("component: {}", c)
+        //}
+
     }
 
     /// Generate socket metrics.
