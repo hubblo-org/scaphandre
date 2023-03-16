@@ -838,8 +838,70 @@ impl MetricGenerator {
                     hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
-                    attributes,
+                    attributes: attributes.clone(),
                     description: String::from("Physical RAM usage by the process, in bytes"),
+                    metric_value: MetricValueType::Text(metric_value.value),
+                });
+            }
+            let metric_name = String::from("scaph_process_disk_write_bytes");
+            if let Some(metric_value) = self.topology.get_process_disk_written_bytes(pid) {
+                self.data.push(Metric {
+                    name: metric_name,
+                    metric_type: String::from("gauge"),
+                    ttl: 60.0,
+                    timestamp: metric_value.timestamp,
+                    hostname: self.hostname.clone(),
+                    state: String::from("ok"),
+                    tags: vec!["scaphandre".to_string()],
+                    attributes: attributes.clone(),
+                    description: String::from("Data written on disk by the process, in bytes"),
+                    metric_value: MetricValueType::Text(metric_value.value),
+                });
+            }
+            let metric_name = String::from("scaph_process_disk_read_bytes");
+            if let Some(metric_value) = self.topology.get_process_disk_read_bytes(pid) {
+                self.data.push(Metric {
+                    name: metric_name,
+                    metric_type: String::from("gauge"),
+                    ttl: 60.0,
+                    timestamp: metric_value.timestamp,
+                    hostname: self.hostname.clone(),
+                    state: String::from("ok"),
+                    tags: vec!["scaphandre".to_string()],
+                    attributes: attributes.clone(),
+                    description: String::from("Data read on disk by the process, in bytes"),
+                    metric_value: MetricValueType::Text(metric_value.value),
+                });
+            }
+            let metric_name = String::from("scaph_process_disk_total_written_bytes");
+            if let Some(metric_value) = self.topology.get_process_disk_total_write_bytes(pid) {
+                self.data.push(Metric {
+                    name: metric_name,
+                    metric_type: String::from("gauge"),
+                    ttl: 60.0,
+                    timestamp: metric_value.timestamp,
+                    hostname: self.hostname.clone(),
+                    state: String::from("ok"),
+                    tags: vec!["scaphandre".to_string()],
+                    attributes: attributes.clone(),
+                    description: String::from(
+                        "Total data written on disk by the process, in bytes",
+                    ),
+                    metric_value: MetricValueType::Text(metric_value.value),
+                });
+            }
+            let metric_name = String::from("scaph_process_disk_total_read_bytes");
+            if let Some(metric_value) = self.topology.get_process_disk_total_read_bytes(pid) {
+                self.data.push(Metric {
+                    name: metric_name,
+                    metric_type: String::from("gauge"),
+                    ttl: 60.0,
+                    timestamp: metric_value.timestamp,
+                    hostname: self.hostname.clone(),
+                    state: String::from("ok"),
+                    tags: vec!["scaphandre".to_string()],
+                    attributes: attributes.clone(),
+                    description: String::from("Total data read on disk by the process, in bytes"),
                     metric_value: MetricValueType::Text(metric_value.value),
                 });
             }
