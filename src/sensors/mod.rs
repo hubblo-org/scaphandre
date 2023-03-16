@@ -178,11 +178,11 @@ impl Topology {
 
         let sysinfo_system = System::new_all();
         let sysinfo_cores = sysinfo_system.cpus();
-        #[cfg(target_os = "linux")]
+        #[cfg(target_os="linux")]
         let cpuinfo = CpuInfo::new().unwrap();
         for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
             let mut info = HashMap::<String, String>::new();
-            #[cfg(target_os = "linux")]
+            #[cfg(target_os="linux")]
             {
                 for (k, v) in cpuinfo.get_info(id as usize).unwrap().iter() {
                     info.insert(String::from(*k), String::from(*v));
@@ -321,9 +321,7 @@ impl Topology {
         }
         let pt = &mut self.proc_tracker;
         info!("REFRESH CPU");
-        pt.sysinfo.refresh_cpu();
-        pt.sysinfo.refresh_components();
-        pt.sysinfo.refresh_memory();
+        self.proc_tracker.refresh();
         self.refresh_procs();
         self.refresh_record();
         self.refresh_stats();
@@ -550,13 +548,34 @@ impl Topology {
         None
     }
 
+    pub fn get_cpu_frequency(&self) -> Record {
+        Record::new(
+            current_system_time_since_epoch(),
+            self.proc_tracker.get_cpu_frequency().to_string(),
+            units::Unit::MegaHertz
+        )
+    }
+
     pub fn get_load_avg(&self) -> Option<Vec<Record>> {
         let load = self.get_proc_tracker().sysinfo.load_average();
         let timestamp = current_system_time_since_epoch();
-        Some(vec![
-            Record::new(timestamp, load.one.to_string(), units::Unit::Numeric),
-            Record::new(timestamp, load.five.to_string(), units::Unit::Numeric),
-            Record::new(timestamp, load.five.to_string(), units::Unit::Numeric),
+        Some(
+            vec![
+                Record::new(
+                    timestamp,
+                    load.one.to_string(),
+                    units::Unit::Numeric
+                ),
+                Record::new(
+                    timestamp,
+                    load.five.to_string(),
+                    units::Unit::Numeric
+                ),
+                Record::new(
+                    timestamp,
+                    load.five.to_string(),
+                    units::Unit::Numeric
+                )
         ])
     }
 

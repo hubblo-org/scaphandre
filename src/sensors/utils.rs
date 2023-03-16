@@ -8,7 +8,7 @@ use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use sysinfo::{
-    get_current_pid, CpuExt, Pid, Process, ProcessExt, ProcessStatus, System, SystemExt,
+    get_current_pid, CpuExt, Pid, Process, ProcessExt, ProcessStatus, System, SystemExt, CpuRefreshKind
 };
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
@@ -84,33 +84,44 @@ pub struct IProcess {
 
 impl IProcess {
     pub fn new(process: &Process) -> IProcess {
-        let mut stime = 0;
-        let mut utime = 0;
         #[cfg(target_os = "linux")]
         {
+            let mut stime = 0;
+            let mut utime = 0;
             if let Ok(procfs_process) =
                 procfs::process::Process::new(process.pid().to_string().parse::<i32>().unwrap())
             {
                 if let Ok(stat) = procfs_process.stat() {
                     stime += stat.stime;
                     utime += stat.utime;
+
                 }
+            }
+            IProcess {
+                pid: process.pid(),
+                owner: 0,
+                comm: String::from(process.exe().to_str().unwrap()),
+                cmdline: process.cmd().to_vec(),
+                cpu_usage_percentage: process.cpu_usage(),
+                memory: process.memory(),
+                virtual_memory: process.virtual_memory(),
+                stime,
+                utime,
+            }
+        }
+        #[cfg(not(target_os="linux"))]
+        {
+            IProcess {
+                pid: process.pid(),
+                owner: 0,
+                comm: String::from(process.exe().to_str().unwrap()),
+                cmdline: process.cmd().to_vec(),
+                cpu_usage_percentage: process.cpu_usage(),
+                memory: process.memory(),
+                virtual_memory: process.virtual_memory(),
             }
         }
 
-        IProcess {
-            pid: process.pid(),
-            owner: 0,
-            comm: String::from(process.exe().to_str().unwrap()),
-            cmdline: process.cmd().to_vec(),
-            cpu_usage_percentage: process.cpu_usage(),
-            memory: process.memory(),
-            virtual_memory: process.virtual_memory(),
-            #[cfg(target_os = "linux")]
-            stime,
-            #[cfg(target_os = "linux")]
-            utime,
-        }
     }
 
     /// Returns the command line of related to the process, as found by sysinfo.
@@ -224,7 +235,7 @@ impl ProcessTracker {
         let regex_cgroup_containerd = Regex::new("/system.slice/containerd.service/.*$").unwrap();
 
         let mut system = System::new_all();
-        system.refresh_cpu();
+        system.refresh_cpu_specifics(CpuRefreshKind::everything());
         let nb_cores = system.cpus().len();
 
         ProcessTracker {
@@ -239,6 +250,20 @@ impl ProcessTracker {
             regex_cgroup_containerd,
             nb_cores,
         }
+    }
+
+    pub fn refresh(&mut self) {
+        self.sysinfo.refresh_components();
+        self.sysinfo.refresh_memory();
+        self.sysinfo.refresh_cpu_specifics(CpuRefreshKind::everything());
+    }
+
+    pub fn components(&mut self) -> Vec<String> {
+        let mut res = vec![];
+        for c in self.sysinfo.components() {
+           res.push(format!("{:?}", c));
+        }
+        res
     }
 
     /// Properly creates and adds a ProcessRecord to 'procs', the vector of vectors or ProcessRecords
@@ -362,6 +387,10 @@ impl ProcessTracker {
     //    }
     //    None
     //}
+
+    pub fn get_cpu_frequency(&self) -> u64 {
+       self.sysinfo.global_cpu_info().frequency() 
+    }
 
     /// Returns all vectors of process records linked to a running, sleeping, waiting or zombie process.
     /// (Not terminated)
