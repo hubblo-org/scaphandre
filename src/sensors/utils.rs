@@ -77,6 +77,14 @@ pub struct IProcess {
     pub virtual_memory: u64,
     // Memory consumed by the process (at the time the struct is created), in bytes
     pub memory: u64,
+    // Disk bytes read by the process
+    pub disk_read: u64,
+    // Disk bytes written by the process
+    pub disk_written: u64,
+    // Total disk bytes read by the process
+    pub total_disk_read: u64,
+    // Total disk bytes written by the process
+    pub total_disk_written: u64,
     #[cfg(target_os = "linux")]
     pub stime: u64,
     #[cfg(target_os = "linux")]
@@ -85,6 +93,7 @@ pub struct IProcess {
 
 impl IProcess {
     pub fn new(process: &Process) -> IProcess {
+        let disk_usage = process.disk_usage();
         #[cfg(target_os = "linux")]
         {
             let mut stime = 0;
@@ -105,6 +114,10 @@ impl IProcess {
                 cpu_usage_percentage: process.cpu_usage(),
                 memory: process.memory(),
                 virtual_memory: process.virtual_memory(),
+                disk_read: disk_usage.read_bytes,
+                disk_written: disk_usage.written_bytes,
+                total_disk_read: disk_usage.total_read_bytes,
+                total_disk_written: disk_usage.total_written_bytes,
                 stime,
                 utime,
             }
@@ -119,6 +132,10 @@ impl IProcess {
                 cpu_usage_percentage: process.cpu_usage(),
                 memory: process.memory(),
                 virtual_memory: process.virtual_memory(),
+                disk_read: disk_usage.read_bytes,
+                disk_written: disk_usage.written_bytes,
+                total_disk_read: disk_usage.total_read_bytes,
+                total_disk_written: disk_usage.total_written_bytes,
             }
         }
     }
@@ -254,6 +271,8 @@ impl ProcessTracker {
     pub fn refresh(&mut self) {
         self.sysinfo.refresh_components();
         self.sysinfo.refresh_memory();
+        self.sysinfo.refresh_disks();
+        self.sysinfo.refresh_disks_list();
         self.sysinfo
             .refresh_cpu_specifics(CpuRefreshKind::everything());
     }

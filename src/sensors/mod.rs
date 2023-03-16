@@ -624,6 +624,49 @@ impl Topology {
         }
         None
     }
+
+    pub fn get_process_disk_written_bytes(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            return Some(Record::new(
+                record.timestamp,
+                record.process.disk_written.to_string(),
+                units::Unit::Bytes,
+            ));
+        }
+        None
+    }
+
+    pub fn get_process_disk_read_bytes(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            return Some(Record::new(
+                record.timestamp,
+                record.process.disk_read.to_string(),
+                units::Unit::Bytes,
+            ));
+        }
+        None
+    }
+    pub fn get_process_disk_total_read_bytes(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            return Some(Record::new(
+                record.timestamp,
+                record.process.total_disk_read.to_string(),
+                units::Unit::Bytes,
+            ));
+        }
+        None
+    }
+
+    pub fn get_process_disk_total_write_bytes(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            return Some(Record::new(
+                record.timestamp,
+                record.process.total_disk_written.to_string(),
+                units::Unit::Bytes,
+            ));
+        }
+        None
+    }
 }
 
 // !!!!!!!!!!!!!!!!! CPUSocket !!!!!!!!!!!!!!!!!!!!!!!
