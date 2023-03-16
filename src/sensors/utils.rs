@@ -8,7 +8,8 @@ use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use sysinfo::{
-    get_current_pid, CpuExt, Pid, Process, ProcessExt, ProcessStatus, System, SystemExt, CpuRefreshKind
+    get_current_pid, CpuExt, CpuRefreshKind, Pid, Process, ProcessExt, ProcessStatus, System,
+    SystemExt,
 };
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
@@ -94,7 +95,6 @@ impl IProcess {
                 if let Ok(stat) = procfs_process.stat() {
                     stime += stat.stime;
                     utime += stat.utime;
-
                 }
             }
             IProcess {
@@ -109,7 +109,7 @@ impl IProcess {
                 utime,
             }
         }
-        #[cfg(not(target_os="linux"))]
+        #[cfg(not(target_os = "linux"))]
         {
             IProcess {
                 pid: process.pid(),
@@ -121,7 +121,6 @@ impl IProcess {
                 virtual_memory: process.virtual_memory(),
             }
         }
-
     }
 
     /// Returns the command line of related to the process, as found by sysinfo.
@@ -255,13 +254,14 @@ impl ProcessTracker {
     pub fn refresh(&mut self) {
         self.sysinfo.refresh_components();
         self.sysinfo.refresh_memory();
-        self.sysinfo.refresh_cpu_specifics(CpuRefreshKind::everything());
+        self.sysinfo
+            .refresh_cpu_specifics(CpuRefreshKind::everything());
     }
 
     pub fn components(&mut self) -> Vec<String> {
         let mut res = vec![];
         for c in self.sysinfo.components() {
-           res.push(format!("{:?}", c));
+            res.push(format!("{c:?}"));
         }
         res
     }
@@ -389,7 +389,7 @@ impl ProcessTracker {
     //}
 
     pub fn get_cpu_frequency(&self) -> u64 {
-       self.sysinfo.global_cpu_info().frequency() 
+        self.sysinfo.global_cpu_info().frequency()
     }
 
     /// Returns all vectors of process records linked to a running, sleeping, waiting or zombie process.

@@ -17,7 +17,7 @@ pub enum Unit {
     KiloBytes,
     MegaBytes,
     GigaBytes,
-    MegaHertz
+    MegaHertz,
 }
 
 impl Unit {

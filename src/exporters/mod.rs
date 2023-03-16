@@ -481,7 +481,6 @@ impl MetricGenerator {
         //for c in self.topology.proc_tracker.components() {
         //    println!("component: {}", c)
         //}
-
     }
 
     /// Generate socket metrics.
