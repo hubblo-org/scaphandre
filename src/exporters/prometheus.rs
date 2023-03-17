@@ -270,7 +270,7 @@ async fn show_metrics(
                     let value = match msg.metric_value {
                         // MetricValueType::IntSigned(value) => event.set_metric_sint64(value),
                         // MetricValueType::Float(value) => event.set_metric_f(value),
-                        MetricValueType::FloatDouble(value) => value.to_string(),
+                        //MetricValueType::FloatDouble(value) => value.to_string(),
                         MetricValueType::IntUnsigned(value) => value.to_string(),
                         MetricValueType::Text(ref value) => value.to_string(),
                     };

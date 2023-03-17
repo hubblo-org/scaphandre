@@ -167,9 +167,10 @@ impl StdoutExporter {
 
         let metrics = metric_generator.pop_metrics();
         let mut metrics_iter = metrics.iter();
+        let none_value = MetricValueType::Text("0".to_string());
         let host_power = match metrics_iter.find(|x| x.name == "scaph_host_power_microwatts") {
-            Some(m) => m.metric_value.clone(),
-            None => MetricValueType::Text("0".to_string()),
+            Some(m) => &m.metric_value,
+            None => &none_value,
         };
 
         let domain_names = metric_generator.topology.domains_names.as_ref();
