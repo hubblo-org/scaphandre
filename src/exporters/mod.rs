@@ -59,12 +59,11 @@ struct Metric {
     timestamp: Duration,
 }
 
-#[derive(Clone)]
 enum MetricValueType {
     // IntSigned(i64),
     // Float(f32),
     Text(String),
-    FloatDouble(f64),
+    //FloatDouble(f64),
     IntUnsigned(u64),
 }
 
@@ -74,7 +73,7 @@ impl fmt::Display for MetricValueType {
             // MetricValueType::IntSigned(value) => write!(f, "{}", value),
             // MetricValueType::Float(value) => write!(f, "{}", value),
             MetricValueType::Text(text) => write!(f, "{text}"),
-            MetricValueType::FloatDouble(value) => write!(f, "{value}"),
+            //MetricValueType::FloatDouble(value) => write!(f, "{value}"),
             MetricValueType::IntUnsigned(value) => write!(f, "{value}"),
         }
     }
@@ -86,7 +85,7 @@ impl fmt::Debug for MetricValueType {
             // MetricValueType::IntSigned(value) => write!(f, "{}", value),
             // MetricValueType::Float(value) => write!(f, "{}", value),
             MetricValueType::Text(text) => write!(f, "{text}"),
-            MetricValueType::FloatDouble(value) => write!(f, "{value}"),
+            //MetricValueType::FloatDouble(value) => write!(f, "{value}"),
             MetricValueType::IntUnsigned(value) => write!(f, "{value}"),
         }
     }
@@ -780,21 +779,19 @@ impl MetricGenerator {
             }
 
             if let Some(metrics) = self.topology.get_all_per_process(pid) {
-                for (k,v) in metrics {
-                    self.data.push(
-                        Metric {
-                            name: k,
-                            metric_type: String::from("gauge"),
-                            ttl: 60.0,
-                            timestamp: v.1.timestamp,
-                            hostname: self.hostname.clone(),
-                            state: String::from("ok"),
-                            tags: vec!["scaphandre".to_string()],
-                            attributes: attributes.clone(),
-                            description: v.0,
-                            metric_value: MetricValueType::Text(v.1.value)
-                        }
-                    )
+                for (k, v) in metrics {
+                    self.data.push(Metric {
+                        name: k,
+                        metric_type: String::from("gauge"),
+                        ttl: 60.0,
+                        timestamp: v.1.timestamp,
+                        hostname: self.hostname.clone(),
+                        state: String::from("ok"),
+                        tags: vec!["scaphandre".to_string()],
+                        attributes: attributes.clone(),
+                        description: v.0,
+                        metric_value: MetricValueType::Text(v.1.value),
+                    })
                 }
             }
         }
