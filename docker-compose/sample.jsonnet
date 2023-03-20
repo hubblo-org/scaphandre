@@ -41,6 +41,18 @@ dashboard.new(
               legendFormat='{{instance}}',
           )
       )
+      .addTarget(
+          grafana.prometheus.target(
+              'sum(scaph_process_power_consumption_microwatts) / 1000000',
+              legendFormat='sum of processes power',
+          )
+      )
+      .addTarget(
+          grafana.prometheus.target(
+              'sum(scaph_domain_power_microwatts) / 1000000',
+              legendFormat='sum of rapl domains power',
+          )
+      )
   )
   .addPanel(
       grafana.graphPanel.new(
@@ -97,7 +109,7 @@ dashboard.new(
             title='Socket power consumption',
             datasource='${PROMETHEUS_DS}',
             format='W',
-            span=4,
+            span=3,
             min=0
         )
         .addTarget(
@@ -109,10 +121,25 @@ dashboard.new(
     )
     .addPanel(
         grafana.graphPanel.new(
+            title='scaph_domain_power',
+            datasource='${PROMETHEUS_DS}',
+            format='W',
+            span=3,
+            min=0
+        )
+        .addTarget(
+            grafana.prometheus.target(
+                'scaph_domain_power_microwatts / 1000000',
+                legendFormat='{{domain_name}}',
+            )
+        )
+    )
+    .addPanel(
+        grafana.graphPanel.new(
             title='scaph_self_cpu',
             datasource='${PROMETHEUS_DS}',
             format='%',
-            span=4,
+            span=3,
             min=0
         )
         .addTarget(
@@ -124,10 +151,10 @@ dashboard.new(
     )
     .addPanel(
         grafana.graphPanel.new(
-            title='Socket power consumption',
+            title='scaph_self_mem',
             datasource='${PROMETHEUS_DS}',
             format='Bytes',
-            span=4,
+            span=3,
             min=0
         )
         .addTarget(
@@ -150,7 +177,7 @@ dashboard.new(
     )
     .addPanel(
         grafana.graphPanel.new(
-            title='Filtered process (process_filter) power, by exe',
+            title='Filtered process (process_filter) power, by cmdline',
             datasource='${PROMETHEUS_DS}',
             span=3,
             format='W',
@@ -162,7 +189,7 @@ dashboard.new(
         )
         .addTarget(
             grafana.prometheus.target(
-                'scaph_process_power_consumption_microwatts{exe=~".*${process_filter}.*"}/1000000',
+                'scaph_process_power_consumption_microwatts{cmdline=~".*${process_filter}.*"}/1000000',
                 legendFormat='{{ cmdline }}',
             )
         )
@@ -181,7 +208,7 @@ dashboard.new(
         )
         .addTarget(
             grafana.prometheus.target(
-                'scaph_process_cpu_usage_percentage{exe=~".*${process_filter}.*"}',
+                'scaph_process_cpu_usage_percentage{cmdline=~".*${process_filter}.*"}',
                 legendFormat='{{ cmdline }}',
             )
         )
@@ -200,7 +227,7 @@ dashboard.new(
         )
         .addTarget(
             grafana.prometheus.target(
-                'scaph_process_memory_bytes{exe=~".*${process_filter}.*"}',
+                'scaph_process_memory_bytes{cmdline=~".*${process_filter}.*"}',
                 legendFormat='{{ cmdline }}',
             )
         )
@@ -219,7 +246,7 @@ dashboard.new(
         )
         .addTarget(
             grafana.prometheus.target(
-                'scaph_process_memory_virtual_bytes{exe=~".*${process_filter}.*"}',
+                'scaph_process_memory_virtual_bytes{cmdline=~".*${process_filter}.*"}',
                 legendFormat='{{ cmdline }}',
             )
         )
