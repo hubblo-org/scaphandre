@@ -18,7 +18,7 @@ services:
         target: /var/run/docker.sock
     command: ["-vvvv", "prometheus", "--containers"] 
     environment:
-      RUST_BACKTRACE: 1
+      RUST_BACKTRACE: "full"
     networks:
       - scaphandre-network
     
