@@ -301,6 +301,7 @@ async fn show_metrics(
             }
             Err(e) => {
                 warn!("Error in show_metrics : {e:?}");
+                warn!("Error details : {}", e.to_string());
             }
         }
     } else {
