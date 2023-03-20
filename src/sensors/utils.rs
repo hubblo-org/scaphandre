@@ -380,33 +380,6 @@ impl ProcessTracker {
         refer
     }
 
-    /// Returns the result of the substraction of utime between last and
-    /// previous ProcessRecord for a given pid.
-    //pub fn get_diff_utime(&self, pid: Pid) -> Option<u64> {
-    //    let records = self.find_records(pid).unwrap();
-    //    if records.len() > 1 {
-    //        if let Some(previous) = &records[0].process.stat {
-    //            if let Some(current) = &records[1].process.stat {
-    //                return Some(previous.utime - current.utime);
-    //            }
-    //        }
-    //    }
-    //    None
-    //}
-    /// Returns the result of the substraction of stime between last and
-    /// previous ProcessRecord for a given pid.
-    //pub fn get_diff_stime(&self, pid: Pid) -> Option<u64> {
-    //    let records = self.find_records(pid).unwrap();
-    //    if records.len() > 1 {
-    //        if let Some(previous) = &records[0].process.stat {
-    //            if let Some(current) = &records[1].process.stat {
-    //                return Some(previous.stime - current.stime);
-    //            }
-    //        }
-    //    }
-    //    None
-    //}
-
     pub fn get_cpu_frequency(&self) -> u64 {
         self.sysinfo.global_cpu_info().frequency()
     }
