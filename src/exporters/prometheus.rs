@@ -232,70 +232,74 @@ async fn show_metrics(
     if req.uri().path() == format!("/{}", &suffix) {
         debug!("in metrics !");
         let now = current_system_time_since_epoch();
-        let mut last_request = context.last_request.lock().unwrap();
-        debug!("stored last request !");
-        match context.metric_generator.lock() {
-            Ok(mut metric_generator) => {
-                debug!("stored metric generator !");
-                if now - (*last_request) > Duration::from_secs(2) {
-                    {
-                        info!(
-                            "{}: Refresh topology",
-                            Utc::now().format("%Y-%m-%dT%H:%M:%S")
-                        );
-                        metric_generator
-                            .topology
-                            .proc_tracker
-                            .clean_terminated_process_records_vectors();
-                        metric_generator.topology.refresh();
+        match context.last_request.lock() {
+            Ok(mut last_request) => {
+                debug!("stored last request !");
+                match context.metric_generator.lock() {
+                    Ok(mut metric_generator) => {
+                        debug!("stored metric generator !");
+                        if now - (*last_request) > Duration::from_secs(2) {
+                            {
+                                info!(
+                                    "{}: Refresh topology",
+                                    Utc::now().format("%Y-%m-%dT%H:%M:%S")
+                                );
+                                metric_generator
+                                    .topology
+                                    .proc_tracker
+                                    .clean_terminated_process_records_vectors();
+                                metric_generator.topology.refresh();
+                            }
+                        }
+                        debug!("refreshed topology !");
+                        *last_request = now;
+
+                        info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
+
+                        metric_generator.gen_all_metrics();
+
+                        let mut metrics_pushed: Vec<String> = vec![];
+
+                        debug!("popping metrics !");
+                        // Send all data
+                        for msg in metric_generator.pop_metrics() {
+                            let mut attributes: Option<&HashMap<String, String>> = None;
+                            if !msg.attributes.is_empty() {
+                                attributes = Some(&msg.attributes);
+                            }
+
+                            let value = match msg.metric_value {
+                                // MetricValueType::IntSigned(value) => event.set_metric_sint64(value),
+                                // MetricValueType::Float(value) => event.set_metric_f(value),
+                                //MetricValueType::FloatDouble(value) => value.to_string(),
+                                MetricValueType::IntUnsigned(value) => value.to_string(),
+                                MetricValueType::Text(ref value) => value.to_string(),
+                            };
+
+                            let mut should_i_add_help = true;
+
+                            if metrics_pushed.contains(&msg.name) {
+                                should_i_add_help = false;
+                            } else {
+                                metrics_pushed.insert(0, msg.name.clone());
+                            }
+
+                            body = push_metric(
+                                body,
+                                msg.description.clone(),
+                                msg.metric_type.clone(),
+                                msg.name.clone(),
+                                format_metric(&msg.name, &value, attributes),
+                                should_i_add_help,
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        panic!("Error from lock(): {}", e);
                     }
                 }
-                debug!("refreshed topology !");
-                *last_request = now;
-
-                info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-
-                metric_generator.gen_all_metrics();
-
-                let mut metrics_pushed: Vec<String> = vec![];
-
-                debug!("popping metrics !");
-                // Send all data
-                for msg in metric_generator.pop_metrics() {
-                    let mut attributes: Option<&HashMap<String, String>> = None;
-                    if !msg.attributes.is_empty() {
-                        attributes = Some(&msg.attributes);
-                    }
-
-                    let value = match msg.metric_value {
-                        // MetricValueType::IntSigned(value) => event.set_metric_sint64(value),
-                        // MetricValueType::Float(value) => event.set_metric_f(value),
-                        //MetricValueType::FloatDouble(value) => value.to_string(),
-                        MetricValueType::IntUnsigned(value) => value.to_string(),
-                        MetricValueType::Text(ref value) => value.to_string(),
-                    };
-
-                    let mut should_i_add_help = true;
-
-                    if metrics_pushed.contains(&msg.name) {
-                        should_i_add_help = false;
-                    } else {
-                        metrics_pushed.insert(0, msg.name.clone());
-                    }
-
-                    body = push_metric(
-                        body,
-                        msg.description.clone(),
-                        msg.metric_type.clone(),
-                        msg.name.clone(),
-                        format_metric(&msg.name, &value, attributes),
-                        should_i_add_help,
-                    );
-                }
             }
-            Err(e) => {
-                panic!("Error from lock(): {}", e);
-            }
+            Err(e) => {warn!("Error in show_metrics : {e:?}");}
         }
     } else {
         let _ = write!(body, "<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{suffix}\">/{suffix}</a>");
