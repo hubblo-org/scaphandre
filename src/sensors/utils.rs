@@ -482,135 +482,149 @@ impl ProcessTracker {
         let regex_clean_container_id = Regex::new("[[:alnum:]]{12,}").unwrap();
         if let Some(_p) = process.get(0) {
             // if we have the cgroups data from the original process struct
-            let procfs_process =
-                procfs::process::Process::new(pid.to_string().parse::<i32>().unwrap()).unwrap();
-            if let Ok(cgroups) = procfs_process.cgroups() {
-                let mut found = false;
-                for cg in &cgroups {
-                    if found {
-                        break;
-                    }
-                    // docker
-                    if self.regex_cgroup_docker.is_match(&cg.pathname) {
-                        debug!("regex docker matched : {}", &cg.pathname); //coucou
-                        description
-                            .insert(String::from("container_scheduler"), String::from("docker"));
-                        // extract container_id
-                        //let container_id = cg.pathname.split('/').last().unwrap();
-                        if let Some(container_id_capture) =
-                            regex_clean_container_id.captures(&cg.pathname)
-                        {
-                            let container_id = &container_id_capture[0];
-                            debug!("container_id = {}", container_id);
-                            description
-                                .insert(String::from("container_id"), String::from(container_id));
-                            if let Some(container) =
-                                containers.iter().find(|x| x.Id == container_id)
+            if let Ok(procfs_process) =
+                procfs::process::Process::new(pid.to_string().parse::<i32>().unwrap())
+            {
+                if let Ok(cgroups) = procfs_process.cgroups() {
+                    let mut found = false;
+                    for cg in &cgroups {
+                        if found {
+                            break;
+                        }
+                        // docker
+                        if self.regex_cgroup_docker.is_match(&cg.pathname) {
+                            debug!("regex docker matched : {}", &cg.pathname); //coucou
+                            description.insert(
+                                String::from("container_scheduler"),
+                                String::from("docker"),
+                            );
+                            // extract container_id
+                            //let container_id = cg.pathname.split('/').last().unwrap();
+                            if let Some(container_id_capture) =
+                                regex_clean_container_id.captures(&cg.pathname)
                             {
-                                debug!("found container with id: {}", &container_id);
-                                let mut names = String::from("");
-                                for n in &container.Names {
-                                    debug!("adding container name: {}", &n.trim().replace('/', ""));
-                                    names.push_str(&n.trim().replace('/', ""));
-                                }
-                                description.insert(String::from("container_names"), names);
+                                let container_id = &container_id_capture[0];
+                                debug!("container_id = {}", container_id);
                                 description.insert(
-                                    String::from("container_docker_version"),
-                                    docker_version.clone(),
+                                    String::from("container_id"),
+                                    String::from(container_id),
                                 );
-                                if let Some(labels) = &container.Labels {
-                                    for (k, v) in labels {
-                                        let escape_list = ["-", ".", ":", " "];
-                                        let mut key = k.clone();
-                                        for e in escape_list.iter() {
-                                            key = key.replace(e, "_");
+                                if let Some(container) =
+                                    containers.iter().find(|x| x.Id == container_id)
+                                {
+                                    debug!("found container with id: {}", &container_id);
+                                    let mut names = String::from("");
+                                    for n in &container.Names {
+                                        debug!(
+                                            "adding container name: {}",
+                                            &n.trim().replace('/', "")
+                                        );
+                                        names.push_str(&n.trim().replace('/', ""));
+                                    }
+                                    description.insert(String::from("container_names"), names);
+                                    description.insert(
+                                        String::from("container_docker_version"),
+                                        docker_version.clone(),
+                                    );
+                                    if let Some(labels) = &container.Labels {
+                                        for (k, v) in labels {
+                                            let escape_list = ["-", ".", ":", " "];
+                                            let mut key = k.clone();
+                                            for e in escape_list.iter() {
+                                                key = key.replace(e, "_");
+                                            }
+                                            description.insert(
+                                                format!("container_label_{key}"),
+                                                v.to_string(),
+                                            );
                                         }
+                                    }
+                                }
+                                found = true;
+                            }
+                        } else {
+                            // containerd
+                            if self.regex_cgroup_containerd.is_match(&cg.pathname) {
+                                debug!("regex containerd matched : {}", &cg.pathname);
+                                description.insert(
+                                    String::from("container_runtime"),
+                                    String::from("containerd"),
+                                );
+                            } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
+                                debug!("regex kubernetes matched : {}", &cg.pathname);
+                                // kubernetes not using containerd but we can get the container id
+                            } else {
+                                // cgroup not related to a container technology
+                                continue;
+                            }
+
+                            let container_id =
+                                match self.extract_pod_id_from_cgroup_path(cg.pathname.clone()) {
+                                    Ok(id) => id,
+                                    Err(err) => {
+                                        info!("Couldn't get container id : {}", err);
+                                        "ERROR Couldn't get container id".to_string()
+                                    }
+                                };
+                            description.insert(String::from("container_id"), container_id.clone());
+                            // find pod in pods that has pod_status > container_status.container
+                            if let Some(pod) = pods.iter().find(|x| match &x.status {
+                                Some(status) => {
+                                    if let Some(container_statuses) = &status.container_statuses {
+                                        container_statuses.iter().any(|y| match &y.container_id {
+                                            Some(id) => {
+                                                if let Some(final_id) = id.strip_prefix("docker://")
+                                                {
+                                                    final_id == container_id
+                                                } else if let Some(final_id) =
+                                                    id.strip_prefix("containerd://")
+                                                {
+                                                    final_id == container_id
+                                                } else {
+                                                    false
+                                                }
+                                            }
+                                            None => false,
+                                        })
+                                    } else {
+                                        false
+                                    }
+                                }
+                                None => false,
+                            }) {
+                                description.insert(
+                                    String::from("container_scheduler"),
+                                    String::from("kubernetes"),
+                                );
+                                if let Some(pod_name) = &pod.metadata.name {
+                                    description.insert(
+                                        String::from("kubernetes_pod_name"),
+                                        pod_name.clone(),
+                                    );
+                                }
+                                if let Some(pod_namespace) = &pod.metadata.namespace {
+                                    description.insert(
+                                        String::from("kubernetes_pod_namespace"),
+                                        pod_namespace.clone(),
+                                    );
+                                }
+                                if let Some(pod_spec) = &pod.spec {
+                                    if let Some(node_name) = &pod_spec.node_name {
                                         description.insert(
-                                            format!("container_label_{key}"),
-                                            v.to_string(),
+                                            String::from("kubernetes_node_name"),
+                                            node_name.clone(),
                                         );
                                     }
                                 }
                             }
                             found = true;
-                        }
-                    } else {
-                        // containerd
-                        if self.regex_cgroup_containerd.is_match(&cg.pathname) {
-                            debug!("regex containerd matched : {}", &cg.pathname);
-                            description.insert(
-                                String::from("container_runtime"),
-                                String::from("containerd"),
-                            );
-                        } else if self.regex_cgroup_kubernetes.is_match(&cg.pathname) {
-                            debug!("regex kubernetes matched : {}", &cg.pathname);
-                            // kubernetes not using containerd but we can get the container id
-                        } else {
-                            // cgroup not related to a container technology
-                            continue;
-                        }
-
-                        let container_id =
-                            match self.extract_pod_id_from_cgroup_path(cg.pathname.clone()) {
-                                Ok(id) => id,
-                                Err(err) => {
-                                    info!("Couldn't get container id : {}", err);
-                                    "ERROR Couldn't get container id".to_string()
-                                }
-                            };
-                        description.insert(String::from("container_id"), container_id.clone());
-                        // find pod in pods that has pod_status > container_status.container
-                        if let Some(pod) = pods.iter().find(|x| match &x.status {
-                            Some(status) => {
-                                if let Some(container_statuses) = &status.container_statuses {
-                                    container_statuses.iter().any(|y| match &y.container_id {
-                                        Some(id) => {
-                                            if let Some(final_id) = id.strip_prefix("docker://") {
-                                                final_id == container_id
-                                            } else if let Some(final_id) =
-                                                id.strip_prefix("containerd://")
-                                            {
-                                                final_id == container_id
-                                            } else {
-                                                false
-                                            }
-                                        }
-                                        None => false,
-                                    })
-                                } else {
-                                    false
-                                }
-                            }
-                            None => false,
-                        }) {
-                            description.insert(
-                                String::from("container_scheduler"),
-                                String::from("kubernetes"),
-                            );
-                            if let Some(pod_name) = &pod.metadata.name {
-                                description
-                                    .insert(String::from("kubernetes_pod_name"), pod_name.clone());
-                            }
-                            if let Some(pod_namespace) = &pod.metadata.namespace {
-                                description.insert(
-                                    String::from("kubernetes_pod_namespace"),
-                                    pod_namespace.clone(),
-                                );
-                            }
-                            if let Some(pod_spec) = &pod.spec {
-                                if let Some(node_name) = &pod_spec.node_name {
-                                    description.insert(
-                                        String::from("kubernetes_node_name"),
-                                        node_name.clone(),
-                                    );
-                                }
-                            }
-                        }
-                        found = true;
-                    } //else {
-                      //    debug!("Cgroup not identified as related to a container technology : {}", &cg.pathname);
-                      //}
+                        } //else {
+                          //    debug!("Cgroup not identified as related to a container technology : {}", &cg.pathname);
+                          //}
+                    }
                 }
+            } else {
+                debug!("Could'nt find {} in procfs.", pid.to_string());
             }
         }
         description
