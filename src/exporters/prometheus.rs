@@ -299,7 +299,9 @@ async fn show_metrics(
                     }
                 }
             }
-            Err(e) => {warn!("Error in show_metrics : {e:?}");}
+            Err(e) => {
+                warn!("Error in show_metrics : {e:?}");
+            }
         }
     } else {
         let _ = write!(body, "<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{suffix}\">/{suffix}</a>");
