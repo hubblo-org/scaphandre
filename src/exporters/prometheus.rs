@@ -295,13 +295,14 @@ async fn show_metrics(
                         }
                     }
                     Err(e) => {
-                        panic!("Error from lock(): {}", e);
+                        error!("Error while locking metric_generator: {e:?}");
+                        error!("Error while locking metric_generator: {}", e.to_string());
                     }
                 }
             }
             Err(e) => {
-                warn!("Error in show_metrics : {e:?}");
-                warn!("Error details : {}", e.to_string());
+                error!("Error in show_metrics : {e:?}");
+                error!("Error details : {}", e.to_string());
             }
         }
     } else {
