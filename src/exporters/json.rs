@@ -1,21 +1,21 @@
 use crate::exporters::*;
 use crate::sensors::Sensor;
 use clap::Arg;
+use colored::*;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::File;
 use std::path::PathBuf;
 use std::thread;
 use std::time::{Duration, Instant};
-use colored::*;
-use regex::Regex;
 
 /// An Exporter that displays power consumption data of the host
 /// and its processes on the standard output of the terminal.
 pub struct JSONExporter {
     sensor: Box<dyn Sensor>,
     reports: Vec<Report>,
-    regex: Option<Regex>
+    regex: Option<Regex>,
 }
 
 impl Exporter for JSONExporter {
@@ -100,7 +100,6 @@ impl Exporter for JSONExporter {
     }
 }
 
-
 #[derive(Serialize, Deserialize)]
 struct Domain {
     name: String,
@@ -147,7 +146,7 @@ impl JSONExporter {
         JSONExporter {
             sensor,
             reports: Vec::new(),
-            regex: None
+            regex: None,
         }
     }
 
@@ -241,13 +240,12 @@ impl JSONExporter {
         };
 
         let consumers: Vec<(IProcess, f64)>;
-        let top_consumers;
         if let Some(regex_filter) = &self.regex {
             debug!("Processes filtered by '{}':", regex_filter.as_str());
             consumers = metric_generator
                 .topology
                 .proc_tracker
-                .get_filtered_processes(&regex_filter);
+                .get_filtered_processes(regex_filter);
         } else {
             consumers = metric_generator.topology.proc_tracker.get_top_consumers(
                 parameters
@@ -257,7 +255,7 @@ impl JSONExporter {
                     .unwrap(),
             );
         }
-        top_consumers = consumers
+        let top_consumers = consumers
             .iter()
             .filter_map(|(process, _value)| {
                 metrics
@@ -295,20 +293,18 @@ impl JSONExporter {
             })
             .collect::<Vec<_>>();
 
-        let all_sockets_vec  = metric_generator
-            .topology
-            .get_sockets_passive();
+        let all_sockets_vec = metric_generator.topology.get_sockets_passive();
         let all_sockets = all_sockets_vec
             .iter()
             .filter_map(|socket| {
-                if let Some(metric) = socket_metrics_res.iter().find(|x|
+                if let Some(metric) = socket_metrics_res.iter().find(|x| {
                     socket.id
                         == x.attributes
                             .get("socket_id")
                             .unwrap()
                             .parse::<u16>()
                             .unwrap()
-                ) {
+                }) {
                     let socket_power = format!("{}", metric.metric_value).parse::<f32>().unwrap();
 
                     let domains = metrics
