@@ -403,11 +403,11 @@ impl ProcessTracker {
             if !p.is_empty() {
                 //TODO implement
                 // clippy will ask you to remove mut from res, but you just need to implement to fix that
-                if let Some(_sysinfo_p) = self.sysinfo.process(p[0].process.pid) {
-                    //let status = sysinfo_p.status();
-                    //if status != ProcessStatus::Dead {//&& status != ProcessStatus::Stop {
-                    res.push(p);
-                    //}
+                if let Some(sysinfo_p) = self.sysinfo.process(p[0].process.pid) {
+                    let status = sysinfo_p.status();
+                    if status != ProcessStatus::Dead {//&& status != ProcessStatus::Stop {
+                        res.push(p);
+                    }
                 }
             }
         }
@@ -660,7 +660,6 @@ impl ProcessTracker {
     }
 
     pub fn get_cpu_usage_percentage(&self, pid: Pid, nb_cores: usize) -> f32 {
-        info!("CALL FOR CPU USAGE");
         let cpu_current_usage = self.sysinfo.global_cpu_info().cpu_usage();
         if let Some(p) = self.sysinfo.process(pid) {
             (cpu_current_usage * p.cpu_usage() / 100.0) / nb_cores as f32
@@ -715,9 +714,14 @@ impl ProcessTracker {
             if p.len() > 1 {
                 let diff = self
                     .get_cpu_usage_percentage(p.first().unwrap().process.pid as _, self.nb_cores);
-                let process_exe = p.last().unwrap().process.exe(self).unwrap_or_default();
+                let p_record = p.last().unwrap();
+                let process_exe = p_record.process.exe(self).unwrap_or_default();
+                let process_cmdline = p_record.process.cmdline(self).unwrap_or_default();
                 if regex_filter.is_match(process_exe.to_str().unwrap_or_default()) {
-                    consumers.push((p.last().unwrap().process.clone(), OrderedFloat(diff as f64)));
+                    consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
+                    consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                } else if regex_filter.is_match(&process_cmdline.concat()) {
+                    consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
                     consumers.sort_by(|x, y| y.1.cmp(&x.1));
                 }
             }

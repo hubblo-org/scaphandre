@@ -7,12 +7,15 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::thread;
 use std::time::{Duration, Instant};
+use colored::*;
+use regex::Regex;
 
 /// An Exporter that displays power consumption data of the host
 /// and its processes on the standard output of the terminal.
 pub struct JSONExporter {
     sensor: Box<dyn Sensor>,
     reports: Vec<Report>,
+    regex: Option<Regex>
 }
 
 impl Exporter for JSONExporter {
@@ -76,6 +79,14 @@ impl Exporter for JSONExporter {
             .takes_value(false);
         options.push(arg);
 
+        let arg = Arg::with_name("regex_filter")
+            .help("Filter processes based on regular expressions (e.g: 'scaph\\w\\wd.e').")
+            .long("regex")
+            .short("r")
+            .required(false)
+            .takes_value(true);
+        options.push(arg);
+
         // the resulting labels of this option are not yet used by this exporter, activate this option once we display something interesting about it
         //let arg = Arg::with_name("qemu")
         //    .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
@@ -88,6 +99,7 @@ impl Exporter for JSONExporter {
         options
     }
 }
+
 
 #[derive(Serialize, Deserialize)]
 struct Domain {
@@ -135,6 +147,7 @@ impl JSONExporter {
         JSONExporter {
             sensor,
             reports: Vec::new(),
+            regex: None
         }
     }
 
@@ -160,6 +173,25 @@ impl JSONExporter {
             .unwrap()
             .parse()
             .expect("Wrong step_duration_nano value, should be a number of nano seconds");
+
+        self.regex = if !parameters.is_present("regex_filter")
+            || parameters.value_of("regex_filter").unwrap().is_empty()
+        {
+            None
+        } else {
+            Some(
+                Regex::new(parameters.value_of("regex_filter").unwrap())
+                    .expect("Wrong regex_filter, regexp is invalid"),
+            )
+        };
+
+        if parameters.occurrences_of("regex_filter") == 1
+            && parameters.occurrences_of("max_top_consumers") == 1
+        {
+            let warning =
+                String::from("Warning: (--max-top-consumers) and (-r / --regex) used at the same time. (--max-top-consumers) disabled");
+            eprintln!("{}", warning.bright_yellow());
+        }
 
         info!("Measurement step is: {}s", step_duration);
         if let Some(timeout) = parameters.value_of("timeout") {
@@ -192,6 +224,8 @@ impl JSONExporter {
 
         let metrics = metric_generator.pop_metrics();
         let mut metrics_iter = metrics.iter();
+        let socket_metrics_res = metrics_iter.find(|x| x.name == "scaph_socket_power_microwatts");
+        //info!("socket metrics res : {:?}", socket_metrics_res);
         let mut host_report: Option<Host> = None;
         if let Some(host_metric) = metrics_iter.find(|x| x.name == "scaph_host_power_microwatts") {
             let host_power_string = format!("{}", host_metric.metric_value);
@@ -206,14 +240,24 @@ impl JSONExporter {
             info!("didn't find host metric");
         };
 
-        let consumers = metric_generator.topology.proc_tracker.get_top_consumers(
-            parameters
-                .value_of("max_top_consumers")
-                .unwrap_or("10")
-                .parse::<u16>()
-                .unwrap(),
-        );
-        let top_consumers = consumers
+        let consumers: Vec<(IProcess, f64)>;
+        let top_consumers;
+        if let Some(regex_filter) = &self.regex {
+            debug!("Processes filtered by '{}':", regex_filter.as_str());
+            consumers = metric_generator
+                .topology
+                .proc_tracker
+                .get_filtered_processes(&regex_filter);
+        } else {
+            consumers = metric_generator.topology.proc_tracker.get_top_consumers(
+                parameters
+                    .value_of("max_top_consumers")
+                    .unwrap_or("10")
+                    .parse::<u16>()
+                    .unwrap(),
+            );
+        }
+        top_consumers = consumers
             .iter()
             .filter_map(|(process, _value)| {
                 metrics
@@ -251,24 +295,20 @@ impl JSONExporter {
             })
             .collect::<Vec<_>>();
 
-        let all_sockets = metric_generator
+        let all_sockets_vec  = metric_generator
             .topology
-            .get_sockets_passive()
+            .get_sockets_passive();
+        let all_sockets = all_sockets_vec
             .iter()
             .filter_map(|socket| {
-                if let Some(metric) = metrics_iter.find(|x| {
-                    if x.name == "scaph_socket_power_microwatts" {
-                        socket.id
-                            == x.attributes
-                                .get("socket_id")
-                                .unwrap()
-                                .parse::<u16>()
-                                .unwrap()
-                    } else {
-                        info!("socket not found ! ");
-                        false
-                    }
-                }) {
+                if let Some(metric) = socket_metrics_res.iter().find(|x|
+                    socket.id
+                        == x.attributes
+                            .get("socket_id")
+                            .unwrap()
+                            .parse::<u16>()
+                            .unwrap()
+                ) {
                     let socket_power = format!("{}", metric.metric_value).parse::<f32>().unwrap();
 
                     let domains = metrics

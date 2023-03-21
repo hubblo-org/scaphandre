@@ -653,7 +653,7 @@ impl MetricGenerator {
                         current_system_time_since_epoch().as_secs().to_string();
                 }
             } else {
-                info!("Docker socket is None.");
+                debug!("Docker socket is None.");
             }
         }
     }
@@ -670,7 +670,7 @@ impl MetricGenerator {
                     self.pods = pods_result;
                     debug!("Found {} pods", &self.pods.len());
                 } else {
-                    info!("Failed getting pods list, despite client seems ok.");
+                    debug!("Failed getting pods list, despite client seems ok.");
                 }
             } else {
                 debug!("Kubernetes socket is not some.");
@@ -720,11 +720,11 @@ impl MetricGenerator {
             if self.watch_kubernetes && self.kubernetes_client.is_some() {
                 if self.pods_last_check.is_empty() {
                     self.gen_kubernetes_pods_basic_metadata();
-                    info!("First check done on pods.");
+                    debug!("First check done on pods.");
                 }
                 let last_check = self.pods_last_check.clone();
                 if (now.parse::<i32>().unwrap() - last_check.parse::<i32>().unwrap()) > 20 {
-                    info!(
+                    debug!(
                         "Just refreshed pod list ! last: {} now: {}, diff: {}",
                         last_check,
                         now,

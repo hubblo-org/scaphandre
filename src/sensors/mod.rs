@@ -1042,13 +1042,13 @@ impl CPUSocket {
                 .get(self.record_buffer.len() - 2)
                 .unwrap();
             debug!(
-                "last_record value: {} previous_record value: {}",
+                "socket : last_record value: {} previous_record value: {}",
                 &last_record.value, &previous_record.value
             );
             let last_rec_val = last_record.value.trim();
-            debug!("l851 : trying to parse {} as u64", last_rec_val);
+            debug!("socket : l1049 : trying to parse {} as u64", last_rec_val);
             let prev_rec_val = previous_record.value.trim();
-            debug!("l853 : trying to parse {} as u64", prev_rec_val);
+            debug!("socket : l1051 : trying to parse {} as u64", prev_rec_val);
             if let (Ok(last_microjoules), Ok(previous_microjoules)) =
                 (last_rec_val.parse::<u64>(), prev_rec_val.parse::<u64>())
             {
@@ -1057,14 +1057,14 @@ impl CPUSocket {
                     microjoules = last_microjoules - previous_microjoules;
                 } else {
                     debug!(
-                        "previous_microjoules ({}) > last_microjoules ({})",
+                        "socket: previous_microjoules ({}) > last_microjoules ({})",
                         previous_microjoules, last_microjoules
                     );
                 }
                 let time_diff =
                     last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
                 let microwatts = microjoules as f64 / time_diff;
-                debug!("l866: microwatts: {}", microwatts);
+                debug!("socket : l1067: microwatts: {}", microwatts);
                 return Some(Record::new(
                     last_record.timestamp,
                     (microwatts as u64).to_string(),
