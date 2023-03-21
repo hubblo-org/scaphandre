@@ -405,7 +405,8 @@ impl ProcessTracker {
                 // clippy will ask you to remove mut from res, but you just need to implement to fix that
                 if let Some(sysinfo_p) = self.sysinfo.process(p[0].process.pid) {
                     let status = sysinfo_p.status();
-                    if status != ProcessStatus::Dead {//&& status != ProcessStatus::Stop {
+                    if status != ProcessStatus::Dead {
+                        //&& status != ProcessStatus::Stop {
                         res.push(p);
                     }
                 }
