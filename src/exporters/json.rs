@@ -319,7 +319,7 @@ impl JSONExporter {
                                     == socket.id
                         })
                         .map(|d| Domain {
-                            name: d.name.clone(),
+                            name: d.attributes.get("domain_name").unwrap().clone(),
                             consumption: format!("{}", d.metric_value).parse::<f32>().unwrap(),
                             timestamp: d.timestamp.as_secs_f64(),
                         })
