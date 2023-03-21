@@ -475,9 +475,21 @@ impl MetricGenerator {
             description: format!("Global frequency of all the cpus. In {}", freq.unit),
             metric_value: MetricValueType::Text(freq.value),
         });
-        //for c in self.topology.proc_tracker.components() {
-        //    println!("component: {}", c)
-        //}
+        for (metric_name, metric) in self.topology.get_disks() {
+            info!("pushing disk metric to data : {}", metric_name);
+            self.data.push(Metric {
+                name: metric_name,
+                metric_type: String::from("gauge"),
+                ttl: 60.0,
+                timestamp: metric.2.timestamp,
+                hostname: self.hostname.clone(),
+                state: String::from("ok"),
+                tags: vec!["scaphandre".to_string()],
+                attributes: metric.1,
+                description: metric.0,
+                metric_value: MetricValueType::Text(metric.2.value),
+            });
+        }
     }
 
     /// Generate socket metrics.
