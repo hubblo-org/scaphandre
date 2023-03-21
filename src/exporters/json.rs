@@ -4,11 +4,13 @@ use clap::Arg;
 use colored::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::fs::File;
-use std::path::PathBuf;
-use std::thread;
-use std::time::{Duration, Instant};
+use std::{
+    fs,
+    fs::File,
+    path::PathBuf,
+    thread,
+    time::{Duration, Instant},
+};
 
 /// An Exporter that displays power consumption data of the host
 /// and its processes on the standard output of the terminal.
@@ -151,9 +153,24 @@ struct Container {
     scheduler: String,
 }
 #[derive(Serialize, Deserialize)]
+struct Disk {
+    disk_type: String,
+    disk_mount_point: String,
+    disk_is_removable: bool,
+    disk_file_system: String,
+    disk_total_bytes: String,
+    disk_available_bytes: String,
+    disk_name: String,
+}
+#[derive(Serialize, Deserialize)]
+struct Components {
+    disks: Option<Vec<Disk>>,
+}
+#[derive(Serialize, Deserialize)]
 struct Host {
     consumption: f32,
     timestamp: f64,
+    components: Components,
 }
 #[derive(Serialize, Deserialize)]
 struct Report {
@@ -236,6 +253,74 @@ impl JSONExporter {
         self.retrieve_metrics(parameters, metric_generator);
     }
 
+    fn gen_disks_report(&self, metrics: &Vec<&Metric>) -> Vec<Disk> {
+        let mut res: Vec<Disk> = vec![];
+        for m in metrics {
+            let metric_disk_name = m.attributes.get("disk_name").unwrap();
+            if let Some(mut disk) = res.iter_mut().find(|x| metric_disk_name == &x.disk_name) {
+                info!("editing disk");
+                disk.disk_name = metric_disk_name.clone();
+                if m.name == "scaph_host_disk_available_bytes" {
+                    disk.disk_available_bytes = m.metric_value.to_string();
+                } else if m.name == "scaph_host_disk_total_bytes" {
+                    disk.disk_total_bytes = m.metric_value.to_string();
+                }
+            } else {
+                info!("adding disk");
+                res.push(Disk {
+                    disk_name: metric_disk_name.clone(),
+                    disk_available_bytes: {
+                        if m.name == "scaph_host_disk_available_bytes" {
+                            m.metric_value.to_string()
+                        } else {
+                            String::from("")
+                        }
+                    },
+                    disk_file_system: {
+                        if let Some(metric_disk_file_system) = m.attributes.get("disk_file_system")
+                        {
+                            metric_disk_file_system.clone()
+                        } else {
+                            String::from("")
+                        }
+                    },
+                    disk_is_removable: {
+                        if let Some(metric_disk_is_removable) =
+                            m.attributes.get("disk_is_removable")
+                        {
+                            metric_disk_is_removable.parse::<bool>().unwrap()
+                        } else {
+                            false
+                        }
+                    },
+                    disk_mount_point: {
+                        if let Some(metric_disk_mount_point) = m.attributes.get("disk_mount_point")
+                        {
+                            metric_disk_mount_point.clone()
+                        } else {
+                            String::from("")
+                        }
+                    },
+                    disk_total_bytes: {
+                        if m.name == "scaph_host_disk_total_bytes" {
+                            m.metric_value.to_string()
+                        } else {
+                            String::from("")
+                        }
+                    },
+                    disk_type: {
+                        if let Some(metric_disk_type) = m.attributes.get("disk_type") {
+                            metric_disk_type.clone()
+                        } else {
+                            String::from("")
+                        }
+                    },
+                })
+            }
+        }
+        res
+    }
+
     fn retrieve_metrics(
         &mut self,
         parameters: &ArgMatches,
@@ -246,20 +331,33 @@ impl JSONExporter {
         let metrics = metric_generator.pop_metrics();
         let mut metrics_iter = metrics.iter();
         let socket_metrics_res = metrics_iter.find(|x| x.name == "scaph_socket_power_microwatts");
-        //info!("socket metrics res : {:?}", socket_metrics_res);
+        //TODO: fix for multiple sockets
         let mut host_report: Option<Host> = None;
-        if let Some(host_metric) = metrics_iter.find(|x| x.name == "scaph_host_power_microwatts") {
+        let disks = self.gen_disks_report(
+            &metrics_iter
+                .filter(|x| x.name.starts_with("scaph_host_disk_"))
+                .collect(),
+        );
+        if let Some(host_metric) = &metrics
+            .iter()
+            .find(|x| x.name == "scaph_host_power_microwatts")
+        {
             let host_power_string = format!("{}", host_metric.metric_value);
             let host_power_f32 = host_power_string.parse::<f32>().unwrap();
             if host_power_f32 > 0.0 {
                 host_report = Some(Host {
                     consumption: host_power_f32,
                     timestamp: host_metric.timestamp.as_secs_f64(),
+                    components: Components { disks: None },
                 });
             }
         } else {
             info!("didn't find host metric");
         };
+
+        if let Some(host) = &mut host_report {
+            host.components.disks = Some(disks);
+        }
 
         let consumers: Vec<(IProcess, f64)>;
         if let Some(regex_filter) = &self.regex {

@@ -11,11 +11,8 @@ pub mod units;
 pub mod utils;
 #[cfg(target_os = "linux")]
 use procfs::{CpuInfo, CpuTime, KernelStats};
-use std::collections::HashMap;
-use std::error::Error;
-use std::fmt;
-use std::mem::size_of_val;
-use std::time::Duration;
+use std::{collections::HashMap, error::Error, fmt, mem::size_of_val, str, time::Duration};
+use sysinfo::DiskExt;
 #[allow(unused_imports)]
 use sysinfo::{CpuExt, Pid, System, SystemExt};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
@@ -562,6 +559,48 @@ impl Topology {
             Record::new(timestamp, load.five.to_string(), units::Unit::Numeric),
             Record::new(timestamp, load.five.to_string(), units::Unit::Numeric),
         ])
+    }
+
+    pub fn get_disks(&self) -> HashMap<String, (String, HashMap<String, String>, Record)> {
+        let timestamp = current_system_time_since_epoch();
+        let mut res = HashMap::new();
+        for d in self.proc_tracker.sysinfo.disks() {
+            let mut attributes = HashMap::new();
+            if let Ok(file_system) = str::from_utf8(d.file_system()) {
+                attributes.insert(String::from("disk_file_system"), String::from(file_system));
+            }
+            if let Some(mount_point) = d.mount_point().to_str() {
+                attributes.insert(String::from("disk_mount_point"), String::from(mount_point));
+            }
+            attributes.insert(
+                String::from("disk_is_removable"),
+                d.is_removable().to_string(),
+            );
+            if let Some(disk_name) = d.name().to_str() {
+                attributes.insert(String::from("disk_name"), String::from(disk_name));
+            }
+            res.insert(
+                String::from("scaph_host_disk_total_bytes"),
+                (
+                    String::from("Total disk size, in bytes."),
+                    attributes.clone(),
+                    Record::new(timestamp, d.total_space().to_string(), units::Unit::Bytes),
+                ),
+            );
+            res.insert(
+                String::from("scaph_host_disk_available_bytes"),
+                (
+                    String::from("Available disk space, in bytes."),
+                    attributes.clone(),
+                    Record::new(
+                        timestamp,
+                        d.available_space().to_string(),
+                        units::Unit::Bytes,
+                    ),
+                ),
+            );
+        }
+        res
     }
 
     /// Returns the power consumed between last and previous measurement for a given process ID, in microwatts
