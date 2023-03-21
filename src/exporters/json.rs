@@ -87,6 +87,12 @@ impl Exporter for JSONExporter {
             .takes_value(true);
         options.push(arg);
 
+        let arg = Arg::with_name("resources")
+            .help("Monitor and include CPU/RAM/Disk usage per process.")
+            .long("resources")
+            .required(false);
+        options.push(arg);
+
         // the resulting labels of this option are not yet used by this exporter, activate this option once we display something interesting about it
         //let arg = Arg::with_name("qemu")
         //    .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
@@ -118,10 +124,26 @@ struct Socket {
 struct Consumer {
     exe: PathBuf,
     pid: i32,
+    resources_usage: Option<ResourcesUsage>,
     consumption: f32,
     timestamp: f64,
     container: Option<Container>,
 }
+
+#[derive(Serialize, Deserialize)]
+struct ResourcesUsage {
+    cpu_usage: String,
+    cpu_usage_unit: String,
+    memory_usage: String,
+    memory_usage_unit: String,
+    memory_virtual_usage: String,
+    memory_virtual_usage_unit: String,
+    disk_usage_write: String,
+    disk_usage_write_unit: String,
+    disk_usage_read: String,
+    disk_usage_read_unit: String,
+}
+
 #[derive(Serialize, Deserialize)]
 struct Container {
     id: String,
@@ -255,7 +277,7 @@ impl JSONExporter {
                     .unwrap(),
             );
         }
-        let top_consumers = consumers
+        let mut top_consumers = consumers
             .iter()
             .filter_map(|(process, _value)| {
                 metrics
@@ -268,6 +290,7 @@ impl JSONExporter {
                         exe: PathBuf::from(metric.attributes.get("exe").unwrap()),
                         pid: process.pid.to_string().parse::<i32>().unwrap(),
                         consumption: format!("{}", metric.metric_value).parse::<f32>().unwrap(),
+                        resources_usage: None,
                         timestamp: metric.timestamp.as_secs_f64(),
                         container: match parameters.is_present("containers") {
                             true => metric.attributes.get("container_id").map(|container_id| {
@@ -292,6 +315,54 @@ impl JSONExporter {
                     })
             })
             .collect::<Vec<_>>();
+
+        if parameters.is_present("resources") {
+            info!("ADDING RESOURCES");
+            for c in top_consumers.iter_mut() {
+                let mut res = ResourcesUsage {
+                    cpu_usage: String::from("0"),
+                    cpu_usage_unit: String::from("%"),
+                    disk_usage_read: String::from("0"),
+                    disk_usage_read_unit: String::from("Bytes"),
+                    disk_usage_write: String::from("0"),
+                    disk_usage_write_unit: String::from("Bytes"),
+                    memory_usage: String::from("0"),
+                    memory_usage_unit: String::from("Bytes"),
+                    memory_virtual_usage: String::from("0"),
+                    memory_virtual_usage_unit: String::from("Bytes"),
+                };
+                let mut metrics = metrics.iter().filter(|x| {
+                    x.name.starts_with("scaph_process_")
+                        && x.attributes.get("pid").unwrap() == &c.pid.to_string()
+                });
+                if let Some(cpu_usage_metric) =
+                    metrics.find(|y| y.name == "scaph_process_cpu_usage_percentage")
+                {
+                    res.cpu_usage = cpu_usage_metric.metric_value.to_string();
+                }
+                if let Some(mem_usage_metric) =
+                    metrics.find(|y| y.name == "scaph_process_memory_bytes")
+                {
+                    res.memory_usage = mem_usage_metric.metric_value.to_string();
+                }
+                if let Some(mem_virtual_usage_metric) =
+                    metrics.find(|y| y.name == "scaph_process_memory_virtual_bytes")
+                {
+                    res.memory_virtual_usage = mem_virtual_usage_metric.metric_value.to_string();
+                }
+                if let Some(disk_write_metric) =
+                    metrics.find(|y| y.name == "scaph_process_disk_write_bytes")
+                {
+                    res.disk_usage_write = disk_write_metric.metric_value.to_string();
+                }
+                if let Some(disk_read_metric) =
+                    metrics.find(|y| y.name == "scaph_process_disk_read_bytes")
+                {
+                    res.disk_usage_read = disk_read_metric.metric_value.to_string();
+                }
+                c.resources_usage = Some(res);
+            }
+        }
 
         let all_sockets_vec = metric_generator.topology.get_sockets_passive();
         let all_sockets = all_sockets_vec
