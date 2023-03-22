@@ -125,6 +125,7 @@ struct Socket {
 #[derive(Serialize, Deserialize)]
 struct Consumer {
     exe: PathBuf,
+    cmdline: String,
     pid: i32,
     resources_usage: Option<ResourcesUsage>,
     consumption: f32,
@@ -386,6 +387,7 @@ impl JSONExporter {
                     })
                     .map(|metric| Consumer {
                         exe: PathBuf::from(metric.attributes.get("exe").unwrap()),
+                        cmdline: metric.attributes.get("cmdline").unwrap().clone(),
                         pid: process.pid.to_string().parse::<i32>().unwrap(),
                         consumption: format!("{}", metric.metric_value).parse::<f32>().unwrap(),
                         resources_usage: None,
