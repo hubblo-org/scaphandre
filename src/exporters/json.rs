@@ -402,6 +402,13 @@ impl JSONExporter {
                         .expect("Wrong container_regex expression. Regexp is invalid."),
                 );
             }
+            #[cfg(not(feature = "containers"))]
+            {
+                consumers = metric_generator
+                    .topology
+                    .proc_tracker
+                    .get_top_consumers(max_top);
+            }
         } else {
             consumers = metric_generator
                 .topology
