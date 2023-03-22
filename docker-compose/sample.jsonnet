@@ -32,7 +32,7 @@ dashboard.new(
           title='Hosts power consumption',
           datasource='${PROMETHEUS_DS}',
           format='W',
-          span=4,
+          span=3,
           min=0
       )
       .addTarget(
@@ -58,7 +58,7 @@ dashboard.new(
       grafana.graphPanel.new(
           title='Hosts power consumption total (dynamic time range)',
           datasource='${PROMETHEUS_DS}',
-          span=4,
+          span=3,
           bars=true,
           format='Wh',
           x_axis_mode='series',
@@ -74,9 +74,29 @@ dashboard.new(
    )
   .addPanel(
       grafana.graphPanel.new(
+          title='Disks capacity and usage',
+          datasource='${PROMETHEUS_DS}',
+          span=3,
+          format='bytes',
+      )
+      .addTarget(
+          grafana.prometheus.target(
+              'scaph_host_disk_total_bytes',
+              legendFormat='{{ disk_name }} {{ disk_type }} total',
+          )
+      )
+      .addTarget(
+          grafana.prometheus.target(
+              'scaph_host_disk_available_bytes',
+              legendFormat='{{ disk_name }} {{ disk_type }} available',
+          )
+      )
+   )
+  .addPanel(
+      grafana.graphPanel.new(
           title='Host load average',
           datasource='${PROMETHEUS_DS}',
-          span=4,
+          span=3,
           format='',
           min=0
       )
@@ -153,7 +173,7 @@ dashboard.new(
         grafana.graphPanel.new(
             title='scaph_self_mem',
             datasource='${PROMETHEUS_DS}',
-            format='Bytes',
+            format='bytes',
             span=3,
             min=0
         )
