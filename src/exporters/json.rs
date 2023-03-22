@@ -76,6 +76,7 @@ impl Exporter for JSONExporter {
 
         let arg = Arg::with_name("containers")
             .help("Monitor and apply labels for processes running as containers")
+            .short("c")
             .long("containers")
             .required(false)
             .takes_value(false);
@@ -93,6 +94,13 @@ impl Exporter for JSONExporter {
             .help("Monitor and include CPU/RAM/Disk usage per process.")
             .long("resources")
             .required(false);
+        options.push(arg);
+
+        let arg = Arg::with_name("container_regex")
+            .help("Filter process by container name based on regular expressions (e.g: 'scaph\\w\\wd.e'). Works only with --containers enabled.")
+            .long("container-regex")
+            .required(false)
+            .takes_value(true);
         options.push(arg);
 
         // the resulting labels of this option are not yet used by this exporter, activate this option once we display something interesting about it
@@ -149,6 +157,7 @@ struct ResourcesUsage {
 
 #[derive(Serialize, Deserialize)]
 struct Container {
+    name: String,
     id: String,
     runtime: String,
     scheduler: String,
@@ -229,6 +238,12 @@ impl JSONExporter {
         {
             let warning =
                 String::from("Warning: (--max-top-consumers) and (-r / --regex) used at the same time. (--max-top-consumers) disabled");
+            eprintln!("{}", warning.bright_yellow());
+        }
+
+        if !parameters.is_present("containers") && parameters.is_present("container_regex") {
+            let warning =
+                String::from("Warning: --container-regex is used but --containers is not enabled. Regex search won't work.");
             eprintln!("{}", warning.bright_yellow());
         }
 
@@ -361,20 +376,27 @@ impl JSONExporter {
         }
 
         let consumers: Vec<(IProcess, f64)>;
+        let max_top = parameters
+            .value_of("max_top_consumers")
+            .unwrap_or("10")
+            .parse::<u16>()
+            .unwrap();
         if let Some(regex_filter) = &self.regex {
             debug!("Processes filtered by '{}':", regex_filter.as_str());
             consumers = metric_generator
                 .topology
                 .proc_tracker
                 .get_filtered_processes(regex_filter);
-        } else {
-            consumers = metric_generator.topology.proc_tracker.get_top_consumers(
-                parameters
-                    .value_of("max_top_consumers")
-                    .unwrap_or("10")
-                    .parse::<u16>()
-                    .unwrap(),
+        } else if parameters.is_present("container_regex") {
+            consumers = metric_generator.get_processes_filtered_by_container_name(
+                &Regex::new(parameters.value_of("container_regex").unwrap())
+                    .expect("Wrong container_regex expression. Regexp is invalid."),
             );
+        } else {
+            consumers = metric_generator
+                .topology
+                .proc_tracker
+                .get_top_consumers(max_top);
         }
         let mut top_consumers = consumers
             .iter()
@@ -396,6 +418,12 @@ impl JSONExporter {
                             true => metric.attributes.get("container_id").map(|container_id| {
                                 Container {
                                     id: String::from(container_id),
+                                    name: String::from(
+                                        metric
+                                            .attributes
+                                            .get("container_names")
+                                            .unwrap_or(&String::from("unknown")),
+                                    ),
                                     runtime: String::from(
                                         metric
                                             .attributes

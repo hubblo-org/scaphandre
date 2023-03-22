@@ -28,6 +28,8 @@ use {
     docker_sync::{container::Container, Docker},
     k8s_sync::kubernetes::Kubernetes,
     k8s_sync::Pod,
+    ordered_float::*,
+    regex::Regex,
     utils::{get_docker_client, get_kubernetes_client},
 };
 
@@ -220,6 +222,50 @@ impl MetricGenerator {
             #[cfg(target_os = "linux")]
             qemu: _qemu,
         }
+    }
+
+    #[cfg(feature = "containers")]
+    pub fn get_processes_filtered_by_container_name(
+        &self,
+        container_regex: &Regex,
+    ) -> Vec<(IProcess, f64)> {
+        let mut consumers: Vec<(IProcess, OrderedFloat<f64>)> = vec![];
+        for p in &self.topology.proc_tracker.procs {
+            if p.len() > 1 {
+                let diff = self.topology.proc_tracker.get_cpu_usage_percentage(
+                    p.first().unwrap().process.pid as _,
+                    self.topology.proc_tracker.nb_cores,
+                );
+                let p_record = p.last().unwrap();
+                let container_description = self
+                    .topology
+                    .proc_tracker
+                    .get_process_container_description(
+                        p_record.process.pid,
+                        &self.containers,
+                        self.docker_version.clone(),
+                        &self.pods,
+                    );
+                if let Some(name) = container_description.get("container_names") {
+                    if container_regex.is_match(name) {
+                        consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
+                        consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                    }
+                }
+                //if container_regex.is_match(process_exe.to_str().unwrap_or_default()) {
+                //    consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
+                //    consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                //} else if container_regex.is_match(&process_cmdline.concat()) {
+                //    consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
+                //    consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                //}
+            }
+        }
+        let mut result: Vec<(IProcess, f64)> = vec![];
+        for (p, f) in consumers {
+            result.push((p, f.into_inner()));
+        }
+        result
     }
 
     /// Generate all scaphandre internal metrics.
