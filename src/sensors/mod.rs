@@ -12,9 +12,9 @@ pub mod utils;
 #[cfg(target_os = "linux")]
 use procfs::{CpuInfo, CpuTime, KernelStats};
 use std::{collections::HashMap, error::Error, fmt, mem::size_of_val, str, time::Duration};
-use sysinfo::DiskExt;
 #[allow(unused_imports)]
 use sysinfo::{CpuExt, Pid, System, SystemExt};
+use sysinfo::{DiskExt, DiskType};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
@@ -571,6 +571,17 @@ impl Topology {
             }
             if let Some(mount_point) = d.mount_point().to_str() {
                 attributes.insert(String::from("disk_mount_point"), String::from(mount_point));
+            }
+            match d.type_() {
+                DiskType::SSD => {
+                    attributes.insert(String::from("disk_type"), String::from("SSD"));
+                }
+                DiskType::HDD => {
+                    attributes.insert(String::from("disk_type"), String::from("HDD"));
+                }
+                DiskType::Unknown(_) => {
+                    attributes.insert(String::from("disk_type"), String::from("Unknown"));
+                }
             }
             attributes.insert(
                 String::from("disk_is_removable"),
