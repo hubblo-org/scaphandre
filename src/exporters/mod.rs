@@ -706,6 +706,7 @@ impl MetricGenerator {
         if self.watch_docker && self.docker_client.is_some() {
             if let Some(docker) = self.docker_client.as_mut() {
                 if let Ok(containers_result) = docker.get_containers(false) {
+                    warn!("Got containers: {:?}", containers_result);
                     self.containers = containers_result;
                     self.containers_last_check =
                         current_system_time_since_epoch().as_secs().to_string();

@@ -401,7 +401,7 @@ impl JSONExporter {
                     &Regex::new(parameters.value_of("container_regex").unwrap())
                         .expect("Wrong container_regex expression. Regexp is invalid."),
                 );
-                debug!("consumers : {:?}", consumers);
+                warn!("consumers : {:?}", consumers);
             }
             #[cfg(not(feature = "containers"))]
             {
@@ -457,7 +457,7 @@ impl JSONExporter {
                                 }
                             }),
                             false => {
-                                debug!(
+                                info!(
                                     "No container_id for {}",
                                     metric.attributes.get("cmdline").unwrap().clone()
                                 );
