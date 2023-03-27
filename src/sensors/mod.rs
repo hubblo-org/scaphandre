@@ -614,6 +614,46 @@ impl Topology {
         res
     }
 
+    pub fn get_total_memory_bytes(&self) -> Record {
+        Record {
+            timestamp: current_system_time_since_epoch(),
+            value: self.proc_tracker.sysinfo.total_memory().to_string(),
+            unit: units::Unit::Bytes,
+        }
+    }
+
+    pub fn get_available_memory_bytes(&self) -> Record {
+        Record {
+            timestamp: current_system_time_since_epoch(),
+            value: self.proc_tracker.sysinfo.available_memory().to_string(),
+            unit: units::Unit::Bytes,
+        }
+    }
+
+    pub fn get_free_memory_bytes(&self) -> Record {
+        Record {
+            timestamp: current_system_time_since_epoch(),
+            value: self.proc_tracker.sysinfo.free_memory().to_string(),
+            unit: units::Unit::Bytes,
+        }
+    }
+
+    pub fn get_total_swap_bytes(&self) -> Record {
+        Record {
+            timestamp: current_system_time_since_epoch(),
+            value: self.proc_tracker.sysinfo.total_swap().to_string(),
+            unit: units::Unit::Bytes,
+        }
+    }
+
+    pub fn get_free_swap_bytes(&self) -> Record {
+        Record {
+            timestamp: current_system_time_since_epoch(),
+            value: self.proc_tracker.sysinfo.free_swap().to_string(),
+            unit: units::Unit::Bytes,
+        }
+    }
+
     /// Returns the power consumed between last and previous measurement for a given process ID, in microwatts
     pub fn get_process_power_consumption_microwatts(&self, pid: Pid) -> Option<Record> {
         if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
