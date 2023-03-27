@@ -455,9 +455,7 @@ impl JSONExporter {
                                     ),
                                 }
                             }),
-                            false => {
-                                None
-                            }
+                            false => None,
                         },
                     })
             })
