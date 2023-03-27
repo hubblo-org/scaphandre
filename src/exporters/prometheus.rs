@@ -50,80 +50,80 @@ impl Exporter for PrometheusExporter {
 
         runner(
             (*self.sensor.get_topology()).unwrap(),
-            parameters.value_of("address").unwrap().to_string(),
-            parameters.value_of("port").unwrap().to_string(),
-            parameters.value_of("suffix").unwrap().to_string(),
-            parameters.is_present("qemu"),
-            parameters.is_present("containers"),
+            parameters.get_one::<String>("address").unwrap().to_string(),
+            parameters.get_one::<String>("port").unwrap().to_string(),
+            parameters.get_one::<String>("suffix").unwrap().to_string(),
+            parameters.get_flag("qemu"),
+            parameters.get_flag("containers"),
             get_hostname(),
         );
     }
     /// Returns options understood by the exporter.
-    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
+    fn get_options() -> Vec<clap::Arg> {
         let mut options = Vec::new();
-        let arg = Arg::with_name("address")
+        let arg = Arg::new("address")
             .default_value(DEFAULT_IP_ADDRESS)
             .help("ipv6 or ipv4 address to expose the service to")
             .long("address")
-            .short("a")
+            .short('a')
             .required(false)
-            .takes_value(true);
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("port")
+        let arg = Arg::new("port")
             .default_value("8080")
             .help("TCP port number to expose the service")
             .long("port")
-            .short("p")
+            .short('p')
             .required(false)
-            .takes_value(true);
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("suffix")
+        let arg = Arg::new("suffix")
             .default_value("metrics")
             .help("url suffix to access metrics")
             .long("suffix")
-            .short("s")
+            .short('s')
             .required(false)
-            .takes_value(true);
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("qemu")
+        let arg = Arg::new("qemu")
             .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
             .long("qemu")
-            .short("q")
+            .short('q')
             .required(false)
-            .takes_value(false);
+            .action(clap::ArgAction::SetTrue);
         options.push(arg);
 
-        let arg = Arg::with_name("containers")
+        let arg = Arg::new("containers")
             .help("Monitor and apply labels for processes running as containers")
             .long("containers")
             .required(false)
-            .takes_value(false);
+            .action(clap::ArgAction::SetTrue);
         options.push(arg);
 
-        let arg = Arg::with_name("kubernetes_host")
+        let arg = Arg::new("kubernetes_host")
             .help("FQDN of the kubernetes API server")
             .long("kubernetes-host")
             .required(false)
-            .takes_value(true);
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("kubernetes_scheme")
+        let arg = Arg::new("kubernetes_scheme")
             .help("Protocol used to access kubernetes API server")
             .long("kubernetes-scheme")
             .default_value("http")
             .required(false)
-            .takes_value(true);
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("kubernetes_port")
+        let arg = Arg::new("kubernetes_port")
             .help("Kubernetes API server port number")
             .long("kubernetes-port")
             .default_value("6443")
             .required(false)
-            .takes_value(true);
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
         options

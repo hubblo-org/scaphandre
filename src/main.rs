@@ -1,5 +1,6 @@
 //! Generic sensor and transmission agent for energy consumption related metrics.
-use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
+
+use clap::{crate_authors, crate_version, value_parser, Arg, ArgAction, Command};
 use scaphandre::{get_exporters_options, run};
 fn main() {
     #[cfg(target_os = "linux")]
@@ -7,69 +8,69 @@ fn main() {
     #[cfg(target_os = "windows")]
     let sensors = ["msr_rapl"];
     let exporters_options = get_exporters_options();
-    let exporters = exporters_options.keys();
-    let exporters: Vec<&str> = exporters.into_iter().map(|x| x.as_str()).collect();
+    let exporters: Vec<String> = exporters_options.keys().map(|x| x.to_string()).collect();
 
     #[cfg(target_os = "linux")]
     let sensor_default_value = String::from("powercap_rapl");
     #[cfg(not(target_os = "linux"))]
     let sensor_default_value = String::from("msr_rapl");
 
-    let mut matches = App::new("scaphandre")
+    let mut matches = Command::new("scaphandre")
         .author(crate_authors!())
         .version(crate_version!())
         .about("Extensible metrology agent for energy/electricity consumption related metrics")
-        .setting(AppSettings::SubcommandRequiredElseHelp)
         .arg(
-            Arg::with_name("v")
-                .short("v")
-                .multiple(true)
+            Arg::new("v")
+                .short('v')
                 .help("Sets the level of verbosity.")
+                .action(ArgAction::Count)
         )
         .arg(
-            Arg::with_name("no-header")
+            Arg::new("no-header")
                 .value_name("no-header")
                 .help("Prevents the header to be displayed in the terminal output.")
                 .required(false)
-                .takes_value(false)
                 .long("no-header")
+                .action(clap::ArgAction::SetTrue),
         )
         .arg(
-            Arg::with_name("sensor")
+            Arg::new("sensor")
                 .value_name("sensor")
                 .help("Sensor module to apply on the host to get energy consumption metrics.")
                 .required(false)
-                .takes_value(true)
                 .default_value(&sensor_default_value)
-                .possible_values(&sensors)
-                .short("s")
+                .short('s')
                 .long("sensor")
+                .value_parser(sensors)
+                .action(clap::ArgAction::Set)
         ).arg(
-            Arg::with_name("sensor-buffer-per-domain-max-kB")
+            Arg::new("sensor-buffer-per-domain-max-kB")
                 .value_name("sensor-buffer-per-domain-max-kB")
                 .help("Maximum memory size allowed, in KiloBytes, for storing energy consumption of each domain.")
                 .required(false)
-                .takes_value(true)
                 .default_value("1")
+                .value_parser(value_parser!(u16))
+                .action(clap::ArgAction::Set)
         ).arg(
-            Arg::with_name("sensor-buffer-per-socket-max-kB")
+            Arg::new("sensor-buffer-per-socket-max-kB")
                 .value_name("sensor-buffer-per-socket-max-kB")
                 .help("Maximum memory size allowed, in KiloBytes, for storing energy consumption of each socket.")
                 .required(false)
-                .takes_value(true)
                 .default_value("1")
+                .value_parser(value_parser!(u16))
+                .action(clap::ArgAction::Set)
         ).arg(
-            Arg::with_name("vm")
+            Arg::new("vm")
                 .value_name("vm")
                 .help("Tell scaphandre if he is running in a virtual machine.")
                 .long("vm")
                 .required(false)
-                .takes_value(false)
+                .action(clap::ArgAction::SetTrue),
         );
 
     for exporter in exporters {
-        let mut subcmd = SubCommand::with_name(exporter).about(
-            match exporter {
+        let mut subcmd = Command::new(&exporter).about(
+            match exporter.as_str() {
                 "stdout" => "Stdout exporter allows you to output the power consumption data in the terminal",
                 "json" => "JSON exporter allows you to output the power consumption data in a json file",
                 "prometheus" => "Prometheus exporter exposes power consumption metrics on an http endpoint (/metrics is default) in prometheus accepted format",
@@ -80,7 +81,7 @@ fn main() {
             }
         );
 
-        let myopts = exporters_options.get(exporter).unwrap();
+        let myopts = exporters_options.get(&exporter).unwrap();
         for opt in myopts {
             subcmd = subcmd.arg(opt);
         }
