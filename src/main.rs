@@ -8,11 +8,7 @@ fn main() {
     #[cfg(target_os = "windows")]
     let sensors = ["msr_rapl"];
     let exporters_options = get_exporters_options();
-    let exporters: Vec<String> = exporters_options
-        .keys()
-        .into_iter()
-        .map(|x| x.to_string())
-        .collect();
+    let exporters: Vec<String> = exporters_options.keys().map(|x| x.to_string()).collect();
 
     #[cfg(target_os = "linux")]
     let sensor_default_value = String::from("powercap_rapl");

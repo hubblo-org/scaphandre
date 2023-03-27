@@ -1,6 +1,6 @@
 use crate::exporters::*;
 use crate::sensors::Sensor;
-use clap::{value_parser, Arg};
+use clap::{parser::ValueSource, value_parser, Arg};
 use colored::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -80,24 +80,24 @@ impl Exporter for JSONExporter {
 
         #[cfg(feature = "containers")]
         {
-            let arg = Arg::with_name("containers")
+            let arg = Arg::new("containers")
                 .help("Monitor and apply labels for processes running as containers")
-                .short("c")
+                .short('c')
                 .long("containers")
                 .required(false)
-                .takes_value(false);
+                .action(clap::ArgAction::Set);
             options.push(arg);
         }
 
-        let arg = Arg::with_name("regex_filter")
+        let arg = Arg::new("regex_filter")
             .help("Filter processes based on regular expressions (e.g: 'scaph\\w\\wd.e').")
             .long("regex")
-            .short("r")
+            .short('r')
             .required(false)
-            .takes_value(true);
+            .action(clap::ArgAction::Set);
         options.push(arg);
 
-        let arg = Arg::with_name("resources")
+        let arg = Arg::new("resources")
             .help("Monitor and include CPU/RAM/Disk usage per process.")
             .long("resources")
             .required(false);
@@ -105,11 +105,11 @@ impl Exporter for JSONExporter {
 
         #[cfg(feature = "containers")]
         {
-            let arg = Arg::with_name("container_regex")
+            let arg = Arg::new("container_regex")
                 .help("Filter process by container name based on regular expressions (e.g: 'scaph\\w\\wd.e'). Works only with --containers enabled.")
                 .long("container-regex")
                 .required(false)
-                .takes_value(true);
+                .action(clap::ArgAction::Set);
             options.push(arg);
         }
 
@@ -227,19 +227,22 @@ impl JSONExporter {
             .get_one("step_duration_nano")
             .expect("Wrong step_duration_nano value, should be a number of nano seconds");
 
-        self.regex = if !parameters.is_present("regex_filter")
-            || parameters.value_of("regex_filter").unwrap().is_empty()
+        self.regex = if !parameters.get_flag("regex_filter")
+            || parameters
+                .get_one::<String>("regex_filter")
+                .unwrap()
+                .is_empty()
         {
             None
         } else {
             Some(
-                Regex::new(parameters.value_of("regex_filter").unwrap())
+                Regex::new(parameters.get_one::<String>("regex_filter").unwrap())
                     .expect("Wrong regex_filter, regexp is invalid"),
             )
         };
 
-        if parameters.occurrences_of("regex_filter") == 1
-            && parameters.occurrences_of("max_top_consumers") == 1
+        if parameters.value_source("regex_filter") == Some(ValueSource::CommandLine)
+            && parameters.value_source("max_top_consumers") == Some(ValueSource::CommandLine)
         {
             let warning =
                 String::from("Warning: (--max-top-consumers) and (-r / --regex) used at the same time. (--max-top-consumers) disabled");
@@ -247,7 +250,7 @@ impl JSONExporter {
         }
 
         #[cfg(feature = "containers")]
-        if !parameters.is_present("containers") && parameters.is_present("container_regex") {
+        if !parameters.get_flag("containers") && parameters.get_flag("container_regex") {
             let warning =
                 String::from("Warning: --container-regex is used but --containers is not enabled. Regex search won't work.");
             eprintln!("{}", warning.bright_yellow());
@@ -383,8 +386,8 @@ impl JSONExporter {
 
         let consumers: Vec<(IProcess, f64)>;
         let max_top = parameters
-            .value_of("max_top_consumers")
-            .unwrap_or("10")
+            .get_one::<String>("max_top_consumers")
+            .unwrap_or(&String::from("10"))
             .parse::<u16>()
             .unwrap();
         if let Some(regex_filter) = &self.regex {
@@ -393,11 +396,11 @@ impl JSONExporter {
                 .topology
                 .proc_tracker
                 .get_filtered_processes(regex_filter);
-        } else if parameters.is_present("container_regex") {
+        } else if parameters.get_flag("container_regex") {
             #[cfg(feature = "containers")]
             {
                 consumers = metric_generator.get_processes_filtered_by_container_name(
-                    &Regex::new(parameters.value_of("container_regex").unwrap())
+                    &Regex::new(parameters.get_one::<String>("container_regex").unwrap())
                         .expect("Wrong container_regex expression. Regexp is invalid."),
                 );
             }
@@ -460,8 +463,7 @@ impl JSONExporter {
             })
             .collect::<Vec<_>>();
 
-        if parameters.is_present("resources") {
-            info!("ADDING RESOURCES");
+        if parameters.get_flag("resources") {
             for c in top_consumers.iter_mut() {
                 let mut res = ResourcesUsage {
                     cpu_usage: String::from("0"),

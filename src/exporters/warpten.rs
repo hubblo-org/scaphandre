@@ -1,6 +1,6 @@
 use crate::exporters::*;
-use clap::{value_parser, Arg};
 use crate::sensors::{utils::IProcess, RecordGenerator, Sensor, Topology};
+use clap::{value_parser, Arg};
 use std::time::Duration;
 use std::{env, thread};
 use utils::get_scaphandre_version;
