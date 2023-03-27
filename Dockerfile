@@ -1,4 +1,4 @@
-FROM rust:1.59 as planner
+FROM rust:1.68 as planner
 WORKDIR app
 
 RUN cargo install cargo-chef
@@ -7,7 +7,7 @@ COPY . .
 # Analyze dependencies
 RUN cargo chef prepare  --recipe-path recipe.json
 
-FROM rust:1.59 as cacher
+FROM rust:1.68 as cacher
 WORKDIR app
 RUN cargo install cargo-chef
 COPY --from=planner /app/recipe.json recipe.json
@@ -15,7 +15,7 @@ COPY --from=planner /app/recipe.json recipe.json
 # Cache dependencies
 RUN cargo chef cook --release --recipe-path recipe.json
 
-FROM rust:1.59 as builder
+FROM rust:1.68 as builder
 WORKDIR app
 COPY . .
 
