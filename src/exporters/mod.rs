@@ -536,6 +536,77 @@ impl MetricGenerator {
                 metric_value: MetricValueType::Text(metric.2.value),
             });
         }
+
+        let ram_attributes = HashMap::new();
+        let metric_value = self.topology.get_total_memory_bytes();
+        self.data.push(Metric {
+            name: String::from("scaph_host_memory_total_bytes"),
+            metric_type: String::from("gauge"),
+            ttl: 60.0,
+            timestamp: metric_value.timestamp,
+            hostname: self.hostname.clone(),
+            state: String::from("ok"),
+            tags: vec!["scaphandre".to_string()],
+            attributes: ram_attributes.clone(),
+            description: String::from("Random Access Memory installed on the host, in bytes."),
+            metric_value: MetricValueType::Text(metric_value.value),
+        });
+        let metric_value = self.topology.get_available_memory_bytes();
+        self.data.push(Metric {
+            name: String::from("scaph_host_memory_available_bytes"),
+            metric_type: String::from("gauge"),
+            ttl: 60.0,
+            timestamp: metric_value.timestamp,
+            hostname: self.hostname.clone(),
+            state: String::from("ok"),
+            tags: vec!["scaphandre".to_string()],
+            attributes: ram_attributes.clone(),
+            description: String::from(
+                "Random Access Memory available to be re-used on the host, in bytes.",
+            ),
+            metric_value: MetricValueType::Text(metric_value.value),
+        });
+        let metric_value = self.topology.get_free_memory_bytes();
+        self.data.push(Metric {
+            name: String::from("scaph_host_memory_free_bytes"),
+            metric_type: String::from("gauge"),
+            ttl: 60.0,
+            timestamp: metric_value.timestamp,
+            hostname: self.hostname.clone(),
+            state: String::from("ok"),
+            tags: vec!["scaphandre".to_string()],
+            attributes: ram_attributes.clone(),
+            description: String::from(
+                "Random Access Memory free to be used (not reused) on the host, in bytes.",
+            ),
+            metric_value: MetricValueType::Text(metric_value.value),
+        });
+        let metric_value = self.topology.get_free_swap_bytes();
+        self.data.push(Metric {
+            name: String::from("scaph_host_swap_free_bytes"),
+            metric_type: String::from("gauge"),
+            ttl: 60.0,
+            timestamp: metric_value.timestamp,
+            hostname: self.hostname.clone(),
+            state: String::from("ok"),
+            tags: vec!["scaphandre".to_string()],
+            attributes: ram_attributes.clone(),
+            description: String::from("Swap space free to be used on the host, in bytes."),
+            metric_value: MetricValueType::Text(metric_value.value),
+        });
+        let metric_value = self.topology.get_total_swap_bytes();
+        self.data.push(Metric {
+            name: String::from("scaph_host_swap_total_bytes"),
+            metric_type: String::from("gauge"),
+            ttl: 60.0,
+            timestamp: metric_value.timestamp,
+            hostname: self.hostname.clone(),
+            state: String::from("ok"),
+            tags: vec!["scaphandre".to_string()],
+            attributes: ram_attributes,
+            description: String::from("Total swap space on the host, in bytes."),
+            metric_value: MetricValueType::Text(metric_value.value),
+        });
     }
 
     /// Generate socket metrics.
