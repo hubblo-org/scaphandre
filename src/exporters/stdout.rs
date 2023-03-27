@@ -125,7 +125,7 @@ impl StdoutExporter {
             parameters.get_flag("containers"),
         );
 
-        println!("Measurement step is: {}s", step_duration);
+        println!("Measurement step is: {step_duration}s");
         if timeout_secs == 0 {
             loop {
                 self.iterate(&regex_filter, process_number, &mut metric_generator);
@@ -165,9 +165,10 @@ impl StdoutExporter {
 
         let metrics = metric_generator.pop_metrics();
         let mut metrics_iter = metrics.iter();
+        let none_value = MetricValueType::Text("0".to_string());
         let host_power = match metrics_iter.find(|x| x.name == "scaph_host_power_microwatts") {
-            Some(m) => m.metric_value.clone(),
-            None => MetricValueType::Text("0".to_string()),
+            Some(m) => &m.metric_value,
+            None => &none_value,
         };
 
         let domain_names = metric_generator.topology.domains_names.as_ref();
@@ -177,7 +178,7 @@ impl StdoutExporter {
 
         println!(
             "Host:\t{} W",
-            (format!("{}", host_power).parse::<f64>().unwrap() / 1000000.0)
+            (format!("{host_power}").parse::<f64>().unwrap() / 1000000.0)
         );
 
         if domain_names.is_some() {
@@ -195,7 +196,7 @@ impl StdoutExporter {
             }
             let socket_id = s.attributes.get("socket_id").unwrap().clone();
 
-            let mut to_print = format!("Socket{}\t{} W |\t", socket_id, power_str);
+            let mut to_print = format!("Socket{socket_id}\t{power_str} W |\t");
 
             let domains = metrics.iter().filter(|x| {
                 x.name == "scaph_domain_power_microwatts"
@@ -230,19 +231,19 @@ impl StdoutExporter {
                         to_print.push_str("---");
                     }
                 }
-                println!("{}\n", to_print);
+                println!("{to_print}\n");
             }
         }
 
         let consumers: Vec<(IProcess, f64)>;
         if let Some(regex_filter) = regex_filter {
-            println!("Processes filtered by '{}':", regex_filter.as_str());
+            debug!("Processes filtered by '{}':", regex_filter.as_str());
             consumers = metric_generator
                 .topology
                 .proc_tracker
                 .get_filtered_processes(regex_filter);
         } else {
-            println!("Top {} consumers:", process_number);
+            println!("Top {process_number} consumers:");
             consumers = metric_generator
                 .topology
                 .proc_tracker
@@ -258,7 +259,7 @@ impl StdoutExporter {
                 if let Some(process) = metrics.iter().find(|x| {
                     if x.name == "scaph_process_power_consumption_microwatts" {
                         let pid = x.attributes.get("pid").unwrap();
-                        pid.parse::<i32>().unwrap() == c.0.pid
+                        pid == &c.0.pid.to_string()
                     } else {
                         false
                     }

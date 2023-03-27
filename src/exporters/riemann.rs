@@ -81,7 +81,7 @@ impl RiemannClient {
         match metric.metric_value {
             // MetricValueType::IntSigned(value) => event.set_metric_sint64(value),
             // MetricValueType::Float(value) => event.set_metric_f(value),
-            MetricValueType::FloatDouble(value) => event.set_metric_d(value),
+            //MetricValueType::FloatDouble(value) => event.set_metric_d(value),
             MetricValueType::IntUnsigned(value) => event.set_metric_sint64(
                 i64::try_from(value).expect("Metric cannot be converted to signed integer."),
             ),
@@ -133,7 +133,7 @@ impl Exporter for RiemannExporter {
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
         );
         println!("Press CTRL-C to stop scaphandre");
-        println!("Measurement step is: {}s", dispatch_duration);
+        println!("Measurement step is: {dispatch_duration}s");
 
         let topology = self.sensor.get_topology().unwrap();
         let mut metric_generator = MetricGenerator::new(

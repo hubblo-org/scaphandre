@@ -1,6 +1,6 @@
 [package]
 name = "scaphandre"
-version = "0.4.1"
+version = "0.5.0"
 authors = ["Benoit Petit <bpetit@hubblo.org>"]
 edition = "2018"
 license = "Apache-2.0"
@@ -34,7 +34,8 @@ chrono = "0.4.19"
 docker-sync = { version = "0.1.2", optional = true }
 k8s-sync = { version = "0.2.3", optional = true }
 hyper = { version = "0.14", features = ["full"], optional = true }
-tokio = { version = "1", features = ["full"], optional = true}
+tokio = { version = "1.26.0", features = ["full"], optional = true}
+sysinfo = { version = "0.28.3"}
 
 [target.'cfg(target_os="linux")'.dependencies]
 #procfs = "0.13.2"
@@ -42,8 +43,6 @@ procfs = { version = "0.12.0" }
 
 [target.'cfg(target_os="windows")'.dependencies]
 windows = { version = "0.27.0", features = ["alloc","Win32_Storage_FileSystem","Win32_Foundation","Win32_Security","Win32_System_IO","Win32_System_Ioctl"]}
-sysinfo = { version = "0.22.4"}
-
 
 [features]
 default = ["prometheus", "riemann", "warpten", "json", "containers"]

@@ -1,8 +1,11 @@
+#[cfg(target_os = "linux")]
 use scaphandre::exporters::qemu::QemuExporter;
+#[cfg(target_os = "linux")]
 use scaphandre::sensors::powercap_rapl::PowercapRAPLSensor;
 use std::env::current_dir;
 use std::fs::{create_dir, read_dir};
 
+#[cfg(target_os = "linux")]
 #[test]
 fn exporter_qemu() {
     let sensor = PowercapRAPLSensor::new(1, 1, false);

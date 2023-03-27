@@ -1,6 +1,6 @@
 use crate::exporters::*;
-use crate::sensors::{RecordGenerator, Sensor, Topology};
 use clap::{value_parser, Arg};
+use crate::sensors::{utils::IProcess, RecordGenerator, Sensor, Topology};
 use std::time::Duration;
 use std::{env, thread};
 use utils::get_scaphandre_version;
@@ -132,7 +132,7 @@ impl Warp10Exporter {
         //read_token: Option<&str>,
         qemu: bool,
     ) -> Result<Vec<warp10::Warp10Response>, warp10::Error> {
-        let client = warp10::Client::new(&format!("{}://{}:{}", scheme, host, port))?;
+        let client = warp10::Client::new(&format!("{scheme}://{host}:{port}"))?;
         let writer = client.get_writer(write_token.to_string());
         self.topology
             .proc_tracker
@@ -154,10 +154,9 @@ impl Warp10Exporter {
             warp10::Value::Double(scaphandre_version.parse::<f64>().unwrap()),
         )];
 
-        if let Some(metric_value) = self
-            .topology
-            .get_process_cpu_consumption_percentage(procfs::process::Process::myself().unwrap().pid)
-        {
+        if let Some(metric_value) = self.topology.get_process_cpu_usage_percentage(
+            IProcess::myself(&self.topology.proc_tracker).unwrap().pid,
+        ) {
             data.push(warp10::Data::new(
                 time::OffsetDateTime::now_utc(),
                 None,
@@ -167,10 +166,9 @@ impl Warp10Exporter {
             ));
         }
 
-        if let Some(metric_value) = self
-            .topology
-            .get_process_cpu_consumption_percentage(procfs::process::Process::myself().unwrap().pid)
-        {
+        if let Some(metric_value) = self.topology.get_process_cpu_usage_percentage(
+            IProcess::myself(&self.topology.proc_tracker).unwrap().pid,
+        ) {
             data.push(warp10::Data::new(
                 time::OffsetDateTime::now_utc(),
                 None,

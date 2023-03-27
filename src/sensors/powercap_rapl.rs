@@ -108,7 +108,7 @@ impl Sensor for PowercapRAPLSensor {
         if modules_state.is_err() && !self.virtual_machine {
             warn!("Couldn't find intel_rapl modules.");
         }
-        let mut topo = Topology::new();
+        let mut topo = Topology::new(HashMap::new());
         let re_socket = Regex::new(r"^.*/intel-rapl:\d+$").unwrap();
         let re_domain = Regex::new(r"^.*/intel-rapl:\d+:\d+$").unwrap();
         let mut re_domain_matched = false;
@@ -143,7 +143,7 @@ impl Sensor for PowercapRAPLSensor {
                         self.base_path, socket_id, domain_id
                     ),
                 );
-                if let Ok(domain_name) = &fs::read_to_string(format!("{}/name", folder_name)) {
+                if let Ok(domain_name) = &fs::read_to_string(format!("{folder_name}/name")) {
                     topo.safe_add_domain_to_socket(
                         socket_id,
                         domain_id,

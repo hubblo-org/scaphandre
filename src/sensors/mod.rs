@@ -10,14 +10,11 @@ pub mod powercap_rapl;
 pub mod units;
 pub mod utils;
 #[cfg(target_os = "linux")]
-use procfs::{process, CpuInfo, CpuTime, KernelStats};
-use std::collections::HashMap;
-use std::error::Error;
-use std::fmt;
-use std::mem::size_of_val;
-use std::time::Duration;
-#[cfg(not(target_os = "linux"))]
-use sysinfo::{ProcessorExt, System, SystemExt};
+use procfs::{CpuInfo, CpuTime, KernelStats};
+use std::{collections::HashMap, error::Error, fmt, mem::size_of_val, str, time::Duration};
+#[allow(unused_imports)]
+use sysinfo::{CpuExt, Pid, System, SystemExt};
+use sysinfo::{DiskExt, DiskType};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
@@ -58,10 +55,8 @@ pub struct Topology {
     pub buffer_max_kbytes: u16,
     /// Sorted list of all domains names
     pub domains_names: Option<Vec<String>>,
-    ///
-    #[cfg(target_os = "windows")]
-    #[allow(dead_code)]
-    sensor_data: HashMap<String, String>,
+    /// Sensor-specific data needed in the topology
+    _sensor_data: HashMap<String, String>,
 }
 
 impl RecordGenerator for Topology {
@@ -141,19 +136,14 @@ impl RecordGenerator for Topology {
 
 impl Default for Topology {
     fn default() -> Self {
-        #[cfg(target_os = "windows")]
         {
             Self::new(HashMap::new())
         }
-
-        #[cfg(target_os = "linux")]
-        Self::new()
     }
 }
 
 impl Topology {
     /// Instanciates Topology and returns the instance
-    #[cfg(target_os = "windows")]
     pub fn new(sensor_data: HashMap<String, String>) -> Topology {
         Topology {
             sockets: vec![],
@@ -162,19 +152,7 @@ impl Topology {
             record_buffer: vec![],
             buffer_max_kbytes: 1,
             domains_names: None,
-            sensor_data,
-        }
-    }
-    /// Instanciates Topology and returns the instance
-    #[cfg(target_os = "linux")]
-    pub fn new() -> Topology {
-        Topology {
-            sockets: vec![],
-            proc_tracker: ProcessTracker::new(5),
-            stat_buffer: vec![],
-            record_buffer: vec![],
-            buffer_max_kbytes: 1,
-            domains_names: None,
+            _sensor_data: sensor_data,
         }
     }
 
@@ -188,37 +166,30 @@ impl Topology {
     /// if let Some(cores) = Topology::generate_cpu_cores() {
     ///     println!("There are {} cores on this host.", cores.len());
     ///     for c in &cores {
-    ///         println!("Here is CPU Core number {}", c.attributes.get("processor").unwrap());
+    ///         println!("CPU info {:?}", c.attributes);
     ///     }
     /// }
     /// ```
     pub fn generate_cpu_cores() -> Option<Vec<CPUCore>> {
         let mut cores = vec![];
 
+        let sysinfo_system = System::new_all();
+        let sysinfo_cores = sysinfo_system.cpus();
         #[cfg(target_os = "linux")]
-        {
-            let cpuinfo = CpuInfo::new().unwrap();
-            for id in 0..(cpuinfo.num_cores() - 1) {
-                let mut info = HashMap::new();
-                for (k, v) in cpuinfo.get_info(id).unwrap().iter() {
+        let cpuinfo = CpuInfo::new().unwrap();
+        for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
+            let mut info = HashMap::<String, String>::new();
+            #[cfg(target_os = "linux")]
+            {
+                for (k, v) in cpuinfo.get_info(id as usize).unwrap().iter() {
                     info.insert(String::from(*k), String::from(*v));
                 }
-                cores.push(CPUCore::new(id as u16, info));
             }
-        }
-        #[cfg(target_os = "windows")]
-        {
-            warn!("generate_cpu_info is not implemented yet on this OS.");
-            let sysinfo_system = System::new_all();
-            let sysinfo_cores = sysinfo_system.processors();
-            for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
-                let mut info = HashMap::new();
-                info.insert(String::from("frequency"), c.frequency().to_string());
-                info.insert(String::from("name"), c.name().to_string());
-                info.insert(String::from("vendor_id"), c.vendor_id().to_string());
-                info.insert(String::from("brand"), c.brand().to_string());
-                cores.push(CPUCore::new(id, info));
-            }
+            info.insert(String::from("frequency"), c.frequency().to_string());
+            info.insert(String::from("name"), c.name().to_string());
+            info.insert(String::from("vendor_id"), c.vendor_id().to_string());
+            info.insert(String::from("brand"), c.brand().to_string());
+            cores.push(CPUCore::new(id, info));
         }
         Some(cores)
     }
@@ -345,6 +316,7 @@ impl Topology {
             //
             //}
         }
+        self.proc_tracker.refresh();
         self.refresh_procs();
         self.refresh_record();
         self.refresh_stats();
@@ -353,36 +325,14 @@ impl Topology {
     /// Gets currently running processes (as procfs::Process instances) and stores
     /// them in self.proc_tracker
     fn refresh_procs(&mut self) {
-        #[cfg(target_os = "linux")]
-        {
-            //current_procs is the up to date list of processus running on the host
-            if let Ok(procs) = process::all_processes() {
-                info!("Before refresh procs init.");
-                procs
-                    .iter()
-                    .map(IProcess::from_linux_process)
-                    .for_each(|p| {
-                        let pid = p.pid;
-                        let res = self.proc_tracker.add_process_record(p);
-                        match res {
-                            Ok(_) => {}
-                            Err(msg) => {
-                                panic!("Failed to track process with pid {} !\nGot: {}", pid, msg)
-                            }
-                        }
-                    });
-            }
-        }
-        #[cfg(target_os = "windows")]
         {
             let pt = &mut self.proc_tracker;
             pt.sysinfo.refresh_processes();
-            pt.sysinfo.refresh_cpu();
             let current_procs = pt
                 .sysinfo
                 .processes()
                 .values()
-                .map(IProcess::from_windows_process)
+                .map(IProcess::new)
                 .collect::<Vec<_>>();
             for p in current_procs {
                 match pt.add_process_record(p) {
@@ -593,52 +543,131 @@ impl Topology {
         None
     }
 
+    pub fn get_cpu_frequency(&self) -> Record {
+        Record::new(
+            current_system_time_since_epoch(),
+            self.proc_tracker.get_cpu_frequency().to_string(),
+            units::Unit::MegaHertz,
+        )
+    }
+
+    pub fn get_load_avg(&self) -> Option<Vec<Record>> {
+        let load = self.get_proc_tracker().sysinfo.load_average();
+        let timestamp = current_system_time_since_epoch();
+        Some(vec![
+            Record::new(timestamp, load.one.to_string(), units::Unit::Numeric),
+            Record::new(timestamp, load.five.to_string(), units::Unit::Numeric),
+            Record::new(timestamp, load.five.to_string(), units::Unit::Numeric),
+        ])
+    }
+
+    pub fn get_disks(&self) -> HashMap<String, (String, HashMap<String, String>, Record)> {
+        let timestamp = current_system_time_since_epoch();
+        let mut res = HashMap::new();
+        for d in self.proc_tracker.sysinfo.disks() {
+            let mut attributes = HashMap::new();
+            if let Ok(file_system) = str::from_utf8(d.file_system()) {
+                attributes.insert(String::from("disk_file_system"), String::from(file_system));
+            }
+            if let Some(mount_point) = d.mount_point().to_str() {
+                attributes.insert(String::from("disk_mount_point"), String::from(mount_point));
+            }
+            match d.type_() {
+                DiskType::SSD => {
+                    attributes.insert(String::from("disk_type"), String::from("SSD"));
+                }
+                DiskType::HDD => {
+                    attributes.insert(String::from("disk_type"), String::from("HDD"));
+                }
+                DiskType::Unknown(_) => {
+                    attributes.insert(String::from("disk_type"), String::from("Unknown"));
+                }
+            }
+            attributes.insert(
+                String::from("disk_is_removable"),
+                d.is_removable().to_string(),
+            );
+            if let Some(disk_name) = d.name().to_str() {
+                attributes.insert(String::from("disk_name"), String::from(disk_name));
+            }
+            res.insert(
+                String::from("scaph_host_disk_total_bytes"),
+                (
+                    String::from("Total disk size, in bytes."),
+                    attributes.clone(),
+                    Record::new(timestamp, d.total_space().to_string(), units::Unit::Bytes),
+                ),
+            );
+            res.insert(
+                String::from("scaph_host_disk_available_bytes"),
+                (
+                    String::from("Available disk space, in bytes."),
+                    attributes.clone(),
+                    Record::new(
+                        timestamp,
+                        d.available_space().to_string(),
+                        units::Unit::Bytes,
+                    ),
+                ),
+            );
+        }
+        res
+    }
+
+    pub fn get_total_memory_bytes(&self) -> Record {
+        Record {
+            timestamp: current_system_time_since_epoch(),
+            value: self.proc_tracker.sysinfo.total_memory().to_string(),
+            unit: units::Unit::Bytes,
+        }
+    }
+
+    pub fn get_available_memory_bytes(&self) -> Record {
+        Record {
+            timestamp: current_system_time_since_epoch(),
+            value: self.proc_tracker.sysinfo.available_memory().to_string(),
+            unit: units::Unit::Bytes,
+        }
+    }
+
+    pub fn get_free_memory_bytes(&self) -> Record {
+        Record {
+            timestamp: current_system_time_since_epoch(),
+            value: self.proc_tracker.sysinfo.free_memory().to_string(),
+            unit: units::Unit::Bytes,
+        }
+    }
+
+    pub fn get_total_swap_bytes(&self) -> Record {
+        Record {
+            timestamp: current_system_time_since_epoch(),
+            value: self.proc_tracker.sysinfo.total_swap().to_string(),
+            unit: units::Unit::Bytes,
+        }
+    }
+
+    pub fn get_free_swap_bytes(&self) -> Record {
+        Record {
+            timestamp: current_system_time_since_epoch(),
+            value: self.proc_tracker.sysinfo.free_swap().to_string(),
+            unit: units::Unit::Bytes,
+        }
+    }
+
     /// Returns the power consumed between last and previous measurement for a given process ID, in microwatts
-    pub fn get_process_power_consumption_microwatts(&self, pid: i32) -> Option<Record> {
-        let tracker = self.get_proc_tracker();
-        if let Some(recs) = tracker.find_records(pid) {
-            if recs.len() > 1 {
-                #[cfg(target_os = "linux")]
-                {
-                    let last = recs.first().unwrap();
-                    let previous = recs.get(1).unwrap();
-                    if let Some(topo_stats_diff) = self.get_stats_diff() {
-                        //trace!("Topology stats measured diff: {:?}", topo_stats_diff);
-                        let process_total_time =
-                            last.total_time_jiffies() - previous.total_time_jiffies();
-                        let topo_total_time = topo_stats_diff.total_time_jiffies();
-                        let usage_percent = process_total_time as f64 / topo_total_time as f64;
-                        let topo_conso = self.get_records_diff_power_microwatts();
-                        if let Some(val) = &topo_conso {
-                            //trace!("topo conso: {}", val);
-                            let val_f64 = val.value.parse::<f64>().unwrap();
-                            //trace!("val f64: {}", val_f64);
-                            let result = (val_f64 * usage_percent) as u64;
-                            //trace!("result: {}", result);
-                            return Some(Record::new(
-                                last.timestamp,
-                                result.to_string(),
-                                units::Unit::MicroWatt,
-                            ));
-                        }
-                    }
-                }
-                #[cfg(target_os = "windows")]
-                {
-                    let last = recs.first().unwrap();
-                    let process_cpu_percentage =
-                        tracker.get_cpu_usage_percentage(pid as usize, tracker.nb_cores);
-                    let topo_conso = self.get_records_diff_power_microwatts();
-                    if let Some(conso) = &topo_conso {
-                        let conso_f64 = conso.value.parse::<f64>().unwrap();
-                        let result = (conso_f64 * process_cpu_percentage as f64) / 100.0_f64;
-                        return Some(Record::new(
-                            last.timestamp,
-                            result.to_string(),
-                            units::Unit::MicroWatt,
-                        ));
-                    }
-                }
+    pub fn get_process_power_consumption_microwatts(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            let process_cpu_percentage = self.get_process_cpu_usage_percentage(pid).unwrap();
+            let topo_conso = self.get_records_diff_power_microwatts();
+            if let Some(conso) = &topo_conso {
+                let conso_f64 = conso.value.parse::<f64>().unwrap();
+                let result =
+                    (conso_f64 * process_cpu_percentage.value.parse::<f64>().unwrap()) / 100.0_f64;
+                return Some(Record::new(
+                    record.timestamp,
+                    result.to_string(),
+                    units::Unit::MicroWatt,
+                ));
             }
         } else {
             trace!("Couldn't find records for PID: {}", pid);
@@ -646,27 +675,178 @@ impl Topology {
         None
     }
 
-    pub fn get_process_cpu_consumption_percentage(&self, pid: i32) -> Option<Record> {
-        let tracker = self.get_proc_tracker();
-        if let Some(recs) = tracker.find_records(pid) {
-            if recs.len() > 1 {
-                let last = recs.first().unwrap();
-                let previous = recs.get(1).unwrap();
-                if let Some(topo_stats_diff) = self.get_stats_diff() {
-                    let process_total_time =
-                        last.total_time_jiffies() - previous.total_time_jiffies();
-
-                    let topo_total_time = topo_stats_diff.total_time_jiffies();
-
-                    let usage = process_total_time as f64 / topo_total_time as f64;
-
-                    return Some(Record::new(
-                        current_system_time_since_epoch(),
-                        usage.to_string(),
+    pub fn get_all_per_process(&self, pid: Pid) -> Option<HashMap<String, (String, Record)>> {
+        let mut res = HashMap::new();
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            let process_cpu_percentage =
+                record.process.cpu_usage_percentage / self.proc_tracker.nb_cores as f32;
+            res.insert(
+                String::from("scaph_process_cpu_usage_percentage"),
+                (String::from("CPU time consumed by the process, as a percentage of the capacity of all the CPU Cores"),
+                Record::new(
+                    record.timestamp,
+                    process_cpu_percentage.to_string(),
+                    units::Unit::Percentage,
+                    )
+                )
+            );
+            res.insert(
+                String::from("scaph_process_memory_virtual_bytes"),
+                (
+                    String::from("Virtual RAM usage by the process, in bytes"),
+                    Record::new(
+                        record.timestamp,
+                        record.process.virtual_memory.to_string(),
                         units::Unit::Percentage,
-                    ));
-                }
+                    ),
+                ),
+            );
+            res.insert(
+                String::from("scaph_process_memory_bytes"),
+                (
+                    String::from("Physical RAM usage by the process, in bytes"),
+                    Record::new(
+                        record.timestamp,
+                        record.process.memory.to_string(),
+                        units::Unit::Bytes,
+                    ),
+                ),
+            );
+            res.insert(
+                String::from("scaph_process_disk_write_bytes"),
+                (
+                    String::from("Data written on disk by the process, in bytes"),
+                    Record::new(
+                        record.timestamp,
+                        record.process.disk_written.to_string(),
+                        units::Unit::Bytes,
+                    ),
+                ),
+            );
+            res.insert(
+                String::from("scaph_process_disk_read_bytes"),
+                (
+                    String::from("Data read on disk by the process, in bytes"),
+                    Record::new(
+                        record.timestamp,
+                        record.process.disk_read.to_string(),
+                        units::Unit::Bytes,
+                    ),
+                ),
+            );
+            res.insert(
+                String::from("scaph_process_disk_total_write_bytes"),
+                (
+                    String::from("Total data written on disk by the process, in bytes"),
+                    Record::new(
+                        record.timestamp,
+                        record.process.total_disk_written.to_string(),
+                        units::Unit::Bytes,
+                    ),
+                ),
+            );
+            res.insert(
+                String::from("scaph_process_disk_total_read_bytes"),
+                (
+                    String::from("Total data read on disk by the process, in bytes"),
+                    Record::new(
+                        record.timestamp,
+                        record.process.total_disk_read.to_string(),
+                        units::Unit::Bytes,
+                    ),
+                ),
+            );
+            let topo_conso = self.get_records_diff_power_microwatts();
+            if let Some(conso) = &topo_conso {
+                let conso_f64 = conso.value.parse::<f64>().unwrap();
+                let result = (conso_f64 * process_cpu_percentage as f64) / 100.0_f64;
+                res.insert(
+                    String::from("scaph_process_power_consumption_microwatts"),
+                    (
+                        String::from("Total data read on disk by the process, in bytes"),
+                        Record::new(record.timestamp, result.to_string(), units::Unit::MicroWatt),
+                    ),
+                );
             }
+        }
+        Some(res)
+    }
+
+    // Per process metrics, from ProcessRecord during last refresh, returned in Record structs
+
+    pub fn get_process_cpu_usage_percentage(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            return Some(Record::new(
+                record.timestamp,
+                (record.process.cpu_usage_percentage / self.proc_tracker.nb_cores as f32)
+                    .to_string(),
+                units::Unit::Percentage,
+            ));
+        }
+        None
+    }
+
+    pub fn get_process_memory_virtual_bytes(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            return Some(Record::new(
+                record.timestamp,
+                record.process.virtual_memory.to_string(),
+                units::Unit::Bytes,
+            ));
+        }
+        None
+    }
+
+    pub fn get_process_memory_bytes(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            return Some(Record::new(
+                record.timestamp,
+                record.process.memory.to_string(),
+                units::Unit::Bytes,
+            ));
+        }
+        None
+    }
+
+    pub fn get_process_disk_written_bytes(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            return Some(Record::new(
+                record.timestamp,
+                record.process.disk_written.to_string(),
+                units::Unit::Bytes,
+            ));
+        }
+        None
+    }
+
+    pub fn get_process_disk_read_bytes(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            return Some(Record::new(
+                record.timestamp,
+                record.process.disk_read.to_string(),
+                units::Unit::Bytes,
+            ));
+        }
+        None
+    }
+    pub fn get_process_disk_total_read_bytes(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            return Some(Record::new(
+                record.timestamp,
+                record.process.total_disk_read.to_string(),
+                units::Unit::Bytes,
+            ));
+        }
+        None
+    }
+
+    pub fn get_process_disk_total_write_bytes(&self, pid: Pid) -> Option<Record> {
+        if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
+            return Some(Record::new(
+                record.timestamp,
+                record.process.total_disk_written.to_string(),
+                units::Unit::Bytes,
+            ));
         }
         None
     }
@@ -952,13 +1132,13 @@ impl CPUSocket {
                 .get(self.record_buffer.len() - 2)
                 .unwrap();
             debug!(
-                "last_record value: {} previous_record value: {}",
+                "socket : last_record value: {} previous_record value: {}",
                 &last_record.value, &previous_record.value
             );
             let last_rec_val = last_record.value.trim();
-            debug!("l851 : trying to parse {} as u64", last_rec_val);
+            debug!("socket : l1049 : trying to parse {} as u64", last_rec_val);
             let prev_rec_val = previous_record.value.trim();
-            debug!("l853 : trying to parse {} as u64", prev_rec_val);
+            debug!("socket : l1051 : trying to parse {} as u64", prev_rec_val);
             if let (Ok(last_microjoules), Ok(previous_microjoules)) =
                 (last_rec_val.parse::<u64>(), prev_rec_val.parse::<u64>())
             {
@@ -967,14 +1147,14 @@ impl CPUSocket {
                     microjoules = last_microjoules - previous_microjoules;
                 } else {
                     debug!(
-                        "previous_microjoules ({}) > last_microjoules ({})",
+                        "socket: previous_microjoules ({}) > last_microjoules ({})",
                         previous_microjoules, last_microjoules
                     );
                 }
                 let time_diff =
                     last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
                 let microwatts = microjoules as f64 / time_diff;
-                debug!("l866: microwatts: {}", microwatts);
+                debug!("socket : l1067: microwatts: {}", microwatts);
                 return Some(Record::new(
                     last_record.timestamp,
                     (microwatts as u64).to_string(),
@@ -1255,11 +1435,11 @@ mod tests {
             cores[0].attributes.len()
         );
         for c in &cores {
-            println!("{:?}", c.attributes.get("processor"));
+            println!("{:?}", c.attributes);
         }
         assert_eq!(!cores.is_empty(), true);
         for c in &cores {
-            assert_eq!(c.attributes.len() > 5, true);
+            assert_eq!(c.attributes.len() > 3, true);
         }
     }
 

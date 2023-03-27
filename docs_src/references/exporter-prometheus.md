@@ -52,11 +52,9 @@ And some more deep metrics that you may want if you need to make more complex ca
 
 If you hack scaph or just want to investigate its behavior, you may be interested in some internal metrics:
 
-- `scaph_self_mem_total_program_size`: Total program size, measured in pages
+- `scaph_self_memory_bytes`: Scaphandre memory usage, in bytes
 
-- `scaph_self_mem_resident_set_size`: Resident set size, measured in pages
-
-- `scaph_self_mem_shared_resident_size`: Number of resident shared pages (i.e., backed by a file)
+- `scaph_self_memory_virtual_bytes`: Scaphandre virtual memory usage, in bytes
 
 - `scaph_self_topo_stats_nb`: Number of CPUStat traces stored for the host
 
