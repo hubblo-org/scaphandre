@@ -2,6 +2,7 @@
 //!
 //! `Exporter` is the root for all exporters. It defines the [Exporter] trait
 //! needed to implement an exporter.
+#[cfg(feature = "json")]
 pub mod json;
 #[cfg(feature = "prometheus")]
 pub mod prometheus;
@@ -18,7 +19,6 @@ use crate::sensors::{
     RecordGenerator, Topology,
 };
 use chrono::Utc;
-use clap::ArgMatches;
 use std::collections::HashMap;
 use std::fmt;
 use std::time::Duration;
@@ -102,10 +102,11 @@ impl fmt::Debug for MetricValueType {
 /// the metrics are generated/refreshed by calling the refresh* methods available
 /// with the structs provided by the sensor.
 pub trait Exporter {
-    /// Entry point for all Exporters
-    fn run(&mut self, parameters: ArgMatches);
-    /// Get the options passed via the command line
-    fn get_options() -> Vec<clap::Arg>;
+    /// Runs the exporter.
+    fn run(&mut self);
+
+    /// The name of the kind of the exporter, for example "json".
+    fn kind(&self) -> &str;
 }
 
 /// MetricGenerator is an exporter helper structure to collect Scaphandre metrics.
