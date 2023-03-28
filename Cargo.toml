@@ -14,9 +14,7 @@ homepage = "https://hubblo-org.github.io/scaphandre-documentation"
 [dependencies]
 loggerv = "0.7.2"
 log = "0.4"
-# clap string feature is required to allow dynamic values otherwise it ended up with a lifetime pb.
-# https://docs.rs/clap/4.0.19/clap/builder/struct.Str.html
-clap = { version = "4.0.18", features = ["cargo", "string"] }
+clap = { version = "4.2", features = ["cargo", "derive"] }
 regex = "1.7.0"
 riemann_client = { version = "0.9.0", optional = true }
 hostname = "0.3.1"
@@ -43,9 +41,10 @@ procfs = { version = "0.12.0" }
 windows = { version = "0.27.0", features = ["alloc","Win32_Storage_FileSystem","Win32_Foundation","Win32_Security","Win32_System_IO","Win32_System_Ioctl"]}
 
 [features]
-default = ["prometheus", "riemann", "warpten", "json", "containers"]
+default = ["prometheus", "riemann", "warpten", "json", "containers", "qemu"]
 prometheus = ["hyper", "tokio"]
 riemann = ["riemann_client"]
 json = ["serde", "serde_json"]
 containers = ["docker-sync", "k8s-sync"]
 warpten = ["warp10"]
+qemu = []

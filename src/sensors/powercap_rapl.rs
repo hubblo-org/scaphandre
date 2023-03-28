@@ -7,6 +7,9 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::{env, fs};
 
+pub const DEFAULT_BUFFER_PER_SOCKET_MAX_KBYTES: u16 = 1;
+pub const DEFAULT_BUFFER_PER_DOMAIN_MAX_KBYTES: u16 = 1;
+
 /// This is a Sensor type that relies on powercap and rapl linux modules
 /// to collect energy consumption from CPU sockets and RAPL domains
 pub struct PowercapRAPLSensor {
@@ -188,7 +191,7 @@ impl Sensor for PowercapRAPLSensor {
     }
 
     /// Instanciates Topology object if not existing and returns it
-    fn get_topology(&mut self) -> Box<Option<Topology>> {
+    fn get_topology(&self) -> Box<Option<Topology>> {
         let topology = self.generate_topology().ok();
         if topology.is_none() {
             panic!("Couldn't generate the topology !");
@@ -207,7 +210,7 @@ mod tests {
     }
     #[test]
     fn get_topology_returns_topology_type() {
-        let mut sensor = PowercapRAPLSensor::new(1, 1, false);
+        let sensor = PowercapRAPLSensor::new(1, 1, false);
         let topology = sensor.get_topology();
         assert_eq!(
             "alloc::boxed::Box<core::option::Option<scaphandre::sensors::Topology>>",
