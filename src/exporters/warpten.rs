@@ -1,6 +1,6 @@
 use super::utils::get_hostname;
 use crate::exporters::*;
-use crate::sensors::{Sensor, Topology};
+use crate::sensors::Sensor;
 use clap::{value_parser, Arg};
 use std::time::Duration;
 use std::{env, thread};
@@ -140,16 +140,12 @@ impl Warp10Exporter {
         let client = warp10::Client::new(&format!("{scheme}://{host}:{port}"))?;
         let writer = client.get_writer(write_token.to_string());
 
-        let topology: Topology;
-
-        match *self.sensor.get_topology() {
-            Some(topo) => {
-                topology = topo;
-            }
+        let topology = match *self.sensor.get_topology() {
+            Some(topo) => topo,
             None => {
                 panic!("Couldn't generate the Topology");
             }
-        }
+        };
 
         let mut metric_generator =
             MetricGenerator::new(topology, get_hostname(), qemu, watch_containers);
