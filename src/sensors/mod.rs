@@ -20,7 +20,7 @@ use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
 /// Sensor trait, the Sensor API.
 pub trait Sensor {
-    fn get_topology(&mut self) -> Box<Option<Topology>>;
+    fn get_topology(&self) -> Box<Option<Topology>>;
     fn generate_topology(&self) -> Result<Topology, Box<dyn Error>>;
 }
 
@@ -1452,9 +1452,9 @@ mod tests {
     #[test]
     fn read_topology_stats() {
         #[cfg(target_os = "linux")]
-        let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
+        let sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
         #[cfg(not(target_os = "linux"))]
-        let mut sensor = msr_rapl::MsrRAPLSensor::new();
+        let sensor = msr_rapl::MsrRAPLSensor::new();
         let topo = (*sensor.get_topology()).unwrap();
         println!("{:?}", topo.read_stats());
     }
@@ -1462,9 +1462,9 @@ mod tests {
     #[test]
     fn read_core_stats() {
         #[cfg(target_os = "linux")]
-        let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
+        let sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
         #[cfg(not(target_os = "linux"))]
-        let mut sensor = msr_rapl::MsrRAPLSensor::new();
+        let sensor = msr_rapl::MsrRAPLSensor::new();
         let mut topo = (*sensor.get_topology()).unwrap();
         for s in topo.get_sockets() {
             for c in s.get_cores() {
@@ -1476,9 +1476,9 @@ mod tests {
     #[test]
     fn read_socket_stats() {
         #[cfg(target_os = "linux")]
-        let mut sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
+        let sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
         #[cfg(not(target_os = "linux"))]
-        let mut sensor = msr_rapl::MsrRAPLSensor::new();
+        let sensor = msr_rapl::MsrRAPLSensor::new();
         let mut topo = (*sensor.get_topology()).unwrap();
         for s in topo.get_sockets() {
             println!("{:?}", s.read_stats());

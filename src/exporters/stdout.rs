@@ -1,169 +1,112 @@
-use clap::parser::ValueSource;
-use clap::{value_parser, Arg};
-
 use crate::exporters::*;
 use crate::sensors::{utils::IProcess, Sensor};
-use colored::*;
 use regex::Regex;
-use std::fmt::Write as _;
 use std::thread;
 use std::time::{Duration, Instant};
 
 /// An Exporter that displays power consumption data of the host
 /// and its processes on the standard output of the terminal.
 pub struct StdoutExporter {
-    sensor: Box<dyn Sensor>,
+    metric_generator: MetricGenerator,
+    args: ExporterArgs,
+}
+
+/// Holds the arguments for a StdoutExporter.
+///
+/// When using Scaphandre as a command-line application, such a struct will be
+/// automatically populated by the clap library. If you're using Scaphandre as
+/// a library, you should populate the arguments yourself.
+#[derive(clap::Args, Debug)]
+// The command group makes `processes` and `regex_filter` exclusive.
+#[command(group(clap::ArgGroup::new("disp").args(["processes", "regex_filter"])))]
+pub struct ExporterArgs {
+    /// Maximum time spent measuring, in seconds.
+    /// If negative, runs forever.
+    #[arg(short, long, default_value_t = 10)]
+    pub timeout: i64,
+
+    /// Interval between two measurements, in seconds
+    #[arg(short, long, value_name = "SECONDS", default_value_t = 2)]
+    pub step: u64,
+
+    /// Maximum number of processes to display
+    #[arg(short, long, default_value_t = 5)]
+    pub processes: u16,
+
+    /// Filter processes based on regular expressions (example: 'scaph\\w\\w.e')
+    #[arg(short, long)]
+    pub regex_filter: Option<Regex>,
+
+    /// Monitor and apply labels for processes running as containers
+    #[arg(long)]
+    pub containers: bool,
+
+    /// Apply labels to metrics of processes looking like a Qemu/KVM virtual machine
+    #[arg(short, long)]
+    pub qemu: bool,
 }
 
 impl Exporter for StdoutExporter {
-    /// Lanches runner()
-    fn run(&mut self, parameters: ArgMatches) {
-        self.runner(parameters);
+    /// Runs [iterate()] every `step` until `timeout`
+    fn run(&mut self) {
+        let time_step = Duration::from_secs(self.args.step);
+        let time_limit = if self.args.timeout < 0 {
+            None
+        } else {
+            Some(Duration::from_secs(self.args.timeout.unsigned_abs()))
+        };
+
+        println!("Measurement step is: {time_step:?}");
+        if let Some(timeout) = time_limit {
+            let t0 = Instant::now();
+            while t0.elapsed() <= timeout {
+                self.iterate();
+                thread::sleep(time_step);
+            }
+        } else {
+            loop {
+                self.iterate();
+                thread::sleep(time_step);
+            }
+        }
     }
 
-    /// Returns options needed for that exporter, as a HashMap
-    fn get_options() -> Vec<clap::Arg> {
-        let mut options = Vec::new();
-        let arg = Arg::new("timeout")
-            .default_value("10")
-            .help("Maximum time spent measuring, in seconds. 0 means continuous measurement.")
-            .long("timeout")
-            .short('t')
-            .required(false)
-            .value_parser(value_parser!(u64))
-            .action(clap::ArgAction::Set);
-        options.push(arg);
-
-        let arg = Arg::new("step_duration")
-            .default_value("2")
-            .help("Set measurement step duration in second.")
-            .long("step")
-            .short('s')
-            .required(false)
-            .value_parser(value_parser!(u64))
-            .action(clap::ArgAction::Set);
-        options.push(arg);
-
-        let arg = Arg::new("process_number")
-            .default_value("5")
-            .help("Number of processes to display.")
-            .long("process")
-            .short('p')
-            .required(false)
-            .value_parser(value_parser!(u16))
-            .action(clap::ArgAction::Set);
-        options.push(arg);
-
-        let arg = Arg::new("regex_filter")
-            .help("Filter processes based on regular expressions (e.g: 'scaph\\w\\wd.e'). This option disable '-p' or '--process' one.")
-            .long("regex")
-            .short('r')
-            .required(false)
-            .action(clap::ArgAction::Set);
-        options.push(arg);
-
-        let arg = Arg::new("qemu")
-            .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
-            .long("qemu")
-            .short('q')
-            .required(false)
-            .action(clap::ArgAction::SetTrue);
-        options.push(arg);
-
-        let arg = Arg::new("containers")
-            .help("Monitor and apply labels for processes running as containers")
-            .long("containers")
-            .required(false)
-            .action(clap::ArgAction::SetTrue);
-        options.push(arg);
-
-        options
+    fn kind(&self) -> &str {
+        "stdout"
     }
 }
 
 impl StdoutExporter {
     /// Instantiates and returns a new StdoutExporter
-    pub fn new(sensor: Box<dyn Sensor>) -> StdoutExporter {
-        StdoutExporter { sensor }
-    }
+    pub fn new(sensor: &dyn Sensor, args: ExporterArgs) -> StdoutExporter {
+        // Prepare the retrieval of the measurements
+        let topo = sensor
+            .get_topology()
+            .expect("sensor topology should be available");
 
-    /// Runs iteration() every 'step', during until 'timeout'
-    pub fn runner(&mut self, parameters: ArgMatches) {
-        // Parse parameters
-        // All parameters have a default values so it is safe to unwrap them.
-        // Panic if a non numerical value is passed except for regex_filter.
+        let metric_generator =
+            MetricGenerator::new(topo, utils::get_hostname(), args.qemu, args.containers);
 
-        let timeout_secs: u64 = *parameters
-            .get_one("timeout")
-            .expect("Wrong timeout value, should be a number of seconds");
-
-        let step_duration: u64 = *parameters
-            .get_one("step_duration")
-            .expect("Wrong step_duration value, should be a number of seconds");
-
-        let process_number: u16 = *parameters
-            .get_one("process_number")
-            .expect("Wrong process_number value, should be a number");
-
-        let regex_filter: Option<Regex> = parameters
-            .get_one::<String>("regex_filter")
-            .map(|regex| Regex::new(regex).expect("Wrong regex_filter, regexp is invalid"));
-
-        if parameters.value_source("regex_filter") == Some(ValueSource::CommandLine)
-            && parameters.value_source("process_number") == Some(ValueSource::CommandLine)
-        {
-            let warning =
-                String::from("Warning: (-p / --process) and (-r / --regex) used at the same time. (-p / --process) disabled");
-            eprintln!("{}", warning.bright_yellow());
-        }
-
-        let topology = self.sensor.get_topology().unwrap();
-        let mut metric_generator = MetricGenerator::new(
-            topology,
-            utils::get_hostname(),
-            parameters.get_flag("qemu"),
-            parameters.get_flag("containers"),
-        );
-
-        println!("Measurement step is: {step_duration}s");
-        if timeout_secs == 0 {
-            loop {
-                self.iterate(&regex_filter, process_number, &mut metric_generator);
-                thread::sleep(Duration::new(step_duration, 0));
-            }
-        } else {
-            let now = Instant::now();
-
-            while now.elapsed().as_secs() <= timeout_secs {
-                self.iterate(&regex_filter, process_number, &mut metric_generator);
-                thread::sleep(Duration::new(step_duration, 0));
-            }
+        StdoutExporter {
+            metric_generator,
+            args,
         }
     }
 
-    fn iterate(
-        &mut self,
-        regex_filter: &Option<Regex>,
-        process_number: u16,
-        metric_generator: &mut MetricGenerator,
-    ) {
-        metric_generator
+    fn iterate(&mut self) {
+        self.metric_generator
             .topology
             .proc_tracker
             .clean_terminated_process_records_vectors();
-        metric_generator.topology.refresh();
-        self.show_metrics(regex_filter, process_number, metric_generator);
+        self.metric_generator.topology.refresh();
+        self.show_metrics();
     }
 
-    fn show_metrics(
-        &self,
-        regex_filter: &Option<Regex>,
-        process_number: u16,
-        metric_generator: &mut MetricGenerator,
-    ) {
-        metric_generator.gen_all_metrics();
+    fn show_metrics(&mut self) {
+        use std::fmt::Write;
+        self.metric_generator.gen_all_metrics();
 
-        let metrics = metric_generator.pop_metrics();
+        let metrics = self.metric_generator.pop_metrics();
         let mut metrics_iter = metrics.iter();
         let none_value = MetricValueType::Text("0".to_string());
         let host_power = match metrics_iter.find(|x| x.name == "scaph_host_power_microwatts") {
@@ -171,7 +114,7 @@ impl StdoutExporter {
             None => &none_value,
         };
 
-        let domain_names = metric_generator.topology.domains_names.as_ref();
+        let domain_names = self.metric_generator.topology.domains_names.as_ref();
         if domain_names.is_some() {
             info!("domain_names: {:?}", domain_names.unwrap());
         }
@@ -236,18 +179,21 @@ impl StdoutExporter {
         }
 
         let consumers: Vec<(IProcess, f64)>;
-        if let Some(regex_filter) = regex_filter {
-            debug!("Processes filtered by '{}':", regex_filter.as_str());
-            consumers = metric_generator
+        if let Some(regex) = &self.args.regex_filter {
+            println!("Processes filtered by '{regex}':");
+            consumers = self
+                .metric_generator
                 .topology
                 .proc_tracker
-                .get_filtered_processes(regex_filter);
+                .get_filtered_processes(regex);
         } else {
-            println!("Top {process_number} consumers:");
-            consumers = metric_generator
+            let n = self.args.processes;
+            println!("Top {n} consumers:");
+            consumers = self
+                .metric_generator
                 .topology
                 .proc_tracker
-                .get_top_consumers(process_number);
+                .get_top_consumers(n);
         }
 
         info!("consumers : {:?}", consumers);

@@ -300,7 +300,7 @@ impl Sensor for MsrRAPLSensor {
         Ok(topology)
     }
 
-    fn get_topology(&mut self) -> Box<Option<Topology>> {
+    fn get_topology(&self) -> Box<Option<Topology>> {
         let topology = self.generate_topology().ok();
         if topology.is_none() {
             panic!("Couldn't generate the topology !");

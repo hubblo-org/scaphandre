@@ -1,129 +1,85 @@
 use crate::exporters::*;
 use crate::sensors::Sensor;
-use clap::{parser::ValueSource, value_parser, Arg};
-use colored::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
-    fs,
     fs::File,
-    path::PathBuf,
+    io::{BufWriter, Write},
+    path::{Path, PathBuf},
     thread,
     time::{Duration, Instant},
 };
 
-/// An Exporter that displays power consumption data of the host
-/// and its processes on the standard output of the terminal.
-pub struct JSONExporter {
-    sensor: Box<dyn Sensor>,
-    reports: Vec<Report>,
-    regex: Option<Regex>,
+/// An Exporter that writes power consumption data of the host
+/// and its processes in the JSON format, either in a file or
+/// to the standard output.
+pub struct JsonExporter {
+    metric_generator: MetricGenerator,
+    time_step: Duration,
+    time_limit: Option<Duration>,
+    max_top_consumers: u16,
+    out_writer: BufWriter<Box<dyn Write>>,
+    process_regex: Option<Regex>,
+    container_regex: Option<Regex>,
+    monitor_resources: bool,
+    watch_containers: bool,
 }
 
-impl Exporter for JSONExporter {
-    /// Lanches runner()
-    fn run(&mut self, parameters: ArgMatches) {
-        self.runner(parameters);
-    }
+// Note: clap::Args automatically generate Args for the fields of this struct,
+// using the field's name as the argument's name, and the doc comment
+// above the field as the argument's description.
 
-    /// Returns options needed for that exporter, as a HashMap
+/// Holds the arguments for a JsonExporter.
+///
+/// When using Scaphandre as a command-line application, such a struct will be
+/// automatically populated by the clap library. If you're using Scaphandre as
+/// a library, you should populate the arguments yourself.
+#[derive(clap::Args, Debug)]
+pub struct ExporterArgs {
+    /// Maximum time spent measuring, in seconds.
+    /// If negative, runs forever.
+    #[arg(short, long, default_value_t = 10)]
+    pub timeout: i64,
 
-    fn get_options() -> Vec<clap::Arg> {
-        let mut options = Vec::new();
-        let arg = Arg::new("timeout")
-            .help("Maximum time spent measuring, in seconds.")
-            .long("timeout")
-            .short('t')
-            .required(false)
-            .value_parser(value_parser!(u64))
-            .action(clap::ArgAction::Set);
-        options.push(arg);
+    /// Interval between two measurements, in seconds
+    #[arg(short, long, value_name = "SECONDS", default_value_t = 2)]
+    pub step: u64,
 
-        let arg = Arg::new("step_duration")
-            .default_value("2")
-            .help("Set measurement step duration in second.")
-            .long("step")
-            .short('s')
-            .required(false)
-            .value_parser(value_parser!(u64))
-            .action(clap::ArgAction::Set);
-        options.push(arg);
+    /// Additional step duration in _nano_ seconds.
+    /// This is added to `step` to get the final duration.
+    #[arg(long, value_name = "NANOSECS", default_value_t = 0)]
+    pub step_nano: u32,
 
-        let arg = Arg::new("step_duration_nano")
-            .default_value("0")
-            .help("Set measurement step duration in nano second.")
-            .long("step_nano")
-            .short('n')
-            .required(false)
-            .value_parser(value_parser!(u32))
-            .action(clap::ArgAction::Set);
-        options.push(arg);
+    /// Maximum number of processes to watch
+    #[arg(long, default_value_t = 10)]
+    pub max_top_consumers: u16,
 
-        let arg = Arg::new("file_path")
-            .default_value("")
-            .help("Destination file for the report.")
-            .long("file")
-            .short('f')
-            .required(false)
-            .action(clap::ArgAction::Set);
-        options.push(arg);
+    /// Destination file for the report (if absent, print the report to stdout)
+    #[arg(short, long)]
+    pub file: Option<String>,
 
-        let arg = Arg::new("max_top_consumers")
-            .default_value("10")
-            .help("Maximum number of processes to watch.")
-            .long("max-top-consumers")
-            .short('m')
-            .required(false)
-            .value_parser(value_parser!(u16))
-            .action(clap::ArgAction::Set);
-        options.push(arg);
+    /// Monitor and apply labels for processes running as containers
+    #[arg(long)]
+    pub containers: bool,
 
-        #[cfg(feature = "containers")]
-        {
-            let arg = Arg::new("containers")
-                .help("Monitor and apply labels for processes running as containers")
-                .short('c')
-                .long("containers")
-                .required(false)
-                .action(clap::ArgAction::SetTrue);
-            options.push(arg);
-        }
+    /// Filter processes based on regular expressions (example: 'scaph\\w\\w.e')
+    #[arg(long)]
+    pub process_regex: Option<Regex>,
 
-        let arg = Arg::new("regex_filter")
-            .help("Filter processes based on regular expressions (e.g: 'scaph\\w\\wd.e').")
-            .long("regex")
-            .short('r')
-            .required(false)
-            .action(clap::ArgAction::Set);
-        options.push(arg);
+    /// Filter containers based on regular expressions
+    #[arg(long)]
+    pub container_regex: Option<Regex>,
 
-        let arg = Arg::new("resources")
-            .help("Monitor and include CPU/RAM/Disk usage per process.")
-            .long("resources")
-            .required(false)
-            .action(clap::ArgAction::SetTrue);
-        options.push(arg);
-
-        #[cfg(feature = "containers")]
-        {
-            let arg = Arg::new("container_regex")
-                .help("Filter process by container name based on regular expressions (e.g: 'scaph\\w\\wd.e'). Works only with --containers enabled.")
-                .long("container-regex")
-                .required(false)
-                .action(clap::ArgAction::Set);
-            options.push(arg);
-        }
-
-        let arg = Arg::new("qemu")
-            .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
-            .long("qemu")
-            .short('q')
-            .required(false)
-            .action(clap::ArgAction::SetTrue);
-        options.push(arg);
-        options
-    }
+    /// Monitor and incude CPU, RAM and Disk usage per process
+    #[arg(long)]
+    pub resources: bool,
+    // TODO uncomment this option once we display something interesting about it
+    // /// Apply labels to metrics of processes looking like a Qemu/KVM virtual machine
+    // #[arg(short, long)]
+    // pub qemu: bool
 }
+
+// Below are the structures that will store the reports.
 
 #[derive(Serialize, Deserialize)]
 struct Domain {
@@ -198,79 +154,73 @@ struct Report {
     sockets: Vec<Socket>,
 }
 
-impl JSONExporter {
-    /// Instantiates and returns a new JSONExporter
-    pub fn new(sensor: Box<dyn Sensor>) -> JSONExporter {
-        JSONExporter {
-            sensor,
-            reports: Vec::new(),
-            regex: None,
-        }
-    }
+impl Exporter for JsonExporter {
+    /// Runs [iterate()] every `step` until `timeout`
+    fn run(&mut self) {
+        let step = self.time_step;
+        info!("Measurement step is: {step:?}");
 
-    /// Runs iteration() every 'step', until 'timeout'
-    pub fn runner(&mut self, parameters: ArgMatches) {
-        let topology = self.sensor.get_topology().unwrap();
-        let mut metric_generator = MetricGenerator::new(
-            topology,
-            utils::get_hostname(),
-            parameters.get_flag("qemu"),
-            parameters.get_flag("containers"),
-        );
-
-        // We have a default value of 2s so it is safe to unwrap the option
-        // Panic if a non numerical value is passed
-        let step_duration: u64 = *parameters
-            .get_one("step_duration")
-            .expect("Wrong step_duration value, should be a number of seconds");
-        let step_duration_nano: u32 = *parameters
-            .get_one("step_duration_nano")
-            .expect("Wrong step_duration_nano value, should be a number of nano seconds");
-
-        self.regex = if parameters.get_one::<String>("regex_filter").is_none() {
-            None
-        } else {
-            Some(
-                Regex::new(parameters.get_one::<String>("regex_filter").unwrap())
-                    .expect("Wrong regex_filter, regexp is invalid"),
-            )
-        };
-
-        if parameters.value_source("regex_filter") == Some(ValueSource::CommandLine)
-            && parameters.value_source("max_top_consumers") == Some(ValueSource::CommandLine)
-        {
-            let warning =
-                String::from("Warning: (--max-top-consumers) and (-r / --regex) used at the same time. (--max-top-consumers) disabled");
-            eprintln!("{}", warning.bright_yellow());
-        }
-
-        #[cfg(feature = "containers")]
-        if !parameters.get_flag("containers") && parameters.get_flag("container_regex") {
-            let warning =
-                String::from("Warning: --container-regex is used but --containers is not enabled. Regex search won't work.");
-            eprintln!("{}", warning.bright_yellow());
-        }
-
-        info!("Measurement step is: {}s", step_duration);
-        if let Some(timeout) = parameters.get_one::<u64>("timeout") {
-            let now = Instant::now();
-
-            let timeout_secs: u64 = *timeout;
-            while now.elapsed().as_secs() <= timeout_secs {
-                self.iterate(&parameters, &mut metric_generator);
-                thread::sleep(Duration::new(step_duration, step_duration_nano));
+        if let Some(timeout) = self.time_limit {
+            let t0 = Instant::now();
+            while t0.elapsed() <= timeout {
+                self.iterate();
+                thread::sleep(self.time_step);
             }
         } else {
             loop {
-                self.iterate(&parameters, &mut metric_generator);
-                thread::sleep(Duration::new(step_duration, step_duration_nano));
+                self.iterate();
+                thread::sleep(self.time_step);
             }
         }
     }
 
-    fn iterate(&mut self, parameters: &ArgMatches, metric_generator: &mut MetricGenerator) {
-        metric_generator.topology.refresh();
-        self.retrieve_metrics(parameters, metric_generator);
+    fn kind(&self) -> &str {
+        "json"
+    }
+}
+
+impl JsonExporter {
+    /// Instantiates and returns a new JsonExporter.
+    pub fn new(sensor: &dyn Sensor, args: ExporterArgs) -> JsonExporter {
+        // Prepare the retrieval of the measurements
+        let topo = sensor
+            .get_topology()
+            .expect("sensor topology should be available");
+        let metric_generator =
+            MetricGenerator::new(topo, utils::get_hostname(), false, args.containers);
+
+        // Extract the parameters we need to run the exporter
+        let time_step = Duration::new(args.step, args.step_nano);
+        let time_limit = if args.timeout < 0 {
+            None
+        } else {
+            Some(Duration::from_secs(args.timeout.unsigned_abs()))
+        };
+        let max_top_consumers = args.max_top_consumers;
+        let process_regex = args.process_regex;
+        let container_regex = args.container_regex;
+        let monitor_resources = args.resources;
+
+        // Prepare the output (either stdout or a file)
+        let output: Box<dyn Write> = match args.file {
+            Some(f) => {
+                let path = Path::new(&f);
+                Box::new(File::create(path).unwrap_or_else(|_| panic!("failed to open file {f}")))
+            }
+            None => Box::new(std::io::stdout()),
+        };
+        let out_writer = BufWriter::new(output);
+        JsonExporter {
+            metric_generator,
+            time_step,
+            time_limit,
+            max_top_consumers,
+            out_writer,
+            process_regex,
+            container_regex,
+            monitor_resources,
+            watch_containers: args.containers,
+        }
     }
 
     fn gen_disks_report(&self, metrics: &Vec<&Metric>) -> Vec<Disk> {
@@ -341,14 +291,15 @@ impl JSONExporter {
         res
     }
 
-    fn retrieve_metrics(
-        &mut self,
-        parameters: &ArgMatches,
-        metric_generator: &mut MetricGenerator,
-    ) {
-        metric_generator.gen_all_metrics();
+    fn iterate(&mut self) {
+        self.metric_generator.topology.refresh();
+        self.retrieve_metrics();
+    }
 
-        let metrics = metric_generator.pop_metrics();
+    fn retrieve_metrics(&mut self) {
+        self.metric_generator.gen_all_metrics();
+
+        let metrics = self.metric_generator.pop_metrics();
         let mut metrics_iter = metrics.iter();
         let socket_metrics_res = metrics_iter.find(|x| x.name == "scaph_socket_power_microwatts");
         //TODO: fix for multiple sockets
@@ -373,43 +324,39 @@ impl JSONExporter {
             }
         } else {
             info!("didn't find host metric");
+            // TODO in that case, no report is written, thus I think we should return here (?)
         };
 
         if let Some(host) = &mut host_report {
             host.components.disks = Some(disks);
         }
 
-        let consumers: Vec<(IProcess, f64)>;
-        let max_top = parameters
-            .get_one::<u16>("max_top_consumers")
-            .unwrap_or(&10);
-        if let Some(regex_filter) = &self.regex {
+        let max_top = self.max_top_consumers;
+        let consumers: Vec<(IProcess, f64)> = if let Some(regex_filter) = &self.process_regex {
             debug!("Processes filtered by '{}':", regex_filter.as_str());
-            consumers = metric_generator
+            self.metric_generator
                 .topology
                 .proc_tracker
-                .get_filtered_processes(regex_filter);
-        } else if let Some(param) = parameters.get_one::<String>("container_regex") {
+                .get_filtered_processes(regex_filter)
+        } else if let Some(regex_filter) = &self.container_regex {
             #[cfg(feature = "containers")]
             {
-                consumers = metric_generator.get_processes_filtered_by_container_name(
-                    &Regex::new(param)
-                        .expect("Wrong container_regex expression. Regexp is invalid."),
-                );
+                self.metric_generator
+                    .get_processes_filtered_by_container_name(regex_filter)
             }
+
             #[cfg(not(feature = "containers"))]
-            {
-                consumers = metric_generator
-                    .topology
-                    .proc_tracker
-                    .get_top_consumers(*max_top);
-            }
-        } else {
-            consumers = metric_generator
+            self.metric_generator
                 .topology
                 .proc_tracker
-                .get_top_consumers(*max_top);
-        }
+                .get_top_consumers(max_top)
+        } else {
+            self.metric_generator
+                .topology
+                .proc_tracker
+                .get_top_consumers(max_top)
+        };
+
         let mut top_consumers = consumers
             .iter()
             .filter_map(|(process, _value)| {
@@ -426,9 +373,11 @@ impl JSONExporter {
                         consumption: format!("{}", metric.metric_value).parse::<f32>().unwrap(),
                         resources_usage: None,
                         timestamp: metric.timestamp.as_secs_f64(),
-                        container: match parameters.get_flag("containers") {
-                            true => metric.attributes.get("container_id").map(|container_id| {
-                                Container {
+                        container: if self.watch_containers {
+                            metric
+                                .attributes
+                                .get("container_id")
+                                .map(|container_id| Container {
                                     id: String::from(container_id),
                                     name: String::from(
                                         metric
@@ -448,15 +397,15 @@ impl JSONExporter {
                                             .get("container_scheduler")
                                             .unwrap_or(&String::from("unknown")),
                                     ),
-                                }
-                            }),
-                            false => None,
+                                })
+                        } else {
+                            None
                         },
                     })
             })
             .collect::<Vec<_>>();
 
-        if parameters.get_flag("resources") {
+        if self.monitor_resources {
             for c in top_consumers.iter_mut() {
                 let mut res = ResourcesUsage {
                     cpu_usage: String::from("0"),
@@ -503,8 +452,10 @@ impl JSONExporter {
             }
         }
 
-        let all_sockets_vec = metric_generator.topology.get_sockets_passive();
-        let all_sockets = all_sockets_vec
+        let all_sockets = self
+            .metric_generator
+            .topology
+            .get_sockets_passive()
             .iter()
             .filter_map(|socket| {
                 if let Some(metric) = socket_metrics_res.iter().find(|x| {
@@ -555,20 +506,9 @@ impl JSONExporter {
                     sockets: all_sockets,
                 };
 
-                let file_path = parameters.get_one::<String>("file_path").unwrap();
-                // Print json
-                if file_path.is_empty() {
-                    let json: String =
-                        serde_json::to_string(&report).expect("Unable to parse report");
-                    println!("{}", &json);
-                } else {
-                    self.reports.push(report);
-                    // Serialize it to a JSON string.
-                    let json: String =
-                        serde_json::to_string(&self.reports).expect("Unable to parse report");
-                    let _ = File::create(file_path);
-                    fs::write(file_path, json).expect("Unable to write file");
-                }
+                // Serialize the report to json
+                serde_json::to_writer(&mut self.out_writer, &report)
+                    .expect("report should be serializable to JSON");
             }
             None => {
                 info!("No data yet, didn't write report.");
