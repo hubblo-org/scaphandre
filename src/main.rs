@@ -47,7 +47,7 @@ struct Cli {
 }
 
 /// Defines the possible subcommands, one per exporter.
-/// 
+///
 /// ### Description style
 /// Per the clap documentation, the description of commands and arguments should be written in the style applied here,
 /// *not* in the third-person. That is, use "Do xyz" instead of "Does xyz".
@@ -173,7 +173,7 @@ fn print_scaphandre_header(exporter_name: &str) {
 mod test {
     use super::*;
     const SUBCOMMANDS: [&str; 6] = ["json", "prometheus", "qemu", "riemann", "stdout", "warpten"];
-    
+
     /// Test that `--help` works for Scaphandre _and_ for each subcommand.
     /// This also ensures that all the subcommands are properly defined, as Clap will check some constraints
     /// when trying to parse a subcommand (for instance, it will check that no two short options have the same name).
@@ -181,8 +181,14 @@ mod test {
     fn test_help() {
         fn assert_shows_help(args: &[&str]) {
             match Cli::try_parse_from(args) {
-                Ok(_) => panic!("The CLI didn't generate a help message for {:?}, are the inputs correct?", args),
-                Err(e) => assert_eq!(e.kind(), clap::error::ErrorKind::DisplayHelp, "The CLI emitted an error for {args:?}:\n{e}")
+                Ok(_) => panic!(
+                    "The CLI didn't generate a help message for {args:?}, are the inputs correct?"
+                ),
+                Err(e) => assert_eq!(
+                    e.kind(),
+                    clap::error::ErrorKind::DisplayHelp,
+                    "The CLI emitted an error for {args:?}:\n{e}"
+                ),
             };
         }
         assert_shows_help(&["scaphandre", "--help"]);
