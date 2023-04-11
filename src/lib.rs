@@ -13,7 +13,7 @@ use colored::*;
 use exporters::json::JSONExporter;
 #[cfg(feature = "prometheus")]
 use exporters::prometheus::PrometheusExporter;
-#[cfg(all(target_os = "linux", not(feature = "warpten")))]
+#[cfg(target_os = "linux")]
 use exporters::qemu::QemuExporter;
 #[cfg(feature = "riemann")]
 use exporters::riemann::RiemannExporter;
@@ -92,32 +92,25 @@ pub fn run(matches: ArgMatches) {
         exporter_parameters = prometheus_exporter_parameters.clone();
         let mut exporter = PrometheusExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
+    } else if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
+        if header {
+            scaphandre_header("warp10");
+        }
+        exporter_parameters = warp10_exporter_parameters.clone();
+        let mut exporter = Warp10Exporter::new(sensor_boxed);
+        exporter.run(exporter_parameters);
     } else {
         #[cfg(target_os = "linux")]
         {
-            #[cfg(feature = "warpten")]
-            {
-                if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
-                    if header {
-                        scaphandre_header("warp10");
-                    }
-                    exporter_parameters = warp10_exporter_parameters.clone();
-                    let mut exporter = Warp10Exporter::new(sensor_boxed);
-                    exporter.run(exporter_parameters);
+            if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
+                if header {
+                    scaphandre_header("qemu");
                 }
+                exporter_parameters = qemu_exporter_parameters.clone();
+                let mut exporter = QemuExporter::new(sensor_boxed);
+                exporter.run(exporter_parameters);
             }
-            #[cfg(not(feature = "warpten"))]
-            {
-                if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
-                    if header {
-                        scaphandre_header("qemu");
-                    }
-                    exporter_parameters = qemu_exporter_parameters.clone();
-                    let mut exporter = QemuExporter::new(sensor_boxed);
-                    exporter.run(exporter_parameters);
-                }
-                error!("Warp10 exporter feature was not included in this build.");
-            }
+            error!("Warp10 exporter feature was not included in this build.");
         }
         error!("Couldn't determine which exporter to run.");
     }
