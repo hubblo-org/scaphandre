@@ -11,8 +11,7 @@ use std::{env, thread};
 /// a [Warp10](https://warp10.io) instance through **HTTP(s)**
 /// (contributions welcome to support websockets).
 pub struct Warp10Exporter {
-    sensor: Box<dyn Sensor>,
-    metric_generator: MetricGenerator
+    metric_generator: MetricGenerator,
 }
 
 impl Exporter for Warp10Exporter {
@@ -39,12 +38,7 @@ impl Exporter for Warp10Exporter {
         self.metric_generator.qemu = qemu;
 
         loop {
-            match self.iteration(
-                host,
-                scheme,
-                port.parse::<u16>().unwrap(),
-                &write_token,
-            ) {
+            match self.iteration(host, scheme, port.parse::<u16>().unwrap(), &write_token) {
                 Ok(res) => debug!("Result: {:?}", res),
                 Err(err) => error!("Failed ! {:?}", err),
             }
@@ -128,9 +122,8 @@ impl Warp10Exporter {
                 panic!("Couldn't generate the Topology");
             }
         };
-        let metric_generator =
-            MetricGenerator::new(topology, get_hostname(), false, false);
-        Warp10Exporter { sensor, metric_generator }
+        let metric_generator = MetricGenerator::new(topology, get_hostname(), false, false);
+        Warp10Exporter { metric_generator }
     }
 
     /// Collects data from the Topology, creates warp10::Data objects containing the
