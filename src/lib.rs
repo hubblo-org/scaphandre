@@ -93,12 +93,15 @@ pub fn run(matches: ArgMatches) {
         let mut exporter = PrometheusExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
     } else if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
-        if header {
-            scaphandre_header("warp10");
+        #[cfg(feature = "warpten")]
+        {
+            if header {
+                scaphandre_header("warp10");
+            }
+            exporter_parameters = warp10_exporter_parameters.clone();
+            let mut exporter = Warp10Exporter::new(sensor_boxed);
+            exporter.run(exporter_parameters);
         }
-        exporter_parameters = warp10_exporter_parameters.clone();
-        let mut exporter = Warp10Exporter::new(sensor_boxed);
-        exporter.run(exporter_parameters);
     } else {
         #[cfg(target_os = "linux")]
         {
