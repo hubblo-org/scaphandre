@@ -35,7 +35,7 @@ use {
 
 /// General metric definition.
 #[derive(Debug)]
-struct Metric {
+pub struct Metric {
     /// `name` is the metric name, it will be used as service field for Riemann.
     name: String, // Will be used as service for Riemann
     /// `metric_type` mostly used by Prometheus, define is it is a gauge, counter...
@@ -111,7 +111,7 @@ pub trait Exporter {
 /// MetricGenerator is an exporter helper structure to collect Scaphandre metrics.
 /// The goal is to provide a standard Vec\<Metric\> that can be used by exporters
 /// to avoid code duplication.
-struct MetricGenerator {
+pub struct MetricGenerator {
     /// `data` will be used to store the metrics retrieved.
     data: Vec<Metric>,
     /// `topology` is the system physical layout retrieve via the sensors crate with
@@ -160,7 +160,7 @@ struct MetricGenerator {
 impl MetricGenerator {
     /// Returns a MetricGenerator instance that will host metrics.
 
-    fn new(
+    pub fn new(
         topology: Topology,
         hostname: String,
         _qemu: bool,

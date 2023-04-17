@@ -1,4 +1,5 @@
-use crate::exporters::Exporter;
+use crate::exporters::utils::get_hostname;
+use crate::exporters::{Exporter, MetricGenerator};
 use crate::sensors::{utils::ProcessRecord, Sensor, Topology};
 use std::{fs, io, thread, time};
 
@@ -9,7 +10,7 @@ use std::{fs, io, thread, time};
 /// to collect and deal with their power consumption metrics, the same way
 /// they would do it if they managed bare metal machines.
 pub struct QemuExporter {
-    topology: Topology,
+    sensor: Box<dyn Sensor>,
 }
 
 impl Exporter for QemuExporter {
@@ -19,17 +20,21 @@ impl Exporter for QemuExporter {
         let path = "/var/lib/libvirt/scaphandre";
         let cleaner_step = 120;
         let mut timer = time::Duration::from_secs(cleaner_step);
-        loop {
-            self.iteration(String::from(path));
-            let step = time::Duration::from_secs(5);
-            thread::sleep(step);
-            if timer - step > time::Duration::from_millis(0) {
-                timer -= step;
-            } else {
-                self.topology
-                    .proc_tracker
-                    .clean_terminated_process_records_vectors();
-                timer = time::Duration::from_secs(cleaner_step);
+        if let Ok(topology) = self.sensor.generate_topology() {
+            let mut metric_generator = MetricGenerator::new(topology, get_hostname(), true, false);
+            loop {
+                metric_generator.topology.refresh();
+                self.iteration(String::from(path), &mut metric_generator);
+                let step = time::Duration::from_secs(5);
+                thread::sleep(step);
+                if timer - step > time::Duration::from_millis(0) {
+                    timer -= step;
+                } else {
+                    metric_generator.topology
+                        .proc_tracker
+                        .clean_terminated_process_records_vectors();
+                    timer = time::Duration::from_secs(cleaner_step);
+                }
             }
         }
     }
@@ -42,53 +47,35 @@ impl Exporter for QemuExporter {
 impl QemuExporter {
     /// Instantiates and returns a new QemuExporter
     pub fn new(mut sensor: Box<dyn Sensor>) -> QemuExporter {
-        let some_topology = *sensor.get_topology();
         QemuExporter {
-            topology: some_topology.unwrap(),
+            sensor,
         }
     }
 
     /// Performs processing of metrics, using self.topology
-    pub fn iteration(&mut self, path: String) {
+    pub fn iteration(&mut self, path: String, metric_generator: &mut MetricGenerator) {
         trace!("path: {}", path);
-        self.topology.refresh();
-        let topo_uj_diff = self.topology.get_records_diff();
-        let topo_stat_diff = self.topology.get_stats_diff();
-        if let Some(topo_rec_uj) = topo_uj_diff {
-            debug!("Got topo uj diff: {:?}", topo_rec_uj);
-            let proc_tracker = self.topology.get_proc_tracker();
-            let processes = proc_tracker.get_alive_processes();
+
+        if let Some(topo_energy) = metric_generator.topology.get_records_diff_power_microwatts() {
+            let processes = metric_generator.topology.proc_tracker.get_alive_processes();
             let qemu_processes = QemuExporter::filter_qemu_vm_processes(&processes);
-            debug!(
-                "Number of filtered qemu processes: {}",
-                qemu_processes.len()
-            );
             for qp in qemu_processes {
-                info!("Working on {:?}", qp);
                 if qp.len() > 2 {
                     let last = qp.first().unwrap();
-                    let previous = qp.get(1).unwrap();
                     let vm_name = QemuExporter::get_vm_name_from_cmdline(
-                        &last.process.cmdline(proc_tracker).unwrap(),
+                        &last.process.cmdline(&metric_generator.topology.proc_tracker).unwrap(),
                     );
-                    let time_pdiff = last.process.total_time_jiffies(proc_tracker)
-                        - previous.process.total_time_jiffies(proc_tracker);
-                    if let Some(time_tdiff) = &topo_stat_diff {
-                        let first_domain_path = format!("{path}/{vm_name}/intel-rapl:0:0");
-                        if fs::read_dir(&first_domain_path).is_err() {
-                            match fs::create_dir_all(&first_domain_path) {
-                                Ok(_) => info!("Created {} folder.", &path),
-                                Err(error) => panic!("Couldn't create {}. Got: {}", &path, error),
-                            }
+                    let first_domain_path = format!("{path}/{vm_name}/intel-rapl:0:0");
+                    if fs::read_dir(&first_domain_path).is_err() {
+                        match fs::create_dir_all(&first_domain_path) {
+                            Ok(_) => info!("Created {} folder.", &path),
+                            Err(error) => panic!("Couldn't create {}. Got: {}", &path, error),
                         }
-                        let tdiff = time_tdiff.total_time_jiffies();
-                        trace!("Time_pdiff={} time_tdiff={}", time_pdiff.to_string(), tdiff);
-                        let ratio = time_pdiff / tdiff;
-                        trace!("Ratio is {}", ratio.to_string());
-                        let uj_to_add = ratio * topo_rec_uj.value.parse::<u64>().unwrap();
-                        trace!("Adding {} uJ", uj_to_add);
+                    }
+                    if let Some(ratio) = metric_generator.topology.get_process_cpu_usage_percentage(last.process.pid) {
+                        let uj_to_add = ratio.value.parse::<f64>().unwrap() * topo_energy.value.parse::<f64>().unwrap() / 100.0;
                         let complete_path = format!("{path}/{vm_name}/intel-rapl:0");
-                        if let Ok(result) = QemuExporter::add_or_create(&complete_path, uj_to_add) {
+                        if let Ok(result) = QemuExporter::add_or_create(&complete_path, uj_to_add as u64) {
                             trace!("{:?}", result);
                             debug!("Updated {}", complete_path);
                         }
