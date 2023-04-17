@@ -275,26 +275,32 @@ impl Topology {
     /// Generates CPUCore instances for the host and adds them
     /// to appropriate CPUSocket instance from self.sockets
     pub fn add_cpu_cores(&mut self) {
-        if let Some(mut cores) = Topology::generate_cpu_cores() {
-            while !cores.is_empty() {
-                let c = cores.pop().unwrap();
-                let socket_id = &c
-                    .attributes
-                    .get("physical id")
-                    .unwrap()
-                    .parse::<u16>()
-                    .unwrap();
-                let socket = self
-                    .sockets
-                    .iter_mut()
-                    .find(|x| &x.id == socket_id)
-                    .expect("Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line");
-                if socket_id == &socket.id {
-                    socket.add_cpu_core(c);
-                }
+        let mut cores = Topology::generate_cpu_cores().unwrap();
+        while !cores.is_empty() {
+            let c = cores.pop().unwrap();
+            let socket_id = &c
+                .attributes
+                .get("physical id")
+                .unwrap()
+                .parse::<u16>()
+                .unwrap();
+            let socket_match = self
+                .sockets
+                .iter_mut()
+                .find(|x| &x.id == socket_id);
+            
+            //In VMs there might be a missmatch betwen Sockets and Cores - see Issue#133 as a first fix we just map all cores that can't be mapped to the first
+            let socket = match socket_match {
+                Some(x) => x,
+                None =>self.sockets.first_mut().expect("Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line")
+            };
+
+            if socket_id == &socket.id {
+                socket.add_cpu_core(c);
+            } else {
+                socket.add_cpu_core(c);
+                warn!("coud't not match core to socket - mapping to first socket instead - if you are not using --vm there is something wrong")
             }
-        } else {
-            warn!("Couldn't retrieve any CPU Core from the topology. (generate_cpu_cores)");
         }
     }
 
