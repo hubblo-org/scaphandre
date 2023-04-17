@@ -284,10 +284,7 @@ impl Topology {
                     .unwrap()
                     .parse::<u16>()
                     .unwrap();
-                let socket_match = self
-                    .sockets
-                    .iter_mut()
-                    .find(|x| &x.id == socket_id);
+                let socket_match = self.sockets.iter_mut().find(|x| &x.id == socket_id);
 
                 //In VMs there might be a missmatch betwen Sockets and Cores - see Issue#133 as a first fix we just map all cores that can't be mapped to the first
                 let socket = match socket_match {
