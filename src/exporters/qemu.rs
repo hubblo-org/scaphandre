@@ -1,6 +1,6 @@
 use crate::exporters::utils::get_hostname;
 use crate::exporters::{Exporter, MetricGenerator};
-use crate::sensors::{utils::ProcessRecord, Sensor, Topology};
+use crate::sensors::{utils::ProcessRecord, Sensor};
 use std::{fs, io, thread, time};
 
 /// An Exporter that extracts power consumption data of running
@@ -30,7 +30,8 @@ impl Exporter for QemuExporter {
                 if timer - step > time::Duration::from_millis(0) {
                     timer -= step;
                 } else {
-                    metric_generator.topology
+                    metric_generator
+                        .topology
                         .proc_tracker
                         .clean_terminated_process_records_vectors();
                     timer = time::Duration::from_secs(cleaner_step);
@@ -46,24 +47,28 @@ impl Exporter for QemuExporter {
 
 impl QemuExporter {
     /// Instantiates and returns a new QemuExporter
-    pub fn new(mut sensor: Box<dyn Sensor>) -> QemuExporter {
-        QemuExporter {
-            sensor,
-        }
+    pub fn new(sensor: Box<dyn Sensor>) -> QemuExporter {
+        QemuExporter { sensor }
     }
 
     /// Performs processing of metrics, using self.topology
     pub fn iteration(&mut self, path: String, metric_generator: &mut MetricGenerator) {
         trace!("path: {}", path);
 
-        if let Some(topo_energy) = metric_generator.topology.get_records_diff_power_microwatts() {
+        if let Some(topo_energy) = metric_generator
+            .topology
+            .get_records_diff_power_microwatts()
+        {
             let processes = metric_generator.topology.proc_tracker.get_alive_processes();
             let qemu_processes = QemuExporter::filter_qemu_vm_processes(&processes);
             for qp in qemu_processes {
                 if qp.len() > 2 {
                     let last = qp.first().unwrap();
                     let vm_name = QemuExporter::get_vm_name_from_cmdline(
-                        &last.process.cmdline(&metric_generator.topology.proc_tracker).unwrap(),
+                        &last
+                            .process
+                            .cmdline(&metric_generator.topology.proc_tracker)
+                            .unwrap(),
                     );
                     let first_domain_path = format!("{path}/{vm_name}/intel-rapl:0:0");
                     if fs::read_dir(&first_domain_path).is_err() {
@@ -72,10 +77,17 @@ impl QemuExporter {
                             Err(error) => panic!("Couldn't create {}. Got: {}", &path, error),
                         }
                     }
-                    if let Some(ratio) = metric_generator.topology.get_process_cpu_usage_percentage(last.process.pid) {
-                        let uj_to_add = ratio.value.parse::<f64>().unwrap() * topo_energy.value.parse::<f64>().unwrap() / 100.0;
+                    if let Some(ratio) = metric_generator
+                        .topology
+                        .get_process_cpu_usage_percentage(last.process.pid)
+                    {
+                        let uj_to_add = ratio.value.parse::<f64>().unwrap()
+                            * topo_energy.value.parse::<f64>().unwrap()
+                            / 100.0;
                         let complete_path = format!("{path}/{vm_name}/intel-rapl:0");
-                        if let Ok(result) = QemuExporter::add_or_create(&complete_path, uj_to_add as u64) {
+                        if let Ok(result) =
+                            QemuExporter::add_or_create(&complete_path, uj_to_add as u64)
+                        {
                             trace!("{:?}", result);
                             debug!("Updated {}", complete_path);
                         }
