@@ -29,7 +29,7 @@ In the definition of the virtual machine (here we are using libvirt), ensure you
 
     virsh edit DOMAIN_NAME
 
-Then add:
+Then add this filesystem configuration block inside the `<devices></devices>` block:
 
     <filesystem type='mount' accessmode='passthrough'>
         <driver type='virtiofs'/>
@@ -39,6 +39,13 @@ Then add:
     </filesystem>
 
 Save and (re)start the virtual machine.
+
+If you get this error: "error: unsupported configuration: 'virtiofs' requires shared memory", you might add this configuration section to the `<domain>` section.
+
+    <memoryBacking>
+      <source type='memfd'/>
+      <access mode='shared'/>
+    </memoryBacking>
 
 Then connect to the virtual machine and mount the filesystem:
 

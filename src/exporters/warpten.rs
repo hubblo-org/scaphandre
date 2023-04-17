@@ -1,16 +1,17 @@
+use super::utils::get_hostname;
 use crate::exporters::*;
-use crate::sensors::{utils::IProcess, RecordGenerator, Sensor, Topology};
+use crate::sensors::Sensor;
 use clap::{value_parser, Arg};
 use std::time::Duration;
 use std::{env, thread};
-use utils::get_scaphandre_version;
+
 //use warp10::data::Format;
 
 /// An exporter that sends power consumption data of the host and its processes to
 /// a [Warp10](https://warp10.io) instance through **HTTP(s)**
 /// (contributions welcome to support websockets).
 pub struct Warp10Exporter {
-    topology: Topology,
+    metric_generator: MetricGenerator,
 }
 
 impl Exporter for Warp10Exporter {
@@ -32,16 +33,12 @@ impl Exporter for Warp10Exporter {
         //let read_token = parameters.value_of("read-token");
         let step: u64 = *parameters.get_one("step").unwrap();
         let qemu = parameters.get_flag("qemu");
+        let watch_containers = parameters.get_flag("containers");
+        self.metric_generator.watch_containers = watch_containers;
+        self.metric_generator.qemu = qemu;
 
         loop {
-            match self.iteration(
-                host,
-                scheme,
-                port.parse::<u16>().unwrap(),
-                &write_token,
-                //read_token,
-                qemu,
-            ) {
+            match self.iteration(host, scheme, port.parse::<u16>().unwrap(), &write_token) {
                 Ok(res) => debug!("Result: {:?}", res),
                 Err(err) => error!("Failed ! {:?}", err),
             }
@@ -105,6 +102,13 @@ impl Exporter for Warp10Exporter {
             .action(clap::ArgAction::SetTrue);
         options.push(arg);
 
+        let arg = Arg::new("containers")
+            .help("Monitor and apply labels for processes running as containers")
+            .long("containers")
+            .required(false)
+            .action(clap::ArgAction::SetTrue);
+        options.push(arg);
+
         options
     }
 }
@@ -112,12 +116,14 @@ impl Exporter for Warp10Exporter {
 impl Warp10Exporter {
     /// Instantiates and returns a new Warp10Exporter
     pub fn new(mut sensor: Box<dyn Sensor>) -> Warp10Exporter {
-        if let Some(topo) = *sensor.get_topology() {
-            Warp10Exporter { topology: topo }
-        } else {
-            error!("Could'nt generate the Topology.");
-            panic!("Could'nt generate the Topology.");
-        }
+        let topology = match *sensor.get_topology() {
+            Some(topo) => topo,
+            None => {
+                panic!("Couldn't generate the Topology");
+            }
+        };
+        let metric_generator = MetricGenerator::new(topology, get_hostname(), false, false);
+        Warp10Exporter { metric_generator }
     }
 
     /// Collects data from the Topology, creates warp10::Data objects containing the
@@ -130,235 +136,51 @@ impl Warp10Exporter {
         port: u16,
         write_token: &str,
         //read_token: Option<&str>,
-        qemu: bool,
     ) -> Result<Vec<warp10::Warp10Response>, warp10::Error> {
         let client = warp10::Client::new(&format!("{scheme}://{host}:{port}"))?;
         let writer = client.get_writer(write_token.to_string());
-        self.topology
+
+        self.metric_generator
+            .topology
             .proc_tracker
             .clean_terminated_process_records_vectors();
 
         debug!("Refreshing topology.");
-        self.topology.refresh();
+        self.metric_generator.topology.refresh();
 
-        let records = self.topology.get_records_passive();
-        let scaphandre_version = get_scaphandre_version();
+        self.metric_generator.gen_all_metrics();
 
-        let labels = vec![];
+        let process_data: Vec<warp10::Data> = vec![];
 
-        let mut data = vec![warp10::Data::new(
-            time::OffsetDateTime::now_utc(),
-            None,
-            String::from("scaph_self_version"),
-            labels.clone(),
-            warp10::Value::Double(scaphandre_version.parse::<f64>().unwrap()),
-        )];
+        for metric in self.metric_generator.pop_metrics() {
+            let mut labels = vec![];
 
-        if let Some(metric_value) = self.topology.get_process_cpu_usage_percentage(
-            IProcess::myself(&self.topology.proc_tracker).unwrap().pid,
-        ) {
-            data.push(warp10::Data::new(
-                time::OffsetDateTime::now_utc(),
-                None,
-                String::from("scaph_self_cpu_usage_percent"),
-                labels.clone(),
-                warp10::Value::Int(metric_value.value.parse::<i32>().unwrap()),
-            ));
-        }
-
-        if let Some(metric_value) = self.topology.get_process_cpu_usage_percentage(
-            IProcess::myself(&self.topology.proc_tracker).unwrap().pid,
-        ) {
-            data.push(warp10::Data::new(
-                time::OffsetDateTime::now_utc(),
-                None,
-                String::from("scaph_self_cpu_usage_percent"),
-                labels.clone(),
-                warp10::Value::Int(metric_value.value.parse::<i32>().unwrap()),
-            ));
-        }
-
-        if let Ok(metric_value) = procfs::process::Process::myself().unwrap().statm() {
-            let value = metric_value.size * procfs::page_size().unwrap() as u64;
-            data.push(warp10::Data::new(
-                time::OffsetDateTime::now_utc(),
-                None,
-                String::from("scaph_self_mem_total_program_size"),
-                labels.clone(),
-                warp10::Value::Int(value as i32),
-            ));
-            let value = metric_value.resident * procfs::page_size().unwrap() as u64;
-            data.push(warp10::Data::new(
-                time::OffsetDateTime::now_utc(),
-                None,
-                String::from("scaph_self_mem_resident_set_size"),
-                labels.clone(),
-                warp10::Value::Int(value as i32),
-            ));
-            let value = metric_value.shared * procfs::page_size().unwrap() as u64;
-            data.push(warp10::Data::new(
-                time::OffsetDateTime::now_utc(),
-                None,
-                String::from("scaph_self_mem_shared_resident_size"),
-                labels.clone(),
-                warp10::Value::Int(value as i32),
-            ));
-        }
-
-        let metric_value = self.topology.stat_buffer.len();
-        data.push(warp10::Data::new(
-            time::OffsetDateTime::now_utc(),
-            None,
-            String::from("scaph_self_topo_stats_nb"),
-            labels.clone(),
-            warp10::Value::Int(metric_value as i32),
-        ));
-
-        let metric_value = self.topology.record_buffer.len();
-        data.push(warp10::Data::new(
-            time::OffsetDateTime::now_utc(),
-            None,
-            String::from("scaph_self_topo_records_nb"),
-            labels.clone(),
-            warp10::Value::Int(metric_value as i32),
-        ));
-
-        let metric_value = self.topology.proc_tracker.procs.len();
-        data.push(warp10::Data::new(
-            time::OffsetDateTime::now_utc(),
-            None,
-            String::from("scaph_self_topo_procs_nb"),
-            labels.clone(),
-            warp10::Value::Int(metric_value as i32),
-        ));
-
-        for socket in &self.topology.sockets {
-            let mut metric_labels = labels.clone();
-            metric_labels.push(warp10::Label::new("socket_id", &socket.id.to_string()));
-            let metric_value = socket.stat_buffer.len();
-            data.push(warp10::Data::new(
-                time::OffsetDateTime::now_utc(),
-                None,
-                String::from("scaph_self_socket_stats_nb"),
-                metric_labels.clone(),
-                warp10::Value::Int(metric_value as i32),
-            ));
-            let metric_value = socket.record_buffer.len();
-            data.push(warp10::Data::new(
-                time::OffsetDateTime::now_utc(),
-                None,
-                String::from("scaph_self_socket_records_nb"),
-                metric_labels.clone(),
-                warp10::Value::Int(metric_value as i32),
-            ));
-
-            let socket_records = socket.get_records_passive();
-            if !socket_records.is_empty() {
-                let socket_energy_microjoules = &socket_records.last().unwrap().value;
-                if let Ok(metric_value) = socket_energy_microjoules.parse::<i64>() {
-                    data.push(warp10::Data::new(
-                        time::OffsetDateTime::now_utc(),
-                        None,
-                        String::from("scaph_socket_energy_microjoules"),
-                        metric_labels.clone(),
-                        warp10::Value::Long(metric_value),
-                    ));
-                }
-
-                if let Some(metric_value) = socket.get_records_diff_power_microwatts() {
-                    data.push(warp10::Data::new(
-                        time::OffsetDateTime::now_utc(),
-                        None,
-                        String::from("scaph_socket_power_microwatts"),
-                        metric_labels.clone(),
-                        warp10::Value::Long(metric_value.value.parse::<i64>().unwrap()),
-                    ));
-                }
+            for (k, v) in metric.attributes {
+                labels.push(warp10::Label::new(&k, &v));
             }
 
-            for domain in &socket.domains {
-                let mut metric_labels = labels.clone();
-                metric_labels.push(warp10::Label::new("rapl_domain_name", &domain.name));
-                let metric_value = domain.record_buffer.len();
-                data.push(warp10::Data::new(
-                    time::OffsetDateTime::now_utc(),
-                    None,
-                    String::from("scaph_self_domain_records_nb"),
-                    metric_labels.clone(),
-                    warp10::Value::Int(metric_value as i32),
-                ));
-            }
+            //if !metric.name.starts_with("scaph_domain") && !metric.name.starts_with("scaph_socket") {
+            //    process_data.push(warp10::Data::new(
+            //        time::OffsetDateTime::now_utc(),
+            //        None,
+            //        metric.name,
+            //        labels,
+            //        warp10::Value::String(metric.metric_value.to_string()),
+            //    ));
+            //}
         }
 
-        if !records.is_empty() {
-            let record = records.last().unwrap();
-            let metric_value = record.value.clone();
+        let res = writer.post_sync(process_data)?;
 
-            data.push(warp10::Data::new(
-                time::OffsetDateTime::now_utc(),
-                None,
-                String::from("scaph_host_energy_microjoules"),
-                labels.clone(),
-                warp10::Value::Long(metric_value.parse::<i64>().unwrap()),
-            ));
+        let results = vec![res];
 
-            if let Some(metric_value) = self.topology.get_records_diff_power_microwatts() {
-                data.push(warp10::Data::new(
-                    time::OffsetDateTime::now_utc(),
-                    None,
-                    String::from("scaph_host_power_microwatts"),
-                    labels.clone(),
-                    warp10::Value::Long(metric_value.value.parse::<i64>().unwrap()),
-                ));
-            }
-        }
-
-        let res = writer.post_sync(data)?;
-
-        let mut results = vec![res];
-
-        let mut process_data = vec![warp10::Data::new(
-            time::OffsetDateTime::now_utc(),
-            None,
-            String::from("scaph_self_version"),
-            labels.clone(),
-            warp10::Value::Double(scaphandre_version.parse::<f64>().unwrap()),
-        )];
-
-        let processes_tracker = &self.topology.proc_tracker;
-        for pid in processes_tracker.get_alive_pids() {
-            let exe = processes_tracker.get_process_name(pid);
-            let cmdline = processes_tracker.get_process_cmdline(pid);
-
-            let mut plabels = labels.clone();
-            plabels.push(warp10::Label::new("pid", &pid.to_string()));
-            plabels.push(warp10::Label::new("exe", &exe));
-            if let Some(cmdline_str) = cmdline {
-                if qemu {
-                    if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
-                        plabels.push(warp10::Label::new("vmname", &vmname));
-                    }
-                }
-                plabels.push(warp10::Label::new(
-                    "cmdline",
-                    &cmdline_str.replace('\"', "\\\""),
-                ));
-            }
-            let metric_name = format!(
-                "{}_{}_{}",
-                "scaph_process_power_consumption_microwats", pid, exe
-            );
-            if let Some(power) = self.topology.get_process_power_consumption_microwatts(pid) {
-                process_data.push(warp10::Data::new(
-                    time::OffsetDateTime::now_utc(),
-                    None,
-                    metric_name,
-                    plabels,
-                    warp10::Value::Long(power.value.parse::<i64>().unwrap()),
-                ));
-            }
-        }
-        let process_res = writer.post_sync(process_data)?;
+        //let mut process_data = vec![warp10::Data::new(
+        //    time::OffsetDateTime::now_utc(),
+        //    None,
+        //    String::from("scaph_self_version"),
+        //    labels.clone(),
+        //    warp10::Value::Double(scaphandre_version.parse::<f64>().unwrap()),
+        //)];
 
         //if let Some(token) = read_token {
         //let reader = client.get_reader(token.to_owned());
@@ -375,8 +197,6 @@ impl Warp10Exporter {
         //Err(err) => panic!("error is: {:?}", err)
         //}
         //}
-
-        results.push(process_res);
 
         Ok(results)
     }
