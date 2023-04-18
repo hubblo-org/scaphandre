@@ -85,7 +85,7 @@ impl Exporter for JSONExporter {
                 .short('c')
                 .long("containers")
                 .required(false)
-                .action(clap::ArgAction::Set);
+                .action(clap::ArgAction::SetTrue);
             options.push(arg);
         }
 
@@ -100,7 +100,8 @@ impl Exporter for JSONExporter {
         let arg = Arg::new("resources")
             .help("Monitor and include CPU/RAM/Disk usage per process.")
             .long("resources")
-            .required(false);
+            .required(false)
+            .action(clap::ArgAction::SetTrue);
         options.push(arg);
 
         #[cfg(feature = "containers")]
@@ -113,14 +114,13 @@ impl Exporter for JSONExporter {
             options.push(arg);
         }
 
-        // the resulting labels of this option are not yet used by this exporter, activate this option once we display something interesting about it
-        //let arg = Arg::with_name("qemu")
-        //    .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
-        //    .long("qemu")
-        //    .short("q")
-        //    .required(false)
-        //    .takes_value(false);
-        //options.push(arg);
+        let arg = Arg::new("qemu")
+            .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
+            .long("qemu")
+            .short('q')
+            .required(false)
+            .action(clap::ArgAction::SetTrue);
+        options.push(arg);
         options
     }
 }
@@ -227,12 +227,7 @@ impl JSONExporter {
             .get_one("step_duration_nano")
             .expect("Wrong step_duration_nano value, should be a number of nano seconds");
 
-        self.regex = if !parameters.get_flag("regex_filter")
-            || parameters
-                .get_one::<String>("regex_filter")
-                .unwrap()
-                .is_empty()
-        {
+        self.regex = if parameters.get_one::<String>("regex_filter").is_none() {
             None
         } else {
             Some(
@@ -386,21 +381,19 @@ impl JSONExporter {
 
         let consumers: Vec<(IProcess, f64)>;
         let max_top = parameters
-            .get_one::<String>("max_top_consumers")
-            .unwrap_or(&String::from("10"))
-            .parse::<u16>()
-            .unwrap();
+            .get_one::<u16>("max_top_consumers")
+            .unwrap_or(&10);
         if let Some(regex_filter) = &self.regex {
             debug!("Processes filtered by '{}':", regex_filter.as_str());
             consumers = metric_generator
                 .topology
                 .proc_tracker
                 .get_filtered_processes(regex_filter);
-        } else if parameters.get_flag("container_regex") {
+        } else if let Some(param) = parameters.get_one::<String>("container_regex") {
             #[cfg(feature = "containers")]
             {
                 consumers = metric_generator.get_processes_filtered_by_container_name(
-                    &Regex::new(parameters.get_one::<String>("container_regex").unwrap())
+                    &Regex::new(param)
                         .expect("Wrong container_regex expression. Regexp is invalid."),
                 );
             }
@@ -415,7 +408,7 @@ impl JSONExporter {
             consumers = metric_generator
                 .topology
                 .proc_tracker
-                .get_top_consumers(max_top);
+                .get_top_consumers(*max_top);
         }
         let mut top_consumers = consumers
             .iter()
