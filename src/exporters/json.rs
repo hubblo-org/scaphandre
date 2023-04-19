@@ -402,7 +402,7 @@ impl JSONExporter {
                 consumers = metric_generator
                     .topology
                     .proc_tracker
-                    .get_top_consumers(max_top);
+                    .get_top_consumers(*max_top);
             }
         } else {
             consumers = metric_generator
