@@ -9,7 +9,10 @@ metadata:
   namespace: {{ .Release.Namespace }}
   {{- end }}
   labels:
-    app.kubernetes.io/name: {{ template "scaphandre.name" . }}
+    {{- include "labels.common" . | nindent 4 }}
+    {{- if .Values.serviceMonitor.labels }}
+    {{- toYaml .Values.serviceMonitor.labels | nindent 4 }}
+    {{- end }}
 spec:
   endpoints:
     - path: /metrics

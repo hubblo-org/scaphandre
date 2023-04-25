@@ -15,11 +15,17 @@ to be installed from the source code.
 ### Parameters
 #### Service monitor parameters
 
-| Name                                       | Description                                                                                                     | Value                     |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `serviceMonitor.enabled`           | Create ServiceMonitor Resource for scraping metrics using PrometheusOperator                                    | `false`                    |
-| `serviceMonitor.namespace`         | The namespace in which the ServiceMonitor will be created   (if not set, default to namespace on which this chart is installed)                                                    | `""`                      |
-| `serviceMonitor.interval`          | The interval at which metrics should be scraped                                                                 | `1m`                     |
+| Name                      | Description                                                                                   | Value                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------| ------------------------- |
+| `serviceMonitor.enabled`  | Create ServiceMonitor Resource for scraping metrics using PrometheusOperator                  | `false`                   |
+| `serviceMonitor.namespace`| The namespace in which the ServiceMonitor will be created   (if not set, default to namespace on which this chart is installed)  | `""`                      |
+| `serviceMonitor.interval` | The interval at which metrics should be scraped                                               | `1m`                     |
+| `serviceMonitor.labels`   | Extra labels for the ServiceMonitor                                                           | `{}`                     |
+
+#### Other parameters
+| Name                                       | Description                                                                 | Value                     |
+| ------------------------------------------ | ----------------------------------------------------------------------------| ------------------------- |
+| `tolerations`                              | Tolerations for pod assignment. Evaluated as a template.                    | `- operator: "Exists"`    |
 
 ## Install Prometheus
 

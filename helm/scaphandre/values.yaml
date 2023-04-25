@@ -28,3 +28,10 @@ serviceMonitor:
   interval: 1m
   # Specifies namespace, where ServiceMonitor should be installed
   # namespace: monitoring
+
+  # Extra labels for the ServiceMonitor
+  labels: {}
+
+tolerations:
+  # Tolerate all taints for observability
+  - operator: "Exists"
