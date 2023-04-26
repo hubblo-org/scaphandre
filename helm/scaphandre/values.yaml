@@ -32,6 +32,9 @@ serviceMonitor:
   # Extra labels for the ServiceMonitor
   labels: {}
 
+  # Specify the timeout after which the scrape is ended
+  scrapeTimeout: 30s
+
 tolerations:
   # Tolerate all taints for observability
   - operator: "Exists"
