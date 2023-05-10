@@ -8,7 +8,7 @@ extern crate log;
 pub mod exporters;
 pub mod sensors;
 #[cfg(target_os = "windows")]
-use sensors::msr_rapl::MsrRAPLSensor;
+use sensors::msr_rapl::{MsrRAPLSensor, Sensor};
 #[cfg(target_os = "linux")]
 use sensors::{powercap_rapl, Sensor};
 
