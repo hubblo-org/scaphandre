@@ -7,6 +7,9 @@ use scaphandre::{exporters, sensors::Sensor};
 #[cfg(target_os = "linux")]
 use scaphandre::sensors::powercap_rapl;
 
+#[cfg(target_os = "windows")]
+use scaphandre::sensors::msr_rapl;
+
 // the struct below defines the main Scaphandre command-line interface
 /// Extensible metrology agent for electricity consumption related metrics.
 #[derive(Parser)]
@@ -53,6 +56,9 @@ struct Cli {
 /// *not* in the third-person. That is, use "Do xyz" instead of "Does xyz".
 #[derive(Subcommand)]
 enum ExporterChoice {
+    /// Write the metrics to the terminal
+    Stdout(exporters::stdout::ExporterArgs),
+
     /// Write the metrics in the JSON format to a file or to stdout
     #[cfg(feature = "json")]
     Json(exporters::json::ExporterArgs),
@@ -69,9 +75,6 @@ enum ExporterChoice {
     /// Expose the metrics to a Riemann server
     #[cfg(feature = "riemann")]
     Riemann(exporters::riemann::ExporterArgs),
-
-    /// Write the metrics to the terminal
-    Stdout(exporters::stdout::ExporterArgs),
 
     /// Expose the metrics to a Warp10 host, through HTTP
     #[cfg(feature = "warpten")]
@@ -93,21 +96,26 @@ fn main() {
 
 fn build_exporter(choice: ExporterChoice, sensor: &dyn Sensor) -> Box<dyn exporters::Exporter> {
     match choice {
-        ExporterChoice::Json(args) => {
-            Box::new(exporters::json::JsonExporter::new(sensor, args)) // keep this in braces
-        }
-        ExporterChoice::Prometheus(args) => {
-            Box::new(exporters::prometheus::PrometheusExporter::new(sensor, args))
-        }
-        ExporterChoice::Qemu => {
-            Box::new(exporters::qemu::QemuExporter::new(sensor)) // keep this in braces
-        }
-        ExporterChoice::Riemann(args) => {
-            Box::new(exporters::riemann::RiemannExporter::new(sensor, args))
-        }
         ExporterChoice::Stdout(args) => {
             Box::new(exporters::stdout::StdoutExporter::new(sensor, args))
         }
+        #[cfg(feature = "json")]
+        ExporterChoice::Json(args) => {
+            Box::new(exporters::json::JsonExporter::new(sensor, args)) // keep this in braces
+        }
+        #[cfg(feature = "prometheus")]
+        ExporterChoice::Prometheus(args) => {
+            Box::new(exporters::prometheus::PrometheusExporter::new(sensor, args))
+        }
+        #[cfg(feature = "qemu")]
+        ExporterChoice::Qemu => {
+            Box::new(exporters::qemu::QemuExporter::new(sensor)) // keep this in braces
+        }
+        #[cfg(feature = "riemann")]
+        ExporterChoice::Riemann(args) => {
+            Box::new(exporters::riemann::RiemannExporter::new(sensor, args))
+        }
+        #[cfg(feature = "warpten")]
         ExporterChoice::Warpten(args) => {
             Box::new(exporters::warpten::Warp10Exporter::new(sensor, args))
         }
@@ -130,7 +138,7 @@ fn build_sensor(cli: &Cli) -> impl Sensor {
     };
 
     #[cfg(target_os = "windows")]
-    let msr_sensor_win = || sensors::msr_rapl::MsrRAPLSensor::new();
+    let msr_sensor_win = || msr_rapl::MsrRAPLSensor::new();
 
     match cli.sensor.as_deref() {
         Some("powercap_rapl") => {
@@ -144,7 +152,7 @@ fn build_sensor(cli: &Cli) -> impl Sensor {
         Some("msr") => {
             #[cfg(target_os = "windows")]
             {
-                msr_sensor()
+                msr_sensor_win()
             }
             #[cfg(not(target_os = "windows"))]
             panic!("Invalid sensor: Scaphandre's msr only works on Windows")
@@ -172,7 +180,20 @@ fn print_scaphandre_header(exporter_name: &str) {
 #[cfg(test)]
 mod test {
     use super::*;
-    const SUBCOMMANDS: [&str; 6] = ["json", "prometheus", "qemu", "riemann", "stdout", "warpten"];
+
+    const SUBCOMMANDS: &[&str] = &[
+        "stdout",
+        #[cfg(feature = "prometheus")]
+        "prometheus",
+        #[cfg(feature = "riemann")]
+        "riemann",
+        #[cfg(feature = "json")]
+        "json",
+        #[cfg(feature = "warpten")]
+        "warpten",
+        #[cfg(feature = "qemu")]
+        "qemu",
+    ];
 
     /// Test that `--help` works for Scaphandre _and_ for each subcommand.
     /// This also ensures that all the subcommands are properly defined, as Clap will check some constraints
