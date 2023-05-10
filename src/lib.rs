@@ -7,11 +7,11 @@
 extern crate log;
 pub mod exporters;
 pub mod sensors;
-use sensors::Sensor;
 #[cfg(target_os = "windows")]
 use sensors::msr_rapl::MsrRAPLSensor;
 #[cfg(target_os = "linux")]
 use sensors::powercap_rapl;
+use sensors::Sensor;
 
 use std::time::{Duration, SystemTime};
 
