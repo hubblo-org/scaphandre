@@ -13,6 +13,8 @@ use colored::*;
 use exporters::json::JSONExporter;
 #[cfg(feature = "prometheus")]
 use exporters::prometheus::PrometheusExporter;
+#[cfg(feature = "prometheuspush")]
+use exporters::prometheuspush::PrometheusPushExporter;
 #[cfg(target_os = "linux")]
 use exporters::qemu::QemuExporter;
 #[cfg(feature = "riemann")]
@@ -92,6 +94,13 @@ pub fn run(matches: ArgMatches) {
         exporter_parameters = prometheus_exporter_parameters.clone();
         let mut exporter = PrometheusExporter::new(sensor_boxed);
         exporter.run(exporter_parameters);
+    } else if let Some(prometheuspush_exporter_parameters) = matches.subcommand_matches("prometheuspush") {
+        if header {
+            scaphandre_header("prometheuspush");
+        }
+        exporter_parameters = prometheuspush_exporter_parameters.clone();
+        let mut exporter = PrometheusPushExporter::new(sensor_boxed);
+        exporter.run(exporter_parameters);
     } else if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
         #[cfg(feature = "warpten")]
         {
@@ -151,6 +160,11 @@ pub fn get_exporters_options() -> HashMap<String, Vec<clap::Arg>> {
     options.insert(
         String::from("warp10"),
         exporters::warpten::Warp10Exporter::get_options(),
+    );
+    #[cfg(feature = "prometheuspush")]
+    options.insert(
+        String::from("prometheuspush"),
+        exporters::prometheuspush::PrometheusPushExporter::get_options(),
     );
     options
 }

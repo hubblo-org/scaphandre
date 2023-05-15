@@ -2,7 +2,7 @@
 //!
 //! `PrometheusExporter` implementation, expose metrics to
 //! a [Prometheus](https://prometheus.io/) server.
-use super::utils::get_hostname;
+use super::utils::{get_hostname, DEFAULT_IP_ADDRESS};
 use crate::current_system_time_since_epoch;
 use crate::exporters::{Exporter, MetricGenerator, MetricValueType};
 use crate::sensors::{Sensor, Topology};
@@ -18,9 +18,6 @@ use std::{
     sync::{Arc, Mutex},
     time::Duration,
 };
-
-/// Default ipv4/ipv6 address to expose the service is any
-const DEFAULT_IP_ADDRESS: &str = "::";
 
 /// Exporter that exposes metrics to an HTTP endpoint
 /// matching the Prometheus.io metrics format.

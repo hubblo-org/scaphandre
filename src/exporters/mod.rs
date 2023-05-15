@@ -3,6 +3,8 @@
 //! `Exporter` is the root for all exporters. It defines the [Exporter] trait
 //! needed to implement an exporter.
 pub mod json;
+#[cfg(feature = "prometheuspush")]
+pub mod prometheuspush;
 #[cfg(feature = "prometheus")]
 pub mod prometheus;
 #[cfg(target_os = "linux")]

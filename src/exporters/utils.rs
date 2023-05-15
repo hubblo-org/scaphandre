@@ -8,6 +8,9 @@ use {
     k8s_sync::{errors::KubernetesError, kubernetes::Kubernetes},
 };
 
+/// Default ipv4/ipv6 address to expose the service is any
+pub const DEFAULT_IP_ADDRESS: &str = "::";
+
 /// Returns a cmdline String filtered from potential characters that
 /// could break exporters output.
 ///

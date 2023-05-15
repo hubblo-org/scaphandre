@@ -1301,6 +1301,7 @@ dependencies = [
  "docker-sync",
  "hostname",
  "hyper",
+ "isahc",
  "k8s-sync",
  "log",
  "loggerv",
