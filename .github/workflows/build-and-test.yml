@@ -55,12 +55,12 @@ jobs:
           override: true
           components: rustfmt
       - name: Check formatting
-        uses: rust-cargo-action@v2
+        uses: bpetit/rust-cargo-action@v2
         with:
           command: fmt
           args: --all -- --check
       - name: Clippy Check
-        uses: rust-cargo-action@v2
+        uses: bpetit/rust-cargo-action@v2
         with:
           command: clippy
           args: -- -A clippy::upper_case_acronyms -D warnings
@@ -79,12 +79,12 @@ jobs:
         run: |
           rustup toolchain install stable-x86_64-pc-windows-msvc
       - name: Check formatting
-        uses: rust-cargo-action@v2
+        uses: bpetit/rust-cargo-action@v2
         with:
           command: fmt
           args: --all -- --check
       - name: Clippy Check
-        uses: rust-cargo-action@v2
+        uses: bpetit/rust-cargo-action@v2
         with:
           command : clippy
           args: --no-default-features --features "prometheus json riemann"
