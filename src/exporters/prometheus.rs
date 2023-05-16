@@ -39,15 +39,15 @@ pub struct ExporterArgs {
     pub address: IpAddr,
 
     /// TCP port of the metrics endpoint for Prometheus
-    #[arg(short, long)]
+    #[arg(short, long, default_value_t = 8080)]
     pub port: u16,
 
-    #[arg(short, long)]
+    #[arg(short, long, default_value_t = String::from("metrics"))]
     pub suffix: String,
 
     /// Apply labels to metrics of processes that look like a Qemu/KVM virtual machine
     #[arg(long)]
-    pub qmeu: bool,
+    pub qemu: bool,
 
     /// Apply labels to metrics of processes running as containers
     #[arg(long)]
@@ -82,7 +82,7 @@ impl Exporter for PrometheusExporter {
         let metric_generator = MetricGenerator::new(
             self.topo.clone(), // improvement possible here: avoid cloning by adding a lifetime param to MetricGenerator
             self.hostname.clone(),
-            self.args.qmeu,
+            self.args.qemu,
             self.args.containers,
         );
         run_server(socket_addr, metric_generator, &self.args.suffix);
