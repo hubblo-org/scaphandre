@@ -345,11 +345,13 @@ impl JsonExporter {
                     .get_processes_filtered_by_container_name(regex_filter)
             }
 
-            #[cfg(not(feature = "containers"))]
-            self.metric_generator
-                .topology
-                .proc_tracker
-                .get_top_consumers(max_top)
+            #[cfg(not(feature = "containers"))]{
+                info!("Container regex filter is used but containers feature is not present. Returning top consumers based on max-top-consumers.");
+                self.metric_generator
+                    .topology
+                    .proc_tracker
+                    .get_top_consumers(max_top)
+            }
         } else {
             self.metric_generator
                 .topology
