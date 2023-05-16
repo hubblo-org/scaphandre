@@ -112,7 +112,7 @@ impl Warp10Exporter {
             let mut labels = vec![];
 
             for (k, v) in &metric.attributes {
-                labels.push(warp10::Label::new(&k, &v));
+                labels.push(warp10::Label::new(k, v));
             }
 
             process_data.push(warp10::Data::new(
@@ -120,7 +120,7 @@ impl Warp10Exporter {
                 None,
                 metric.name,
                 labels,
-                warp10::Value::String(metric.metric_value.to_string().replace("`", "")),
+                warp10::Value::String(metric.metric_value.to_string().replace('`', "")),
             ));
         }
 
