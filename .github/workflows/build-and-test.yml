@@ -25,6 +25,10 @@ env:
   AWX_PUBLIC_USER: "scaphandre-public"
   AWX_HOST: "https://cd.hubblo.org"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check_pr_is_on_the_right_branch:
     name: Check PR is open on the right branch
@@ -41,8 +45,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: check_pr_is_on_the_right_branch
     steps:
-      - name: Cancel Previous Runs
-        uses: ambimax/action-cancel-previous-runs@v2
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Install Rust
