@@ -103,7 +103,7 @@ jobs:
         id: login
         run: |
           export AWX_TOKEN=$(awx --conf.host "${{env.AWX_HOST}}" --conf.username "${{env.AWX_PUBLIC_USER}}" --conf.password "${{env.AWX_PUBLIC_ACCESS}}" login | jq .token | tr -d '"')
-          echo "::set-output name=awx_token::${AWX_TOKEN}"
+          echo "awx_token=${AWX_TOKEN}" >> $GITHUB_OUTPUT
       - name: Prepare Rust environment on bare metal worker
         id: rust
         run: |
@@ -135,7 +135,7 @@ jobs:
         id: login
         run: |
           export AWX_TOKEN=$(awx --conf.host "${{env.AWX_HOST}}" --conf.username "${{env.AWX_PUBLIC_USER}}" --conf.password "${{env.AWX_PUBLIC_ACCESS}}" login | jq .token | tr -d '"')
-          echo "::set-output name=awx_token::${AWX_TOKEN}"
+          echo "awx_token=${AWX_TOKEN}" >> $GITHUB_OUTPUT
       - name: Build debug version
         id: builddebug
         run: |
