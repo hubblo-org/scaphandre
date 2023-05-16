@@ -48,19 +48,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Install Rust
-        uses: actions-rs/toolchain@v2
+        uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           profile: minimal
           override: true
           components: rustfmt
       - name: Check formatting
-        uses: actions-rs/cargo@v2
+        uses: bpetit/action-cargo@v2
         with:
           command: fmt
           args: --all -- --check
       - name: Clippy Check
-        uses: actions-rs/cargo@v2
+        uses: bpetit/action-cargo@v2
         with:
           command: clippy
           args: -- -A clippy::upper_case_acronyms -D warnings
@@ -79,12 +79,12 @@ jobs:
         run: |
           rustup toolchain install stable-x86_64-pc-windows-msvc
       - name: Check formatting
-        uses: actions-rs/cargo@v2
+        uses: bpetit/action-cargo@v2
         with:
           command: fmt
           args: --all -- --check
       - name: Clippy Check
-        uses: actions-rs/cargo@v2
+        uses: bpetit/action-cargo@v2
         with:
           command : clippy
           args: --no-default-features --features "prometheus json riemann"
