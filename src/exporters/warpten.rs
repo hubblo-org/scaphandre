@@ -106,37 +106,27 @@ impl Warp10Exporter {
 
         self.metric_generator.gen_all_metrics();
 
-        let process_data: Vec<warp10::Data> = vec![];
+        let mut process_data: Vec<warp10::Data> = vec![];
 
         for metric in self.metric_generator.pop_metrics() {
             let mut labels = vec![];
 
-            for (k, v) in metric.attributes {
+            for (k, v) in &metric.attributes {
                 labels.push(warp10::Label::new(&k, &v));
             }
 
-            //if !metric.name.starts_with("scaph_domain") && !metric.name.starts_with("scaph_socket") {
-            //    process_data.push(warp10::Data::new(
-            //        time::OffsetDateTime::now_utc(),
-            //        None,
-            //        metric.name,
-            //        labels,
-            //        warp10::Value::String(metric.metric_value.to_string()),
-            //    ));
-            //}
+            process_data.push(warp10::Data::new(
+                time::OffsetDateTime::now_utc(),
+                None,
+                metric.name,
+                labels,
+                warp10::Value::String(metric.metric_value.to_string().replace("`", "")),
+            ));
         }
 
         let res = writer.post_sync(process_data)?;
 
         let results = vec![res];
-
-        //let mut process_data = vec![warp10::Data::new(
-        //    time::OffsetDateTime::now_utc(),
-        //    None,
-        //    String::from("scaph_self_version"),
-        //    labels.clone(),
-        //    warp10::Value::Double(scaphandre_version.parse::<f64>().unwrap()),
-        //)];
 
         //if let Some(token) = read_token {
         //let reader = client.get_reader(token.to_owned());
