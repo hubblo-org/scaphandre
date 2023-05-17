@@ -87,7 +87,7 @@ jobs:
         uses: bpetit/action-cargo@v2.0.1
         with:
           command : clippy
-          args: --no-default-features --features "prometheus json riemann"
+          args: --no-default-features --features "prometheus json riemann warpten"
 
   test_linux_x86_64:
     name: Test on GNU/Linux x86_64 (Bare metal worker)
@@ -169,7 +169,7 @@ jobs:
           rustup toolchain install stable-x86_64-pc-windows-msvc
       - name: Build (debug mode)
         run: |
-          cargo test --no-default-features --features "prometheus json riemann"
+          cargo test --no-default-features --features "prometheus json riemann warpten"
       - name: Build (debug mode)
         run: |
-          cargo build --no-default-features --features "prometheus json riemann"
+          cargo build --no-default-features --features "prometheus json riemann warpten"
