@@ -3,48 +3,79 @@
 //! `PrometheusPushExporter` implementation, push/send metrics to
 //! a [Prometheus](https://prometheus.io/) pushgateway.
 //! 
-use clap::builder::TypedValueParser;
 use isahc::{prelude::*, Request};
 use std::time::Duration;
 use crate::exporters::{Exporter};
-use crate::sensors::{Sensor};
-use clap::{ArgMatches, Arg};
+use crate::sensors::{Sensor, Topology};
 use chrono::Utc;
 use std::thread;
+use super::utils::get_hostname;
 
 pub struct PrometheusPushExporter {
-    sensor: Box<dyn Sensor>,
+    topo: Topology,
+    hostname: String,
+    args: ExporterArgs
+}
+
+/// Hold the arguments for a PrometheusExporter.
+#[derive(clap::Args, Debug)]
+pub struct ExporterArgs {
+    /// IP address (v4 or v6) of the metrics endpoint for Prometheus
+    #[arg(short = 'H', long = "host", default_value_t = String::from("localhost"))]
+    pub host: String,
+
+    /// TCP port of the metrics endpoint for Prometheus
+    #[arg(short, long, default_value_t = 9091)]
+    pub port: u16,
+
+    #[arg(long, default_value_t = String::from("metrics"))]
+    pub suffix: String,
+
+    #[arg(short = 'S', long, default_value_t = String::from("http"))]
+    pub scheme: String,
+
+    #[arg(short, long, default_value_t = 5)]
+    pub step: u64,
+
+    /// Apply labels to metrics of processes that look like a Qemu/KVM virtual machine
+    #[arg(long)]
+    pub qemu: bool,
+
+    /// Apply labels to metrics of processes running as containers
+    #[arg(long)]
+    pub containers: bool,
 }
 
 impl PrometheusPushExporter {
-    pub fn new(sensor: Box<dyn Sensor>) -> PrometheusPushExporter {
-        PrometheusPushExporter { sensor }
+    pub fn new(sensor: &dyn Sensor, args: ExporterArgs) -> PrometheusPushExporter {
+        let topo = sensor
+            .get_topology()
+            .expect("sensor topology should be available");
+        let hostname = get_hostname();
+        PrometheusPushExporter { topo, hostname, args }
     }
 }
 
 impl Exporter for PrometheusPushExporter {
-    fn run(&mut self, parameters: ArgMatches) {
+    fn run(&mut self) {
         info!(
             "{}: Starting Prometheus Push exporter",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
         );
 
-        let step: String = *parameters.get_one("step").unwrap();
-        let host: String = *parameters.get_one("host").unwrap();
-        let scheme: String = *parameters.get_one("scheme").unwrap();
-        let port: String = *parameters.get_one("port").unwrap();
-        let route: String = *parameters.get_one("route").unwrap();
-        let uri = format!("{scheme}://{host}:{port}/{route}");
+        let uri = format!("{}://{}:{}/{}/job/test", self.args.scheme, self.args.host, self.args.port, self.args.suffix);
+        // add job and per metric suffix ? 
 
         loop {
-            let body = "# HELP mymetric this is my metric\n# TYPE mymetric gauge\nmymetric 50";
+            let body = "# HELP mymetric this is my metric\n# TYPE mymetric gauge\nmymetric 50\n";
             if let Ok(request) = Request::post(uri.clone())
                 .header("Content-Type", "text/plain")
                 .timeout(Duration::from_secs(5))
                 .body(body) {
                     match request.send() {
-                        Ok(response) => {
+                        Ok(mut response) => {
                             warn!("Got {:?}", response);
+                            warn!("Response Text {:?}", response.text());
                         }
                         Err(err) => {
                             warn!("Got error : {:?}", err)
@@ -52,45 +83,11 @@ impl Exporter for PrometheusPushExporter {
                     }
                 }
 
-            thread::sleep(Duration::new(step.parse::<u64>().unwrap(), 0));
+            thread::sleep(Duration::new(self.args.step, 0));
         }
     }
-    /// Returns options understood by the exporter.
-    fn get_options() -> Vec<clap::Arg> {
-        let mut options = Vec::new();
-        let arg = Arg::new("host")
-            .default_value("localhost")
-            .help("PushGateway's host FQDN or IP address.")
-            .long("host")
-            .short('H')
-            .required(false) // send to localhost if none
-            .action(clap::ArgAction::Set);
-        options.push(arg);
-        let arg = Arg::new("port")
-            .default_value("9091")
-            .help("PushGateway's TCP port number.")
-            .long("port")
-            .short('p')
-            .required(false) // send to localhost if none
-            .action(clap::ArgAction::Set);
-        options.push(arg);
-        let arg = Arg::new("scheme")
-            .default_value("https")
-            .help("http or https.")
-            .long("scheme")
-            .short('s')
-            .required(false) // send to localhost if none
-            .action(clap::ArgAction::Set);
-        options.push(arg);
-        let arg = Arg::new("step")
-            .default_value("20")
-            .help("Time between two push, in seconds.")
-            .long("step")
-            .short('S')
-            .required(false) // send to localhost if none
-            .action(clap::ArgAction::Set);
-        options.push(arg);
 
-        options
+    fn kind(&self) -> &str {
+        "prometheuspush"
     }
 }

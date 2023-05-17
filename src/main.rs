@@ -79,6 +79,11 @@ enum ExporterChoice {
     /// Expose the metrics to a Warp10 host, through HTTP
     #[cfg(feature = "warpten")]
     Warpten(exporters::warpten::ExporterArgs),
+
+    /// Push metrics to Prometheus Push Gateway
+    #[cfg(feature = "prometheuspush")]
+    PrometheusPush(exporters::prometheuspush::ExporterArgs)
+
 }
 
 fn main() {
@@ -118,6 +123,10 @@ fn build_exporter(choice: ExporterChoice, sensor: &dyn Sensor) -> Box<dyn export
         #[cfg(feature = "warpten")]
         ExporterChoice::Warpten(args) => {
             Box::new(exporters::warpten::Warp10Exporter::new(sensor, args))
+        }
+        #[cfg(feature = "prometheuspush")]
+        ExporterChoice::PrometheusPush(args) => {
+            Box::new(exporters::prometheuspush::PrometheusPushExporter::new(sensor, args))
         }
     }
     // Note that invalid choices are automatically turned into errors by `parse()` before the Cli is populated,
