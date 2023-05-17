@@ -7,178 +7,33 @@
 extern crate log;
 pub mod exporters;
 pub mod sensors;
-use clap::ArgMatches;
-use colored::*;
-#[cfg(feature = "json")]
-use exporters::json::JSONExporter;
-#[cfg(feature = "prometheus")]
-use exporters::prometheus::PrometheusExporter;
-#[cfg(feature = "prometheuspush")]
-use exporters::prometheuspush::PrometheusPushExporter;
-#[cfg(target_os = "linux")]
-use exporters::qemu::QemuExporter;
-#[cfg(feature = "riemann")]
-use exporters::riemann::RiemannExporter;
-#[cfg(feature = "warpten")]
-use exporters::warpten::Warp10Exporter;
-use exporters::{stdout::StdoutExporter, Exporter};
+
 #[cfg(target_os = "windows")]
-use sensors::msr_rapl::MsrRAPLSensor;
+use sensors::msr_rapl;
+
 #[cfg(target_os = "linux")]
-use sensors::powercap_rapl::PowercapRAPLSensor;
-use sensors::Sensor;
-use std::collections::HashMap;
+use sensors::powercap_rapl;
+
 use std::time::{Duration, SystemTime};
 
-/// Helper function to get a Sensor instance from ArgMatches
-fn get_sensor(matches: &ArgMatches) -> Box<dyn Sensor> {
-    let sensor = match matches.get_one::<String>("sensor").unwrap().as_str() {
-        #[cfg(target_os = "linux")]
-        "powercap_rapl" => PowercapRAPLSensor::new(
-            *matches.get_one("sensor-buffer-per-socket-max-kB").unwrap(),
-            *matches.get_one("sensor-buffer-per-domain-max-kB").unwrap(),
-            matches.get_flag("vm"),
-        ),
-        #[cfg(target_os = "linux")]
-        _ => PowercapRAPLSensor::new(
-            *matches.get_one("sensor-buffer-per-socket-max-kB").unwrap(),
-            *matches.get_one("sensor-buffer-per-domain-max-kB").unwrap(),
-            matches.get_flag("vm"),
-        ),
-        #[cfg(not(target_os = "linux"))]
-        _ => MsrRAPLSensor::new(),
-    };
-    Box::new(sensor)
-}
-
-/// Matches the sensor and exporter name and options requested from the command line and
-/// creates the appropriate instances. Launchs the standardized entrypoint of
-/// the choosen exporter: run()
-/// This function should be updated to take new exporters into account.
-pub fn run(matches: ArgMatches) {
-    loggerv::init_with_verbosity(u64::from(matches.get_count("v"))).unwrap();
-
-    let sensor_boxed = get_sensor(&matches);
-    let exporter_parameters;
-
-    let mut header = true;
-    if matches.get_flag("no-header") {
-        header = false;
-    }
-
-    if let Some(stdout_exporter_parameters) = matches.subcommand_matches("stdout") {
-        if header {
-            scaphandre_header("stdout");
-        }
-        exporter_parameters = stdout_exporter_parameters.clone();
-        let mut exporter = StdoutExporter::new(sensor_boxed);
-        exporter.run(exporter_parameters);
-    } else if let Some(json_exporter_parameters) = matches.subcommand_matches("json") {
-        if header {
-            scaphandre_header("json");
-        }
-        exporter_parameters = json_exporter_parameters.clone();
-        let mut exporter = JSONExporter::new(sensor_boxed);
-        exporter.run(exporter_parameters);
-    } else if let Some(riemann_exporter_parameters) = matches.subcommand_matches("riemann") {
-        if header {
-            scaphandre_header("riemann");
-        }
-        exporter_parameters = riemann_exporter_parameters.clone();
-        let mut exporter = RiemannExporter::new(sensor_boxed);
-        exporter.run(exporter_parameters);
-    } else if let Some(prometheus_exporter_parameters) = matches.subcommand_matches("prometheus") {
-        if header {
-            scaphandre_header("prometheus");
-        }
-        exporter_parameters = prometheus_exporter_parameters.clone();
-        let mut exporter = PrometheusExporter::new(sensor_boxed);
-        exporter.run(exporter_parameters);
-    } else if let Some(prometheuspush_exporter_parameters) = matches.subcommand_matches("prometheuspush") {
-        if header {
-            scaphandre_header("prometheuspush");
-        }
-        exporter_parameters = prometheuspush_exporter_parameters.clone();
-        let mut exporter = PrometheusPushExporter::new(sensor_boxed);
-        exporter.run(exporter_parameters);
-    } else if let Some(warp10_exporter_parameters) = matches.subcommand_matches("warp10") {
-        #[cfg(feature = "warpten")]
-        {
-            if header {
-                scaphandre_header("warp10");
-            }
-            exporter_parameters = warp10_exporter_parameters.clone();
-            let mut exporter = Warp10Exporter::new(sensor_boxed);
-            exporter.run(exporter_parameters);
-        }
-    } else {
-        #[cfg(target_os = "linux")]
-        {
-            if let Some(qemu_exporter_parameters) = matches.subcommand_matches("qemu") {
-                if header {
-                    scaphandre_header("qemu");
-                }
-                exporter_parameters = qemu_exporter_parameters.clone();
-                let mut exporter = QemuExporter::new(sensor_boxed);
-                exporter.run(exporter_parameters);
-            }
-            error!("Warp10 exporter feature was not included in this build.");
-        }
-        error!("Couldn't determine which exporter to run.");
-    }
-}
-
-/// Returns options needed for each exporter as a HashMap.
-/// This function has to be updated to enable a new exporter.
-pub fn get_exporters_options() -> HashMap<String, Vec<clap::Arg>> {
-    let mut options = HashMap::new();
-    options.insert(
-        String::from("stdout"),
-        exporters::stdout::StdoutExporter::get_options(),
-    );
-    #[cfg(feature = "json")]
-    options.insert(
-        String::from("json"),
-        exporters::json::JSONExporter::get_options(),
-    );
-    #[cfg(feature = "prometheus")]
-    options.insert(
-        String::from("prometheus"),
-        exporters::prometheus::PrometheusExporter::get_options(),
-    );
-    #[cfg(feature = "riemann")]
-    options.insert(
-        String::from("riemann"),
-        exporters::riemann::RiemannExporter::get_options(),
-    );
+/// Create a new [`Sensor`] instance with the default sensor available,
+/// with its default options.
+pub fn get_default_sensor() -> impl sensors::Sensor {
     #[cfg(target_os = "linux")]
-    options.insert(
-        String::from("qemu"),
-        exporters::qemu::QemuExporter::get_options(),
+    return powercap_rapl::PowercapRAPLSensor::new(
+        powercap_rapl::DEFAULT_BUFFER_PER_SOCKET_MAX_KBYTES,
+        powercap_rapl::DEFAULT_BUFFER_PER_DOMAIN_MAX_KBYTES,
+        false,
     );
-    #[cfg(feature = "warp10")]
-    options.insert(
-        String::from("warp10"),
-        exporters::warpten::Warp10Exporter::get_options(),
-    );
-    #[cfg(feature = "prometheuspush")]
-    options.insert(
-        String::from("prometheuspush"),
-        exporters::prometheuspush::PrometheusPushExporter::get_options(),
-    );
-    options
+
+    #[cfg(target_os = "windows")]
+    return msr_rapl::MsrRAPLSensor::new();
 }
 
 fn current_system_time_since_epoch() -> Duration {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()
-}
-
-pub fn scaphandre_header(exporter_name: &str) {
-    let title = format!("Scaphandre {exporter_name} exporter");
-    println!("{}", title.red().bold());
-    println!("Sending ⚡ metrics");
 }
 
 /// Returns rust crate version, can be use used in language bindings to expose Rust core version

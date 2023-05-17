@@ -1,5 +1,5 @@
-use crate::exporters::utils::get_hostname;
-use crate::exporters::{Exporter, MetricGenerator};
+use crate::exporters::Exporter;
+use crate::sensors::Topology;
 use crate::sensors::{utils::ProcessRecord, Sensor};
 use std::{fs, io, thread, time};
 
@@ -10,65 +10,59 @@ use std::{fs, io, thread, time};
 /// to collect and deal with their power consumption metrics, the same way
 /// they would do it if they managed bare metal machines.
 pub struct QemuExporter {
-    sensor: Box<dyn Sensor>,
+    // We don't need a MetricGenerator for this exporter, because it "justs"
+    // puts the metrics in files in the same way as the powercap kernel module.
+    topology: Topology,
 }
 
 impl Exporter for QemuExporter {
-    /// Runs iteration() in a loop.
-    fn run(&mut self, _parameters: clap::ArgMatches) {
+    /// Runs [iterate()] in a loop.
+    fn run(&mut self) {
         info!("Starting qemu exporter");
         let path = "/var/lib/libvirt/scaphandre";
         let cleaner_step = 120;
         let mut timer = time::Duration::from_secs(cleaner_step);
-        if let Ok(topology) = self.sensor.generate_topology() {
-            let mut metric_generator = MetricGenerator::new(topology, get_hostname(), true, false);
-            loop {
-                metric_generator.topology.refresh();
-                self.iteration(String::from(path), &mut metric_generator);
-                let step = time::Duration::from_secs(5);
-                thread::sleep(step);
-                if timer - step > time::Duration::from_millis(0) {
-                    timer -= step;
-                } else {
-                    metric_generator
-                        .topology
-                        .proc_tracker
-                        .clean_terminated_process_records_vectors();
-                    timer = time::Duration::from_secs(cleaner_step);
-                }
+        loop {
+            self.iterate(String::from(path));
+            let step = time::Duration::from_secs(5);
+            thread::sleep(step);
+            if timer - step > time::Duration::from_millis(0) {
+                timer -= step;
+            } else {
+                self.topology
+                    .proc_tracker
+                    .clean_terminated_process_records_vectors();
+                timer = time::Duration::from_secs(cleaner_step);
             }
         }
     }
 
-    fn get_options() -> Vec<clap::Arg> {
-        Vec::new()
+    fn kind(&self) -> &str {
+        "qemu"
     }
 }
 
 impl QemuExporter {
     /// Instantiates and returns a new QemuExporter
-    pub fn new(sensor: Box<dyn Sensor>) -> QemuExporter {
-        QemuExporter { sensor }
+    pub fn new(sensor: &dyn Sensor) -> QemuExporter {
+        let topology = sensor
+            .get_topology()
+            .expect("sensor topology should be available");
+        QemuExporter { topology }
     }
 
-    /// Performs processing of metrics, using self.topology
-    pub fn iteration(&mut self, path: String, metric_generator: &mut MetricGenerator) {
+    /// Processes the metrics of `self.topology` and exposes them at the given `path`.
+    pub fn iterate(&mut self, path: String) {
         trace!("path: {}", path);
 
-        if let Some(topo_energy) = metric_generator
-            .topology
-            .get_records_diff_power_microwatts()
-        {
-            let processes = metric_generator.topology.proc_tracker.get_alive_processes();
+        if let Some(topo_energy) = self.topology.get_records_diff_power_microwatts() {
+            let processes = self.topology.proc_tracker.get_alive_processes();
             let qemu_processes = QemuExporter::filter_qemu_vm_processes(&processes);
             for qp in qemu_processes {
                 if qp.len() > 2 {
                     let last = qp.first().unwrap();
                     let vm_name = QemuExporter::get_vm_name_from_cmdline(
-                        &last
-                            .process
-                            .cmdline(&metric_generator.topology.proc_tracker)
-                            .unwrap(),
+                        &last.process.cmdline(&self.topology.proc_tracker).unwrap(),
                     );
                     let first_domain_path = format!("{path}/{vm_name}/intel-rapl:0:0");
                     if fs::read_dir(&first_domain_path).is_err() {
@@ -77,7 +71,7 @@ impl QemuExporter {
                             Err(error) => panic!("Couldn't create {}. Got: {}", &path, error),
                         }
                     }
-                    if let Some(ratio) = metric_generator
+                    if let Some(ratio) = self
                         .topology
                         .get_process_cpu_usage_percentage(last.process.pid)
                     {
@@ -107,7 +101,7 @@ impl QemuExporter {
                 return String::from(splitted.next().unwrap().split(',').next().unwrap());
             }
         }
-        String::from("")
+        String::from("") // TODO return Option<String> None instead, and stop at line 76 (it won't work with {path}//intel-rapl)
     }
 
     /// Either creates an energy_uj file (as the ones managed by powercap kernel module)

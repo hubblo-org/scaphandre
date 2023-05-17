@@ -1,133 +1,99 @@
 //! # PrometheusExporter
 //!
-//! `PrometheusExporter` implementation, expose metrics to
-//! a [Prometheus](https://prometheus.io/) server.
-use super::utils::{get_hostname, DEFAULT_IP_ADDRESS};
+//! The Prometheus Exporter expose metrics to a [Prometheus](https://prometheus.io/) server.
+//! This is achieved by exposing an HTTP endpoint, which the Prometheus will
+//! [scrape](https://prometheus.io/docs/prometheus/latest/getting_started).
+
+use super::utils;
 use crate::current_system_time_since_epoch;
 use crate::exporters::{Exporter, MetricGenerator, MetricValueType};
 use crate::sensors::{Sensor, Topology};
 use chrono::Utc;
-use clap::{Arg, ArgMatches};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
 use std::convert::Infallible;
-use std::fmt::Write as _;
 use std::{
     collections::HashMap,
-    net::{IpAddr, SocketAddr},
+    fmt::Write,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::{Arc, Mutex},
     time::Duration,
 };
 
+/// Default ipv4/ipv6 address to expose the service is any
+const DEFAULT_IP_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
+
 /// Exporter that exposes metrics to an HTTP endpoint
 /// matching the Prometheus.io metrics format.
 pub struct PrometheusExporter {
-    /// Sensor instance that is used to generate the Topology and
-    /// thus get power consumption metrics.
-    sensor: Box<dyn Sensor>,
+    topo: Topology,
+    hostname: String,
+    args: ExporterArgs,
+}
+
+/// Hold the arguments for a PrometheusExporter.
+#[derive(clap::Args, Debug)]
+pub struct ExporterArgs {
+    /// IP address (v4 or v6) of the metrics endpoint for Prometheus
+    #[arg(short, long, default_value_t = DEFAULT_IP_ADDRESS)]
+    pub address: IpAddr,
+
+    /// TCP port of the metrics endpoint for Prometheus
+    #[arg(short, long, default_value_t = 8080)]
+    pub port: u16,
+
+    #[arg(short, long, default_value_t = String::from("metrics"))]
+    pub suffix: String,
+
+    /// Apply labels to metrics of processes that look like a Qemu/KVM virtual machine
+    #[arg(long)]
+    pub qemu: bool,
+
+    /// Apply labels to metrics of processes running as containers
+    #[arg(long)]
+    pub containers: bool,
 }
 
 impl PrometheusExporter {
     /// Instantiates PrometheusExporter and returns the instance.
-    pub fn new(sensor: Box<dyn Sensor>) -> PrometheusExporter {
-        PrometheusExporter { sensor }
+    pub fn new(sensor: &dyn Sensor, args: ExporterArgs) -> PrometheusExporter {
+        // Prepare the retrieval of the measurements, catch most of the errors early
+        let topo = sensor
+            .get_topology()
+            .expect("sensor topology should be available");
+        let hostname = utils::get_hostname();
+        PrometheusExporter {
+            topo,
+            hostname,
+            args,
+        }
     }
 }
 
 impl Exporter for PrometheusExporter {
-    /// Entry point ot the PrometheusExporter.
-    ///
-    /// Runs HTTP server and metrics exposure through the runner function.
-    fn run(&mut self, parameters: ArgMatches) {
+    /// Starts an HTTP server to expose the metrics in Prometheus format.
+    fn run(&mut self) {
         info!(
             "{}: Starting Prometheus exporter",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
         );
         println!("Press CTRL-C to stop scaphandre");
-
-        runner(
-            (*self.sensor.get_topology()).unwrap(),
-            parameters.get_one::<String>("address").unwrap().to_string(),
-            parameters.get_one::<String>("port").unwrap().to_string(),
-            parameters.get_one::<String>("suffix").unwrap().to_string(),
-            parameters.get_flag("qemu"),
-            parameters.get_flag("containers"),
-            get_hostname(),
+        let socket_addr = SocketAddr::new(self.args.address, self.args.port);
+        let metric_generator = MetricGenerator::new(
+            self.topo.clone(), // improvement possible here: avoid cloning by adding a lifetime param to MetricGenerator
+            self.hostname.clone(),
+            self.args.qemu,
+            self.args.containers,
         );
+        run_server(socket_addr, metric_generator, &self.args.suffix);
     }
-    /// Returns options understood by the exporter.
-    fn get_options() -> Vec<clap::Arg> {
-        let mut options = Vec::new();
-        let arg = Arg::new("address")
-            .default_value(DEFAULT_IP_ADDRESS)
-            .help("ipv6 or ipv4 address to expose the service to")
-            .long("address")
-            .short('a')
-            .required(false)
-            .action(clap::ArgAction::Set);
-        options.push(arg);
 
-        let arg = Arg::new("port")
-            .default_value("8080")
-            .help("TCP port number to expose the service")
-            .long("port")
-            .short('p')
-            .required(false)
-            .action(clap::ArgAction::Set);
-        options.push(arg);
-
-        let arg = Arg::new("suffix")
-            .default_value("metrics")
-            .help("url suffix to access metrics")
-            .long("suffix")
-            .short('s')
-            .required(false)
-            .action(clap::ArgAction::Set);
-        options.push(arg);
-
-        let arg = Arg::new("qemu")
-            .help("Apply labels to metrics of processes looking like a Qemu/KVM virtual machine")
-            .long("qemu")
-            .short('q')
-            .required(false)
-            .action(clap::ArgAction::SetTrue);
-        options.push(arg);
-
-        let arg = Arg::new("containers")
-            .help("Monitor and apply labels for processes running as containers")
-            .long("containers")
-            .required(false)
-            .action(clap::ArgAction::SetTrue);
-        options.push(arg);
-
-        let arg = Arg::new("kubernetes_host")
-            .help("FQDN of the kubernetes API server")
-            .long("kubernetes-host")
-            .required(false)
-            .action(clap::ArgAction::Set);
-        options.push(arg);
-
-        let arg = Arg::new("kubernetes_scheme")
-            .help("Protocol used to access kubernetes API server")
-            .long("kubernetes-scheme")
-            .default_value("http")
-            .required(false)
-            .action(clap::ArgAction::Set);
-        options.push(arg);
-
-        let arg = Arg::new("kubernetes_port")
-            .help("Kubernetes API server port number")
-            .long("kubernetes-port")
-            .default_value("6443")
-            .required(false)
-            .action(clap::ArgAction::Set);
-        options.push(arg);
-
-        options
+    fn kind(&self) -> &str {
+        "prometheus"
     }
 }
 
-/// Contains a mutex holding a Topology object.
+/// Contains a mutex holding a MetricGenerator.
 /// Used to pass the topology data from one http worker to another.
 struct PowerMetrics {
     last_request: Mutex<Duration>,
@@ -135,55 +101,36 @@ struct PowerMetrics {
 }
 
 #[tokio::main]
-async fn runner(
-    topology: Topology,
-    address: String,
-    port: String,
-    suffix: String,
-    qemu: bool,
-    watch_containers: bool,
-    hostname: String,
+async fn run_server(
+    socket_addr: SocketAddr,
+    metric_generator: MetricGenerator,
+    endpoint_suffix: &str,
 ) {
-    if let Ok(addr) = address.parse::<IpAddr>() {
-        if let Ok(port) = port.parse::<u16>() {
-            let socket_addr = SocketAddr::new(addr, port);
-
-            let power_metrics = PowerMetrics {
-                last_request: Mutex::new(Duration::new(0, 0)),
-                metric_generator: Mutex::new(MetricGenerator::new(
-                    topology,
-                    hostname.clone(),
-                    qemu,
-                    watch_containers,
-                )),
-            };
-            let context = Arc::new(power_metrics);
-            let make_svc = make_service_fn(move |_| {
-                let ctx = context.clone();
-                let sfx = suffix.clone();
-                async {
-                    Ok::<_, Infallible>(service_fn(move |req| {
-                        show_metrics(req, ctx.clone(), sfx.clone())
-                    }))
-                }
-            });
-            let server = Server::bind(&socket_addr);
-            let res = server.serve(make_svc);
-            let (tx, rx) = tokio::sync::oneshot::channel::<()>();
-            let graceful = res.with_graceful_shutdown(async {
-                rx.await.ok();
-            });
-
-            if let Err(e) = graceful.await {
-                error!("server error: {}", e);
-            }
-            let _ = tx.send(());
-        } else {
-            panic!("{} is not a valid TCP port number", port);
+    let power_metrics = PowerMetrics {
+        last_request: Mutex::new(Duration::new(0, 0)),
+        metric_generator: Mutex::new(metric_generator),
+    };
+    let context = Arc::new(power_metrics);
+    let make_svc = make_service_fn(move |_| {
+        let ctx = context.clone();
+        let sfx = endpoint_suffix.to_string();
+        async {
+            Ok::<_, Infallible>(service_fn(move |req| {
+                show_metrics(req, ctx.clone(), sfx.clone())
+            }))
         }
-    } else {
-        panic!("{} is not a valid ip address", address);
+    });
+    let server = Server::bind(&socket_addr);
+    let res = server.serve(make_svc);
+    let (tx, rx) = tokio::sync::oneshot::channel::<()>();
+    let graceful = res.with_graceful_shutdown(async {
+        rx.await.ok();
+    });
+
+    if let Err(e) = graceful.await {
+        error!("server error: {}", e);
     }
+    let _ = tx.send(());
 }
 
 /// Returns a well formatted Prometheus metric string.

@@ -182,15 +182,15 @@ impl IProcess {
     pub fn cgroups() {}
 }
 
-pub fn page_size() -> Result<i64, String> {
+pub fn page_size() -> Result<u64, String> {
     let res;
     #[cfg(target_os = "linux")]
     {
-        res = Ok(procfs::page_size().unwrap())
+        res = Ok(procfs::page_size())
     }
     #[cfg(target_os = "windows")]
     {
-        res = Ok(4096)
+        res = Ok(4096u64)
     }
     res
 }
