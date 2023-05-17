@@ -2,19 +2,19 @@
 //!
 //! `PrometheusPushExporter` implementation, push/send metrics to
 //! a [Prometheus](https://prometheus.io/) pushgateway.
-//! 
-use isahc::{prelude::*, Request};
-use std::time::Duration;
-use crate::exporters::{Exporter};
+//!
+use super::utils::get_hostname;
+use crate::exporters::Exporter;
 use crate::sensors::{Sensor, Topology};
 use chrono::Utc;
+use isahc::{prelude::*, Request};
 use std::thread;
-use super::utils::get_hostname;
+use std::time::Duration;
 
 pub struct PrometheusPushExporter {
     topo: Topology,
     hostname: String,
-    args: ExporterArgs
+    args: ExporterArgs,
 }
 
 /// Hold the arguments for a PrometheusExporter.
@@ -52,7 +52,11 @@ impl PrometheusPushExporter {
             .get_topology()
             .expect("sensor topology should be available");
         let hostname = get_hostname();
-        PrometheusPushExporter { topo, hostname, args }
+        PrometheusPushExporter {
+            topo,
+            hostname,
+            args,
+        }
     }
 }
 
@@ -63,25 +67,29 @@ impl Exporter for PrometheusPushExporter {
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
         );
 
-        let uri = format!("{}://{}:{}/{}/job/test", self.args.scheme, self.args.host, self.args.port, self.args.suffix);
-        // add job and per metric suffix ? 
+        let uri = format!(
+            "{}://{}:{}/{}/job/test",
+            self.args.scheme, self.args.host, self.args.port, self.args.suffix
+        );
+        // add job and per metric suffix ?
 
         loop {
             let body = "# HELP mymetric this is my metric\n# TYPE mymetric gauge\nmymetric 50\n";
             if let Ok(request) = Request::post(uri.clone())
                 .header("Content-Type", "text/plain")
                 .timeout(Duration::from_secs(5))
-                .body(body) {
-                    match request.send() {
-                        Ok(mut response) => {
-                            warn!("Got {:?}", response);
-                            warn!("Response Text {:?}", response.text());
-                        }
-                        Err(err) => {
-                            warn!("Got error : {:?}", err)
-                        }
+                .body(body)
+            {
+                match request.send() {
+                    Ok(mut response) => {
+                        warn!("Got {:?}", response);
+                        warn!("Response Text {:?}", response.text());
+                    }
+                    Err(err) => {
+                        warn!("Got error : {:?}", err)
                     }
                 }
+            }
 
             thread::sleep(Duration::new(self.args.step, 0));
         }
