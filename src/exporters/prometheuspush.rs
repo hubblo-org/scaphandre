@@ -83,7 +83,6 @@ impl Exporter for PrometheusPushExporter {
             self.args.qemu,
             self.args.containers,
         );
-        // add job and per metric suffix ?
 
         loop {
             metric_generator.topology.refresh();
@@ -104,30 +103,13 @@ impl Exporter for PrometheusPushExporter {
 
                 if should_i_add_help {
                     let _ = write!(body, "# HELP {} {}", m.name, m.description);
-                    //warn!(
-                    //    "line {} : {}",
-                    //    counter,
-                    //    format!("# HELP {} {}", m.name, m.description)
-                    //);
-                    //counter = counter + 1;
                     let _ = write!(body, "\n# TYPE {} {}\n", m.name, m.metric_type);
-                    //warn!(
-                    //    "line {} : {}",
-                    //    counter,
-                    //    format!("\n# TYPE {} {}\n", m.name, m.metric_type)
-                    //);
-                    //counter = counter + 1;
                 }
                 let mut attributes = None;
                 if !m.attributes.is_empty() {
                     attributes = Some(&m.attributes);
                 }
-                //warn!(
-                //    "line {} : {}",
-                //    counter,
-                //    format_prometheus_metric(&m.name, &m.metric_value.to_string(), attributes)
-                //);
-                //counter = counter + 1;
+
                 let _ = write!(
                     body,
                     "{}",
@@ -135,7 +117,6 @@ impl Exporter for PrometheusPushExporter {
                 );
             }
             //warn!("body: {}", body);
-            // TODO: fix tcp broken pipe on push gateway side
             if let Ok(request) = Request::post(uri.clone())
                 .header("Content-Type", "text/plain")
                 .timeout(Duration::from_secs(5))
