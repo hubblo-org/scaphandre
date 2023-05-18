@@ -133,21 +133,6 @@ async fn run_server(
     let _ = tx.send(());
 }
 
-/// Returns a well formatted Prometheus metric string.
-fn format_metric(key: &str, value: &str, labels: Option<&HashMap<String, String>>) -> String {
-    let mut result = key.to_string();
-    if let Some(labels) = labels {
-        result.push('{');
-        for (k, v) in labels.iter() {
-            let _ = write!(result, "{}=\"{}\",", k, v.replace('\"', "_"));
-        }
-        result.remove(result.len() - 1);
-        result.push('}');
-    }
-    let _ = writeln!(result, " {value}");
-    result
-}
-
 /// Adds lines related to a metric in the body (String) of response.
 fn push_metric(
     mut body: String,
@@ -228,7 +213,7 @@ async fn show_metrics(
                                 msg.description.clone(),
                                 msg.metric_type.clone(),
                                 msg.name.clone(),
-                                format_metric(&msg.name, &value, attributes),
+                                utils::format_prometheus_metric(&msg.name, &value, attributes),
                                 should_i_add_help,
                             );
                         }

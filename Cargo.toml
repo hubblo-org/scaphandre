@@ -32,6 +32,7 @@ k8s-sync = { version = "0.2.3", optional = true }
 hyper = { version = "0.14", features = ["full"], optional = true }
 tokio = { version = "1.26.0", features = ["full"], optional = true}
 sysinfo = { version = "0.28.3"}
+isahc = { version = "1.7.2", optional = true }
 
 [target.'cfg(target_os="linux")'.dependencies]
 procfs = { version = "0.15.0" }
@@ -40,10 +41,11 @@ procfs = { version = "0.15.0" }
 windows = { version = "0.27.0", features = ["alloc","Win32_Storage_FileSystem","Win32_Foundation","Win32_Security","Win32_System_IO","Win32_System_Ioctl"]}
 
 [features]
-default = ["prometheus", "riemann", "warpten", "json", "containers"]
+default = ["prometheus", "riemann", "warpten", "json", "containers", "prometheuspush"]
 prometheus = ["hyper", "tokio"]
 riemann = ["riemann_client"]
 json = ["serde", "serde_json"]
 containers = ["docker-sync", "k8s-sync"]
 warpten = ["warp10"]
+prometheuspush = ["isahc"]
 qemu = []
