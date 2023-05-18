@@ -3,14 +3,14 @@
 //! `PrometheusPushExporter` implementation, push/send metrics to
 //! a [Prometheus](https://prometheus.io/) pushgateway.
 //!
-use super::utils::{get_hostname, format_prometheus_metric};
+use super::utils::{format_prometheus_metric, get_hostname};
 use crate::exporters::{Exporter, MetricGenerator};
 use crate::sensors::{Sensor, Topology};
 use chrono::Utc;
 use isahc::{prelude::*, Request};
+use std::fmt::Write;
 use std::thread;
 use std::time::Duration;
-use std::fmt::Write;
 
 pub struct PrometheusPushExporter {
     topo: Topology,
@@ -48,7 +48,7 @@ pub struct ExporterArgs {
 
     /// Job name to apply as a label for pushed metrics
     #[arg(short, long, default_value_t = String::from("scaphandre"))]
-    pub job: String
+    pub job: String,
 }
 
 impl PrometheusPushExporter {
@@ -81,16 +81,18 @@ impl Exporter for PrometheusPushExporter {
             self.topo.clone(),
             self.hostname.clone(),
             self.args.qemu,
-            self.args.containers
+            self.args.containers,
         );
         // add job and per metric suffix ?
 
         loop {
             metric_generator.topology.refresh();
             metric_generator.gen_all_metrics();
-            let mut body = String::from("# HELP mymetric this is my metric\n# TYPE mymetric gauge\nmymetric 50\n");
+            let mut body = String::from(
+                "# HELP mymetric this is my metric\n# TYPE mymetric gauge\nmymetric 50\n",
+            );
             let mut metrics_pushed: Vec<String> = vec![];
-            let mut counter = 0;
+            //let mut counter = 0;
             for m in metric_generator.pop_metrics() {
                 let mut should_i_add_help = true;
 
@@ -102,19 +104,35 @@ impl Exporter for PrometheusPushExporter {
 
                 if should_i_add_help {
                     let _ = write!(body, "# HELP {} {}", m.name, m.description);
-                    warn!("line {} : {}", counter, format!("# HELP {} {}", m.name, m.description));
-                    counter = counter + 1;
+                    //warn!(
+                    //    "line {} : {}",
+                    //    counter,
+                    //    format!("# HELP {} {}", m.name, m.description)
+                    //);
+                    //counter = counter + 1;
                     let _ = write!(body, "\n# TYPE {} {}\n", m.name, m.metric_type);
-                    warn!("line {} : {}", counter, format!("\n# TYPE {} {}\n", m.name, m.metric_type));
-                    counter = counter + 1;
+                    //warn!(
+                    //    "line {} : {}",
+                    //    counter,
+                    //    format!("\n# TYPE {} {}\n", m.name, m.metric_type)
+                    //);
+                    //counter = counter + 1;
                 }
                 let mut attributes = None;
                 if !m.attributes.is_empty() {
                     attributes = Some(&m.attributes);
                 }
-                warn!("line {} : {}", counter, format_prometheus_metric(&m.name, &m.metric_value.to_string(), attributes));
-                counter = counter + 1;
-                let _ = write!(body, "{}", format_prometheus_metric(&m.name, &m.metric_value.to_string(), attributes));
+                //warn!(
+                //    "line {} : {}",
+                //    counter,
+                //    format_prometheus_metric(&m.name, &m.metric_value.to_string(), attributes)
+                //);
+                //counter = counter + 1;
+                let _ = write!(
+                    body,
+                    "{}",
+                    format_prometheus_metric(&m.name, &m.metric_value.to_string(), attributes)
+                );
             }
             //warn!("body: {}", body);
             // TODO: fix tcp broken pipe on push gateway side
