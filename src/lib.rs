@@ -36,11 +36,6 @@ fn current_system_time_since_epoch() -> Duration {
         .unwrap()
 }
 
-/// Returns rust crate version, can be use used in language bindings to expose Rust core version
-pub fn crate_version() -> &'static str {
-    env!("CARGO_PKG_VERSION")
-}
-
 //  Copyright 2020 The scaphandre authors.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
