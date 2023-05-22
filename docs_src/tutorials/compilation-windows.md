@@ -6,10 +6,6 @@ Scaphandre, on Windows, needs a kernel driver to get the same metrics as it does
 
 Once you have a working driver, you can compile Scaphandre, with the Rust for Windows usual toolkit.
 
-For now, all Scaphandre features are not supported on windows. Use the following command line to build the binary :
-
-```
-cargo build --no-default-features --features "prometheus json riemann"
-```
+For now, all Scaphandre features are not supported on windows. Simply run `cargo build` on a windows machine with cargo installed to get a binary.
 
 Don't forget to add the `--release` flag to build a binary suited for more than test and debug usecases.
