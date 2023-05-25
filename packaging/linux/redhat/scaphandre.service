@@ -8,10 +8,10 @@ After=network.target
 #IPAddressAllow=localhost
 #IPAddressDeny=any
 
-ExecStartPre=-+/usr/bin/modprobe intel_rapl_common
+ExecStartPre=-+/usr/sbin/modprobe intel_rapl_common
 ExecStartPre=+/usr/bin/find /sys/devices/virtual/powercap -name energy_uj -exec chmod g+r -R {} + -exec chown root:powercap {} +
-ExecStart=/usr/local/bin/scaphandre $SCAPHANDRE_ARGS
-EnvironmentFile=/etc/conf.d/scaphandre
+ExecStart=/usr/bin/scaphandre $SCAPHANDRE_ARGS
+EnvironmentFile=/etc/scaphandre/default
 
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 DevicePolicy=closed
