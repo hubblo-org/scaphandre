@@ -27,6 +27,7 @@
 
 # Packaging folder : avoir build artefacts
 packaging/*/BUILD/*
+packaging/*/BUILDROOT/*
 *.rpm
 *.tar.gz
 *.swp

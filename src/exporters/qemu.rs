@@ -84,9 +84,12 @@ impl QemuExporter {
                             Ok(result) => {
                                 trace!("{:?}", result);
                                 debug!("Updated {}", complete_path);
-                            },
+                            }
                             Err(err) => {
-                                error!("Could'nt edit {}. Please check file permissions : {}", complete_path, err);
+                                error!(
+                                    "Could'nt edit {}. Please check file permissions : {}",
+                                    complete_path, err
+                                );
                             }
                         }
                     }

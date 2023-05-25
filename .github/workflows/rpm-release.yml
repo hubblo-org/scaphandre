@@ -1,0 +1,62 @@
+name: Build RPM package
+
+on:
+  push:
+    paths-ignore:
+      - 'docs_src/**'
+      - 'README.md'
+      - 'CITATION'
+      - 'book.toml'
+      - 'CONTRIBUTING.md'
+    tags: [ 'v*.*.*', 'dev*.*.*' ]
+
+jobs:
+  build_rpm:
+    name: Build RPM package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install s3cmd
+        run: sudo apt install python3-pip -y && sudo pip3 install s3cmd awxkit
+      - name: Get tag
+        id: tag
+        uses: devops-actions/action-get-tag@v1.0.2
+        with:
+          strip_v: true # Optional: Remove 'v' character from version
+          default: "v0.0.0" # Optional: Default version when tag not found
+      - name: Override version
+        run: "sed -i 's/Version: .*/Version:        ${{steps.tag.outputs.tag}}/' packaging/linux/redhat/rpmbuild/SPECS/scaphandre.spec"
+      - name: Debug
+        run: grep Version packaging/linux/redhat/rpmbuild/SPECS/scaphandre.spec
+      - name: Extract release notes
+        id: extract-release-notes
+        uses: ffurrer2/extract-release-notes@v1
+      #- name: Display release notes
+      #  run: "echo ${{ steps.extract-release-notes.outputs.release_notes }}"
+      - name: Edit changelog #TODO commit and push to increase changelog
+        run: date=$(date "+%a %b %d %Y - "); sed -i "/%changelog/ a * ${date}${{steps.tag.outputs.tag}}/" packaging/linux/redhat/rpmbuild/SPECS/scaphandre.spec
+      - name: Edit changelog
+        run: echo "    Packaging for version ${{steps.tag.outputs.tag}}" >> packaging/linux/redhat/rpmbuild/SPECS/scaphandre.spec
+      - name: Troubleshoot parameters
+        run: |
+          echo "token: ${{ secrets.GITHUB_TOKEN }} run_id: ${GITHUB_RUN_ID} repository: ${GITHUB_REPOSITORY}"
+      - name: build RPM package
+        id: rpm
+        uses: bpetit/rpmbuild@master
+        with:
+          spec_file: "packaging/linux/redhat/rpmbuild/SPECS/scaphandre.spec"
+      - name: Upload to scw s3
+        run: |
+          s3cmd --access_key="${{ secrets.S3_ACCESS_KEY_ID }}" --secret_key="${{ secrets.S3_SECRET_ACCESS_KEY }}" --region="fr-par" --acl-public --host="s3.fr-par.scw.cloud" --host-bucket="%(bucket).s3.fr-par.scw.cloud" put --recursive ${{ steps.rpm.outputs.rpm_dir_path }} s3://scaphandre/
+      - name: Log on AWX 
+        id: login
+        run: |
+          RAW_RESULT=$(awx --conf.host "${{ secrets.AWX_HOST }}" --conf.username "${{ secrets.AWX_PUBLIC_USER }}" --conf.password "${{ secrets.AWX_PASSWORD }}" login)
+          echo $RAW_RESULT
+          export AWX_TOKEN=$(echo $RAW_RESULT | jq .token | tr -d '"')
+          echo "awx_token=${AWX_TOKEN}" >> $GITHUB_OUTPUT
+      - name: Install and test RPM package
+        id: rpmtest
+        run: |
+          awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ secrets.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\",\"github_rpm_url\":\"https://scaphandre.s3.fr-par.scw.cloud/x86_64/scaphandre-${{steps.tag.outputs.tag}}-1.el9.x86_64.rpm\"}" 19 --monitor

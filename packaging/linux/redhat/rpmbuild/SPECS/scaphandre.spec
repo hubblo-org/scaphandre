@@ -1,5 +1,5 @@
 Name:           scaphandre
-Version:        0.5.0
+Version:        CHANGEME
 Release:        1%{?dist}
 Summary:        Power usage / Electricity / Energy monitoring agent 
 
@@ -19,18 +19,18 @@ BuildRequires:  rust,cargo,openssl-devel,systemd-rpm-macros
 %autosetup
 
 %build
-cargo build --release
+cargo build
 
 %pre
 
 %install
 #rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/%{_bindir}/
-cp target/release/scaphandre $RPM_BUILD_ROOT/%{_bindir}/
+cp target/debug/scaphandre $RPM_BUILD_ROOT/%{_bindir}/
 chmod +x $RPM_BUILD_ROOT/%{_bindir}/scaphandre
 mkdir -p $RPM_BUILD_ROOT/lib/systemd/system
 mkdir -p $RPM_BUILD_ROOT/etc/scaphandre
-touch $RPM_BUILD_ROOT/etc/scaphandre/default
+echo "prometheus" > $RPM_BUILD_ROOT/etc/scaphandre/default
 mkdir -p $RPM_BUILD_ROOT/lib/systemd/system
 cp packaging/linux/redhat/scaphandre.service $RPM_BUILD_ROOT/lib/systemd/system/scaphandre.service
 
@@ -38,7 +38,7 @@ cp packaging/linux/redhat/scaphandre.service $RPM_BUILD_ROOT/lib/systemd/system/
 %systemd_post scaphandre.service
 
 %preun
-%systemd_preun scpahandre.service
+%systemd_preun scaphandre.service
 
 %postun
 %systemd_postun_with_restart scaphandre.service
@@ -55,5 +55,3 @@ cp packaging/linux/redhat/scaphandre.service $RPM_BUILD_ROOT/lib/systemd/system/
 #%license LICENSE
 
 %changelog
-* Wed May 25 2023 - bpetit
-    first package
