@@ -10,7 +10,7 @@ After=network.target
 
 ExecStartPre=-+/usr/sbin/modprobe intel_rapl_common
 ExecStartPre=+/usr/bin/find /sys/devices/virtual/powercap -name energy_uj -exec chmod g+r -R {} + -exec chown root:powercap {} +
-ExecStart=/usr/local/bin/scaphandre prometheus -p 8088
+ExecStart=/usr/local/bin/scaphandre prometheus -p 8080
 EnvironmentFile=/etc/scaphandre
 
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
