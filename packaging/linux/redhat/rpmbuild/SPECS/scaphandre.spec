@@ -30,7 +30,7 @@ cp target/debug/scaphandre $RPM_BUILD_ROOT/%{_bindir}/
 chmod +x $RPM_BUILD_ROOT/%{_bindir}/scaphandre
 mkdir -p $RPM_BUILD_ROOT/lib/systemd/system
 mkdir -p $RPM_BUILD_ROOT/etc/scaphandre
-echo "prometheus" > $RPM_BUILD_ROOT/etc/scaphandre/default
+echo "SCAPHANDRE_ARGS=prometheus" > $RPM_BUILD_ROOT/etc/scaphandre/default
 mkdir -p $RPM_BUILD_ROOT/lib/systemd/system
 cp packaging/linux/redhat/scaphandre.service $RPM_BUILD_ROOT/lib/systemd/system/scaphandre.service
 

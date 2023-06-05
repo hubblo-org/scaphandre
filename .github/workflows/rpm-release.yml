@@ -38,9 +38,6 @@ jobs:
         run: date=$(date "+%a %b %d %Y - "); sed -i "/%changelog/ a * ${date}${{steps.tag.outputs.tag}}/" packaging/linux/redhat/rpmbuild/SPECS/scaphandre.spec
       - name: Edit changelog
         run: echo "    Packaging for version ${{steps.tag.outputs.tag}}" >> packaging/linux/redhat/rpmbuild/SPECS/scaphandre.spec
-      - name: Troubleshoot parameters
-        run: |
-          echo "token: ${{ secrets.GITHUB_TOKEN }} run_id: ${GITHUB_RUN_ID} repository: ${GITHUB_REPOSITORY}"
       - name: build RPM package
         id: rpm
         uses: bpetit/rpmbuild@master
@@ -53,7 +50,6 @@ jobs:
         id: login
         run: |
           RAW_RESULT=$(awx --conf.host "${{ secrets.AWX_HOST }}" --conf.username "${{ secrets.AWX_PUBLIC_USER }}" --conf.password "${{ secrets.AWX_PASSWORD }}" login)
-          echo $RAW_RESULT
           export AWX_TOKEN=$(echo $RAW_RESULT | jq .token | tr -d '"')
           echo "awx_token=${AWX_TOKEN}" >> $GITHUB_OUTPUT
       - name: Install and test RPM package
