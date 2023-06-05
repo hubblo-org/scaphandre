@@ -19,14 +19,14 @@ BuildRequires:  rust,cargo,openssl-devel,systemd-rpm-macros
 %autosetup
 
 %build
-cargo build
+cargo build --release
 
 %pre
 
 %install
 #rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/%{_bindir}/
-cp target/debug/scaphandre $RPM_BUILD_ROOT/%{_bindir}/
+cp target/release/scaphandre $RPM_BUILD_ROOT/%{_bindir}/
 chmod +x $RPM_BUILD_ROOT/%{_bindir}/scaphandre
 mkdir -p $RPM_BUILD_ROOT/lib/systemd/system
 mkdir -p $RPM_BUILD_ROOT/etc/scaphandre
