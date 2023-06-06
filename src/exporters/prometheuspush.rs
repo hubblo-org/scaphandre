@@ -118,7 +118,7 @@ impl Exporter for PrometheusPushExporter {
                     m.attributes
                         .insert(String::from("hostname"), m.hostname.clone());
                 }
-                let attributes= Some(&m.attributes);
+                let attributes = Some(&m.attributes);
 
                 let _ = write!(
                     body,
@@ -126,22 +126,18 @@ impl Exporter for PrometheusPushExporter {
                     format_prometheus_metric(&m.name, &m.metric_value.to_string(), attributes)
                 );
             }
-            
+
             let pre_request = Request::post(uri.clone())
                 .timeout(Duration::from_secs(5))
                 .header("Content-Type", "text/plain");
             let final_request = match self.args.no_tls_check {
-                true => {
-                    pre_request
-                        .ssl_options(SslOption::DANGER_ACCEPT_INVALID_CERTS | SslOption::DANGER_ACCEPT_REVOKED_CERTS)
-                }
-                false => {
-                    pre_request
-                }
+                true => pre_request.ssl_options(
+                    SslOption::DANGER_ACCEPT_INVALID_CERTS | SslOption::DANGER_ACCEPT_REVOKED_CERTS,
+                ),
+                false => pre_request,
             };
             //warn!("body: {}", body);
-            if let Ok(request) = final_request.body(body)
-            {
+            if let Ok(request) = final_request.body(body) {
                 match request.send() {
                     Ok(mut response) => {
                         warn!("Got {:?}", response);
