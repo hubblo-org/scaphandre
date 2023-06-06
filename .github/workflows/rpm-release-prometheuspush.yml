@@ -1,4 +1,4 @@
-name: Build RPM package
+name: Build RPM package for prometheus-push only version
 
 on:
   push:

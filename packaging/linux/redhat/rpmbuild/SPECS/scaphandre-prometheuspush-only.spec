@@ -19,7 +19,7 @@ BuildRequires:  rust,cargo,openssl-devel,systemd-rpm-macros
 %autosetup
 
 %build
-cargo build --release --no-default-features --features prometheuspush
+cargo build --release --no-default-features --features json,prometheuspush
 
 %pre
 
