@@ -113,7 +113,7 @@ impl Exporter for PrometheusPushExporter {
                     m.attributes
                         .insert(String::from("hostname"), m.hostname.clone());
                 }
-                let attributes= Some(&m.attributes);
+                let attributes = Some(&m.attributes);
 
                 let _ = write!(
                     body,
