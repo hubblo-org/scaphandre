@@ -92,7 +92,7 @@ impl Exporter for PrometheusPushExporter {
             );
             let mut metrics_pushed: Vec<String> = vec![];
             //let mut counter = 0;
-            for m in metric_generator.pop_metrics() {
+            for mut m in metric_generator.pop_metrics() {
                 let mut should_i_add_help = true;
 
                 if metrics_pushed.contains(&m.name) {
@@ -105,10 +105,15 @@ impl Exporter for PrometheusPushExporter {
                     let _ = write!(body, "# HELP {} {}", m.name, m.description);
                     let _ = write!(body, "\n# TYPE {} {}\n", m.name, m.metric_type);
                 }
-                let mut attributes = None;
-                if !m.attributes.is_empty() {
-                    attributes = Some(&m.attributes);
+                if !&m.attributes.contains_key("instance") {
+                    m.attributes
+                        .insert(String::from("instance"), m.hostname.clone());
                 }
+                if !&m.attributes.contains_key("hostname") {
+                    m.attributes
+                        .insert(String::from("hostname"), m.hostname.clone());
+                }
+                let attributes= Some(&m.attributes);
 
                 let _ = write!(
                     body,
