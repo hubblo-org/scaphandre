@@ -15,7 +15,7 @@ scaphandre:
   command: prometheus
   args: {}
   extraArgs:
-    containers: true
+    containers:
 #  rustBacktrace: '1'
 
 # Run as root user to get proper permissions
