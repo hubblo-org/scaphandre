@@ -134,7 +134,7 @@ impl Exporter for PrometheusPushExporter {
                 true => pre_request.ssl_options(
                     SslOption::DANGER_ACCEPT_INVALID_CERTS
                         | SslOption::DANGER_ACCEPT_REVOKED_CERTS
-                        | SslOption::DANGER_ACCEPT_INVALID_HOSTS
+                        | SslOption::DANGER_ACCEPT_INVALID_HOSTS,
                 ),
                 false => pre_request,
             };
