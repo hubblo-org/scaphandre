@@ -132,7 +132,9 @@ impl Exporter for PrometheusPushExporter {
                 .header("Content-Type", "text/plain");
             let final_request = match self.args.no_tls_check {
                 true => pre_request.ssl_options(
-                    SslOption::DANGER_ACCEPT_INVALID_CERTS | SslOption::DANGER_ACCEPT_REVOKED_CERTS,
+                    SslOption::DANGER_ACCEPT_INVALID_CERTS
+                        | SslOption::DANGER_ACCEPT_REVOKED_CERTS
+                        | SslOption::DANGER_ACCEPT_INVALID_HOSTS,
                 ),
                 false => pre_request,
             };
