@@ -30,9 +30,9 @@ cp target/release/scaphandre $RPM_BUILD_ROOT/%{_bindir}/
 chmod +x $RPM_BUILD_ROOT/%{_bindir}/scaphandre
 mkdir -p $RPM_BUILD_ROOT/lib/systemd/system
 mkdir -p $RPM_BUILD_ROOT/etc/scaphandre
-echo 'SCAPHANDRE_ARGS="prometheus-push -H localhost -S http"' > $RPM_BUILD_ROOT/etc/scaphandre/default
+echo 'SCAPHANDRE_ARGS="prometheus-push -H localhost -S http"' > $RPM_BUILD_ROOT/etc/scaphandre/prometheuspush
 mkdir -p $RPM_BUILD_ROOT/lib/systemd/system
-cp packaging/linux/redhat/scaphandre.service $RPM_BUILD_ROOT/lib/systemd/system/scaphandre.service
+cp packaging/linux/redhat/scaphandre-prometheuspush.service $RPM_BUILD_ROOT/lib/systemd/system/scaphandre-prometheuspush.service
 
 %post
 %systemd_post scaphandre.service
@@ -49,8 +49,8 @@ cp packaging/linux/redhat/scaphandre.service $RPM_BUILD_ROOT/lib/systemd/system/
 %files
 #%doc README.md
 %{_bindir}/scaphandre
-/lib/systemd/system/scaphandre.service
-/etc/scaphandre/default
+/lib/systemd/system/scaphandre-prometheuspush.service
+/etc/scaphandre/prometheuspush
 
 #%license LICENSE
 
