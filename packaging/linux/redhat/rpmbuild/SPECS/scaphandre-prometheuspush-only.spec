@@ -26,8 +26,8 @@ cargo build --release --no-default-features --features json,prometheuspush
 %install
 #rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/%{_bindir}/
-cp target/release/scaphandre $RPM_BUILD_ROOT/%{_bindir}/
-chmod +x $RPM_BUILD_ROOT/%{_bindir}/scaphandre
+cp target/release/scaphandre $RPM_BUILD_ROOT/%{_bindir}/scaphandre-prometheuspush
+chmod +x $RPM_BUILD_ROOT/%{_bindir}/scaphandre-prometheuspush
 mkdir -p $RPM_BUILD_ROOT/lib/systemd/system
 mkdir -p $RPM_BUILD_ROOT/etc/scaphandre
 echo 'SCAPHANDRE_ARGS="prometheus-push -H localhost -S http"' > $RPM_BUILD_ROOT/etc/scaphandre/prometheuspush
@@ -35,20 +35,20 @@ mkdir -p $RPM_BUILD_ROOT/lib/systemd/system
 cp packaging/linux/redhat/scaphandre-prometheuspush.service $RPM_BUILD_ROOT/lib/systemd/system/scaphandre-prometheuspush.service
 
 %post
-%systemd_post scaphandre.service
+%systemd_post scaphandre-prometheuspush.service
 
 %preun
-%systemd_preun scaphandre.service
+%systemd_preun scaphandre-prometheuspush.service
 
 %postun
-%systemd_postun_with_restart scaphandre.service
+%systemd_postun_with_restart scaphandre-prometheuspush.service
 
 %clean
 #rm -rf $RPM_BUILD_ROOT
 
 %files
 #%doc README.md
-%{_bindir}/scaphandre
+%{_bindir}/scaphandre-prometheuspush
 /lib/systemd/system/scaphandre-prometheuspush.service
 /etc/scaphandre/prometheuspush
 
