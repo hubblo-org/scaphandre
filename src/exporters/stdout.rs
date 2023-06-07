@@ -1,9 +1,9 @@
 use crate::exporters::*;
-use crate::sensors::{utils::IProcess, Sensor, utils::current_system_time_since_epoch};
+use crate::sensors::{utils::current_system_time_since_epoch, utils::IProcess, Sensor};
 use regex::Regex;
+use std::fmt::Write;
 use std::thread;
 use std::time::{Duration, Instant};
-use std::fmt::Write;
 
 /// An Exporter that displays power consumption data of the host
 /// and its processes on the standard output of the terminal.
@@ -227,7 +227,10 @@ impl StdoutExporter {
         println!("## At {}", current_system_time_since_epoch().as_secs());
         for m in metrics {
             let serialized_data = serde_json::to_string(&m.attributes).unwrap();
-            println!("{} = {} {} # {}", m.name, m.metric_value, serialized_data, m.description);
+            println!(
+                "{} = {} {} # {}",
+                m.name, m.metric_value, serialized_data, m.description
+            );
         }
     }
 
@@ -237,7 +240,7 @@ impl StdoutExporter {
         let metrics = self.metric_generator.pop_metrics();
 
         if self.args.raw_metrics {
-           self.raw_metrics_view(metrics);
+            self.raw_metrics_view(metrics);
         } else {
             self.summarized_view(metrics);
         }
