@@ -430,7 +430,10 @@ impl ProcessTracker {
             container_id = container_id.split(':').last().unwrap().to_string();
         }
         if container_id.starts_with("cri-containerd-") {
-            container_id = container_id.strip_prefix("cri-containerd-").unwrap().to_string();
+            container_id = container_id
+                .strip_prefix("cri-containerd-")
+                .unwrap()
+                .to_string();
         }
         Ok(container_id)
     }
