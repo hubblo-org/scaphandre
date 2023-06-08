@@ -22,6 +22,7 @@ to be installed from the source code.
 | `serviceMonitor.interval`      | The interval at which metrics should be scraped                                               | `1m`                     |
 | `serviceMonitor.labels`        | Extra labels for the ServiceMonitor                                                           | `{}`                     |
 | `serviceMonitor.scrapeTimeout` | Specify the timeout after which the scrape is ended                                           | `30s`                    |
+| `serviceMonitor.relabelings`   | Allow to add extra labels to metrics                                                          | Add node metrics         |
 
 #### Other parameters
 | Name                                       | Description                                                                 | Value                     |

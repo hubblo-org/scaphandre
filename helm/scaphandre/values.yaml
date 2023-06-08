@@ -15,7 +15,7 @@ scaphandre:
   command: prometheus
   args: {}
   extraArgs:
-    containers:
+    containers: null
 #  rustBacktrace: '1'
 
 # Run as root user to get proper permissions
@@ -34,6 +34,12 @@ serviceMonitor:
 
   # Specify the timeout after which the scrape is ended
   scrapeTimeout: 30s
+
+  relabelings:
+  - action: replace
+    sourceLabels:
+      - __meta_kubernetes_pod_node_name
+    targetLabel: node
 
 tolerations:
   # Tolerate all taints for observability
