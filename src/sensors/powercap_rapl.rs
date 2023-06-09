@@ -226,8 +226,7 @@ impl Sensor for PowercapRAPLSensor {
                     let domain_name_trimed = domain_name.trim();
                     if domain_name_trimed == "psys" {
                         debug!("Found PSYS domain RAPL folder.");
-                        topo._sensor_data
-                            .insert(String::from("psys"), folder_name);
+                        topo._sensor_data.insert(String::from("psys"), folder_name);
                     }
                 }
                 Err(e) => {
