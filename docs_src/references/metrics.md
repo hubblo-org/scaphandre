@@ -14,6 +14,8 @@ And some more deep metrics that you may want if you need to make more complex ca
 - `scaph_host_energy_microjoules` : Energy measurement for the whole host, as extracted from the sensor, in microjoules. (COUNTER)
 - `scaph_socket_power_microwatts{socket_id="$SOCKET_ID"}`: Power measurement relative to a CPU socket, in microwatts. SOCKET_ID being the socket numerical id (GAUGE)
 
+Since 1.0.0 
+
 If you hack scaph or just want to investigate its behavior, you may be interested in some internal metrics:
 
 - `scaph_self_memory_bytes`: Scaphandre memory usage, in bytes
@@ -41,6 +43,23 @@ Here are available labels for the `scaph_process_power_consumption_microwatts` m
 - `cmdline`: this contains the whole command line with the executable path and its parameters (concatenated). You can filter on this label by using prometheus `=~` operator to match a regular expression pattern. This is very practical in many situations.
 - `instance`: this is a prometheus generated label to enable you to filter the metrics by the originating host. This is very useful when you monitor distributed services, so that you can not only sum the metrics for the same service on the different hosts but also see what instance of that service is consuming the most, or notice differences beteween hosts that may not have the same hardware, and so on...
 - `pid`: is the process id, which is useful if you want to track a specific process and have your eyes on what's happening on the host, but not so practical to use in a more general use case
+
+Since 1.0.0 the following per-process metrics are available as well :
+
+    scaph_process_cpu_usage_percentage
+    # CPU time consumed by the process, as a percentage of the capacity of all the CPU Cores
+    scaph_process_memory_bytes
+    # Physical RAM usage by the process, in bytes
+    scaph_process_memory_virtual_bytes
+    # Virtual RAM usage by the process, in bytes
+    scaph_process_disk_total_write_bytes
+    # Total data written on disk by the process, in bytes
+    scaph_process_disk_write_bytes
+    # Data written on disk by the process, in bytes
+    scaph_process_disk_read_bytes
+    # Data read on disk by the process, in bytes
+    scaph_process_disk_total_read_bytes
+    # Total data read on disk by the process, in bytes
 
 ### Get container-specific labels on scaph_process_* metrics
 
