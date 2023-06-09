@@ -1,21 +1,21 @@
 # Metrics exposed by Scaphandre
 
-With [Stdout](references/exporter-stdout.md) exporter, you can see all metrics available on your machine with flag `--raw-metrics`.
-With [prometheus](references/exporter-prometheus.md) exporter, all metrics have a HELP section provided on /metrics (or whatever suffix you choosed to expose them).
+With [Stdout](exporter-stdout.md) exporter, you can see all metrics available on your machine with flag `--raw-metrics`.
+With [prometheus](exporter-prometheus.md) exporter, all metrics have a HELP section provided on /metrics (or whatever suffix you choosed to expose them).
 
 Here are some key metrics that you will most probably be interested in:
 
-- `scaph_host_power_microwatts`: Power measurement on the whole host, in microwatts (GAUGE)
+- `scaph_host_power_microwatts`: Aggregation of several measurements to give a try on the power usage of the the whole host, in microwatts (GAUGE). It might be the same as RAPL PSYS (see [RAPL domains](../explanations/rapl-domains.md)) measurement if available, or a combination of RAPL PKG and DRAM domains + an estimation of other hardware componentes power usage.
 - `scaph_process_power_consumption_microwatts{exe="$PROCESS_EXE",pid="$PROCESS_PID",cmdline="path/to/exe --and-maybe-options"}`: Power consumption due to the process, measured on at the topology level, in microwatts. PROCESS_EXE being the name of the executable and PROCESS_PID being the pid of the process. (GAUGE)
 
-For more details on that metric labels, see [this section](#scaph_process_power_consumption_microwatts).
+For more details on that metric labels, see [this section](#getting-per-process-data-with-scaph_process_-metrics).
 
 And some more deep metrics that you may want if you need to make more complex calculations and data processing:
 
 - `scaph_host_energy_microjoules` : Energy measurement for the whole host, as extracted from the sensor, in microjoules. (COUNTER)
 - `scaph_socket_power_microwatts{socket_id="$SOCKET_ID"}`: Power measurement relative to a CPU socket, in microwatts. SOCKET_ID being the socket numerical id (GAUGE)
 
-If your machine provides RAPL PSYS domain (see [RAPL domains](explanations/rapl-domains.md)), you can get the raw energy counter for PSYS/platform with `scaph_host_rapl_psys_microjoules`. Note that `scaph_host_power_microwatts` is based on this PSYS counter if it is available.
+If your machine provides RAPL PSYS domain (see [RAPL domains](../explanations/rapl-domains.md)), you can get the raw energy counter for PSYS/platform with `scaph_host_rapl_psys_microjoules`. Note that `scaph_host_power_microwatts` is based on this PSYS counter if it is available.
 
 Since 1.0.0 the following host metrics are availalable as well ;
 
