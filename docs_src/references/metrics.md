@@ -1,6 +1,7 @@
 # Metrics exposed by Scaphandre
 
-All metrics have a HELP section provided on /metrics (or whatever suffix you choosed to expose them).
+With [Stdout](references/exporter-stdout.md) exporter, you can see all metrics available on your machine with flag `--raw-metrics`.
+With [prometheus](references/exporter-prometheus.md) exporter, all metrics have a HELP section provided on /metrics (or whatever suffix you choosed to expose them).
 
 Here are some key metrics that you will most probably be interested in:
 
@@ -14,7 +15,24 @@ And some more deep metrics that you may want if you need to make more complex ca
 - `scaph_host_energy_microjoules` : Energy measurement for the whole host, as extracted from the sensor, in microjoules. (COUNTER)
 - `scaph_socket_power_microwatts{socket_id="$SOCKET_ID"}`: Power measurement relative to a CPU socket, in microwatts. SOCKET_ID being the socket numerical id (GAUGE)
 
-Since 1.0.0 
+If your machine provides RAPL PSYS domain (see [RAPL domains](explanations/rapl-domains.md)), you can get the raw energy counter for PSYS/platform with `scaph_host_rapl_psys_microjoules`. Note that `scaph_host_power_microwatts` is based on this PSYS counter if it is available.
+
+Since 1.0.0 the following host metrics are availalable as well ;
+
+- `scaph_host_swap_total_bytes`: Total swap space on the host, in bytes.
+- `scaph_host_swap_free_bytes`: Swap space free to be used on the host, in bytes.
+- `scaph_host_memory_free_bytes`: Random Access Memory free to be used (not reused) on the host, in bytes.
+- `scaph_host_memory_available_bytes`: Random Access Memory available to be re-used on the host, in bytes.
+- `scaph_host_memory_total_bytes`: Random Access Memory installed on the host, in bytes.
+- `scaph_host_disk_total_bytes`: Total disk size, in bytes.
+- `scaph_host_disk_available_bytes`: Available disk space, in bytes.
+
+Disk metrics have the following labels : disk_file_system, disk_is_removable, disk_type, disk_mount_point, disk_name
+
+- `scaph_host_cpu_frequency`: Global frequency of all the cpus. In MegaHertz
+- `scaph_host_load_avg_fifteen`: Load average on 15 minutes.
+- `scaph_host_load_avg_five`: Load average on 5 minutes.
+- `scaph_host_load_avg_one`: Load average on 1 minute.
 
 If you hack scaph or just want to investigate its behavior, you may be interested in some internal metrics:
 
@@ -46,20 +64,13 @@ Here are available labels for the `scaph_process_power_consumption_microwatts` m
 
 Since 1.0.0 the following per-process metrics are available as well :
 
-    scaph_process_cpu_usage_percentage
-    # CPU time consumed by the process, as a percentage of the capacity of all the CPU Cores
-    scaph_process_memory_bytes
-    # Physical RAM usage by the process, in bytes
-    scaph_process_memory_virtual_bytes
-    # Virtual RAM usage by the process, in bytes
-    scaph_process_disk_total_write_bytes
-    # Total data written on disk by the process, in bytes
-    scaph_process_disk_write_bytes
-    # Data written on disk by the process, in bytes
-    scaph_process_disk_read_bytes
-    # Data read on disk by the process, in bytes
-    scaph_process_disk_total_read_bytes
-    # Total data read on disk by the process, in bytes
+- `scaph_process_cpu_usage_percentage`: CPU time consumed by the process, as a percentage of the capacity of all the CPU Cores
+- `scaph_process_memory_bytes`: Physical RAM usage by the process, in bytes
+- `scaph_process_memory_virtual_bytes`: Virtual RAM usage by the process, in bytes
+- `scaph_process_disk_total_write_bytes`: Total data written on disk by the process, in bytes
+- `scaph_process_disk_write_bytes`: Data written on disk by the process, in bytes
+- `scaph_process_disk_read_bytes`: Data read on disk by the process, in bytes
+- `scaph_process_disk_total_read_bytes`: Total data read on disk by the process, in bytes
 
 ### Get container-specific labels on scaph_process_* metrics
 
