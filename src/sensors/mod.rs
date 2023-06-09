@@ -11,7 +11,7 @@ pub mod units;
 pub mod utils;
 #[cfg(target_os = "linux")]
 use procfs::{CpuInfo, CpuTime, KernelStats};
-use std::{collections::HashMap, error::Error, fmt, mem::size_of_val, str, time::Duration};
+use std::{collections::HashMap, error::Error, fmt, fs, mem::size_of_val, str, time::Duration};
 #[allow(unused_imports)]
 use sysinfo::{CpuExt, Pid, System, SystemExt};
 use sysinfo::{DiskExt, DiskType};
@@ -64,26 +64,28 @@ impl RecordGenerator for Topology {
     /// and returns a clone of this record.
     ///
     fn refresh_record(&mut self) {
-        let mut value: u64 = 0;
-        let mut last_timestamp = current_system_time_since_epoch();
-        for s in self.get_sockets() {
-            let records = s.get_records_passive();
-            if !records.is_empty() {
-                let last = records.last();
-                let last_record = last.unwrap();
-                last_timestamp = last_record.timestamp;
-                let res = last_record.value.trim();
-                if let Ok(val) = res.parse::<u64>() {
-                    value += val;
-                } else {
-                    trace!("couldn't parse value : {}", res);
-                }
-            }
-        }
-        debug!("Record value from topo (addition of sockets) : {}", value);
-        let record = Record::new(last_timestamp, value.to_string(), units::Unit::MicroJoule);
+        //let mut value: u64 = 0;
+        //let mut last_timestamp = current_system_time_since_epoch();
+        //for s in self.get_sockets() {
+        //    let records = s.get_records_passive();
+        //    if !records.is_empty() {
+        //        let last = records.last();
+        //        let last_record = last.unwrap();
+        //        last_timestamp = last_record.timestamp;
+        //        let res = last_record.value.trim();
+        //        if let Ok(val) = res.parse::<u64>() {
+        //            value += val;
+        //        } else {
+        //            trace!("couldn't parse value : {}", res);
+        //        }
+        //    }
+        //}
+        //debug!("Record value from topo (addition of sockets) : {}", value);
+        //let record = Record::new(last_timestamp, value.to_string(), units::Unit::MicroJoule);
 
-        self.record_buffer.push(record);
+        if let Ok(record) = self.read_record() {
+            self.record_buffer.push(record);
+        }
 
         if !self.record_buffer.is_empty() {
             self.clean_old_records();
@@ -416,20 +418,30 @@ impl Topology {
                 .record_buffer
                 .get(self.record_buffer.len() - 2)
                 .unwrap();
-            let last_microjoules = last_record.value.parse::<u64>().unwrap();
-            let previous_microjoules = previous_record.value.parse::<u64>().unwrap();
-            if previous_microjoules > last_microjoules {
-                return None;
+
+            if let Ok(last_microjoules) = last_record.value.trim().parse::<u64>() {
+                if let Ok(previous_microjoules) = previous_record.value.trim().parse::<u64>() {
+                    if previous_microjoules > last_microjoules {
+                        return None;
+                    }
+                    let microjoules = last_microjoules - previous_microjoules;
+                    let time_diff = last_record.timestamp.as_secs_f64()
+                        - previous_record.timestamp.as_secs_f64();
+                    let microwatts = microjoules as f64 / time_diff;
+                    return Some(Record::new(
+                        last_record.timestamp,
+                        (microwatts as u64).to_string(),
+                        units::Unit::MicroWatt,
+                    ));
+                } else {
+                    warn!(
+                        "Could'nt get previous_microjoules: {}",
+                        previous_record.value
+                    );
+                }
+            } else {
+                warn!("Could'nt get last_microjoules: {}", last_record.value);
             }
-            let microjoules = last_microjoules - previous_microjoules;
-            let time_diff =
-                last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
-            let microwatts = microjoules as f64 / time_diff;
-            return Some(Record::new(
-                last_record.timestamp,
-                (microwatts as u64).to_string(),
-                units::Unit::MicroWatt,
-            ));
         }
         None
     }
@@ -856,6 +868,32 @@ impl Topology {
         }
         None
     }
+
+    pub fn get_rapl_psys_energy_microjoules(&self) -> Option<Record> {
+        if let Some(psys) = self._sensor_data.get("psys") {
+            if let Ok(val) = &fs::read_to_string(format!("{psys}/energy_uj")) {
+                return Some(Record::new(
+                    current_system_time_since_epoch(),
+                    val.to_string(),
+                    units::Unit::MicroJoule,
+                ));
+            }
+        }
+        None
+    }
+
+    //pub fn get_rapl_psys_power_microwatts(&self) -> Option<Record> {
+    //    if let Some(psys) = self._sensor_data.get("psys") {
+    //        if let Ok(val) = &fs::read_to_string(format!("{psys}/energy_uj")) {
+    //            return Some(Record::new(
+    //                current_system_time_since_epoch(),
+    //                val.to_string(),
+    //                units::Unit::MicroJoule
+    //            ));
+    //        }
+    //    }
+    //    None
+    //}
 }
 
 // !!!!!!!!!!!!!!!!! CPUSocket !!!!!!!!!!!!!!!!!!!!!!!
