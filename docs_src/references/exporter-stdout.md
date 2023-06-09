@@ -30,7 +30,9 @@ Here is how to display power data for the 'scaphandre' process:
 
     scaphandre stdout -r 'scaphandre'
 
-Since 1.0.0 the flag `--raw-metrics` displays all metrics available for the host, as a parseable list. This might be useful to list metrics that you would like to fetch afterwards in your monitoring dashboard.
+Metrics provided Scaphandre are documented [here](references/metrics.md). 
+
+Since 1.0.0 the flag `--raw-metrics` displays all metrics available for the host, as a parseable list. This might be useful to list metrics that you would like to fetch afterwards in your monitoring dashboard. Without this flag enabled, Stdout exporter has it's own format and might not show you all available metrics.
 
 As always exporter's options can be displayed with `-h`:
 
