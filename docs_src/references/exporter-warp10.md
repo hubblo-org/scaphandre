@@ -37,6 +37,4 @@ With default options values, the metrics are sent to http://localhost:8080 every
 Use -q or --qemu option if you are running scaphandre on a hypervisor. In that case a label with the vm name will be added to all `qemu-system*` processes.
 This will allow to easily create charts consumption for each vm and defined which one is the top contributor.
 
-## Metrics exposed
-
-Typically the Warp10 exporter is working the same way as the riemann and the prometheus exporters regarding metrics. Please look at details in [Prometheus exporter](exporter-prometheus.md) documentations to get the extensive list of metrics available.
+Metrics provided Scaphandre are documented [here](references/metrics.md). 

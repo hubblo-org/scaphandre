@@ -79,7 +79,8 @@ As a reference here is a Riemann configuration:
 ```
 
 ## Metrics exposed
-Typically the Riemann exporter is working in the same way as the prometheus exporter regarding metrics. Please look at details in [Prometheus exporter](exporter-prometheus.md) documentations.
+
+Metrics provided Scaphandre are documented [here](references/metrics.md).
 
 There is only one exception about `process_power_consumption_microwatts` each process has a service name `process_power_consumption_microwatts_pid_exe`.
 

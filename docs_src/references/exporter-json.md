@@ -26,22 +26,34 @@ To get informations about processes that are running in containers, add `--conta
 
     scaphandre --no-header json --containers --max-top-consumers=15 | jq
 
+Since 1.0.0 you can filter the processes, either by their process name with `--process-regex`, or by the name of the container they run in with `--container-regex` (needs the flag `--containers` to be active as well).
+
 As always exporter's options can be displayed with `-h`:
 
-	$ scaphandre json -h
-    JSON exporter allows you to output the power consumption data in a json file
+	Write the metrics in the JSON format to a file or to stdout
 
-    USAGE:
-        scaphandre json [FLAGS] [OPTIONS]
+    Usage: scaphandre json [OPTIONS]
 
-    FLAGS:
-            --containers    Monitor and apply labels for processes running as containers
-        -h, --help          Prints help information
-        -V, --version       Prints version information
+    Options:
+      -t, --timeout <TIMEOUT>
+              Maximum time spent measuring, in seconds. If unspecified, runs forever
+      -s, --step <SECONDS>
+              Interval between two measurements, in seconds [default: 2]
+          --step-nano <NANOSECS>
+              Additional step duration in _nano_ seconds. This is added to `step` to get the final duration [default: 0]
+          --max-top-consumers <MAX_TOP_CONSUMERS>
+              Maximum number of processes to watch [default: 10]
+      -f, --file <FILE>
+              Destination file for the report (if absent, print the report to stdout)
+          --containers
+              Monitor and apply labels for processes running as containers
+          --process-regex <PROCESS_REGEX>
+              Filter processes based on regular expressions (example: 'scaph\\w\\w.e')
+          --container-regex <CONTAINER_REGEX>
+              Filter containers based on regular expressions
+          --resources
+              Monitor and incude CPU, RAM and Disk usage per process
+      -h, --help
+              Print help
 
-    OPTIONS:
-        -f, --file <file_path>                         Destination file for the report. [default: ]
-        -m, --max-top-consumers <max_top_consumers>    Maximum number of processes to watch. [default: 10]
-        -s, --step <step_duration>                     Set measurement step duration in second. [default: 2]
-        -n, --step_nano <step_duration_nano>           Set measurement step duration in nano second. [default: 0]
-        -t, --timeout <timeout>                        Maximum time spent measuring, in seconds.
+Metrics provided Scaphandre are documented [here](references/metrics.md).
