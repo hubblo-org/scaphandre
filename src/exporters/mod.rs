@@ -634,13 +634,12 @@ impl MetricGenerator {
         let sockets = self.topology.get_sockets_passive();
         for socket in sockets {
             let records = socket.get_records_passive();
+            let mut attributes = HashMap::new();
+            attributes.insert("socket_id".to_string(), socket.id.to_string());
             if !records.is_empty() {
                 let metric = records.last().unwrap();
                 let metric_value = metric.value.clone();
                 let metric_timestamp = metric.timestamp;
-
-                let mut attributes = HashMap::new();
-                attributes.insert("socket_id".to_string(), socket.id.to_string());
 
                 self.data.push(Metric {
                     name: String::from("scaph_socket_energy_microjoules"),
@@ -673,6 +672,22 @@ impl MetricGenerator {
                         metric_value: MetricValueType::Text(socket_power_microwatts.clone()),
                     });
                 }
+            }
+            if let Some(mmio) = socket.get_rapl_mmio_energy_microjoules() {
+                self.data.push(Metric {
+                    name: String::from("scaph_socket_rapl_mmio_energy_microjoules"),
+                    metric_type: String::from("counter"),
+                    ttl: 60.0,
+                    timestamp: mmio.timestamp,
+                    hostname: self.hostname.clone(),
+                    state: String::from("ok"),
+                    tags: vec!["scaphandre".to_string()],
+                    attributes: attributes.clone(),
+                    description: format!(
+                        "Energy counter from RAPL mmio interface for Package-0 of CPU socket {}", socket.id
+                    ),
+                    metric_value: MetricValueType::Text(mmio.value)
+                });
             }
             for domain in socket.get_domains_passive() {
                 let records = domain.get_records_passive();
