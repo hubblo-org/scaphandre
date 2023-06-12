@@ -919,7 +919,7 @@ pub struct CPUSocket {
     pub stat_buffer: Vec<CPUStat>,
     ///
     #[allow(dead_code)]
-    sensor_data: HashMap<String, String>,
+    pub sensor_data: HashMap<String, String>,
 }
 
 impl RecordGenerator for CPUSocket {
@@ -1210,6 +1210,20 @@ impl CPUSocket {
         }
         None
     }
+
+    pub fn get_rapl_mmio_energy_microjoules(&self) -> Option<Record> {
+        if let Some(mmio) = self.sensor_data.get("mmio") {
+            if let Ok(val) = &fs::read_to_string(format!("{mmio}/energy_uj")) {
+                return Some(Record::new(
+                    current_system_time_since_epoch(),
+                    val.to_string(),
+                    units::Unit::MicroJoule
+                ));
+            }
+        }
+        None
+    }
+
 }
 
 // !!!!!!!!!!!!!!!!! CPUCore !!!!!!!!!!!!!!!!!!!!!!!
@@ -1356,6 +1370,20 @@ impl Domain {
         }
         None
     }
+
+    pub fn get_rapl_mmio_energy_microjoules(&self) -> Option<Record> {
+        if let Some(mmio) = self.sensor_data.get("mmio") {
+            if let Ok(val) = &fs::read_to_string(format!("{mmio}/energy_uj")) {
+                return Some(Record::new(
+                    current_system_time_since_epoch(),
+                    val.to_string(),
+                    units::Unit::MicroJoule
+                ));
+            }
+        }
+        None
+    }
+
 }
 impl fmt::Display for Domain {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

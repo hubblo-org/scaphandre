@@ -138,9 +138,12 @@ impl Sensor for PowercapRAPLSensor {
         let mut topo = Topology::new(HashMap::new());
         let re_socket = Regex::new(r"^.*/intel-rapl:\d+$").unwrap();
         let re_domain = Regex::new(r"^.*/intel-rapl:\d+:\d+$").unwrap();
+        let re_socket_mmio = Regex::new(r"^.*/intel-rapl-mmio:\d+$").unwrap();
+        let re_domain_mmio = Regex::new(r"^.*/intel-rapl-mmio:\d+:\d+$").unwrap();
         let mut re_domain_matched = false;
         for folder in fs::read_dir(&self.base_path).unwrap() {
             let folder_name = String::from(folder.unwrap().path().to_str().unwrap());
+            warn!("working on {folder_name}");
             // let's catch domain folders
             if re_domain.is_match(&folder_name) {
                 re_domain_matched = true;
@@ -182,6 +185,34 @@ impl Sensor for PowercapRAPLSensor {
                         self.buffer_per_domain_max_kbytes,
                         sensor_data_for_domain,
                     );
+                }
+            } else if re_socket_mmio.is_match(&folder_name) {
+                warn!("matched {folder_name}");
+                let mut splitted = folder_name.split(':');
+                let _ = splitted.next();
+                let socket_id: u16 = String::from(splitted.next().unwrap()).parse().unwrap();
+                for s in topo.get_sockets() {
+                    if socket_id == s.id {
+                        s.sensor_data.insert(
+                            String::from("mmio"),
+                            format!("{}/intel-rapl-mmio:{}/energy_uj", self.base_path, socket_id),
+                        );
+                    } 
+                }
+            } else if re_domain_mmio.is_match(&folder_name) {
+                warn!("matched {folder_name}");
+                let mut splitted = folder_name.split(':');
+                let _ = splitted.next();
+                let socket_id: u16 = String::from(splitted.next().unwrap()).parse().unwrap();
+                let domain_id: u16 = String::from(splitted.next().unwrap()).parse().unwrap();
+                for s in topo.get_sockets() {
+                    if socket_id == s.id {
+                        for d in s.get_domains() {
+                            if d.id == domain_id && &d.name.trim() == &fs::read_to_string(format!("{folder_name}/name")).unwrap().trim() {
+                                d.sensor_data.insert(String::from("mmio"), format!("{}/energy_uj", folder_name));
+                            }
+                        }
+                    } 
                 }
             }
         }
