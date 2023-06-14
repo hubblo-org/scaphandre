@@ -10,6 +10,7 @@ Source0:        %{name}-%{version}.tar.gz
 
 BuildRequires:  rust,cargo,systemd-rpm-macros 
 #Requires:
+AutoReqProv: no
 
 %global debug_package %{nil}
 
