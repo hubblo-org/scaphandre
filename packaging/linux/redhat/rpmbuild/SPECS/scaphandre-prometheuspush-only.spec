@@ -9,8 +9,7 @@ Source0:        %{name}-%{version}.tar.gz
 #Source0 will be github.com url for tar gz of source
 
 BuildRequires:  rust,cargo,systemd-rpm-macros 
-#Requires:
-AutoReqProv: no
+#Requires: 
 
 %global debug_package %{nil}
 
