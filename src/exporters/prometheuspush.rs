@@ -78,8 +78,8 @@ impl Exporter for PrometheusPushExporter {
         );
 
         let uri = format!(
-            "{}://{}:{}/{}/job/{}",
-            self.args.scheme, self.args.host, self.args.port, self.args.suffix, self.args.job
+            "{}://{}:{}/{}/job/{}/instance/{}",
+            self.args.scheme, self.args.host, self.args.port, self.args.suffix, self.args.job, self.hostname.clone()
         );
 
         let mut metric_generator = MetricGenerator::new(
