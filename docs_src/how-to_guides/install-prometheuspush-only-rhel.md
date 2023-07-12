@@ -35,3 +35,11 @@ Once the configuration is changed, you can restart the service and ensure it is 
 Configuration issues or issues to reach the push gateway should be visible in the logs :
 
     systemctl status scaphandre-prometheuspush
+
+## Automatic installation with ansible
+
+There is a [sample Ansible playbook](https://github.com/hubblo-org/scaphandre/blob/dev/automation/ansible/install-configure-prometheuspush-rhel.yml) available in the [automation/ansible](https://github.com/hubblo-org/scaphandre/tree/dev/automation/ansible) folder of the project.
+
+This can be used this way :
+
+    ansible-playbook -i inventory -b -u myunprivilegeduser -K install-configure-prometheuspush-rhel.yml

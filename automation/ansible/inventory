@@ -1,2 +1,2 @@
 [targets]
-myhost # CHANGEME !
+nce.hopto.org ansible_ssh_port=22029

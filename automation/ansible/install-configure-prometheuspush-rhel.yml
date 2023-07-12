@@ -4,7 +4,7 @@
     scaphandre_version: "dev0.5.10"
     pushgateway_host: localhost
     pushgateway_scheme: http
-    pushgateway_port: 9091
+    pushgateway_port: 9092
     scaphandre_config_path: /etc/scaphandre/prometheuspush
     service_name: scaphandre-prometheuspush
   tasks:
@@ -22,7 +22,7 @@
         line: "SCAPHANDRE_ARGS=\"prometheus-push -H {{ pushgateway_host }} -S {{ pushgateway_scheme }} -p {{ pushgateway_port }}\""
         state: present
     - name: Start & enable service
-      shell: "systemctl start {{ service_name }} && systemctl enable {{ service_name }}"
+      shell: "systemctl restart {{ service_name }} && systemctl enable {{ service_name }}"
     - name: Check service state
       shell: "systemctl status {{ service_name }}"
       register: result
