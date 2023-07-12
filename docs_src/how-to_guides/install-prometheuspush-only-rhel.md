@@ -43,3 +43,15 @@ There is a [sample Ansible playbook](https://github.com/hubblo-org/scaphandre/bl
 This can be used this way :
 
     ansible-playbook -i inventory -b -u myunprivilegeduser -K install-configure-prometheuspush-rhel.yml
+
+Beware of the playbook parameters :
+
+    rhel_version: 9
+    scaphandre_version: "dev0.5.10"
+    pushgateway_host: localhost
+    pushgateway_scheme: http
+    pushgateway_port: 9092
+    scaphandre_config_path: /etc/scaphandre/prometheuspush
+    service_name: scaphandre-prometheuspush
+
+Ensure to change those to match your context, including changing rhel version if needed (8 and 9 are supported) and parameters to reach the Push Gateway on the network.
