@@ -3,6 +3,20 @@
 //! `PrometheusPushExporter` implementation, push/send metrics to
 //! a [Prometheus](https://prometheus.io/) pushgateway.
 //!
+
+#[cfg(target_os="windows")]
+extern crate windows_service;
+#[cfg(target_os="windows")]
+use std::{
+    ffi::OsString
+};
+#[cfg(target_os="windows")]
+use windows_service::{
+    service::ServiceControl, service::ServiceControlAccept,
+    service::ServiceExitCode, service::ServiceState, service::ServiceStatus,
+    service::ServiceType, service_control_handler::{self, ServiceControlHandlerResult}
+};
+
 use super::utils::{format_prometheus_metric, get_hostname};
 use crate::exporters::{Exporter, MetricGenerator};
 use crate::sensors::{Sensor, Topology};
@@ -78,8 +92,8 @@ impl Exporter for PrometheusPushExporter {
         );
 
         let uri = format!(
-            "{}://{}:{}/{}/job/{}",
-            self.args.scheme, self.args.host, self.args.port, self.args.suffix, self.args.job
+            "{}://{}:{}/{}/job/{}/instance/{}",
+            self.args.scheme, self.args.host, self.args.port, self.args.suffix, self.args.job, self.hostname.clone()
         );
 
         let mut metric_generator = MetricGenerator::new(
