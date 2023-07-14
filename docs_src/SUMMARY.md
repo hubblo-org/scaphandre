@@ -14,6 +14,7 @@
 
 - [Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)](how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.md)
 - [Get process-level power consumption in my grafana dashboard](how-to_guides/get-process-level-power-in-grafana.md)
+- [Install Scaphandre with only Prometheus-push exporter compiled, for Prometheus Push Gateway, on RHEL 8 and 9](how-to_guides/install-prometheuspush-only-rhel.md)
 
 # Explanations
 
