@@ -8,6 +8,7 @@
 In this first itration of the package, you'll need to enable Test Mode on Windows prior to proceed to this installation, then reboot. (Next version will have an officially signed version of the driver, so this won't be ncessaerry anymore.)
 
     bcdedit.exe -set TESTSIGNING ON
+    bcdedit.exe -set nointegritychecks on
 
 The installer will ensure that test mode is enabled and fail otherwise, but activation of test mode **and a reboot** is needed before anyway.
 
