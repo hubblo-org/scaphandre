@@ -36,7 +36,7 @@ pub struct ExporterArgs {
     #[arg(short = 'S', long, default_value_t = String::from("http"))]
     pub scheme: String,
 
-    #[arg(short, long, default_value_t = 5)]
+    #[arg(short, long, default_value_t = 30)]
     pub step: u64,
 
     /// Apply labels to metrics of processes that look like a Qemu/KVM virtual machine
