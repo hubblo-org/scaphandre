@@ -33,6 +33,7 @@ hyper = { version = "0.14", features = ["full"], optional = true }
 tokio = { version = "1.26.0", features = ["full"], optional = true}
 sysinfo = { version = "0.28.3"}
 isahc = { version = "1.7.2", optional = true }
+argfile = { version = "0.1.5" }
 
 [target.'cfg(target_os="linux")'.dependencies]
 procfs = { version = "0.15.0" }

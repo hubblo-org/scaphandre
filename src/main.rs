@@ -3,6 +3,7 @@
 use clap::{command, ArgAction, Parser, Subcommand};
 use colored::Colorize;
 use scaphandre::{exporters, sensors::Sensor};
+use argfile::expand_args;
 
 #[cfg(target_os = "linux")]
 use scaphandre::sensors::powercap_rapl;
@@ -101,15 +102,27 @@ fn main() {
 fn build_exporter(choice: ExporterChoice, sensor: &dyn Sensor) -> Box<dyn exporters::Exporter> {
     match choice {
         ExporterChoice::Stdout(args) => {
-            Box::new(exporters::stdout::StdoutExporter::new(sensor, args))
+            if let Ok(args_from_file) = expand_args(argfile::parse_fromfile, argfile::PREFIX) {
+                Box::new(exporters::stdout::StdoutExporter::new(sensor, args_from_file))
+            } else {
+                Box::new(exporters::stdout::StdoutExporter::new(sensor, args))
+            }
         }
         #[cfg(feature = "json")]
         ExporterChoice::Json(args) => {
-            Box::new(exporters::json::JsonExporter::new(sensor, args)) // keep this in braces
+            if let Ok(args_from_file) = expand_args(argfile::parse_fromfile, argfile::PREFIX) {
+                Box::new(exporters::json::JsonExporter::new(sensor, args_from_file))
+            } else {
+                Box::new(exporters::json::JsonExporter::new(sensor, args)) // keep this in braces
+            }
         }
         #[cfg(feature = "prometheus")]
         ExporterChoice::Prometheus(args) => {
-            Box::new(exporters::prometheus::PrometheusExporter::new(sensor, args))
+            if let Ok(args_from_file) = expand_args(argfile::parse_fromfile, argfile::PREFIX) {
+                Box::new(exporters::prometheus::PrometheusExporter::new(sensor, args_from_file))
+            } else {
+                Box::new(exporters::prometheus::PrometheusExporter::new(sensor, args))
+            }
         }
         #[cfg(feature = "qemu")]
         ExporterChoice::Qemu => {
@@ -117,16 +130,28 @@ fn build_exporter(choice: ExporterChoice, sensor: &dyn Sensor) -> Box<dyn export
         }
         #[cfg(feature = "riemann")]
         ExporterChoice::Riemann(args) => {
-            Box::new(exporters::riemann::RiemannExporter::new(sensor, args))
+            if let Ok(args_from_file) = expand_args(argfile::parse_fromfile, argfile::PREFIX) {
+                Box::new(exporters::riemann::RiemannExporter::new(sensor, args_from_file))
+            } else {
+                Box::new(exporters::riemann::RiemannExporter::new(sensor, args))
+            }
         }
         #[cfg(feature = "warpten")]
         ExporterChoice::Warpten(args) => {
-            Box::new(exporters::warpten::Warp10Exporter::new(sensor, args))
+            if let Ok(args_from_file) = expand_args(argfile::parse_fromfile, argfile::PREFIX) {
+                Box::new(exporters::warpten::Warp10Exporter::new(sensor, args_from_file))
+            } else {
+                Box::new(exporters::warpten::Warp10Exporter::new(sensor, args))
+            }
         }
         #[cfg(feature = "prometheuspush")]
-        ExporterChoice::PrometheusPush(args) => Box::new(
-            exporters::prometheuspush::PrometheusPushExporter::new(sensor, args),
-        ),
+        ExporterChoice::PrometheusPush(args) => {
+            if let Ok(args_from_file) = expand_args(argfile::parse_fromfile, argfile::PREFIX) {
+                Box::new(exporters::prometheuspush::PrometheusPushExporter::new(sensor, args_from_file))
+            } else {
+                Box::new(exporters::prometheuspush::PrometheusPushExporter::new(sensor, args))
+            }
+        },
     }
     // Note that invalid choices are automatically turned into errors by `parse()` before the Cli is populated,
     // that's why they don't appear in this function.
