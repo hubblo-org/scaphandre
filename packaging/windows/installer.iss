@@ -8,6 +8,8 @@
 #define MyAppExeName "scaphandre.exe"
 #define MyAppSourceFolder "C:\Users\bpeti\Documents\GitHub\scaphandre"
 #define RaplDriverSourceFolder "C:\Users\bpeti\Documents\GitHub\windows-rapl-driver"
+#define SystemFolder "C:\Windows\System32"
+#define System64Folder "C:\Windows\SysWOW64"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
@@ -37,10 +39,14 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
 Source: "{#MyAppSourceFolder}\target\release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\DriverLoader.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#RaplDriverSourceFolder}\x64\Release\DriverLoader.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.inf"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.sys"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.cat"; DestDir: "{app}"; Flags: ignoreversion
+; Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.sys"; DestDir: "{#SystemFolder}";
+; Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.sys"; DestDir: "{#System64Folder}";
+Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.sys"; DestDir: "{app}";
+Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.cat"; DestDir: "{app}";
+; Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.cat"; DestDir: "{#SystemFolder}";
+; Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.cat"; DestDir: "{#System64Folder}";
 Source: "C:\Program Files (x86)\Windows Kits\10\Tools\10.0.22621.0\x64\devcon.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\certmgr.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSourceFolder}\README.md"; DestDir: "{app}"; Flags: ignoreversion
@@ -52,10 +58,18 @@ Source: "{#RaplDriverSourceFolder}\ScaphandreDrvTest.cer"; DestDir: "{app}"; Fla
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 
 [Run]
-; Filename: "{app}/DriverLoader.exe"; Parameters: "install"; WorkingDir: "{app}"; Description: "Install MSR/RAPL Driver ?"; Flags: postinstall
-; Filename: "{app}/DriverLoader.exe"; Parameters: "start"; WorkingDir: "{app}"; Description: "Install MSR/RAPL Driver ?"; Flags: postinstall
 Filename: "C:\windows\System32\WindowsPowershell\v1.0\powershell.exe"; Parameters: "Import-Certificate -FilePath {app}\ScaphandreDrvTest.cer -CertStoreLocation Cert:\LocalMachine\Root"; Description: "Register test certificate"; Flags: waituntilidle shellexec
-Filename: "{app}\devcon.exe"; Parameters: "install {app}\ScaphandreDrv.inf root\SCAPHANDREDRV"; Description: "Install MSR/RAPL Driver ?"; Flags: postinstall waituntilidle 
-Filename: "{app}\devcon.exe"; Parameters: "enable {app}\ScaphandreDrv.inf root\SCAPHANDREDRV"; Description: "Enable MSR/RAPL Driver ?"; Flags: postinstall waituntilidle 
+Filename: "{app}/devcon.exe"; Parameters: "install {app}\ScaphandreDrv.inf root\SCAPHANDREDRV"; Description: "Install Driver"; Flags: waituntilidle 
+Filename: "{app}/devcon.exe"; Parameters: "enable {app}\ScaphandreDrv.inf root\SCAPHANDREDRV"; Description: "Enable Driver"; Flags: waituntilidle
+Filename: "{app}/DriverLoader.exe"; Parameters: "install"; WorkingDir: "{app}"; Description: "Install Driver Service";
+Filename: "{app}/DriverLoader.exe"; Parameters: "start"; WorkingDir: "{app}"; Description: "Start Driver Service"; 
 ; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}";
+; Filename: "schtasks.exe"; Parameters: "/Create /SC ONSTART {app}\scaphandre.exe prometheus-push "
+
+[UninstallRun]
+Filename: "{app}/DriverLoader.exe"; Parameters: "stop"; WorkingDir: "{app}"; RunOnceId: "StopService";
+Filename: "{app}/DriverLoader.exe"; Parameters: "remove"; WorkingDir: "{app}"; RunOnceId: "RemoveService";
+Filename: "{app}/devcon.exe"; Parameters: "disable ScaphandreDrv"; RunOnceId: "DisableDrier";
+Filename: "{app}/devcon.exe"; Parameters: "remove ScaphandreDrv"; RunOnceId: "RemoveService";
+
 
