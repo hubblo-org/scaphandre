@@ -24,9 +24,9 @@ Those are prometheus-push exporter CLI options. Run the executable to get the re
 
     /usr/bin/scaphandre-prometheuspush --help
 
-A simple configuration to target Push Gateway reachable on https://myserver.mydomain:PORT would look like :
+A simple configuration to target Push Gateway reachable on https://myserver.mydomain:PORT and send data every 30 seconds would look like :
 
-    SCAPHANDRE_ARGS="prometheus-push -H myserver.mydomain -S https -p PORT"
+    SCAPHANDRE_ARGS="prometheus-push -H myserver.mydomain -S https -p PORT -s 30"
 
 Once the configuration is changed, you can restart the service and ensure it is enabled as well for next reboot :
 

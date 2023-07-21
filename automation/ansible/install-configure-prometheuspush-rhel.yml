@@ -19,7 +19,7 @@
         path: "{{ scaphandre_config_path }}"
         regexp: '^SCAPHANDRE_ARGS=.*'
         backrefs: true
-        line: "SCAPHANDRE_ARGS=\"prometheus-push -H {{ pushgateway_host }} -S {{ pushgateway_scheme }} -p {{ pushgateway_port }}\""
+        line: "SCAPHANDRE_ARGS=\"prometheus-push -H {{ pushgateway_host }} -S {{ pushgateway_scheme }} -p {{ pushgateway_port }} -s 30\""
         state: present
     - name: Start & enable service
       shell: "systemctl restart {{ service_name }} && systemctl enable {{ service_name }}"
