@@ -4,19 +4,6 @@
 //! a [Prometheus](https://prometheus.io/) pushgateway.
 //!
 
-#[cfg(target_os="windows")]
-extern crate windows_service;
-#[cfg(target_os="windows")]
-use std::{
-    ffi::OsString
-};
-#[cfg(target_os="windows")]
-use windows_service::{
-    service::ServiceControl, service::ServiceControlAccept,
-    service::ServiceExitCode, service::ServiceState, service::ServiceStatus,
-    service::ServiceType, service_control_handler::{self, ServiceControlHandlerResult}
-};
-
 use super::utils::{format_prometheus_metric, get_hostname};
 use crate::exporters::{Exporter, MetricGenerator};
 use crate::sensors::{Sensor, Topology};
@@ -106,9 +93,7 @@ impl Exporter for PrometheusPushExporter {
         loop {
             metric_generator.topology.refresh();
             metric_generator.gen_all_metrics();
-            let mut body = String::from(
-                "# HELP mymetric this is my metric\n# TYPE mymetric gauge\nmymetric 50\n",
-            );
+            let mut body = String::from("");
             let mut metrics_pushed: Vec<String> = vec![];
             //let mut counter = 0;
             for mut m in metric_generator.pop_metrics() {
@@ -167,6 +152,7 @@ impl Exporter for PrometheusPushExporter {
 
             thread::sleep(Duration::new(self.args.step, 0));
         }
+
     }
 
     fn kind(&self) -> &str {
