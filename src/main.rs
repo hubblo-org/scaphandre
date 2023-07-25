@@ -10,28 +10,30 @@ use scaphandre::sensors::powercap_rapl;
 #[cfg(target_os = "windows")]
 use scaphandre::sensors::msr_rapl;
 
-#[cfg(target_os="windows")]
+#[cfg(target_os = "windows")]
 use windows_service::{
-    Result, service_dispatcher,
-    service::ServiceControl, service::ServiceControlAccept,
-    service::ServiceExitCode, service::ServiceState, service::ServiceStatus,
-    service::ServiceType, service_control_handler::{self, ServiceControlHandlerResult}
+    service::ServiceControl,
+    service::ServiceControlAccept,
+    service::ServiceExitCode,
+    service::ServiceState,
+    service::ServiceStatus,
+    service::ServiceType,
+    service_control_handler::{self, ServiceControlHandlerResult},
+    service_dispatcher, Result,
 };
 
-#[cfg(target_os="windows")]
+#[cfg(target_os = "windows")]
 define_windows_service!(ffi_service_main, my_service_main);
 
-#[cfg(target_os="windows")]
+#[cfg(target_os = "windows")]
 #[macro_use]
 extern crate windows_service;
 
-#[cfg(target_os="windows")]
+#[cfg(target_os = "windows")]
 use std::time::Duration;
 
-#[cfg(target_os="windows")]
-use std::{
-    ffi::OsString
-};
+#[cfg(target_os = "windows")]
+use std::ffi::OsString;
 
 // the struct below defines the main Scaphandre command-line interface
 /// Extensible metrology agent for electricity consumption related metrics.
@@ -108,16 +110,16 @@ enum ExporterChoice {
     PrometheusPush(exporters::prometheuspush::ExporterArgs),
 }
 
-#[cfg(target_os="windows")]
+#[cfg(target_os = "windows")]
 fn my_service_main(arguments: Vec<OsString>) {
     if let Err(_e) = run_service(arguments) {
         // Handle errors in some way.
     }
 }
 
-#[cfg(target_os="windows")]
-fn run_service(arguments: Vec<OsString>) -> Result<()> {
-    #[cfg(target_os="windows")]
+#[cfg(target_os = "windows")]
+fn run_service(_arguments: Vec<OsString>) -> Result<()> {
+    #[cfg(target_os = "windows")]
     let event_handler = move |control_event| -> ServiceControlHandlerResult {
         match control_event {
             ServiceControl::Stop => {
@@ -129,7 +131,7 @@ fn run_service(arguments: Vec<OsString>) -> Result<()> {
             _ => ServiceControlHandlerResult::NotImplemented,
         }
     };
-    #[cfg(target_os="windows")]
+    #[cfg(target_os = "windows")]
     if let Ok(system_handler) = service_control_handler::register("Scaphandre", event_handler) {
         let next_status = ServiceStatus {
             // Should match the one from system service registry
@@ -147,9 +149,9 @@ fn run_service(arguments: Vec<OsString>) -> Result<()> {
             // Unused for setting status
             process_id: None,
         };
-    
+
         // Tell the system that the service is running now
-        if let Ok(status_set) = system_handler.set_service_status(next_status) {
+        if let Ok(_status_set) = system_handler.set_service_status(next_status) {
             parse_cli_and_run_exporter();
         } else {
             panic!("Couldn't set Windows service status.");
@@ -161,10 +163,12 @@ fn run_service(arguments: Vec<OsString>) -> Result<()> {
 }
 
 fn main() {
-    #[cfg(target_os="windows")]
+    #[cfg(target_os = "windows")]
     match service_dispatcher::start("Scaphandre", ffi_service_main) {
-        Ok(_) => { },
-        Err(e) => { println!("Couldn't start Windows service dispatcher. Got : {}", e); }
+        Ok(_) => {}
+        Err(e) => {
+            println!("Couldn't start Windows service dispatcher. Got : {}", e);
+        }
     }
 
     parse_cli_and_run_exporter();
@@ -209,9 +213,9 @@ fn build_exporter(choice: ExporterChoice, sensor: &dyn Sensor) -> Box<dyn export
             Box::new(exporters::warpten::Warp10Exporter::new(sensor, args))
         }
         #[cfg(feature = "prometheuspush")]
-        ExporterChoice::PrometheusPush(args) => {
-            Box::new(exporters::prometheuspush::PrometheusPushExporter::new(sensor, args))
-        },
+        ExporterChoice::PrometheusPush(args) => Box::new(
+            exporters::prometheuspush::PrometheusPushExporter::new(sensor, args),
+        ),
     }
     // Note that invalid choices are automatically turned into errors by `parse()` before the Cli is populated,
     // that's why they don't appear in this function.
@@ -231,7 +235,7 @@ fn build_sensor(cli: &Cli) -> impl Sensor {
     };
 
     #[cfg(target_os = "windows")]
-    let msr_sensor_win = || msr_rapl::MsrRAPLSensor::new();
+    let msr_sensor_win = msr_rapl::MsrRAPLSensor::new;
 
     match cli.sensor.as_deref() {
         Some("powercap_rapl") => {

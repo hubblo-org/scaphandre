@@ -43,12 +43,15 @@ pub struct Metric {
     /// `metric_type` mostly used by Prometheus, define is it is a gauge, counter...
     metric_type: String,
     /// `ttl` time to live for this metric used by Riemann.
+    #[allow(dead_code)]
     ttl: f32,
     /// `hostname` host that provides the metric.
     hostname: String,
     /// `state` used by Riemann, define a state like Ok or Ko regarding this metric.
+    #[allow(dead_code)]
     state: String,
     /// `tags` used by Riemann, tags attached to the metric.
+    #[allow(dead_code)]
     tags: Vec<String>,
     /// `attributes` used by exporters to better qualify the metric. In Prometheus context
     /// this is used as a metric tag (socket_id) : `scaph_self_socket_stats_nb{socket_id="0"} 2`.

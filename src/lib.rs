@@ -14,6 +14,7 @@ use sensors::msr_rapl;
 #[cfg(target_os = "linux")]
 use sensors::powercap_rapl;
 
+#[cfg(target_os = "linux")]
 use std::time::{Duration, SystemTime};
 
 /// Create a new [`Sensor`] instance with the default sensor available,
@@ -30,6 +31,7 @@ pub fn get_default_sensor() -> impl sensors::Sensor {
     return msr_rapl::MsrRAPLSensor::new();
 }
 
+#[cfg(target_os = "linux")]
 fn current_system_time_since_epoch() -> Duration {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)

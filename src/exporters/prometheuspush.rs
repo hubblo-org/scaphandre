@@ -157,7 +157,6 @@ impl Exporter for PrometheusPushExporter {
 
             thread::sleep(Duration::new(self.args.step, 0));
         }
-
     }
 
     fn kind(&self) -> &str {

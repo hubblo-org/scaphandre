@@ -340,6 +340,7 @@ impl JsonExporter {
                 .proc_tracker
                 .get_filtered_processes(regex_filter)
         } else if let Some(regex_filter) = &self.container_regex {
+            debug!("Processes filtered by '{}':", regex_filter.as_str());
             #[cfg(feature = "containers")]
             {
                 self.metric_generator
