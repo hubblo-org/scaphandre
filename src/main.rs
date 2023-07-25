@@ -3,13 +3,35 @@
 use clap::{command, ArgAction, Parser, Subcommand};
 use colored::Colorize;
 use scaphandre::{exporters, sensors::Sensor};
-use argfile::expand_args;
 
 #[cfg(target_os = "linux")]
 use scaphandre::sensors::powercap_rapl;
 
 #[cfg(target_os = "windows")]
 use scaphandre::sensors::msr_rapl;
+
+#[cfg(target_os="windows")]
+use windows_service::{
+    Result, service_dispatcher,
+    service::ServiceControl, service::ServiceControlAccept,
+    service::ServiceExitCode, service::ServiceState, service::ServiceStatus,
+    service::ServiceType, service_control_handler::{self, ServiceControlHandlerResult}
+};
+
+#[cfg(target_os="windows")]
+define_windows_service!(ffi_service_main, my_service_main);
+
+#[cfg(target_os="windows")]
+#[macro_use]
+extern crate windows_service;
+
+#[cfg(target_os="windows")]
+use std::time::Duration;
+
+#[cfg(target_os="windows")]
+use std::{
+    ffi::OsString
+};
 
 // the struct below defines the main Scaphandre command-line interface
 /// Extensible metrology agent for electricity consumption related metrics.
@@ -86,7 +108,69 @@ enum ExporterChoice {
     PrometheusPush(exporters::prometheuspush::ExporterArgs),
 }
 
+#[cfg(target_os="windows")]
+fn my_service_main(arguments: Vec<OsString>) {
+    if let Err(_e) = run_service(arguments) {
+        // Handle errors in some way.
+    }
+}
+
+#[cfg(target_os="windows")]
+fn run_service(arguments: Vec<OsString>) -> Result<()> {
+    #[cfg(target_os="windows")]
+    let event_handler = move |control_event| -> ServiceControlHandlerResult {
+        match control_event {
+            ServiceControl::Stop => {
+                // Handle stop event and return control back to the system.
+                ServiceControlHandlerResult::NoError
+            }
+            // All services must accept Interrogate even if it's a no-op.
+            ServiceControl::Interrogate => ServiceControlHandlerResult::NoError,
+            _ => ServiceControlHandlerResult::NotImplemented,
+        }
+    };
+    #[cfg(target_os="windows")]
+    if let Ok(system_handler) = service_control_handler::register("Scaphandre", event_handler) {
+        let next_status = ServiceStatus {
+            // Should match the one from system service registry
+            service_type: ServiceType::OWN_PROCESS,
+            // The new state
+            current_state: ServiceState::Running,
+            // Accept stop events when running
+            controls_accepted: ServiceControlAccept::STOP,
+            // Used to report an error when starting or stopping only, otherwise must be zero
+            exit_code: ServiceExitCode::Win32(0),
+            // Only used for pending states, otherwise must be zero
+            checkpoint: 0,
+            // Only used for pending states, otherwise must be zero
+            wait_hint: Duration::default(),
+            // Unused for setting status
+            process_id: None,
+        };
+    
+        // Tell the system that the service is running now
+        if let Ok(status_set) = system_handler.set_service_status(next_status) {
+            parse_cli_and_run_exporter();
+        } else {
+            panic!("Couldn't set Windows service status.");
+        }
+    } else {
+        panic!("Couldn't get Windows system events handler.");
+    }
+    Ok(())
+}
+
 fn main() {
+    #[cfg(target_os="windows")]
+    match service_dispatcher::start("Scaphandre", ffi_service_main) {
+        Ok(_) => { },
+        Err(e) => { println!("Couldn't start Windows service dispatcher. Got : {}", e); }
+    }
+
+    parse_cli_and_run_exporter();
+}
+
+fn parse_cli_and_run_exporter() {
     let cli = Cli::parse();
     loggerv::init_with_verbosity(cli.verbose.into()).expect("unable to initialize the logger");
 
@@ -102,27 +186,15 @@ fn main() {
 fn build_exporter(choice: ExporterChoice, sensor: &dyn Sensor) -> Box<dyn exporters::Exporter> {
     match choice {
         ExporterChoice::Stdout(args) => {
-            if let Ok(args_from_file) = expand_args(argfile::parse_fromfile, argfile::PREFIX) {
-                Box::new(exporters::stdout::StdoutExporter::new(sensor, args_from_file))
-            } else {
-                Box::new(exporters::stdout::StdoutExporter::new(sensor, args))
-            }
+            Box::new(exporters::stdout::StdoutExporter::new(sensor, args))
         }
         #[cfg(feature = "json")]
         ExporterChoice::Json(args) => {
-            if let Ok(args_from_file) = expand_args(argfile::parse_fromfile, argfile::PREFIX) {
-                Box::new(exporters::json::JsonExporter::new(sensor, args_from_file))
-            } else {
-                Box::new(exporters::json::JsonExporter::new(sensor, args)) // keep this in braces
-            }
+            Box::new(exporters::json::JsonExporter::new(sensor, args)) // keep this in braces
         }
         #[cfg(feature = "prometheus")]
         ExporterChoice::Prometheus(args) => {
-            if let Ok(args_from_file) = expand_args(argfile::parse_fromfile, argfile::PREFIX) {
-                Box::new(exporters::prometheus::PrometheusExporter::new(sensor, args_from_file))
-            } else {
-                Box::new(exporters::prometheus::PrometheusExporter::new(sensor, args))
-            }
+            Box::new(exporters::prometheus::PrometheusExporter::new(sensor, args))
         }
         #[cfg(feature = "qemu")]
         ExporterChoice::Qemu => {
@@ -130,27 +202,15 @@ fn build_exporter(choice: ExporterChoice, sensor: &dyn Sensor) -> Box<dyn export
         }
         #[cfg(feature = "riemann")]
         ExporterChoice::Riemann(args) => {
-            if let Ok(args_from_file) = expand_args(argfile::parse_fromfile, argfile::PREFIX) {
-                Box::new(exporters::riemann::RiemannExporter::new(sensor, args_from_file))
-            } else {
-                Box::new(exporters::riemann::RiemannExporter::new(sensor, args))
-            }
+            Box::new(exporters::riemann::RiemannExporter::new(sensor, args))
         }
         #[cfg(feature = "warpten")]
         ExporterChoice::Warpten(args) => {
-            if let Ok(args_from_file) = expand_args(argfile::parse_fromfile, argfile::PREFIX) {
-                Box::new(exporters::warpten::Warp10Exporter::new(sensor, args_from_file))
-            } else {
-                Box::new(exporters::warpten::Warp10Exporter::new(sensor, args))
-            }
+            Box::new(exporters::warpten::Warp10Exporter::new(sensor, args))
         }
         #[cfg(feature = "prometheuspush")]
         ExporterChoice::PrometheusPush(args) => {
-            if let Ok(args_from_file) = expand_args(argfile::parse_fromfile, argfile::PREFIX) {
-                Box::new(exporters::prometheuspush::PrometheusPushExporter::new(sensor, args_from_file))
-            } else {
-                Box::new(exporters::prometheuspush::PrometheusPushExporter::new(sensor, args))
-            }
+            Box::new(exporters::prometheuspush::PrometheusPushExporter::new(sensor, args))
         },
     }
     // Note that invalid choices are automatically turned into errors by `parse()` before the Cli is populated,
