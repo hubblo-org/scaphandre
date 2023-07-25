@@ -31,7 +31,6 @@ pub fn get_default_sensor() -> impl sensors::Sensor {
     return msr_rapl::MsrRAPLSensor::new();
 }
 
-#[cfg(target_os = "linux")]
 fn current_system_time_since_epoch() -> Duration {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
