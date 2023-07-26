@@ -14,7 +14,7 @@ on:
 jobs:
   build_exe_win1011:
     name: Build exe installer for windows 10/11/server 2016/server 2019/server 2022
-    runs-on: windows
+    runs-on: "windows-2019"
     steps:
       - name: Checkout
         uses: actions/checkout@v3
