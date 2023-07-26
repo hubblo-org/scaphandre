@@ -11,6 +11,10 @@ on:
     tags: [ 'v*.*.*', 'dev*.*.*' ]
     branches: [ '311-github-workflow-to-build-and-publish-a-exemsi-file-including-signed-rapl-driver-at-each-tagrelease' ]
 
+env:
+  WRD_VERSION: v0.0.2
+  WRD_BASE_URL: https://github.com/hubblo-org/windows-rapl-driver/releases/download
+
 jobs:
   build_exe_win1011:
     name: Build exe installer for windows 10/11/server 2016/server 2019/server 2022
@@ -18,22 +22,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          path: scaphandre
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          repository: hubblo-org/windows-rapl-driver.git
-          ref: master
-          path: windows-rapl-driver
       - name: Install Innosoft
         run: |
           $url = "https://jrsoftware.org/download.php/is.exe"
           $dest = "is.exe"
           Invoke-WebRequest -Uri $url -OutFile $dest
           ls
-          & "$dest" /verysilent /suppressmsgbox
-          ls "C:\Program Files (x86)\"
+          & "D:\a\scaphandre\scaphandre\$dest" /verysilent /suppressmsgbox
+          ls "C:\Program Files (x86)\Inno Setup 6\"
+      - name: Get windows-rapl-driver
+        run: |
+          $dest = "DriverLoader.exe"
+          $url = "${{ env.WRD_BASE_URL }}/${{ env.WRD_VERSION }}/DriverLoader.exe" 
+          Invoke-WebRequest -Uri ($url -replace '"', "") -OutFile $dest
+          $dest = "ScaphandreDrv.cat"
+          $url = "${{ env.WRD_BASE_URL }}/${{ env.WRD_VERSION }}/ScaphandreDrv.cat" 
+          Invoke-WebRequest -Uri ($url -replace '"', "") -OutFile $dest
+          $dest = "ScaphandreDrv.sys"
+          $url = "${{ env.WRD_BASE_URL }}/${{ env.WRD_VERSION }}/ScaphandreDrv.sys" 
+          Invoke-WebRequest -Uri ($url -replace '"', "") -OutFile $dest
+          $dest = "ScaphandreDrv.inf"
+          $url = "${{ env.WRD_BASE_URL }}/${{ env.WRD_VERSION }}/ScaphandreDrv.inf" 
+          Invoke-WebRequest -Uri ($url -replace '"', "") -OutFile $dest
+          $dest = "ScaphandreDrvTest.cer"
+          $url = "${{ env.WRD_BASE_URL }}/${{ env.WRD_VERSION }}/ScaphandreDrvTest.cer" 
+          Invoke-WebRequest -Uri ($url -replace '"', "") -OutFile $dest
+          $dest = "devcon.exe"
+          $url = "${{ env.WRD_BASE_URL }}/${{ env.WRD_VERSION }}/devcon.exe" 
+          Invoke-WebRequest -Uri ($url -replace '"', "") -OutFile $dest
+          $dest = "certmgr.exe"
+          $url = "${{ env.WRD_BASE_URL }}/${{ env.WRD_VERSION }}/certmgr.exe" 
+          Invoke-WebRequest -Uri ($url -replace '"', "") -OutFile $dest
+          ls
       - name: Install Rustup
         uses: crazy-max/ghaction-chocolatey@v2
         with:
@@ -41,6 +61,15 @@ jobs:
       - name: Install Rust toolchain
         run: |
           rustup toolchain install stable-x86_64-pc-windows-msvc
-      - name: Build (debug mode)
+      - name: Build Scaphandre
         run: |
           cargo build --release --no-default-features --features "prometheuspush json"
+      - name: Build package 
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" packaging/windows/installer.iss
+      - name: Upload artifact
+        run: |
+          Install-Module -Name AWS.Tools.Installer
+          Install-AWSToolsModule AWS.Tools.EC2,AWS.Tools.S3 -CleanUp
+          Set-AWSCredential -AccessKey ${{ secrets.S3_ACCESS_KEY_ID }} -SecretKey ${{ secrets.S3_SECRET_ACCESS_KEY }} -StoreAs default
+          Write-S3Object -BucketName scaphandre -File scaphandre_0.5.0_installer.exe
