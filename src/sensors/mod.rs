@@ -276,8 +276,7 @@ impl Topology {
     /// to appropriate CPUSocket instance from self.sockets
     pub fn add_cpu_cores(&mut self) {
         if let Some(mut cores) = Topology::generate_cpu_cores() {
-            while !cores.is_empty() {
-                let c = cores.pop().unwrap();
+            while let Some(c) = cores.pop() {
                 let socket_id = &c
                     .attributes
                     .get("physical id")

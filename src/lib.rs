@@ -14,7 +14,6 @@ use sensors::msr_rapl;
 #[cfg(target_os = "linux")]
 use sensors::powercap_rapl;
 
-#[cfg(target_os = "linux")]
 use std::time::{Duration, SystemTime};
 
 /// Create a new [`Sensor`] instance with the default sensor available,
