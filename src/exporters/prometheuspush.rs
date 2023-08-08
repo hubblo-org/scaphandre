@@ -97,9 +97,7 @@ impl Exporter for PrometheusPushExporter {
         loop {
             metric_generator.topology.refresh();
             metric_generator.gen_all_metrics();
-            let mut body = String::from(
-                "# HELP mymetric this is my metric\n# TYPE mymetric gauge\nmymetric 50\n",
-            );
+            let mut body = String::from("");
             let mut metrics_pushed: Vec<String> = vec![];
             //let mut counter = 0;
             for mut m in metric_generator.pop_metrics() {
