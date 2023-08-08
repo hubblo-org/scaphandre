@@ -442,6 +442,12 @@ impl MetricGenerator {
         if !records.is_empty() {
             let record = records.last().unwrap();
             let host_energy_microjoules = record.value.clone();
+            let mut attributes = HashMap::new();
+            if self.topology._sensor_data.contains_key("psys") {
+                attributes.insert(String::from("value_source"), String::from("rapl_psys"));
+            } else if self.topology._sensor_data.contains_key("source_file") {
+                attributes.insert(String::from("value_source"), String::from("rapl_pkg"));
+            }
 
             self.data.push(Metric {
                     name: String::from("scaph_host_energy_microjoules"),
@@ -451,7 +457,7 @@ impl MetricGenerator {
                     hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
-                    attributes: HashMap::new(),
+                    attributes: attributes.clone(),
                     description: String::from(
                         "Energy measurement for the whole host, as extracted from the sensor, in microjoules.",
                     ),
@@ -467,7 +473,7 @@ impl MetricGenerator {
                     hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
-                    attributes: HashMap::new(),
+                    attributes,
                     description: String::from("Power measurement on the whole host, in microwatts"),
                     metric_value: MetricValueType::Text(power.value),
                 });
@@ -684,9 +690,10 @@ impl MetricGenerator {
                     tags: vec!["scaphandre".to_string()],
                     attributes: attributes.clone(),
                     description: format!(
-                        "Energy counter from RAPL mmio interface for Package-0 of CPU socket {}", socket.id
+                        "Energy counter from RAPL mmio interface for Package-0 of CPU socket {}",
+                        socket.id
                     ),
-                    metric_value: MetricValueType::Text(mmio.value)
+                    metric_value: MetricValueType::Text(mmio.value),
                 });
             }
             for domain in socket.get_domains_passive() {

@@ -56,7 +56,7 @@ pub struct Topology {
     /// Sorted list of all domains names
     pub domains_names: Option<Vec<String>>,
     /// Sensor-specific data needed in the topology
-    _sensor_data: HashMap<String, String>,
+    pub _sensor_data: HashMap<String, String>,
 }
 
 impl RecordGenerator for Topology {
@@ -1217,13 +1217,12 @@ impl CPUSocket {
                 return Some(Record::new(
                     current_system_time_since_epoch(),
                     val.to_string(),
-                    units::Unit::MicroJoule
+                    units::Unit::MicroJoule,
                 ));
             }
         }
         None
     }
-
 }
 
 // !!!!!!!!!!!!!!!!! CPUCore !!!!!!!!!!!!!!!!!!!!!!!
@@ -1377,13 +1376,12 @@ impl Domain {
                 return Some(Record::new(
                     current_system_time_since_epoch(),
                     val.to_string(),
-                    units::Unit::MicroJoule
+                    units::Unit::MicroJoule,
                 ));
             }
         }
         None
     }
-
 }
 impl fmt::Display for Domain {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
