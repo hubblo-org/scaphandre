@@ -444,11 +444,20 @@ impl MetricGenerator {
             let host_energy_microjoules = record.value.clone();
             let mut attributes = HashMap::new();
             if self.topology._sensor_data.contains_key("psys") {
-                attributes.insert(String::from("value_source"), String::from("powercap_rapl_psys"));
+                attributes.insert(
+                    String::from("value_source"),
+                    String::from("powercap_rapl_psys"),
+                );
             } else if self.topology._sensor_data.contains_key("source_file") {
-                attributes.insert(String::from("value_source"), String::from("powercap_rapl_pkg"));
+                attributes.insert(
+                    String::from("value_source"),
+                    String::from("powercap_rapl_pkg"),
+                );
             } else if self.topology._sensor_data.contains_key("DRIVER_NAME") {
-                attributes.insert(String::from("value_source"), String::from("scaphandredrv_rapl_pkg"));
+                attributes.insert(
+                    String::from("value_source"),
+                    String::from("scaphandredrv_rapl_pkg"),
+                );
             }
 
             self.data.push(Metric {
