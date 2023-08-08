@@ -36,7 +36,7 @@ pub struct ExporterArgs {
     #[arg(short = 'S', long, default_value_t = String::from("http"))]
     pub scheme: String,
 
-    #[arg(short, long, default_value_t = 5)]
+    #[arg(short, long, default_value_t = 30)]
     pub step: u64,
 
     /// Apply labels to metrics of processes that look like a Qemu/KVM virtual machine
@@ -78,8 +78,13 @@ impl Exporter for PrometheusPushExporter {
         );
 
         let uri = format!(
-            "{}://{}:{}/{}/job/{}",
-            self.args.scheme, self.args.host, self.args.port, self.args.suffix, self.args.job
+            "{}://{}:{}/{}/job/{}/instance/{}",
+            self.args.scheme,
+            self.args.host,
+            self.args.port,
+            self.args.suffix,
+            self.args.job,
+            self.hostname.clone()
         );
 
         let mut metric_generator = MetricGenerator::new(
@@ -92,9 +97,7 @@ impl Exporter for PrometheusPushExporter {
         loop {
             metric_generator.topology.refresh();
             metric_generator.gen_all_metrics();
-            let mut body = String::from(
-                "# HELP mymetric this is my metric\n# TYPE mymetric gauge\nmymetric 50\n",
-            );
+            let mut body = String::from("");
             let mut metrics_pushed: Vec<String> = vec![];
             //let mut counter = 0;
             for mut m in metric_generator.pop_metrics() {
