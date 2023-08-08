@@ -228,7 +228,7 @@ impl JsonExporter {
         let mut res: Vec<Disk> = vec![];
         for m in metrics {
             let metric_disk_name = m.attributes.get("disk_name").unwrap();
-            if let Some(mut disk) = res.iter_mut().find(|x| metric_disk_name == &x.disk_name) {
+            if let Some(disk) = res.iter_mut().find(|x| metric_disk_name == &x.disk_name) {
                 info!("editing disk");
                 disk.disk_name = metric_disk_name.clone();
                 if m.name == "scaph_host_disk_available_bytes" {
