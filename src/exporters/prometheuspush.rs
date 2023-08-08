@@ -141,12 +141,11 @@ impl Exporter for PrometheusPushExporter {
                 ),
                 false => pre_request,
             };
-            //warn!("body: {}", body);
             if let Ok(request) = final_request.body(body) {
                 match request.send() {
                     Ok(mut response) => {
-                        warn!("Got {:?}", response);
-                        warn!("Response Text {:?}", response.text());
+                        debug!("Got {:?}", response);
+                        debug!("Response Text {:?}", response.text());
                     }
                     Err(err) => {
                         warn!("Got error : {:?}", err)
