@@ -197,7 +197,7 @@ impl Sensor for PowercapRAPLSensor {
                             String::from("mmio"),
                             format!("{}/intel-rapl-mmio:{}/energy_uj", self.base_path, socket_id),
                         );
-                    } 
+                    }
                 }
             } else if re_domain_mmio.is_match(&folder_name) {
                 warn!("matched {folder_name}");
@@ -208,11 +208,19 @@ impl Sensor for PowercapRAPLSensor {
                 for s in topo.get_sockets() {
                     if socket_id == s.id {
                         for d in s.get_domains() {
-                            if d.id == domain_id && &d.name.trim() == &fs::read_to_string(format!("{folder_name}/name")).unwrap().trim() {
-                                d.sensor_data.insert(String::from("mmio"), format!("{}/energy_uj", folder_name));
+                            if d.id == domain_id
+                                && d.name.trim()
+                                    == fs::read_to_string(format!("{folder_name}/name"))
+                                        .unwrap()
+                                        .trim()
+                            {
+                                d.sensor_data.insert(
+                                    String::from("mmio"),
+                                    format!("{}/energy_uj", folder_name),
+                                );
                             }
                         }
-                    } 
+                    }
                 }
             }
         }
