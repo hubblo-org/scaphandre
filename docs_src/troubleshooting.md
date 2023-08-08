@@ -18,7 +18,7 @@ It can mean that your cpu doesn't support RAPL. Please refer to the [compatibili
 
 If you are in a situation comparable to [this one](https://github.com/hubblo-org/scaphandre/issues/59), you may need to install additional packages.
 
-On ubuntu 20.01 and 20.10, try to install `linux-modules-extra-$(uname-r)` with apt. Then you should be able to `modprobe intel_rapl_common`.
+On ubuntu 20.01 and 20.10, try to install `linux-modules-extra-$(uname -r)` with apt. Then you should be able to `modprobe intel_rapl_common`.
 
 ### On an AMD cpu machine, I get the following stracktrace
 
