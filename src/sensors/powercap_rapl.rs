@@ -143,7 +143,7 @@ impl Sensor for PowercapRAPLSensor {
         let mut re_domain_matched = false;
         for folder in fs::read_dir(&self.base_path).unwrap() {
             let folder_name = String::from(folder.unwrap().path().to_str().unwrap());
-            warn!("working on {folder_name}");
+            info!("working on {folder_name}");
             // let's catch domain folders
             if re_domain.is_match(&folder_name) {
                 re_domain_matched = true;
@@ -187,7 +187,7 @@ impl Sensor for PowercapRAPLSensor {
                     );
                 }
             } else if re_socket_mmio.is_match(&folder_name) {
-                warn!("matched {folder_name}");
+                info!("matched {folder_name}");
                 let mut splitted = folder_name.split(':');
                 let _ = splitted.next();
                 let socket_id: u16 = String::from(splitted.next().unwrap()).parse().unwrap();
