@@ -870,12 +870,17 @@ impl Topology {
 
     pub fn get_rapl_psys_energy_microjoules(&self) -> Option<Record> {
         if let Some(psys) = self._sensor_data.get("psys") {
-            if let Ok(val) = &fs::read_to_string(format!("{psys}/energy_uj")) {
-                return Some(Record::new(
-                    current_system_time_since_epoch(),
-                    val.to_string(),
-                    units::Unit::MicroJoule,
-                ));
+            match &fs::read_to_string(format!("{psys}/energy_uj")) {
+                Ok(val) => {
+                    return Some(Record::new(
+                        current_system_time_since_epoch(),
+                        val.to_string(),
+                        units::Unit::MicroJoule,
+                    ));
+                },
+                Err(e) => {
+                    warn!("PSYS Error: {:?}", e);
+                }
             }
         }
         None
@@ -1212,12 +1217,17 @@ impl CPUSocket {
 
     pub fn get_rapl_mmio_energy_microjoules(&self) -> Option<Record> {
         if let Some(mmio) = self.sensor_data.get("mmio") {
-            if let Ok(val) = &fs::read_to_string(format!("{mmio}/energy_uj")) {
-                return Some(Record::new(
-                    current_system_time_since_epoch(),
-                    val.to_string(),
-                    units::Unit::MicroJoule,
-                ));
+            match &fs::read_to_string(format!("{mmio}")) {
+                Ok(val) => {
+                    return Some(Record::new(
+                        current_system_time_since_epoch(),
+                        val.to_string(),
+                        units::Unit::MicroJoule,
+                    ));
+                },
+                Err(e)=> {
+                    debug!("MMIO Error: {:?}", e)
+                }
             }
         }
         None
@@ -1371,12 +1381,17 @@ impl Domain {
 
     pub fn get_rapl_mmio_energy_microjoules(&self) -> Option<Record> {
         if let Some(mmio) = self.sensor_data.get("mmio") {
-            if let Ok(val) = &fs::read_to_string(format!("{mmio}/energy_uj")) {
-                return Some(Record::new(
-                    current_system_time_since_epoch(),
-                    val.to_string(),
-                    units::Unit::MicroJoule,
-                ));
+            match &fs::read_to_string(format!("{mmio}")) {
+                Ok(val) => {
+                    return Some(Record::new(
+                        current_system_time_since_epoch(),
+                        val.to_string(),
+                        units::Unit::MicroJoule,
+                    ));
+                },
+                Err(e) => {
+                    debug!("MMIO Error in get microjoules: {:?}", e);
+                }
             }
         }
         None

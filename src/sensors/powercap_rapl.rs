@@ -200,23 +200,21 @@ impl Sensor for PowercapRAPLSensor {
                     }
                 }
             } else if re_domain_mmio.is_match(&folder_name) {
-                warn!("matched {folder_name}");
+                debug!("matched {folder_name}");
                 let mut splitted = folder_name.split(':');
                 let _ = splitted.next();
                 let socket_id: u16 = String::from(splitted.next().unwrap()).parse().unwrap();
-                let domain_id: u16 = String::from(splitted.next().unwrap()).parse().unwrap();
                 for s in topo.get_sockets() {
                     if socket_id == s.id {
+                        let mmio_file = format!("{}/energy_uj", folder_name);
                         for d in s.get_domains() {
-                            if d.id == domain_id
-                                && d.name.trim()
-                                    == fs::read_to_string(format!("{folder_name}/name"))
-                                        .unwrap()
-                                        .trim()
+                            let name_in_folder = fs::read_to_string(format!("{folder_name}/name")).unwrap();
+                            // domain id doesn't match between regular and mmio folders, the name is coherent however (dram)
+                            if d.name.trim() == name_in_folder.trim()
                             {
                                 d.sensor_data.insert(
                                     String::from("mmio"),
-                                    format!("{}/energy_uj", folder_name),
+                                    mmio_file.clone()
                                 );
                             }
                         }
@@ -255,7 +253,7 @@ impl Sensor for PowercapRAPLSensor {
                 }
             }
             if !found {
-                warn!("Could'nt find any RAPL PKG domain (not psys).");
+                warn!("Could'nt find any RAPL PKG domain (nor psys).");
             }
         }
         for folder in fs::read_dir(&self.base_path).unwrap() {
