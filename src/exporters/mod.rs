@@ -751,6 +751,24 @@ impl MetricGenerator {
                             metric_value: MetricValueType::Text(domain_power_microwatts.clone()),
                         });
                     }
+                    let mut mmio_attributes = attributes.clone() ;
+                    mmio_attributes.insert(String::from("value_source"), String::from("powercap_rapl_mmio"));
+                    if let Some(mmio) = domain.get_rapl_mmio_energy_microjoules() {
+                        self.data.push(Metric {
+                            name: String::from("scaph_domain_rapl_mmio_energy_microjoules"),
+                            metric_type: String::from("counter"),
+                            ttl: 60.0,
+                            timestamp: mmio.timestamp,
+                            hostname: self.hostname.clone(),
+                            state: String::from("ok"),
+                            tags: vec!["scaphandre".to_string()],
+                            attributes: mmio_attributes,
+                            description: format!(
+                                "Energy counter from RAPL mmio interface for the {} domain, socket {}.", domain.name, socket.id
+                            ),
+                            metric_value: MetricValueType::Text(mmio.value),
+                        });
+                    }
                 }
             }
         }
