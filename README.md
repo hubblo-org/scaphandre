@@ -29,12 +29,13 @@ Join us on [Gitter](https://gitter.im/hubblo-org/scaphandre) or [Matrix](https:/
 
 ## ✨ Features
 
-- measuring power consumption on **bare metal hosts**
-- measuring power consumption of **qemu/kvm virtual machines** from the host
-- **exposing** power consumption metrics of a virtual machine, to allow **manipulating those metrics in the VM** as if it was a bare metal machine (relies on hypervisor features)
-- exposing power consumption metrics as a **[prometheus](https://prometheus.io) (HTTP) exporter**
-- sending power consumption metrics to **[riemann](http://riemann.io/)**
-- sending power consumption metrics to **[Warp10](http://warp10.io/)**
+- measuring power/energy consumed on **bare metal hosts**
+- measuring power/energy consumed of **qemu/kvm virtual machines** from the host
+- **exposing** power/energy metrics of a virtual machine, to allow **manipulating those metrics in the VM** as if it was a bare metal machine (relies on hypervisor features)
+- exposing metrics as a **[prometheus](https://prometheus.io) (HTTP) exporter**
+- sending metrics in push mode to a **[prometheus](https://prometheus.io) [Push Gateway](https://github.com/prometheus/pushgateway)**
+- sending metrics to **[riemann](http://riemann.io/)**
+- sending metrics to **[Warp10](http://warp10.io/)**
 - works on **[kubernetes](https://kubernetes.io/)**
 - storing power consumption metrics in a **JSON** file
 - showing basic power consumption metrics **in the terminal**
