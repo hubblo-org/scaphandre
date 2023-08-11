@@ -751,8 +751,11 @@ impl MetricGenerator {
                             metric_value: MetricValueType::Text(domain_power_microwatts.clone()),
                         });
                     }
-                    let mut mmio_attributes = attributes.clone() ;
-                    mmio_attributes.insert(String::from("value_source"), String::from("powercap_rapl_mmio"));
+                    let mut mmio_attributes = attributes.clone();
+                    mmio_attributes.insert(
+                        String::from("value_source"),
+                        String::from("powercap_rapl_mmio"),
+                    );
                     if let Some(mmio) = domain.get_rapl_mmio_energy_microjoules() {
                         self.data.push(Metric {
                             name: String::from("scaph_domain_rapl_mmio_energy_microjoules"),

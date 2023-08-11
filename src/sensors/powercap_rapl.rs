@@ -208,14 +208,12 @@ impl Sensor for PowercapRAPLSensor {
                     if socket_id == s.id {
                         let mmio_file = format!("{}/energy_uj", folder_name);
                         for d in s.get_domains() {
-                            let name_in_folder = fs::read_to_string(format!("{folder_name}/name")).unwrap();
+                            let name_in_folder =
+                                fs::read_to_string(format!("{folder_name}/name")).unwrap();
                             // domain id doesn't match between regular and mmio folders, the name is coherent however (dram)
-                            if d.name.trim() == name_in_folder.trim()
-                            {
-                                d.sensor_data.insert(
-                                    String::from("mmio"),
-                                    mmio_file.clone()
-                                );
+                            if d.name.trim() == name_in_folder.trim() {
+                                d.sensor_data
+                                    .insert(String::from("mmio"), mmio_file.clone());
                             }
                         }
                     }
