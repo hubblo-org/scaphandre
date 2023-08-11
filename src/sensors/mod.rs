@@ -877,7 +877,7 @@ impl Topology {
                         val.to_string(),
                         units::Unit::MicroJoule,
                     ));
-                },
+                }
                 Err(e) => {
                     warn!("PSYS Error: {:?}", e);
                 }
@@ -1217,15 +1217,15 @@ impl CPUSocket {
 
     pub fn get_rapl_mmio_energy_microjoules(&self) -> Option<Record> {
         if let Some(mmio) = self.sensor_data.get("mmio") {
-            match &fs::read_to_string(format!("{mmio}")) {
+            match &fs::read_to_string(mmio) {
                 Ok(val) => {
                     return Some(Record::new(
                         current_system_time_since_epoch(),
                         val.to_string(),
                         units::Unit::MicroJoule,
                     ));
-                },
-                Err(e)=> {
+                }
+                Err(e) => {
                     debug!("MMIO Error: {:?}", e)
                 }
             }
@@ -1381,14 +1381,14 @@ impl Domain {
 
     pub fn get_rapl_mmio_energy_microjoules(&self) -> Option<Record> {
         if let Some(mmio) = self.sensor_data.get("mmio") {
-            match &fs::read_to_string(format!("{mmio}")) {
+            match &fs::read_to_string(mmio) {
                 Ok(val) => {
                     return Some(Record::new(
                         current_system_time_since_epoch(),
                         val.to_string(),
                         units::Unit::MicroJoule,
                     ));
-                },
+                }
                 Err(e) => {
                     debug!("MMIO Error in get microjoules: {:?}", e);
                 }
