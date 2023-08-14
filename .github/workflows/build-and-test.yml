@@ -61,6 +61,7 @@ jobs:
         with:
           command: clippy
           args: -- -A clippy::upper_case_acronyms -D warnings
+  
   fmt_and_clippy_windows:
     name: Cargo Fmt and Clippy - Windows
     runs-on: windows-latest
@@ -153,10 +154,14 @@ jobs:
           awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ secrets.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 16 --monitor
   test_windows_x86_64:
     name: Test on Windows x86_64 (Virtual machine worker)
-    runs-on: "windows-2019"
+    runs-on: "windows-latest"
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Install openssl for Windows with vcpkg
+        run: | 
+          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
+          vcpkg install openssl:x64-windows-static-md
       - name: Install Rustup
         uses: crazy-max/ghaction-chocolatey@v2
         with:
