@@ -1,6 +1,7 @@
 use crate::exporters::*;
-use crate::sensors::{utils::IProcess, Sensor};
+use crate::sensors::{utils::current_system_time_since_epoch, utils::IProcess, Sensor};
 use regex::Regex;
+use std::fmt::Write;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -44,6 +45,10 @@ pub struct ExporterArgs {
     /// Apply labels to metrics of processes looking like a Qemu/KVM virtual machine
     #[arg(short, long)]
     pub qemu: bool,
+
+    /// Display metrics with their names
+    #[arg(long)]
+    pub raw_metrics: bool,
 }
 
 impl Exporter for StdoutExporter {
@@ -102,11 +107,7 @@ impl StdoutExporter {
         self.show_metrics();
     }
 
-    fn show_metrics(&mut self) {
-        use std::fmt::Write;
-        self.metric_generator.gen_all_metrics();
-
-        let metrics = self.metric_generator.pop_metrics();
+    fn summarized_view(&mut self, metrics: Vec<Metric>) {
         let mut metrics_iter = metrics.iter();
         let none_value = MetricValueType::Text("0".to_string());
         let host_power = match metrics_iter.find(|x| x.name == "scaph_host_power_microwatts") {
@@ -220,6 +221,29 @@ impl StdoutExporter {
             }
         }
         println!("------------------------------------------------------------\n");
+    }
+
+    fn raw_metrics_view(&mut self, metrics: Vec<Metric>) {
+        println!("## At {}", current_system_time_since_epoch().as_secs());
+        for m in metrics {
+            let serialized_data = serde_json::to_string(&m.attributes).unwrap();
+            println!(
+                "{} = {} {} # {}",
+                m.name, m.metric_value, serialized_data, m.description
+            );
+        }
+    }
+
+    fn show_metrics(&mut self) {
+        self.metric_generator.gen_all_metrics();
+
+        let metrics = self.metric_generator.pop_metrics();
+
+        if self.args.raw_metrics {
+            self.raw_metrics_view(metrics);
+        } else {
+            self.summarized_view(metrics);
+        }
     }
 }
 

@@ -7,6 +7,8 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::{env, fs};
 
+use super::units::Unit;
+
 pub const DEFAULT_BUFFER_PER_SOCKET_MAX_KBYTES: u16 = 1;
 pub const DEFAULT_BUFFER_PER_DOMAIN_MAX_KBYTES: u16 = 1;
 
@@ -70,11 +72,33 @@ impl PowercapRAPLSensor {
 
 impl RecordReader for Topology {
     fn read_record(&self) -> Result<Record, Box<dyn Error>> {
-        Ok(Record {
-            timestamp: current_system_time_since_epoch(),
-            value: String::from("5"),
-            unit: MicroJoule,
-        })
+        // if psys is available, return psys
+        // else return pkg + dram + F(disks)
+
+        if let Some(psys_record) = self.get_rapl_psys_energy_microjoules() {
+            Ok(psys_record)
+        } else {
+            let mut total = 0;
+            for s in &self.sockets {
+                if let Ok(r) = s.read_record() {
+                    if let Ok(val) = r.value.parse::<i32>() {
+                        total += val;
+                    } else {
+                        trace!("could'nt convert {} to i32", r.value);
+                    }
+                }
+                //for d in &s.domains {
+                //    if let Ok(r) = d.read_record() {
+                //        total = total + r.value.parse::<i32>().unwrap()
+                //    }
+                //}
+            }
+            Ok(Record::new(
+                current_system_time_since_epoch(),
+                total.to_string(),
+                Unit::MicroJoule,
+            ))
+        }
     }
 }
 impl RecordReader for CPUSocket {
@@ -114,9 +138,12 @@ impl Sensor for PowercapRAPLSensor {
         let mut topo = Topology::new(HashMap::new());
         let re_socket = Regex::new(r"^.*/intel-rapl:\d+$").unwrap();
         let re_domain = Regex::new(r"^.*/intel-rapl:\d+:\d+$").unwrap();
+        let re_socket_mmio = Regex::new(r"^.*/intel-rapl-mmio:\d+$").unwrap();
+        let re_domain_mmio = Regex::new(r"^.*/intel-rapl-mmio:\d+:\d+$").unwrap();
         let mut re_domain_matched = false;
         for folder in fs::read_dir(&self.base_path).unwrap() {
             let folder_name = String::from(folder.unwrap().path().to_str().unwrap());
+            info!("working on {folder_name}");
             // let's catch domain folders
             if re_domain.is_match(&folder_name) {
                 re_domain_matched = true;
@@ -159,30 +186,86 @@ impl Sensor for PowercapRAPLSensor {
                         sensor_data_for_domain,
                     );
                 }
+            } else if re_socket_mmio.is_match(&folder_name) {
+                info!("matched {folder_name}");
+                let mut splitted = folder_name.split(':');
+                let _ = splitted.next();
+                let socket_id: u16 = String::from(splitted.next().unwrap()).parse().unwrap();
+                for s in topo.get_sockets() {
+                    if socket_id == s.id {
+                        s.sensor_data.insert(
+                            String::from("mmio"),
+                            format!("{}/intel-rapl-mmio:{}/energy_uj", self.base_path, socket_id),
+                        );
+                    }
+                }
+            } else if re_domain_mmio.is_match(&folder_name) {
+                debug!("matched {folder_name}");
+                let mut splitted = folder_name.split(':');
+                let _ = splitted.next();
+                let socket_id: u16 = String::from(splitted.next().unwrap()).parse().unwrap();
+                for s in topo.get_sockets() {
+                    if socket_id == s.id {
+                        let mmio_file = format!("{}/energy_uj", folder_name);
+                        for d in s.get_domains() {
+                            let name_in_folder =
+                                fs::read_to_string(format!("{folder_name}/name")).unwrap();
+                            // domain id doesn't match between regular and mmio folders, the name is coherent however (dram)
+                            if d.name.trim() == name_in_folder.trim() {
+                                d.sensor_data
+                                    .insert(String::from("mmio"), mmio_file.clone());
+                            }
+                        }
+                    }
+                }
             }
         }
         if !re_domain_matched {
             warn!("Couldn't find domain folders from powercap. Fallback on socket folders.");
             warn!("Scaphandre will not be able to provide per-domain data.");
+            let mut found = false;
             for folder in fs::read_dir(&self.base_path).unwrap() {
                 let folder_name = String::from(folder.unwrap().path().to_str().unwrap());
-                if re_socket.is_match(&folder_name) {
-                    let mut splitted = folder_name.split(':');
-                    let _ = splitted.next();
-                    let socket_id = String::from(splitted.next().unwrap()).parse().unwrap();
-                    let mut sensor_data_for_socket = HashMap::new();
-                    sensor_data_for_socket.insert(
-                        String::from("source_file"),
-                        format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
-                    );
-                    topo.safe_add_socket(
-                        socket_id,
-                        vec![],
-                        vec![],
-                        format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
-                        self.buffer_per_socket_max_kbytes,
-                        sensor_data_for_socket,
-                    )
+                if let Ok(domain_name) = &fs::read_to_string(format!("{folder_name}/name")) {
+                    if domain_name != "psys" && re_socket.is_match(&folder_name) {
+                        let mut splitted = folder_name.split(':');
+                        let _ = splitted.next();
+                        let socket_id = String::from(splitted.next().unwrap()).parse().unwrap();
+                        let mut sensor_data_for_socket = HashMap::new();
+                        sensor_data_for_socket.insert(
+                            String::from("source_file"),
+                            format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
+                        );
+                        topo.safe_add_socket(
+                            socket_id,
+                            vec![],
+                            vec![],
+                            format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
+                            self.buffer_per_socket_max_kbytes,
+                            sensor_data_for_socket,
+                        );
+                        found = true;
+                    }
+                } else {
+                    warn!("Couldn't read RAPL folder name : {folder_name}");
+                }
+            }
+            if !found {
+                warn!("Could'nt find any RAPL PKG domain (nor psys).");
+            }
+        }
+        for folder in fs::read_dir(&self.base_path).unwrap() {
+            let folder_name = String::from(folder.unwrap().path().to_str().unwrap());
+            match &fs::read_to_string(format!("{folder_name}/name")) {
+                Ok(domain_name) => {
+                    let domain_name_trimed = domain_name.trim();
+                    if domain_name_trimed == "psys" {
+                        debug!("Found PSYS domain RAPL folder.");
+                        topo._sensor_data.insert(String::from("psys"), folder_name);
+                    }
+                }
+                Err(e) => {
+                    debug!("Got error while reading {folder_name}: {e}");
                 }
             }
         }

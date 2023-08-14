@@ -37,9 +37,9 @@ pub struct JsonExporter {
 #[derive(clap::Args, Debug)]
 pub struct ExporterArgs {
     /// Maximum time spent measuring, in seconds.
-    /// If negative, runs forever.
-    #[arg(short, long, default_value_t = 10)]
-    pub timeout: i64,
+    /// If unspecified, runs forever.
+    #[arg(short, long)]
+    pub timeout: Option<i64>,
 
     /// Interval between two measurements, in seconds
     #[arg(short, long, value_name = "SECONDS", default_value_t = 2)]
@@ -191,10 +191,11 @@ impl JsonExporter {
 
         // Extract the parameters we need to run the exporter
         let time_step = Duration::new(args.step, args.step_nano);
-        let time_limit = if args.timeout < 0 {
-            None
+        let time_limit;
+        if let Some(t) = args.timeout {
+            time_limit = Some(Duration::from_secs(t.unsigned_abs()))
         } else {
-            Some(Duration::from_secs(args.timeout.unsigned_abs()))
+            time_limit = None
         };
         let max_top_consumers = args.max_top_consumers;
         let process_regex = args.process_regex;
@@ -227,7 +228,7 @@ impl JsonExporter {
         let mut res: Vec<Disk> = vec![];
         for m in metrics {
             let metric_disk_name = m.attributes.get("disk_name").unwrap();
-            if let Some(mut disk) = res.iter_mut().find(|x| metric_disk_name == &x.disk_name) {
+            if let Some(disk) = res.iter_mut().find(|x| metric_disk_name == &x.disk_name) {
                 info!("editing disk");
                 disk.disk_name = metric_disk_name.clone();
                 if m.name == "scaph_host_disk_available_bytes" {

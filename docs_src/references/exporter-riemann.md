@@ -9,28 +9,35 @@ You can launch the Riemann exporter this way (running the default powercap_rapl 
 	scaphandre riemann
 
 As always exporter's options can be displayed with `-h`:
+
 ```
-scaphandre-riemann
-Riemann exporter sends power consumption metrics to a Riemann server
+Expose the metrics to a Riemann server
 
-USAGE:
-    scaphandre riemann [FLAGS] [OPTIONS]
+Usage: scaphandre riemann [OPTIONS]
 
-FLAGS:
-    -h, --help       Prints help information
-        --mtls       Connect to a Riemann server using mTLS. Parameters address, ca, cert and key must be defined.
-    -q, --qemu       Instruct that scaphandre is running on an hypervisor
-    -V, --version    Prints version information
-
-OPTIONS:
-    -a, --address <address>               Riemann ipv6 or ipv4 address. If mTLS is used then server fqdn must be
-                                          provided [default: localhost]
-    -d, --dispatch <dispatch_duration>    Duration between metrics dispatch [default: 5]
-    -p, --port <port>                     Riemann TCP port number [default: 5555]
-        --ca <cafile>                     CA certificate file (.pem format)
-        --cert <certfile>                 Client certificate file (.pem format)
-        --key <keyfile>                   Client RSA key
+Options:
+  -a, --address <ADDRESS>
+          Address of the Riemann server. If mTLS is used this must be the server's FQDN [default: localhost]
+  -p, --port <PORT>
+          TCP port number of the Riemann server [default: 5555]
+  -d, --dispatch-interval <DISPATCH_INTERVAL>
+          Duration between each metric dispatch, in seconds [default: 5]
+  -q, --qemu
+          Apply labels to metrics of processes looking like a Qemu/KVM virtual machine
+      --containers
+          Monitor and apply labels for processes running as containers
+      --mtls
+          Connect to Riemann using mTLS instead of plain TCP
+      --ca <CA_FILE>
+          CA certificate file (.pem format)
+      --cert <CERT_FILE>
+          Client certificate file (.pem format)
+      --key <KEY_FILE>
+          Client RSA key file
+  -h, --help
+          Print help
 ```
+
 With default options values, the metrics are sent to http://localhost:5555 every 5 seconds
 
 Use `--mtls` option to connect to a Riemann server using mTLS. In such case, you must provide the following parameters:
@@ -79,7 +86,8 @@ As a reference here is a Riemann configuration:
 ```
 
 ## Metrics exposed
-Typically the Riemann exporter is working in the same way as the prometheus exporter regarding metrics. Please look at details in [Prometheus exporter](exporter-prometheus.md) documentations.
+
+Metrics provided Scaphandre are documented [here](references/metrics.md).
 
 There is only one exception about `process_power_consumption_microwatts` each process has a service name `process_power_consumption_microwatts_pid_exe`.
 

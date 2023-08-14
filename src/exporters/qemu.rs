@@ -55,6 +55,7 @@ impl QemuExporter {
     pub fn iterate(&mut self, path: String) {
         trace!("path: {}", path);
 
+        self.topology.refresh();
         if let Some(topo_energy) = self.topology.get_records_diff_power_microwatts() {
             let processes = self.topology.proc_tracker.get_alive_processes();
             let qemu_processes = QemuExporter::filter_qemu_vm_processes(&processes);
@@ -79,11 +80,17 @@ impl QemuExporter {
                             * topo_energy.value.parse::<f64>().unwrap()
                             / 100.0;
                         let complete_path = format!("{path}/{vm_name}/intel-rapl:0");
-                        if let Ok(result) =
-                            QemuExporter::add_or_create(&complete_path, uj_to_add as u64)
-                        {
-                            trace!("{:?}", result);
-                            debug!("Updated {}", complete_path);
+                        match QemuExporter::add_or_create(&complete_path, uj_to_add as u64) {
+                            Ok(result) => {
+                                trace!("{:?}", result);
+                                debug!("Updated {}", complete_path);
+                            }
+                            Err(err) => {
+                                error!(
+                                    "Could'nt edit {}. Please check file permissions : {}",
+                                    complete_path, err
+                                );
+                            }
                         }
                     }
                 }

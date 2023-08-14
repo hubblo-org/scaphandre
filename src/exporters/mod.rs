@@ -442,6 +442,23 @@ impl MetricGenerator {
         if !records.is_empty() {
             let record = records.last().unwrap();
             let host_energy_microjoules = record.value.clone();
+            let mut attributes = HashMap::new();
+            if self.topology._sensor_data.contains_key("psys") {
+                attributes.insert(
+                    String::from("value_source"),
+                    String::from("powercap_rapl_psys"),
+                );
+            } else if self.topology._sensor_data.contains_key("source_file") {
+                attributes.insert(
+                    String::from("value_source"),
+                    String::from("powercap_rapl_pkg"),
+                );
+            } else if self.topology._sensor_data.contains_key("DRIVER_NAME") {
+                attributes.insert(
+                    String::from("value_source"),
+                    String::from("scaphandredrv_rapl_pkg"),
+                );
+            }
 
             self.data.push(Metric {
                     name: String::from("scaph_host_energy_microjoules"),
@@ -451,7 +468,7 @@ impl MetricGenerator {
                     hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
-                    attributes: HashMap::new(),
+                    attributes: attributes.clone(),
                     description: String::from(
                         "Energy measurement for the whole host, as extracted from the sensor, in microjoules.",
                     ),
@@ -467,7 +484,7 @@ impl MetricGenerator {
                     hostname: self.hostname.clone(),
                     state: String::from("ok"),
                     tags: vec!["scaphandre".to_string()],
-                    attributes: HashMap::new(),
+                    attributes,
                     description: String::from("Power measurement on the whole host, in microwatts"),
                     metric_value: MetricValueType::Text(power.value),
                 });
@@ -610,6 +627,23 @@ impl MetricGenerator {
             description: String::from("Total swap space on the host, in bytes."),
             metric_value: MetricValueType::Text(metric_value.value),
         });
+
+        if let Some(psys) = self.topology.get_rapl_psys_energy_microjoules() {
+            self.data.push(Metric {
+                name: String::from("scaph_host_rapl_psys_microjoules"),
+                metric_type: String::from("counter"),
+                ttl: 60.0,
+                timestamp: psys.timestamp,
+                hostname: self.hostname.clone(),
+                state: String::from("ok"),
+                tags: vec!["scaphandre".to_string()],
+                attributes: HashMap::new(),
+                description: String::from(
+                    "Raw extract of RAPL PSYS domain energy value, in microjoules",
+                ),
+                metric_value: MetricValueType::Text(psys.value),
+            })
+        }
     }
 
     /// Generate socket metrics.
@@ -617,13 +651,12 @@ impl MetricGenerator {
         let sockets = self.topology.get_sockets_passive();
         for socket in sockets {
             let records = socket.get_records_passive();
+            let mut attributes = HashMap::new();
+            attributes.insert("socket_id".to_string(), socket.id.to_string());
             if !records.is_empty() {
                 let metric = records.last().unwrap();
                 let metric_value = metric.value.clone();
                 let metric_timestamp = metric.timestamp;
-
-                let mut attributes = HashMap::new();
-                attributes.insert("socket_id".to_string(), socket.id.to_string());
 
                 self.data.push(Metric {
                     name: String::from("scaph_socket_energy_microjoules"),
@@ -656,6 +689,23 @@ impl MetricGenerator {
                         metric_value: MetricValueType::Text(socket_power_microwatts.clone()),
                     });
                 }
+            }
+            if let Some(mmio) = socket.get_rapl_mmio_energy_microjoules() {
+                self.data.push(Metric {
+                    name: String::from("scaph_socket_rapl_mmio_energy_microjoules"),
+                    metric_type: String::from("counter"),
+                    ttl: 60.0,
+                    timestamp: mmio.timestamp,
+                    hostname: self.hostname.clone(),
+                    state: String::from("ok"),
+                    tags: vec!["scaphandre".to_string()],
+                    attributes: attributes.clone(),
+                    description: format!(
+                        "Energy counter from RAPL mmio interface for Package-0 of CPU socket {}",
+                        socket.id
+                    ),
+                    metric_value: MetricValueType::Text(mmio.value),
+                });
             }
             for domain in socket.get_domains_passive() {
                 let records = domain.get_records_passive();
@@ -699,6 +749,27 @@ impl MetricGenerator {
                                 "Power measurement relative to a RAPL Domain, in microwatts",
                             ),
                             metric_value: MetricValueType::Text(domain_power_microwatts.clone()),
+                        });
+                    }
+                    let mut mmio_attributes = attributes.clone();
+                    mmio_attributes.insert(
+                        String::from("value_source"),
+                        String::from("powercap_rapl_mmio"),
+                    );
+                    if let Some(mmio) = domain.get_rapl_mmio_energy_microjoules() {
+                        self.data.push(Metric {
+                            name: String::from("scaph_domain_rapl_mmio_energy_microjoules"),
+                            metric_type: String::from("counter"),
+                            ttl: 60.0,
+                            timestamp: mmio.timestamp,
+                            hostname: self.hostname.clone(),
+                            state: String::from("ok"),
+                            tags: vec!["scaphandre".to_string()],
+                            attributes: mmio_attributes,
+                            description: format!(
+                                "Energy counter from RAPL mmio interface for the {} domain, socket {}.", domain.name, socket.id
+                            ),
+                            metric_value: MetricValueType::Text(mmio.value),
                         });
                     }
                 }

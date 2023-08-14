@@ -11,7 +11,7 @@
 
 ---
 
-Scaphandre *[skafɑ̃dʁ]* is a metrology agent dedicated to electrical [power](https://en.wikipedia.org/wiki/Electric_power) consumption metrics. The goal of the project is to permit to any company or individual to **measure** the power consumption of its tech services and get this data in a convenient form, sending it through any monitoring or data analysis toolchain.
+Scaphandre *[skafɑ̃dʁ]* is a metrology agent dedicated to electric [power](https://en.wikipedia.org/wiki/Electric_power) and energy consumption metrics. The goal of the project is to permit to any company or individual to **measure** the power consumption of its tech services and get this data in a convenient form, sending it through any monitoring or data analysis toolchain.
 
 **Scaphandre** means *heavy* **diving suit** in [:fr:](https://fr.wikipedia.org/wiki/Scaphandre_%C3%A0_casque). It comes from the idea that tech related services often don't track their power consumption and thus don't expose it to their clients. Most of the time the reason is a presumed bad [ROI](https://en.wikipedia.org/wiki/Return_on_investment). Scaphandre makes, for tech providers and tech users, easier and cheaper to go under the surface to bring back the desired power consumption metrics, take better sustainability focused decisions, and then show the metrics to their clients to allow them to do the same.
 
@@ -29,12 +29,13 @@ Join us on [Gitter](https://gitter.im/hubblo-org/scaphandre) or [Matrix](https:/
 
 ## ✨ Features
 
-- measuring power consumption on **bare metal hosts**
-- measuring power consumption of **qemu/kvm virtual machines** from the host
-- **exposing** power consumption metrics of a virtual machine, to allow **manipulating those metrics in the VM** as if it was a bare metal machine (relies on hypervisor features)
-- exposing power consumption metrics as a **[prometheus](https://prometheus.io) (HTTP) exporter**
-- sending power consumption metrics to **[riemann](http://riemann.io/)**
-- sending power consumption metrics to **[Warp10](http://warp10.io/)**
+- measuring power/energy consumed on **bare metal hosts**
+- measuring power/energy consumed of **qemu/kvm virtual machines** from the host
+- **exposing** power/energy metrics of a virtual machine, to allow **manipulating those metrics in the VM** as if it was a bare metal machine (relies on hypervisor features)
+- exposing metrics as a **[prometheus](https://prometheus.io) (HTTP) exporter**
+- sending metrics in push mode to a **[prometheus](https://prometheus.io) [Push Gateway](https://github.com/prometheus/pushgateway)**
+- sending metrics to **[riemann](http://riemann.io/)**
+- sending metrics to **[Warp10](http://warp10.io/)**
 - works on **[kubernetes](https://kubernetes.io/)**
 - storing power consumption metrics in a **JSON** file
 - showing basic power consumption metrics **in the terminal**

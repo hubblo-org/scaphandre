@@ -24,3 +24,11 @@
 
 # Used by integration tests
 /integration_tests
+
+# Packaging folder : avoir build artefacts
+packaging/*/BUILD/*
+packaging/*/BUILDROOT/*
+*.rpm
+*.tar.gz
+*.swp
+packaging/*/BUILDROOT/*

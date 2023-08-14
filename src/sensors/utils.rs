@@ -696,7 +696,7 @@ impl ProcessTracker {
                             consumers.pop();
                         }
                     } else {
-                        warn!("Couldn't get process info for {}", pid);
+                        debug!("Couldn't get process info for {}", pid);
                     }
                 }
             }

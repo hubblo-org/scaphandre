@@ -7,6 +7,7 @@ use super::utils::{format_prometheus_metric, get_hostname};
 use crate::exporters::{Exporter, MetricGenerator};
 use crate::sensors::{Sensor, Topology};
 use chrono::Utc;
+use isahc::config::SslOption;
 use isahc::{prelude::*, Request};
 use std::fmt::Write;
 use std::thread;
@@ -35,7 +36,7 @@ pub struct ExporterArgs {
     #[arg(short = 'S', long, default_value_t = String::from("http"))]
     pub scheme: String,
 
-    #[arg(short, long, default_value_t = 5)]
+    #[arg(short, long, default_value_t = 30)]
     pub step: u64,
 
     /// Apply labels to metrics of processes that look like a Qemu/KVM virtual machine
@@ -49,6 +50,10 @@ pub struct ExporterArgs {
     /// Job name to apply as a label for pushed metrics
     #[arg(short, long, default_value_t = String::from("scaphandre"))]
     pub job: String,
+
+    /// Don't verify remote TLS certificate (works with --scheme="https")
+    #[arg(long)]
+    pub no_tls_check: bool,
 }
 
 impl PrometheusPushExporter {
@@ -73,8 +78,13 @@ impl Exporter for PrometheusPushExporter {
         );
 
         let uri = format!(
-            "{}://{}:{}/{}/job/{}",
-            self.args.scheme, self.args.host, self.args.port, self.args.suffix, self.args.job
+            "{}://{}:{}/{}/job/{}/instance/{}",
+            self.args.scheme,
+            self.args.host,
+            self.args.port,
+            self.args.suffix,
+            self.args.job,
+            self.hostname.clone()
         );
 
         let mut metric_generator = MetricGenerator::new(
@@ -87,12 +97,10 @@ impl Exporter for PrometheusPushExporter {
         loop {
             metric_generator.topology.refresh();
             metric_generator.gen_all_metrics();
-            let mut body = String::from(
-                "# HELP mymetric this is my metric\n# TYPE mymetric gauge\nmymetric 50\n",
-            );
+            let mut body = String::from("");
             let mut metrics_pushed: Vec<String> = vec![];
             //let mut counter = 0;
-            for m in metric_generator.pop_metrics() {
+            for mut m in metric_generator.pop_metrics() {
                 let mut should_i_add_help = true;
 
                 if metrics_pushed.contains(&m.name) {
@@ -105,10 +113,15 @@ impl Exporter for PrometheusPushExporter {
                     let _ = write!(body, "# HELP {} {}", m.name, m.description);
                     let _ = write!(body, "\n# TYPE {} {}\n", m.name, m.metric_type);
                 }
-                let mut attributes = None;
-                if !m.attributes.is_empty() {
-                    attributes = Some(&m.attributes);
+                if !&m.attributes.contains_key("instance") {
+                    m.attributes
+                        .insert(String::from("instance"), m.hostname.clone());
                 }
+                if !&m.attributes.contains_key("hostname") {
+                    m.attributes
+                        .insert(String::from("hostname"), m.hostname.clone());
+                }
+                let attributes = Some(&m.attributes);
 
                 let _ = write!(
                     body,
@@ -116,16 +129,23 @@ impl Exporter for PrometheusPushExporter {
                     format_prometheus_metric(&m.name, &m.metric_value.to_string(), attributes)
                 );
             }
-            //warn!("body: {}", body);
-            if let Ok(request) = Request::post(uri.clone())
-                .header("Content-Type", "text/plain")
+
+            let pre_request = Request::post(uri.clone())
                 .timeout(Duration::from_secs(5))
-                .body(body)
-            {
+                .header("Content-Type", "text/plain");
+            let final_request = match self.args.no_tls_check {
+                true => pre_request.ssl_options(
+                    SslOption::DANGER_ACCEPT_INVALID_CERTS
+                        | SslOption::DANGER_ACCEPT_REVOKED_CERTS
+                        | SslOption::DANGER_ACCEPT_INVALID_HOSTS,
+                ),
+                false => pre_request,
+            };
+            if let Ok(request) = final_request.body(body) {
                 match request.send() {
                     Ok(mut response) => {
-                        warn!("Got {:?}", response);
-                        warn!("Response Text {:?}", response.text());
+                        debug!("Got {:?}", response);
+                        debug!("Response Text {:?}", response.text());
                     }
                     Err(err) => {
                         warn!("Got error : {:?}", err)

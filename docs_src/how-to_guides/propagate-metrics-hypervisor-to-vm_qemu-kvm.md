@@ -55,6 +55,6 @@ You can now run scaphandre to export the metrics with the exporter of your choic
 
      scaphandre --vm prometheus
 
-Please refer to the [qemu exporter](docs/exporters/qemu.md) reference for more details.
+Please refer to the [qemu exporter](../references/exporter-qemu.md) reference for more details.
 
 **Note:** This how to is only suitable for a "manual" use case. For all automated systems like openstack or proxmox, some more work needs to be done to make the integration of those steps easier.
