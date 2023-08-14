@@ -1,8 +1,4 @@
 {
-    "project" : {
-      "homepage": "https://scaphandre.hubblo.org",
-      "repository": "https://github.com/hubblo-org/scaphandre"
-    },
     "styles": {
       "theme": "light",
       "favicon": "https://raw.githubusercontent.com/hubblo-org/scaphandre/dev/docs_src/scaphandre.small.cleaned.png"
