@@ -6,6 +6,8 @@
 #define MyAppPublisher "Hubblo"
 #define MyAppURL "https://hubblo-org.github.io/scaphandre-documentation"
 #define MyAppExeName "scaphandre.exe"
+#define MyAppSourceFolder "C:\Users\bpeti\Documents\GitHub\scaphandre"
+#define RaplDriverSourceFolder "C:\Users\bpeti\Documents\GitHub\windows-rapl-driver"
 #define SystemFolder "C:\Windows\System32"
 #define System64Folder "C:\Windows\SysWOW64"
 
@@ -22,34 +24,34 @@ AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
-LicenseFile=../../LICENSE
+LicenseFile=C:\Users\bpeti\Documents\GitHub\scaphandre\LICENSE
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
-OutputBaseFilename={#MyAppName}_installer
+OutputBaseFilename={#MyAppName}_{#MyAppVersion}_installer
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 Uninstallable=yes
-SetupIconFile=../../docs_src/scaphandre.ico
+SetupIconFile=C:\Users\bpeti\Documents\GitHub\scaphandre\docs_src\scaphandre.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "../../target/release/{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "../../DriverLoader.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "../../ScaphandreDrv.inf"; DestDir: "{app}"; Flags: ignoreversion
-; Source: "../../ScaphandreDrv.sys"; DestDir: "{#SystemFolder}";
-; Source: "../../ScaphandreDrv.sys"; DestDir: "{#System64Folder}";
-Source: "../../ScaphandreDrv.sys"; DestDir: "{app}";
-Source: "../../ScaphandreDrv.cat"; DestDir: "{app}";
-; Source: "../../ScaphandreDrv.cat"; DestDir: "{#SystemFolder}";
-; Source: "../../ScaphandreDrv.cat"; DestDir: "{#System64Folder}";
-Source: "../../devcon.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "../../certmgr.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "../../README.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "../../CHANGELOG.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "../../ScaphandreDrvTest.cer"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyAppSourceFolder}\target\release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#RaplDriverSourceFolder}\x64\Release\DriverLoader.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.inf"; DestDir: "{app}"; Flags: ignoreversion
+; Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.sys"; DestDir: "{#SystemFolder}";
+; Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.sys"; DestDir: "{#System64Folder}";
+Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.sys"; DestDir: "{app}";
+Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.cat"; DestDir: "{app}";
+; Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.cat"; DestDir: "{#SystemFolder}";
+; Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.cat"; DestDir: "{#System64Folder}";
+Source: "C:\Program Files (x86)\Windows Kits\10\Tools\10.0.22621.0\x64\devcon.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\certmgr.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyAppSourceFolder}\README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyAppSourceFolder}\CHANGELOG.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#RaplDriverSourceFolder}\ScaphandreDrvTest.cer"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
@@ -62,6 +64,7 @@ Filename: "{app}/devcon.exe"; Parameters: "enable {app}\ScaphandreDrv.inf root\S
 Filename: "{app}/DriverLoader.exe"; Parameters: "install"; WorkingDir: "{app}"; Description: "Install Driver Service";
 Filename: "{app}/DriverLoader.exe"; Parameters: "start"; WorkingDir: "{app}"; Description: "Start Driver Service"; 
 ; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}";
+; Filename: "schtasks.exe"; Parameters: "/Create /SC ONSTART {app}\scaphandre.exe prometheus-push "
 
 [UninstallRun]
 Filename: "{app}/DriverLoader.exe"; Parameters: "stop"; WorkingDir: "{app}"; RunOnceId: "StopService";
