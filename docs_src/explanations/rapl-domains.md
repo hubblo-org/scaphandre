@@ -1,72 +1,14 @@
-# Explanation on RAPL domains (what we know so far)
+# Explanation on RAPL / Running Average Power Limit domains: what we (think we) know so far
 
-## PSYS
-
-[Kepler documentation](https://sustainable-computing.io/design/metrics/) says PSYS "is the energy consumed by the "System on a chipt" (SOC)."
-"Generally, this metric is the host energy consumption (from acpi)." but also "Generally, this metric is the **host energy consumption (from acpi) less the RAPL Package and DRAM**."
-
-[https://zhenkai-zhang.github.io/papers/rapl.pdf](https://zhenkai-zhang.github.io/papers/rapl.pdf) says
-Microarchitecture 	Package 	CORE (PP0) 	UNCORE (PP1) 	DRAM
-Haswell 	Y/Y 	Y/N 	Y/N 	Y/Y
-Broadwell 	Y/Y 	Y/N 	Y/N 	Y/Y
-Skylake 	Y/Y 	Y/Y 	Y/N 	Y/Y
-Kaby Lake 	Y/Y 	Y/Y 	Y/N 	Y/Y
-
-
-[https://www.arcsi.fr/doc/platypus.pdf](https://www.arcsi.fr/doc/platypus.pdf) says PSYS is "covering the entire SoC.".
-
-http://www.micheledellipaoli.com/documents/EnergyConsumptionAnalysis.pdf says
-"PSys: (introduced with Intel Skylake) monitors and con-
-trols the thermal and power specifications of the entire
-SoC and it is useful especially when the source of the
-power consumption is neither the CPU nor the GPU. For
-multi-socket server systems, each socket reports its own
-RAPL values."
-
-https://hal.science/hal-03809858/document says
-"PSys. Domain available on some Intel architectures, to monitor and control the thermal
-and power specifications of the entire system on the chip (SoC), instead of just CPU or
-GPU. It includes the power consumption of the package domain, System Agent, PCH,
-eDRAM, and a few more domains on a single-socket SoC"
+RAPL stands for "Running Average Power Limit", it is a feature on Intel/AMD x86 CPU's (manufactured after 2012) that allows to set limits on power used by the CPU and other components. This feature also allows to just get "measurements" (mind the double quotes, as at least part of the numbers RAPL gives are coming from estimations/modeling) of components power usage.
 
 ![RAPL domains](rapl.png)
 
-https://github.com/hubblo-org/scaphandre/issues/116
-https://github.com/hubblo-org/scaphandre/issues/241
-https://github.com/hubblo-org/scaphandre/issues/140
-https://github.com/hubblo-org/scaphandre/issues/289
-https://github.com/hubblo-org/scaphandre/issues/117
-https://github.com/hubblo-org/scaphandre/issues/25
-https://github.com/hubblo-org/scaphandre/issues/316
-https://github.com/hubblo-org/scaphandre/issues/318
+It is composed of "domains", that, in 2023, may include:
+- **Core/PP0**: Energy consumed by the CPU Cores themselves.
+- **Uncore/PP1**: Energy consumed by components close to the CPU : most of the time it means the embedded GPU chipset. 
+- **Dram**: Energy consumed by the memory/RAM sticks
+- **Package/PKG**: Includes "Core" and "Uncore". In some documentations and in some of our experiments it seem to include "Dram", but this doesn't seem true in every cases.
+- **PSys**: We don't have a clear understanding on this one (yet). But most documentations refer to it with words similar to "PSys: (introduced with Intel Skylake) monitors and controls the thermal and power specifications of the entire SoC and it is useful especially when the source of the power consumption is neither the CPU nor the GPU. For multi-socket server systems, each socket reports its own RAPL values.". To summarize, Psys seems like an interesting metric to get energy consumed by a motherboard and connected components (which includes RAPL usual suspects but also WiFi/Bluetooth cards and probably more). If you want to know more about this metric, we gathered references/sources [here](https://github.com/bpetit/awesome-energy/tree/master#rapl-psys-domain). If you want to help us understanding and documenting better this metric, please consider constributing to the [Energizta project](https://github.com/Boavizta/Energizta/).
 
-PSYS MSR is "MSR_PLATFORM_ENERGY_STATUS" 
-https://copyprogramming.com/howto/perf-power-consumption-measure-how-does-it-work
-
-https://pyjoules.readthedocs.io/en/stable/devices/intel_cpu.html
-
-Problems of RAPL on Saphire Rapids
-https://community.intel.com/t5/Software-Tuning-Performance/RAPL-quirks-on-Sapphire-Rapids/td-p/1446761
-
-Misc info on RAPL
-https://web.eece.maine.edu/~vweaver/projects/rapl/
-
-PSYS MSR have a different layout than PKG and dram
-https://patchwork.kernel.org/project/linux-pm/patch/20211207131734.2607104-1-rui.zhang@intel.com/
-
-https://edc.intel.com/content/www/us/en/design/ipla/software-development-platforms/client/platforms/alder-lake-desktop/12th-generation-intel-core-processors-datasheet-volume-1-of-2/010/power-management/ ==> intel doc avout thermal and power management
-https://edc.intel.com/content/www/us/en/design/ipla/software-development-platforms/client/platforms/alder-lake-desktop/12th-generation-intel-core-processors-datasheet-volume-1-of-2/002/platform-power-control/ ==> about psys
-
-https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html ==> intel software developer manual
-
-CVE-8694/8695 and mitigation by intel
-https://www.intel.com/content/www/us/en/developer/articles/technical/software-security-guidance/advisory-guidance/running-average-power-limit-energy-reporting.html
-
-Patch in the kernel
-https://groups.google.com/g/linux.kernel/c/x_7RbqcrxAs
-Patch in powercap
-https://lkml.iu.edu/hypermail/linux/kernel/1603.2/02415.html
-https://lkml.kernel.org/lkml/1460930581-29748-1-git-send-email-srinivas.pandruvada@linux.intel.com/T/
-
-Random
-https://stackoverflow.com/questions/55956287/perf-power-consumption-measure-how-does-it-work
+RAPL documentation from Intel doesn't necessarily give very precise informations about how RAPL behaves depending on the platform, or about what is included in the calculation. Actively looking for other experimentations/feedbacks/documentations is needed. You might find some informations gathered here: [awesome-energy](https://github.com/bpetit/awesome-energy#rapl). If you have more or more precise informations and are willing to contribute, don't hesitate to open a PR to dev branch on [scaphandre's repository](https://github.com/hubblo-org/scaphandre/tree/dev) (targeting [docs_src folder](https://github.com/hubblo-org/scaphandre/tree/dev/docs_src)) and/or the [awesome-energy](https://github.com/bpetit/awesome-energy) repository.
