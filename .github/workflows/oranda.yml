@@ -30,7 +30,7 @@ on:
   # If you only want docs to update with releases, disable this one.
   push:
     branches:
-      - dev
+      - main
   
   # Whenever a workflow called "Release" completes, update the docs!
   #
@@ -75,7 +75,7 @@ jobs:
       - name: Deploy to Github Pages
         uses: JamesIves/github-pages-deploy-action@v4.4.1
         # ONLY if we're on dev (so no PRs or feature branches allowed!)
-        if: ${{ github.ref == 'refs/heads/dev' }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         with:
           branch: gh-pages
           # Gotta tell the action where to find oranda's output
