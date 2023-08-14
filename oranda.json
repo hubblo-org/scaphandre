@@ -1,22 +1,18 @@
 {
-  "project" : {
-    "homepage": "https://scaphandre.hubblo.org",
-    "repository": "https://github.com/hubblo-org/scaphandre"
-  },
-  "styles": {
-    "theme": "light",
-    "favicon": "https://raw.githubusercontent.com/hubblo-org/scaphandre/dev/docs_src/scaphandre.small.cleaned.png"
-  },
-  "marketing": {
-    "social": {
-      "image_alt": "Hubblo's twitter/x account",
-      "twitter_account": "@HubbloOrg"
+    "styles": {
+      "theme": "light",
+      "favicon": "https://raw.githubusercontent.com/hubblo-org/scaphandre/dev/docs_src/scaphandre.small.cleaned.png"
+    },
+    "marketing": {
+      "social": {
+        "image_alt": "Hubblo's twitter/x account",
+        "twitter_account": "@HubbloOrg"
+      }
+    },
+    "components": {
+      "changelog": true,
+      "funding": {
+          "preferred_funding": "github"
+      }
     }
-  },
-  "components": {
-    "changelog": true,
-    "funding": {
-        "preferred_funding": "github"
-    }
-  }
 }

@@ -1,7 +1,7 @@
 # Qemu exporter
 
 Computes energy consumption metrics for each Qemu/KVM virtual machine found on the host.
-Exposes those metrics as filetrees compatible with the [powercap_rapl sensor](../sensors/powercap_rapl.md).
+Exposes those metrics as filetrees compatible with the [powercap_rapl sensor](sensor-powercap_rapl.md).
 
 Note that this is still experimental. Metrics are already considered trustworthy, but there are discussions and tests to be performed about the acceptable ways to share the data with the guests/vms. Any feedback or thoughts about this are welcome. Please refer to the [contributing section](../contributing.md).
 

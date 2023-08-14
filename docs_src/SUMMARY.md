@@ -38,6 +38,7 @@
 
 ## Sensors
 
+- [MSR_RAPL sensor](references/sensor-msr_rapl.md)
 - [PowercapRAPL sensor](references/sensor-powercap_rapl.md)
 - [MSRRAPL sensor](references/sensor-msr_rapl.md)
 

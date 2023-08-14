@@ -1,12 +1,12 @@
 # Getting started
 
 To install Scaphandre, depending on your platform, see:
-+ [Installation on GNU/Linux](installation_linux.md) section.
-+ [Installation on Windows](installation_windows.md) section.
++ [Installation on GNU/Linux](installation-linux.md) section.
++ [Installation on Windows](installation-windows.md) section.
 
 If you want to contribute or just play with the code and need to compile Scaphandre, see :
-+ [Compilation on GNU/Linux](compilation_linux.md).
-+ [Compilation on Windows](compilation_windows.md).
++ [Compilation on GNU/Linux](compilation-linux.md).
++ [Compilation on Windows](compilation-windows.md).
 
 Depending on your kernel version, you could need to modprobe the module intel_rapl or intel_rapl_common first:
 
@@ -58,7 +58,7 @@ If you don't get this output and get an error, jump to the [Troubleshooting](../
 
 At that point, you're ready to use scaphandre. The Stdout exporter is very basic and other exporters should allow you to use and send those metrics the way you like.
 
-The [prometheus exporter](references/exporter-prometheus.md), for example, allows you to expose power consumption metrics as an HTTP endpoint that can be scrapped by a [prometheus](https://prometheus.io) instance:
+The [prometheus exporter](../references/exporter-prometheus.md), for example, allows you to expose power consumption metrics as an HTTP endpoint that can be scrapped by a [prometheus](https://prometheus.io) instance:
 
     docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -p 8080:8080 -ti hubblo/scaphandre prometheus
 

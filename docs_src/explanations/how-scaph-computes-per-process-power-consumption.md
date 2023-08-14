@@ -16,7 +16,7 @@ This is easy to understand, and it matches how we might be billed for a share of
 
 #### Timesharing of work
 
-However, if the reality was _exactly_ like this diagram, our computers would only ever be able to do one thing at a time. It's more accurate and helpful to think of computers working on lots of different jobs at the same time - they work on one job for short interval of time, then another, and another and so one. You'll often see these small intervals of time referred to as _[jiffies](https://www.anshulpatel.in/post/linux_cpu_percentage/)_.
+However, if the reality was _exactly_ like this diagram, our computers would only ever be able to do one thing at a time. It's more accurate and helpful to think of computers working on lots of different jobs at the same time - they work on one job for short interval of time, then another, and another and so one. You'll often see these small intervals of time referred to as _[jiffies](https://www.anshulpatel.in/posts/linux_cpu_percentage/)_.
 
 ![work on jobs is split into jiffies](../img/jiffies.png)
 
