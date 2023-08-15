@@ -75,9 +75,9 @@ jobs:
           Import-Module AWS.Tools.Installer
           Install-AWSToolsModule AWS.Tools.EC2,AWS.Tools.S3 -CleanUp -Confirm:$False
           Set-AWSCredential -AccessKey ${{ secrets.S3_ACCESS_KEY_ID }} -SecretKey ${{ secrets.S3_SECRET_ACCESS_KEY }} -StoreAs default
-          mv packaging/windows/Output/scaphandre_installer.exe scaphandre_${{ env.GITHUB_REF_NAME }}_installer.exe
+          mv packaging/windows/Output/scaphandre_installer.exe scaphandre_${{ github.ref.name }}_installer.exe
           $clientconfig=@{
             SignatureVersion="s3v4"
             ServiceUrl="https://s3.fr-par.scw.cloud"
           }          
-          Write-S3Object -EndpointUrl "https://s3.fr-par.scw.cloud" -Region "fr-par" -BucketName "scaphandre" -File scaphandre_${{ env.GITHUB_REF_NAME }}_installer.exe -key "x86_64/scaphandre_${GITHUB_REF_NAME}_installer.exe" -PublicReadOnly -ClientConfig $clientconfig
+          Write-S3Object -EndpointUrl "https://s3.fr-par.scw.cloud" -Region "fr-par" -BucketName "scaphandre" -File scaphandre_${{ env.GITHUB_REF_NAME }}_installer.exe -key "x86_64/scaphandre_${{ github.ref.name }}_installer.exe" -PublicReadOnly -ClientConfig $clientconfig
