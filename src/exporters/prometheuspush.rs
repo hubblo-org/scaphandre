@@ -3,6 +3,7 @@
 //! `PrometheusPushExporter` implementation, push/send metrics to
 //! a [Prometheus](https://prometheus.io/) pushgateway.
 //!
+
 use super::utils::{format_prometheus_metric, get_hostname};
 use crate::exporters::{Exporter, MetricGenerator};
 use crate::sensors::{Sensor, Topology};
