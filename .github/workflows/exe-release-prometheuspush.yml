@@ -79,6 +79,5 @@ jobs:
           $clientconfig=@{
             SignatureVersion="s3v4"
             ServiceUrl="https://s3.fr-par.scw.cloud"
-            S3Region="fr-par"
           }          
           Write-S3Object -EndpointUrl "https://s3.fr-par.scw.cloud" -Region "fr-par" -BucketName "scaphandre" -File scaphandre_${GITHUB_REF_NAME}_installer.exe -key "x86_64/scaphandre_${GITHUB_REF_NAME}_installer.exe" -PublicReadOnly -ClientConfig $clientconfig
