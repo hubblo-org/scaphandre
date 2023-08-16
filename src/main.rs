@@ -133,36 +133,36 @@ fn run_service(_arguments: Vec<OsString>) -> Result<()> {
             _ => ServiceControlHandlerResult::NotImplemented,
         }
     };
-    if ! stop {
-        if let Ok(system_handler) = service_control_handler::register("Scaphandre", event_handler) {
-            let next_status = ServiceStatus {
-                // Should match the one from system service registry
-                service_type: ServiceType::OWN_PROCESS,
-                // The new state
-                current_state: ServiceState::Running,
-                // Accept stop events when running
-                controls_accepted: ServiceControlAccept::STOP,
-                // Used to report an error when starting or stopping only, otherwise must be zero
-                exit_code: ServiceExitCode::Win32(0),
-                // Only used for pending states, otherwise must be zero
-                checkpoint: 0,
-                // Only used for pending states, otherwise must be zero
-                wait_hint: Duration::default(),
-                // Unused for setting status
-                process_id: None,
-            };
-
-            // Tell the system that the service is running now
-            if let Ok(_status_set) = system_handler.set_service_status(next_status) {
-                parse_cli_and_run_exporter();
-            } else {
-                panic!("Couldn't set Windows service status.");
-            }
+    if let Ok(system_handler) = service_control_handler::register("Scaphandre", event_handler) {
+        let mut next_status = ServiceStatus {
+            // Should match the one from system service registry
+            service_type: ServiceType::OWN_PROCESS,
+            // The new state
+            current_state: ServiceState::Running,
+            // Accept stop events when running
+            controls_accepted: ServiceControlAccept::STOP,
+            // Used to report an error when starting or stopping only, otherwise must be zero
+            exit_code: ServiceExitCode::Win32(0),
+            // Only used for pending states, otherwise must be zero
+            checkpoint: 0,
+            // Only used for pending states, otherwise must be zero
+            wait_hint: Duration::default(),
+            // Unused for setting status
+            process_id: None,
+        };
+        if stop {
+            next_status.current_state = ServiceState::StopPending;
+            next_status.exit_code = ServiceExitCode::Win32(0);
+            next_status.wait_hint = Duration::from_secs(1);
+        }
+        // Tell the system that the service is running now
+        if let Ok(_status_set) = system_handler.set_service_status(next_status) {
+            parse_cli_and_run_exporter();
         } else {
-            panic!("Couldn't get Windows system events handler.");
+            panic!("Couldn't set Windows service status.");
         }
     } else {
-        panic!("Service has been stopped !");
+        panic!("Couldn't get Windows system events handler.");
     }
     Ok(())
 }
