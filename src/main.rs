@@ -3,6 +3,7 @@
 use clap::{command, ArgAction, Parser, Subcommand};
 use colored::Colorize;
 use scaphandre::{exporters, sensors::Sensor};
+use std::sync::mpsc::{self, Receiver};
 
 #[cfg(target_os = "linux")]
 use scaphandre::sensors::powercap_rapl;
@@ -112,20 +113,19 @@ enum ExporterChoice {
 
 #[cfg(target_os = "windows")]
 fn my_service_main(arguments: Vec<OsString>) {
-    if let Err(_e) = run_service(arguments) {
-        // Handle errors in some way.
-
+    if let Err(e) = run_service(arguments) {
+        panic!("{:?}", e);
     }
 }
 
 #[cfg(target_os = "windows")]
 fn run_service(_arguments: Vec<OsString>) -> Result<()> {
-    let mut stop = false;
+    let (tx, rx) = mpsc::channel();
     let event_handler = move |control_event| -> ServiceControlHandlerResult {
         match control_event {
             ServiceControl::Stop => {
                 // Handle stop event and return control back to the system.
-                stop = true;
+                let _ = tx.send(1);
                 ServiceControlHandlerResult::NoError
             }
             // All services must accept Interrogate even if it's a no-op.
@@ -134,7 +134,7 @@ fn run_service(_arguments: Vec<OsString>) -> Result<()> {
         }
     };
     if let Ok(system_handler) = service_control_handler::register("Scaphandre", event_handler) {
-        let mut next_status = ServiceStatus {
+        let next_status = ServiceStatus {
             // Should match the one from system service registry
             service_type: ServiceType::OWN_PROCESS,
             // The new state
@@ -150,17 +150,31 @@ fn run_service(_arguments: Vec<OsString>) -> Result<()> {
             // Unused for setting status
             process_id: None,
         };
-        if stop {
-            next_status.current_state = ServiceState::StopPending;
-            next_status.exit_code = ServiceExitCode::Win32(0);
-            next_status.wait_hint = Duration::from_secs(1);
-        }
+           // next_status.current_state = ServiceState::StopPending;
+           // next_status.exit_code = ServiceExitCode::Win32(0);
+           // next_status.wait_hint = Duration::from_secs(1);
         // Tell the system that the service is running now
         if let Ok(_status_set) = system_handler.set_service_status(next_status) {
-            parse_cli_and_run_exporter();
+            parse_cli_and_run_exporter(&rx);
         } else {
             panic!("Couldn't set Windows service status.");
         }
+
+        let stop_status = ServiceStatus {
+            service_type: ServiceType::OWN_PROCESS,
+            current_state: ServiceState::Stopped,
+            controls_accepted: ServiceControlAccept::STOP,
+            exit_code: ServiceExitCode::Win32(0),
+            checkpoint: 0,
+            wait_hint: Duration::default(),
+            process_id: None
+        };
+        
+        if let Ok(_status_set) = system_handler.set_service_status(stop_status) {
+        } else {
+            panic!("Couldn't set Windows service STOP status.");
+        }
+
     } else {
         panic!("Couldn't get Windows system events handler.");
     }
@@ -176,10 +190,12 @@ fn main() {
         }
     }
 
-    parse_cli_and_run_exporter();
+    let (_, rx) = mpsc::channel();
+
+    parse_cli_and_run_exporter(&rx);
 }
 
-fn parse_cli_and_run_exporter() {
+fn parse_cli_and_run_exporter(channel: &Receiver<u8>) {
     let cli = Cli::parse();
     loggerv::init_with_verbosity(cli.verbose.into()).expect("unable to initialize the logger");
 
@@ -189,7 +205,7 @@ fn parse_cli_and_run_exporter() {
         print_scaphandre_header(exporter.kind());
     }
 
-    exporter.run();
+    exporter.run(channel);
 }
 
 fn build_exporter(choice: ExporterChoice, sensor: &dyn Sensor) -> Box<dyn exporters::Exporter> {

@@ -72,7 +72,7 @@ impl PrometheusExporter {
 
 impl Exporter for PrometheusExporter {
     /// Starts an HTTP server to expose the metrics in Prometheus format.
-    fn run(&mut self) {
+    fn run(&mut self, channel: Receiver<u8>) {
         info!(
             "{}: Starting Prometheus exporter",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
