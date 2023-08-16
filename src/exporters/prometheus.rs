@@ -18,6 +18,7 @@ use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::{Arc, Mutex},
     time::Duration,
+    sync::mpsc::Receiver
 };
 
 /// Default ipv4/ipv6 address to expose the service is any
@@ -72,7 +73,7 @@ impl PrometheusExporter {
 
 impl Exporter for PrometheusExporter {
     /// Starts an HTTP server to expose the metrics in Prometheus format.
-    fn run(&mut self, channel: Receiver<u8>) {
+    fn run(&mut self, channel: &Receiver<u8>) {
         info!(
             "{}: Starting Prometheus exporter",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")

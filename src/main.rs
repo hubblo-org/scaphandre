@@ -4,6 +4,7 @@ use clap::{command, ArgAction, Parser, Subcommand};
 use colored::Colorize;
 use scaphandre::{exporters, sensors::Sensor};
 use std::sync::mpsc::{self, Receiver};
+use std::thread;
 
 #[cfg(target_os = "linux")]
 use scaphandre::sensors::powercap_rapl;
@@ -155,7 +156,9 @@ fn run_service(_arguments: Vec<OsString>) -> Result<()> {
            // next_status.wait_hint = Duration::from_secs(1);
         // Tell the system that the service is running now
         if let Ok(_status_set) = system_handler.set_service_status(next_status) {
-            parse_cli_and_run_exporter(&rx);
+            let handle = thread::spawn(move || {
+                parse_cli_and_run_exporter(&rx);
+            });
         } else {
             panic!("Couldn't set Windows service status.");
         }

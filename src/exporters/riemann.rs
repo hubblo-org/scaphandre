@@ -169,7 +169,7 @@ impl RiemannExporter {
 
 impl Exporter for RiemannExporter {
     /// Entry point of the RiemannExporter.
-    fn run(&mut self, channel: Receiver<u8>) {
+    fn run(&mut self, channel: &Receiver<u8>) {
         info!(
             "{}: Starting Riemann exporter",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
