@@ -387,7 +387,7 @@ impl ProcessTracker {
     /// Returns all vectors of process records linked to a running, sleeping, waiting or zombie process.
     /// (Not terminated)
     pub fn get_alive_processes(&self) -> Vec<&Vec<ProcessRecord>> {
-        debug!("In get alive processes.");
+        trace!("In get alive processes.");
         let mut res = vec![];
         for p in self.procs.iter() {
             //#[cfg(target_os = "linux")]
@@ -412,7 +412,7 @@ impl ProcessTracker {
                 }
             }
         }
-        debug!("End of get alive processes.");
+        trace!("End of get alive processes.");
         res
     }
 
@@ -632,7 +632,6 @@ impl ProcessTracker {
         if result.next().is_some() {
             panic!("Found two vectors of processes with the same id, maintainers should fix this.");
         }
-        debug!("End of get process name.");
         process.get(0).unwrap().process.comm.clone()
     }
 
@@ -652,11 +651,9 @@ impl ProcessTracker {
                         cmdline.push_str(&cmdline_vec.remove(0));
                     }
                 }
-                debug!("End of get process cmdline.");
                 return Some(cmdline);
             }
         }
-        debug!("End of get process cmdline.");
         None
     }
 

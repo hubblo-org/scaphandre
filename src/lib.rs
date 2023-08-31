@@ -27,7 +27,9 @@ pub fn get_default_sensor() -> impl sensors::Sensor {
     );
 
     #[cfg(target_os = "windows")]
-    return msr_rapl::MsrRAPLSensor::new();
+    return msr_rapl::MsrRAPLSensor::new(
+        1
+    );
 }
 
 fn current_system_time_since_epoch() -> Duration {

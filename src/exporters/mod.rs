@@ -900,7 +900,7 @@ impl MetricGenerator {
 
     /// Generate process metrics.
     fn gen_process_metrics(&mut self) {
-        debug!("In gen_process_metrics.");
+        trace!("In gen_process_metrics.");
         #[cfg(feature = "containers")]
         if self.watch_containers {
             let now = current_system_time_since_epoch().as_secs().to_string();
@@ -1043,7 +1043,7 @@ impl MetricGenerator {
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
         );
         self.gen_process_metrics();
-        debug!("self_metrics: {:#?}", self.data);
+        trace!("self_metrics: {:#?}", self.data);
     }
 
     pub fn pop_metrics(&mut self) -> Vec<Metric> {

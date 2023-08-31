@@ -12,18 +12,27 @@ use windows::Win32::Storage::FileSystem::{
 use windows::Win32::System::Ioctl::{FILE_DEVICE_UNKNOWN, METHOD_BUFFERED};
 use windows::Win32::System::IO::DeviceIoControl;
 
-const MSR_RAPL_POWER_UNIT: u16 = 0x606; //
-                                        //const MSR_PKG_POWER_LIMIT: u16 = 0x610; // PKG RAPL Power Limit Control (R/W) See Section 14.7.3, Package RAPL Domain.
-const MSR_PKG_ENERGY_STATUS: u16 = 0x611;
-//const MSR_PKG_POWER_INFO: u16 = 0x614;
-//const MSR_DRAM_ENERGY_STATUS: u16 = 0x619;
-//const MSR_PP0_ENERGY_STATUS: u16 = 0x639; //PP0 Energy Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
-//const MSR_PP0_PERF_STATUS: u16 = 0x63b; // PP0 Performance Throttling Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
-//const MSR_PP0_POLICY: u16 = 0x63a; //PP0 Balance Policy (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
-//const MSR_PP0_POWER_LIMIT: u16 = 0x638; // PP0 RAPL Power Limit Control (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
-//const MSR_PP1_ENERGY_STATUS: u16 = 0x641; // PP1 Energy Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
-//const MSR_PP1_POLICY: u16 = 0x642; // PP1 Balance Policy (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
-//const MSR_PP1_POWER_LIMIT: u16 = 0x640; // PP1 RAPL Power Limit Control (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
+// Intel RAPL MSRs
+const MSR_RAPL_POWER_UNIT: u32 = 0x606; //
+const MSR_PKG_POWER_LIMIT: u32 = 0x610; // PKG RAPL Power Limit Control (R/W) See Section 14.7.3, Package RAPL Domain.
+const MSR_PKG_ENERGY_STATUS: u32 = 0x611;
+const MSR_PKG_POWER_INFO: u32 = 0x614;
+const MSR_DRAM_ENERGY_STATUS: u32 = 0x619;
+const MSR_PP0_ENERGY_STATUS: u32 = 0x639; //PP0 Energy Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
+const MSR_PP0_PERF_STATUS: u32 = 0x63b; // PP0 Performance Throttling Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
+const MSR_PP0_POLICY: u32 = 0x63a; //PP0 Balance Policy (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
+const MSR_PP0_POWER_LIMIT: u32 = 0x638; // PP0 RAPL Power Limit Control (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
+const MSR_PP1_ENERGY_STATUS: u32 = 0x641; // PP1 Energy Status (R/O) See Section 14.7.4, PP0/PP1 RAPL Domains.
+const MSR_PP1_POLICY: u32 = 0x642; // PP1 Balance Policy (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
+const MSR_PP1_POWER_LIMIT: u32 = 0x640; // PP1 RAPL Power Limit Control (R/W) See Section 14.7.4, PP0/PP1 RAPL Domains.
+const MSR_PLATFORM_ENERGY_STATUS: u32 = 0x0000064d;
+const MSR_PLATFORM_POWER_LIMIT: u32 = 0x0000065c ;
+
+// AMD RAPL MSRs
+const MSR_AMD_RAPL_POWER_UNIT: u32 = 0xc0010299;
+const MSR_AMD_CORE_ENERGY_STATUS: u32 = 0xc001029a;
+const MSR_AMD_PKG_ENERGY_STATUS: u32 = 0xc001029b;
+
 
 unsafe fn ctl_code(device_type: u32, request_code: u32, method: u32, access: u32) -> u32 {
     ((device_type) << 16) | ((access) << 14) | ((request_code) << 2) | (method)
@@ -67,16 +76,17 @@ pub struct MsrRAPLSensor {
     power_unit: f64,
     energy_unit: f64,
     time_unit: f64,
+    nb_cpu_sockets: u16
 }
 
 impl Default for MsrRAPLSensor {
     fn default() -> Self {
-        Self::new()
+        Self::new(1)
     }
 }
 
 impl MsrRAPLSensor {
-    pub fn new() -> MsrRAPLSensor {
+    pub fn new(nb_cpu_sockets: u16) -> MsrRAPLSensor {
         let driver_name = "\\\\.\\ScaphandreDriver";
 
         let mut power_unit: f64 = 1.0;
@@ -114,6 +124,7 @@ impl MsrRAPLSensor {
             energy_unit,
             power_unit,
             time_unit,
+            nb_cpu_sockets
         }
     }
 
@@ -159,18 +170,30 @@ impl MsrRAPLSensor {
 
 impl RecordReader for Topology {
     fn read_record(&self) -> Result<Record, Box<dyn Error>> {
-        let randval: i32 = rand::random();
+        let mut res: u64 = 0;
+        warn!("Topology: I have {} sockets", self.sockets.len());
+        for s in &self.sockets {
+            match s.read_record() {
+                Ok(rec) => {
+                    warn!("rec: {:?}", rec);
+                    res = res + rec.value.parse::<u64>()?;
+                },
+                Err(e) => {
+                    error!("Failed to get socket record : {:?}", e);
+                }
+            }
+        }
         Ok(Record {
             timestamp: current_system_time_since_epoch(),
             unit: super::units::Unit::MicroJoule,
-            value: format!("{}", randval),
+            value: res.to_string(),
         })
     }
 }
 
 unsafe fn send_request(
     device: HANDLE,
-    request_code: u16,
+    request_code: u32,
     request: *const u64,
     request_length: usize,
     reply: *mut u64,
@@ -180,7 +203,7 @@ unsafe fn send_request(
     let len_ptr: *mut u32 = &mut len;
 
     if DeviceIoControl(
-        device, // envoi 8 octet et je recoi 8 octet
+        device, // send 8 bytes, receive 8 bytes
         crate::sensors::msr_rapl::ctl_code(
             FILE_DEVICE_UNKNOWN,
             request_code as _,
@@ -213,61 +236,65 @@ impl RecordReader for CPUSocket {
     fn read_record(&self) -> Result<Record, Box<dyn Error>> {
         unsafe {
             let driver_name = self.sensor_data.get("DRIVER_NAME").unwrap();
-            if let Ok(device) = get_handle(driver_name) {
-                let mut msr_result: u64 = 0;
-                let ptr_result = &mut msr_result as *mut u64;
-                let mut src = MSR_RAPL_POWER_UNIT as u64;
-                let ptr = &src as *const u64;
+            match get_handle(driver_name) {
+                Ok(device) => {
+                    let mut msr_result: u64 = 0;
+                    let ptr_result = &mut msr_result as *mut u64;
+                    // get core numbers tied to the socket
+                    let src = MSR_PKG_ENERGY_STATUS as u64;
+                    let ptr = &src as *const u64;
+                
+                    trace!("src: {:x}", src);
+                    trace!("src: {:b}", src);
 
-                src = MSR_PKG_ENERGY_STATUS as u64;
-                trace!("src: {:x}", src);
-                trace!("src: {:b}", src);
+                    trace!("*ptr: {}", *ptr);
+                    trace!("&request: {:?} ptr (as *const u8): {:?}", &src, ptr);
 
-                trace!("*ptr: {}", *ptr);
-                trace!("&request: {:?} ptr (as *const u8): {:?}", &src, ptr);
+                    match send_request(
+                        device,
+                        MSR_PKG_ENERGY_STATUS,
+                        // nouvelle version à integrer : request_code est ignoré et request doit contenir
+                        // request_code sous forme d'un char *
+                        ptr,
+                        8,
+                        ptr_result,
+                        size_of::<u64>(),
+                    ) {
+                        Ok(res) => {
+                            debug!("{}", res);
 
-                if let Ok(res) = send_request(
-                    device,
-                    MSR_PKG_ENERGY_STATUS,
-                    // nouvelle version à integrer : request_code est ignoré et request doit contenir
-                    // request_code sous forme d'un char *
-                    ptr,
-                    8,
-                    ptr_result,
-                    size_of::<u64>(),
-                ) {
-                    debug!("{}", res);
+                            close_handle(device);
 
-                    close_handle(device);
+                            let energy_unit = self
+                                .sensor_data
+                                .get("ENERGY_UNIT")
+                                .unwrap()
+                                .parse::<f64>()
+                                .unwrap();
 
-                    let energy_unit = self
-                        .sensor_data
-                        .get("ENERGY_UNIT")
-                        .unwrap()
-                        .parse::<f64>()
-                        .unwrap();
+                            let current_power = MsrRAPLSensor::extract_rapl_current_power(msr_result, energy_unit);
+                            warn!("current_power: {}", current_power);
 
-                    Ok(Record {
-                        timestamp: current_system_time_since_epoch(),
-                        unit: super::units::Unit::MicroJoule,
-                        value: MsrRAPLSensor::extract_rapl_current_power(msr_result, energy_unit),
-                    })
-                } else {
-                    error!("Failed to get data from send_request.");
-                    close_handle(device);
-                    Ok(Record {
-                        timestamp: current_system_time_since_epoch(),
-                        unit: super::units::Unit::MicroJoule,
-                        value: String::from("0"),
-                    })
+                            Ok(Record {
+                                timestamp: current_system_time_since_epoch(),
+                                unit: super::units::Unit::MicroJoule,
+                                value: current_power,
+                            })
+                        },
+                        Err(e) => {
+                            error!("Failed to get data from send_request: {:?}", e);
+                            close_handle(device);
+                            Ok(Record {
+                                timestamp: current_system_time_since_epoch(),
+                                unit: super::units::Unit::MicroJoule,
+                                value: String::from("0"),
+                            })
+                        }
+                    }
+                },
+                Err(e) => {
+                    panic!("Couldn't get driver handle : {:?}", e);
                 }
-            } else {
-                error!("Couldn't get handle.");
-                Ok(Record {
-                    timestamp: current_system_time_since_epoch(),
-                    unit: super::units::Unit::MicroJoule,
-                    value: String::from("0"),
-                })
             }
         }
     }
@@ -293,9 +320,19 @@ impl Sensor for MsrRAPLSensor {
         let mut topology = Topology::new(sensor_data.clone());
         let mut sys = System::new_all();
         sys.refresh_all();
-        let i = 0;
+
+        warn!("Got {} sockets CPU", self.nb_cpu_sockets);
+        
         //TODO fix that to actually count the number of sockets
-        topology.safe_add_socket(i, vec![], vec![], String::from(""), 4, sensor_data.clone());
+        let mut i = 0;
+        let logical_cpus = sys.cpus() ;
+        
+        while i < self.nb_cpu_sockets {
+            topology.safe_add_socket(i, vec![], vec![], String::from(""), 4, sensor_data.clone());
+            i = i + 1;
+        }
+
+        topology.add_cpu_cores();
 
         Ok(topology)
     }

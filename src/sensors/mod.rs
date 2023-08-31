@@ -278,30 +278,48 @@ impl Topology {
     /// to appropriate CPUSocket instance from self.sockets
     pub fn add_cpu_cores(&mut self) {
         if let Some(mut cores) = Topology::generate_cpu_cores() {
-            while let Some(c) = cores.pop() {
-                let socket_id = &c
-                    .attributes
-                    .get("physical id")
-                    .unwrap()
-                    .parse::<u16>()
-                    .unwrap();
-                let socket_match = self.sockets.iter_mut().find(|x| &x.id == socket_id);
+            #[cfg(target_os = "linux")] {
+                while let Some(c) = cores.pop() {
+                    let socket_id = &c
+                        .attributes
+                        .get("physical id")
+                        .unwrap()
+                        .parse::<u16>()
+                        .unwrap();
+                    let socket_match = self.sockets.iter_mut().find(|x| &x.id == socket_id);
 
-                //In VMs there might be a missmatch betwen Sockets and Cores - see Issue#133 as a first fix we just map all cores that can't be mapped to the first
-                let socket = match socket_match {
-                    Some(x) => x,
-                    None =>self.sockets.first_mut().expect("Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line")
-                };
+                    //In VMs there might be a missmatch betwen Sockets and Cores - see Issue#133 as a first fix we just map all cores that can't be mapped to the first
+                    let socket = match socket_match {
+                        Some(x) => x,
+                        None =>self.sockets.first_mut().expect("Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line")
+                    };
 
-                if socket_id == &socket.id {
-                    socket.add_cpu_core(c);
-                } else {
-                    socket.add_cpu_core(c);
-                    warn!("coud't not match core to socket - mapping to first socket instead - if you are not using --vm there is something wrong")
+                    if socket_id == &socket.id {
+                        socket.add_cpu_core(c);
+                    } else {
+                        socket.add_cpu_core(c);
+                        warn!("coud't not match core to socket - mapping to first socket instead - if you are not using --vm there is something wrong")
+                    }
+                }
+            }
+            #[cfg(target_os = "windows")]
+            {
+                let nb_cores_per_socket = &cores.len() / &self.sockets.len();
+                for s in self.sockets.iter_mut() {
+                    for c in 1..nb_cores_per_socket {
+                        match cores.pop() {
+                            Some(core) => {
+                                s.add_cpu_core(core);
+                            },
+                            None => {
+                                error!("Uneven number of CPU cores !");
+                            }
+                        }
+                    }
                 }
             }
         } else {
-            warn!("Couldn't retrieve any CPU Core from the topology. (generate_cpu_cores)");
+            panic!("Couldn't retrieve any CPU Core from the topology. (generate_cpu_cores)");
         }
     }
 
@@ -1109,16 +1127,17 @@ impl CPUSocket {
             steal: Some(0),
         };
         for c in &self.cpu_cores {
-            let c_stats = c.read_stats().unwrap();
-            stats.user += c_stats.user;
-            stats.nice += c_stats.nice;
-            stats.system += c_stats.system;
-            stats.idle += c_stats.idle;
-            stats.iowait =
-                Some(stats.iowait.unwrap_or_default() + c_stats.iowait.unwrap_or_default());
-            stats.irq = Some(stats.irq.unwrap_or_default() + c_stats.irq.unwrap_or_default());
-            stats.softirq =
-                Some(stats.softirq.unwrap_or_default() + c_stats.softirq.unwrap_or_default());
+            if let Some(c_stats) = c.read_stats() {
+                stats.user += c_stats.user;
+                stats.nice += c_stats.nice;
+                stats.system += c_stats.system;
+                stats.idle += c_stats.idle;
+                stats.iowait =
+                    Some(stats.iowait.unwrap_or_default() + c_stats.iowait.unwrap_or_default());
+                stats.irq = Some(stats.irq.unwrap_or_default() + c_stats.irq.unwrap_or_default());
+                stats.softirq =
+                    Some(stats.softirq.unwrap_or_default() + c_stats.softirq.unwrap_or_default());
+            }
         }
         Some(stats)
     }
@@ -1184,9 +1203,9 @@ impl CPUSocket {
                 &last_record.value, &previous_record.value
             );
             let last_rec_val = last_record.value.trim();
-            debug!("socket : l1049 : trying to parse {} as u64", last_rec_val);
+            debug!("socket : l1187 : trying to parse {} as u64", last_rec_val);
             let prev_rec_val = previous_record.value.trim();
-            debug!("socket : l1051 : trying to parse {} as u64", prev_rec_val);
+            debug!("socket : l1189 : trying to parse {} as u64", prev_rec_val);
             if let (Ok(last_microjoules), Ok(previous_microjoules)) =
                 (last_rec_val.parse::<u64>(), prev_rec_val.parse::<u64>())
             {
@@ -1210,7 +1229,7 @@ impl CPUSocket {
                 ));
             }
         } else {
-            debug!("Not enough records for socket");
+            warn!("Not enough records for socket");
         }
         None
     }
@@ -1532,7 +1551,7 @@ mod tests {
         #[cfg(target_os = "linux")]
         let sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
         #[cfg(not(target_os = "linux"))]
-        let sensor = msr_rapl::MsrRAPLSensor::new();
+        let sensor = msr_rapl::MsrRAPLSensor::new(1);
         let topo = (*sensor.get_topology()).unwrap();
         println!("{:?}", topo.read_stats());
     }
@@ -1542,7 +1561,7 @@ mod tests {
         #[cfg(target_os = "linux")]
         let sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
         #[cfg(not(target_os = "linux"))]
-        let sensor = msr_rapl::MsrRAPLSensor::new();
+        let sensor = msr_rapl::MsrRAPLSensor::new(1);
         let mut topo = (*sensor.get_topology()).unwrap();
         for s in topo.get_sockets() {
             for c in s.get_cores() {
@@ -1556,7 +1575,7 @@ mod tests {
         #[cfg(target_os = "linux")]
         let sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
         #[cfg(not(target_os = "linux"))]
-        let sensor = msr_rapl::MsrRAPLSensor::new();
+        let sensor = msr_rapl::MsrRAPLSensor::new(1);
         let mut topo = (*sensor.get_topology()).unwrap();
         for s in topo.get_sockets() {
             println!("{:?}", s.read_stats());
