@@ -31,8 +31,8 @@ jobs:
           & "D:\a\scaphandre\scaphandre\$dest" /verysilent /suppressmsgbox
           ls "C:\Program Files (x86)\Inno Setup 6\"
       - name: Get windows-rapl-driver
+        shell: pwsh
         run: |
-          
           $dest = "DriverLoader.exe"
           $url = "${{ env.WRD_BASE_URL }}/${{ env.WRD_VERSION }}/DriverLoader.exe" 
           echo ($url -replace '"', "")
