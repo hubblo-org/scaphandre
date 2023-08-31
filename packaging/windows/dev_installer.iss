@@ -40,13 +40,13 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Files]
 Source: "{#MyAppSourceFolder}\target\release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#RaplDriverSourceFolder}\x64\Release\DriverLoader.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.inf"; DestDir: "{app}"; Flags: ignoreversion
-; Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.sys"; DestDir: "{#SystemFolder}";
-; Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.sys"; DestDir: "{#System64Folder}";
-Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.sys"; DestDir: "{app}";
-Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.cat"; DestDir: "{app}";
-; Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.cat"; DestDir: "{#SystemFolder}";
-; Source: "{#RaplDriverSourceFolder}\ScaphandreDrv\ScaphandreDrv.cat"; DestDir: "{#System64Folder}";
+Source: "{#RaplDriverSourceFolder}\x64\Release\ScaphandreDrv\ScaphandreDrv.inf"; DestDir: "{app}"; Flags: ignoreversion
+; Source: "{#RaplDriverSourceFolder}\x64\Release\ScaphandreDrv\ScaphandreDrv.sys"; DestDir: "{#SystemFolder}";
+; Source: "{#RaplDriverSourceFolder}\x64\Release\ScaphandreDrv\ScaphandreDrv.sys"; DestDir: "{#System64Folder}";
+Source: "{#RaplDriverSourceFolder}\x64\Release\ScaphandreDrv\ScaphandreDrv.sys"; DestDir: "{app}";
+Source: "{#RaplDriverSourceFolder}\x64\Release\ScaphandreDrv\ScaphandreDrv.cat"; DestDir: "{app}";
+; Source: "{#RaplDriverSourceFolder}\x64\Release\ScaphandreDrv\ScaphandreDrv.cat"; DestDir: "{#SystemFolder}";
+; Source: "{#RaplDriverSourceFolder}\x64\Release\ScaphandreDrv\ScaphandreDrv.cat"; DestDir: "{#System64Folder}";
 Source: "C:\Program Files (x86)\Windows Kits\10\Tools\10.0.22621.0\x64\devcon.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\certmgr.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSourceFolder}\README.md"; DestDir: "{app}"; Flags: ignoreversion
