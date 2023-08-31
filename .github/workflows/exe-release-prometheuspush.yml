@@ -32,8 +32,10 @@ jobs:
           ls "C:\Program Files (x86)\Inno Setup 6\"
       - name: Get windows-rapl-driver
         run: |
+          
           $dest = "DriverLoader.exe"
           $url = "${{ env.WRD_BASE_URL }}/${{ env.WRD_VERSION }}/DriverLoader.exe" 
+          echo ($url -replace '"', "")
           Invoke-WebRequest -Uri ($url -replace '"', "") -OutFile $dest
           $dest = "ScaphandreDrv.cat"
           $url = "${{ env.WRD_BASE_URL }}/${{ env.WRD_VERSION }}/ScaphandreDrv.cat" 
