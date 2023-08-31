@@ -12,7 +12,7 @@ on:
     branches: [ '336-proper-handling-of-windows-service-management' ]
 
 env:
-  WRD_VERSION: experimental-multi-socket-1
+  WRD_VERSION: "experimental-multi-socket-1"
   WRD_BASE_URL: https://github.com/hubblo-org/windows-rapl-driver/releases/download
 
 jobs:
