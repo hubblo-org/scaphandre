@@ -240,14 +240,24 @@ impl RecordReader for CPUSocket {
                 Ok(device) => {
                     let mut msr_result: u64 = 0;
                     let ptr_result = &mut msr_result as *mut u64;
+                    let mut core_id: u32 = 0;
                     // get core numbers tied to the socket
-                    let src = MSR_PKG_ENERGY_STATUS as u64;
+                    if let Some(core) = self.cpu_cores.first() {
+                        core_id = core.id as u32;
+                    } else {
+                        panic!("Couldn't get a CPUCore in socket {}", self.id);
+                    }
+                    warn!("msr: {:x}", (MSR_PKG_ENERGY_STATUS as u64));
+                    warn!("msr: {:b}", (MSR_PKG_ENERGY_STATUS as u64));
+                    warn!("core_id: {:x} {:b}", (core_id as u64), (core_id as u64));
+                    warn!("core_id: {:b}", ((core_id as u64) << 54));
+                    let src = ((core_id as u64) << 32) | (MSR_PKG_ENERGY_STATUS as u64);
                     let ptr = &src as *const u64;
                 
-                    trace!("src: {:x}", src);
-                    trace!("src: {:b}", src);
+                    warn!("src: {:x}", src);
+                    warn!("src: {:b}", src);
 
-                    trace!("*ptr: {}", *ptr);
+                    warn!("*ptr: {}", *ptr);
                     trace!("&request: {:?} ptr (as *const u8): {:?}", &src, ptr);
 
                     match send_request(
