@@ -305,10 +305,12 @@ impl Topology {
             #[cfg(target_os = "windows")]
             {
                 let nb_cores_per_socket = &cores.len() / &self.sockets.len();
-                for s in self.sockets.iter_mut() {
-                    for c in 1..nb_cores_per_socket {
+                warn!("nb_cores_per_socket: {} cores_len: {} sockets_len: {}", nb_cores_per_socket, &cores.len(), &self.sockets.len());
+                for s in self.sockets.iter_mut().rev() {
+                    for c in 0..nb_cores_per_socket {
                         match cores.pop() {
                             Some(core) => {
+                                warn!("adding core {} to socket {}", core.id, s.id);
                                 s.add_cpu_core(core);
                             },
                             None => {

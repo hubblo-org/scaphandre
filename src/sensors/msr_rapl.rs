@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::mem::size_of;
 use sysinfo::{System, SystemExt};
+use raw_cpuid::{CpuId, TopologyType};
 use windows::Win32::Foundation::{CloseHandle, GetLastError, HANDLE, INVALID_HANDLE_VALUE};
 use windows::Win32::Storage::FileSystem::{
     CreateFileW, FILE_FLAG_OVERLAPPED, FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_READ_DATA,
@@ -11,6 +12,8 @@ use windows::Win32::Storage::FileSystem::{
 };
 use windows::Win32::System::Ioctl::{FILE_DEVICE_UNKNOWN, METHOD_BUFFERED};
 use windows::Win32::System::IO::DeviceIoControl;
+
+use core_affinity;
 
 // Intel RAPL MSRs
 const MSR_RAPL_POWER_UNIT: u32 = 0x606; //
@@ -244,6 +247,20 @@ impl RecordReader for CPUSocket {
                     // get core numbers tied to the socket
                     if let Some(core) = self.cpu_cores.first() {
                         core_id = core.id as u32;
+                        match core_affinity::get_core_ids() {
+                            Some(core_ids) => {
+                                for c in core_ids {
+                                    if c.id == core.id as usize {
+                                        core_affinity::set_for_current(c);
+                                        warn!("Set core_affinity to {}", c.id);
+                                        break;
+                                    }
+                                }    
+                            },
+                            None => {
+                                warn!("Could'nt get core ids from core_affinity.");
+                            }
+                        }
                     } else {
                         panic!("Couldn't get a CPUCore in socket {}", self.id);
                     }
@@ -258,6 +275,7 @@ impl RecordReader for CPUSocket {
                     warn!("src: {:b}", src);
 
                     warn!("*ptr: {}", *ptr);
+                    warn!("*ptr: {:b}", *ptr);
                     trace!("&request: {:?} ptr (as *const u8): {:?}", &src, ptr);
 
                     match send_request(
@@ -311,13 +329,41 @@ impl RecordReader for CPUSocket {
 }
 impl RecordReader for Domain {
     fn read_record(&self) -> Result<Record, Box<dyn Error>> {
-        Ok(Record {
-            timestamp: current_system_time_since_epoch(),
-            unit: super::units::Unit::MicroJoule,
-            value: String::from("10"),
-        })
+        if let core_id = self.sensor_data.get("CORE_ID").unwrap().parse::<usize>().unwrap() {
+            if let msr_addr = self.sensor_data.get("MSR_ADDR").unwrap().parse::<u64>().unwrap() {
+                unsafe {
+                    match get_msr_value(core_id, msr_addr, &self.sensor_data) {
+                        Ok(rec) => {
+                            return Ok(Record {
+                                timestamp: current_system_time_since_epoch(),
+                                unit: super::units::Unit::MicroJoule,
+                                value: rec.value,
+                            })
+                        },
+                        Err(e) => {
+                            error!("Could'nt get MSR value for {}: {}", msr_addr, e);
+                            Ok(Record { 
+                                timestamp: current_system_time_since_epoch(),
+                                value: String::from("0"),
+                                unit: super::units::Unit::MicroJoule
+                            })
+                        }
+                    }
+                }
+            } else {
+                panic!("Couldn't get msr_addr to target for domain {}", self.name);
+            }
+        } else {
+            panic!("Couldn't get core_id to target for domain {}", self.name);
+        }
     }
 }
+
+//fn get_cpu_info() -> Option<u8> {
+//    let cpuid = CpuId::new();
+//
+//    
+//}
 
 impl Sensor for MsrRAPLSensor {
     fn generate_topology(&self) -> Result<Topology, Box<dyn Error>> {
@@ -331,18 +377,143 @@ impl Sensor for MsrRAPLSensor {
         let mut sys = System::new_all();
         sys.refresh_all();
 
-        warn!("Got {} sockets CPU", self.nb_cpu_sockets);
         
         //TODO fix that to actually count the number of sockets
         let mut i = 0;
         let logical_cpus = sys.cpus() ;
+
+        warn!("Got {} sockets CPU from command line", self.nb_cpu_sockets);
+
+        let mut nb_cpu_sockets = 0;
+        let mut logical_cpus_from_cpuid = 0;
+        let cpuid = CpuId::new();
+        match cpuid.get_vendor_info() {
+            Some(info) => {
+                warn!("Got CPU {:?}", info);
+            },
+            None => {
+                warn!("Couldn't get cpuinfo");
+            }
+        }
+        for i in 0..5 {
+            match cpuid.get_extended_topology_info() {
+                Some(info) => {
+                    warn!("Got CPU topo info {:?}", info);
+                    for t in info {
+                        if t.level_type() == TopologyType::Core {
+                            logical_cpus_from_cpuid = t.processors()
+                        }
+                    }
+                },
+                None => {
+                    warn!("Couldn't get cpu topo info");
+                }
+            }
+        }
+        warn!("Logical cpus from sysinfo: {} logical cpus from cpuid: {}", logical_cpus.len(), logical_cpus_from_cpuid);
+        match cpuid.get_advanced_power_mgmt_info() {
+            Some(info) => {
+                warn!("Got CPU power mgmt info {:?}", info);
+            },
+            None => {
+                warn!("Couldn't get cpu power info");
+            }
+        }
+        match cpuid.get_extended_feature_info() {
+            Some(info) => {
+                warn!("Got CPU feature info {:?}", info);
+            },
+            None => {
+                warn!("Couldn't get cpu feature info");
+            }
+        }
+        match cpuid.get_performance_monitoring_info() {
+            Some(info) => {
+                warn!("Got CPU perfmonitoring info {:?}", info);
+            },
+            None => {
+                warn!("Couldn't get cpu perfmonitoring info");
+            }
+        }
+        match cpuid.get_thermal_power_info() {
+            Some(info) => {
+                warn!("Got CPU thermal info {:?}", info);
+            },
+            None => {
+                warn!("Couldn't get cpu thermal info");
+            }
+        }
+        match cpuid.get_extended_state_info() {
+            Some(info) => {
+                warn!("Got CPU state info {:?}", info);
+            },
+            None => {
+                warn!("Couldn't get cpu state info");
+            }
+        }
+        match cpuid.get_processor_capacity_feature_info() {
+            Some(info) => {
+                warn!("Got CPU capacity info {:?}", info);
+            },
+            None => {
+                warn!("Couldn't get cpu capacity info");
+            }
+        }
         
+        if self.nb_cpu_sockets > 2 && logical_cpus.len() < 12 {
+            warn!("Scaphandre has been told to expect {} CPU sockets but there is less than 12 logical cores in total ({}).", self.nb_cpu_sockets, logical_cpus.len());
+            warn!("This is unlikely, be careful to configure Scaphandre for the right number of active CPU sockets on your machine");
+        }
         while i < self.nb_cpu_sockets {
             topology.safe_add_socket(i, vec![], vec![], String::from(""), 4, sensor_data.clone());
+            
+            //topology.safe_add_domain_to_socket(i, , name, uj_counter, buffer_max_kbytes, sensor_data)
             i = i + 1;
         }
 
         topology.add_cpu_cores();
+            
+        for s in topology.get_sockets() {
+            unsafe {
+                let core_id = s.get_cores_passive().first().unwrap().id;
+                match get_msr_value(core_id as usize, MSR_DRAM_ENERGY_STATUS as u64, &sensor_data) {
+                    Ok(rec) => {
+                        warn!("Added domain Dram !");
+                        let mut domain_sensor_data = sensor_data.clone();
+                        domain_sensor_data.insert(String::from("MSR_ADDR"), MSR_DRAM_ENERGY_STATUS.to_string());
+                        domain_sensor_data.insert(String::from("CORE_ID"), core_id.to_string());
+                        s.safe_add_domain(Domain::new(2, String::from("dram"), String::from(""), 5, domain_sensor_data))
+                    },
+                    Err(e) => {
+                        error!("Could'nt add Dram domain.");
+                    }
+                }
+                match get_msr_value(core_id as usize, MSR_PP0_ENERGY_STATUS as u64, &sensor_data) {
+                    Ok(rec) => {
+                        warn!("Added domain Core !");
+                        let mut domain_sensor_data = sensor_data.clone();
+                        domain_sensor_data.insert(String::from("MSR_ADDR"), MSR_PP0_ENERGY_STATUS.to_string());
+                        domain_sensor_data.insert(String::from("CORE_ID"), core_id.to_string());
+                        s.safe_add_domain(Domain::new(2, String::from("core"), String::from(""), 5, domain_sensor_data))
+                    },
+                    Err(e) => {
+                        error!("Could'nt add Core domain.");
+                    }
+                }
+                match get_msr_value(core_id as usize, MSR_PP1_ENERGY_STATUS as u64, &sensor_data) {
+                    Ok(rec) => {
+                        warn!("Added domain Uncore !");
+                        let mut domain_sensor_data = sensor_data.clone();
+                        domain_sensor_data.insert(String::from("MSR_ADDR"), MSR_PP1_ENERGY_STATUS.to_string());
+                        domain_sensor_data.insert(String::from("CORE_ID"), core_id.to_string());
+                        s.safe_add_domain(Domain::new(2, String::from("uncore"), String::from(""), 5, domain_sensor_data))
+                    },
+                    Err(e) => {
+                        error!("Could'nt add Uncore domain.");
+                    }
+                }
+            }
+        }
 
         Ok(topology)
     }
@@ -353,5 +524,77 @@ impl Sensor for MsrRAPLSensor {
             panic!("Couldn't generate the topology !");
         }
         Box::new(topology)
+    }
+}
+
+unsafe fn get_msr_value(core_id: usize, msr_addr: u64, sensor_data: &HashMap<String, String>) -> Result<Record, String> {
+    match get_handle(sensor_data.get("DRIVER_NAME").unwrap()) {
+        Ok(device) => {
+            let mut msr_result: u64 = 0;
+            let ptr_result = &mut msr_result as *mut u64;
+            let mut core_id: u32 = 0;
+            // get core numbers tied to the socket
+            match core_affinity::get_core_ids() {
+                Some(core_ids) => {
+                    for c in core_ids {
+                        if c.id == core_id as usize {
+                            core_affinity::set_for_current(c);
+                            warn!("Set core_affinity to {}", c.id);
+                            break;
+                        }
+                    }    
+                },
+                None => {
+                    warn!("Could'nt get core ids from core_affinity.");
+                }
+            }
+            //warn!("msr: {:x}", (MSR_PKG_ENERGY_STATUS as u64));
+            //warn!("msr: {:b}", (MSR_PKG_ENERGY_STATUS as u64));
+            //warn!("core_id: {:x} {:b}", (core_id as u64), (core_id as u64));
+            //warn!("core_id: {:b}", ((core_id as u64) << 54));
+            let src = ((core_id as u64) << 32) | msr_addr;
+            let ptr = &src as *const u64;
+        
+            //warn!("src: {:x}", src);
+            //warn!("src: {:b}", src);
+            //warn!("*ptr: {}", *ptr);
+            //warn!("*ptr: {:b}", *ptr);
+
+            match send_request(
+                device,
+                MSR_PKG_ENERGY_STATUS,
+                ptr,
+                8,
+                ptr_result,
+                size_of::<u64>(),
+            ) {
+                Ok(res) => {
+                    close_handle(device);
+
+                    let energy_unit = sensor_data
+                        .get("ENERGY_UNIT")
+                        .unwrap()
+                        .parse::<f64>()
+                        .unwrap();
+                    let current_value = MsrRAPLSensor::extract_rapl_current_power(msr_result, energy_unit);
+                    warn!("current_value: {}", current_value);
+
+                    Ok(Record {
+                        timestamp: current_system_time_since_epoch(),
+                        unit: super::units::Unit::MicroJoule,
+                        value: current_value,
+                    })
+                },
+                Err(e) => {
+                    error!("Failed to get data from send_request: {:?}", e);
+                    close_handle(device);
+                    Err(format!("Failed to get data from send_request: {:?}", e))
+                }
+            }
+        },
+        Err(e) => {
+            error!("Couldn't get driver handle : {:?}", e);
+            Err(format!("Couldn't get driver handle : {:?}", e))
+        }
     }
 }
