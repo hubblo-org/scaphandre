@@ -947,31 +947,26 @@ impl ProcessTracker {
         for v in &mut self.procs {
             if !v.is_empty() {
                 if let Some(first) = v.first() {
-                    if let Ok(status) = first.process.status() {
-                        if status.state.contains('T') {
-                            while !v.is_empty() {
-                                v.pop();
+                     if let Ok(status) = first.process.status() {
+                        match status.state {
+                            'T' => {
+                                while !v.is_empty() {
+                                    v.pop();
+                                }
+                                t_stopped += 1;
                             }
-                            t_stopped += 1;
-                        } else if status.state.contains('D') {
-                            d_unint_sleep += 1;
-                        } else if status.state.contains('R') {
-                            r_running += 1;
-                        } else if status.state.contains('S') {
-                            s_int_sleep += 1;
-                        } else if status.state.contains('Z') {
-                            z_defunct_zombie += 1;
-                        } else if status.state.contains('W') {
-                            w_no_resident_high_prio += 1;
-                        } else if status.state.contains('N') {
-                            n_low_prio += 1;
-                        } else if status.state.contains('L') {
-                            l_pages_locked += 1;
-                        } else if status.state.contains('I') {
-                            i_idle += 1;
-                        } else {
-                            unknown += 1;
-                            debug!("unkown state: {} name: {}", status.state, status.name);
+                            'D' => d_unint_sleep += 1,
+                            'R' => r_running += 1,
+                            'S' => s_int_sleep += 1,
+                            'Z' => z_defunct_zombie += 1,
+                            'W' => w_no_resident_high_prio += 1,
+                            'N' => n_low_prio += 1,
+                            'L' => l_pages_locked += 1,
+                            'I' => i_idle += 1,
+                            _ => {
+                                unknown += 1;
+                                debug!("unknown state: {} name: {}", status.state, status.name);
+                            }
                         }
                     } else {
                         while !v.is_empty() {
