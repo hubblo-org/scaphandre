@@ -395,18 +395,32 @@ impl Sensor for MsrRAPLSensor {
                 warn!("Couldn't get cpuinfo");
             }
         }
-        for i in 0..5 {
-            match cpuid.get_extended_topology_info() {
-                Some(info) => {
-                    warn!("Got CPU topo info {:?}", info);
-                    for t in info {
-                        if t.level_type() == TopologyType::Core {
-                            logical_cpus_from_cpuid = t.processors()
+        for i in 0..logical_cpus.len() {
+            match core_affinity::get_core_ids() {
+                Some(core_ids) => {
+                    for c in core_ids {
+                        if c.id == i as usize {
+                            core_affinity::set_for_current(c);
+                            warn!("Set core_affinity to {}", c.id);
+                            match cpuid.get_extended_topology_info() {
+                                Some(info) => {
+                                    warn!("Got CPU topo info {:?}", info);
+                                    for t in info {
+                                        if t.level_type() == TopologyType::Core {
+                                            logical_cpus_from_cpuid = t.processors()
+                                        }
+                                    }
+                                },
+                                None => {
+                                    warn!("Couldn't get cpu topo info");
+                                }
+                            }
+                            break;
                         }
-                    }
+                    }    
                 },
                 None => {
-                    warn!("Couldn't get cpu topo info");
+                    warn!("Could'nt get core ids from core_affinity.");
                 }
             }
         }
