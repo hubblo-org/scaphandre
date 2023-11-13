@@ -41,6 +41,8 @@ serviceMonitor:
       - __meta_kubernetes_pod_node_name
     targetLabel: node
 
+affinity: {}
+
 tolerations:
   # Tolerate all taints for observability
   - operator: "Exists"

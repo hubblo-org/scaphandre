@@ -25,9 +25,10 @@ to be installed from the source code.
 | `serviceMonitor.relabelings`   | Allow to add extra labels to metrics                                                          | Add node metrics         |
 
 #### Other parameters
-| Name                                       | Description                                                                 | Value                     |
-| ------------------------------------------ | ----------------------------------------------------------------------------| ------------------------- |
-| `tolerations`                              | Tolerations for pod assignment. Evaluated as a template.                    | `- operator: "Exists"`    |
+| Name                                       | Description                                                                                     | Value                     |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------| ------------------------- |
+| `affinity`                                 | Pod scheduling preference. Can be used for instance when some node does not support scaphandre. | `{}`                      |
+| `tolerations`                              | Tolerations for pod assignment. Evaluated as a template.                                        | `- operator: "Exists"`    |
 
 ## Install Prometheus
 
