@@ -42,6 +42,7 @@ windows = { version = "0.27.0", features = ["alloc","Win32_Storage_FileSystem","
 windows-service = { version = "0.6.0" }
 raw-cpuid = { version = "10.5.0" }
 core_affinity = { version = "0.8.1"}
+x86 = { version = "0.52.0" }
 
 [features]
 default = ["prometheus", "riemann", "warpten", "json", "containers", "prometheuspush"]

@@ -177,6 +177,7 @@ impl Topology {
 
         let sysinfo_system = System::new_all();
         let sysinfo_cores = sysinfo_system.cpus();
+        warn!("Sysinfo sees {}", sysinfo_cores.len());
         #[cfg(target_os = "linux")]
         let cpuinfo = CpuInfo::new().unwrap();
         for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
@@ -206,7 +207,7 @@ impl Topology {
         counter_uj_path: String,
         buffer_max_kbytes: u16,
         sensor_data: HashMap<String, String>,
-    ) {
+    ) -> Option<CPUSocket> {
         if !self.sockets.iter().any(|s| s.id == socket_id) {
             let socket = CPUSocket::new(
                 socket_id,
@@ -216,8 +217,21 @@ impl Topology {
                 buffer_max_kbytes,
                 sensor_data,
             );
+            let res = socket.clone();
             self.sockets.push(socket);
+            Some(res)
+        } else {
+            None
         }
+    }
+
+    pub fn safe_insert_socket(
+        &mut self,
+        socket: CPUSocket
+    ) {
+        if !self.sockets.iter().any(|s| s.id == socket.id) {
+            self.sockets.push(socket);
+        } 
     }
 
     /// Returns a immutable reference to self.proc_tracker
@@ -302,24 +316,28 @@ impl Topology {
                     }
                 }
             }
-            #[cfg(target_os = "windows")]
-            {
-                let nb_cores_per_socket = &cores.len() / &self.sockets.len();
-                warn!("nb_cores_per_socket: {} cores_len: {} sockets_len: {}", nb_cores_per_socket, &cores.len(), &self.sockets.len());
-                for s in self.sockets.iter_mut().rev() {
-                    for c in 0..nb_cores_per_socket {
-                        match cores.pop() {
-                            Some(core) => {
-                                warn!("adding core {} to socket {}", core.id, s.id);
-                                s.add_cpu_core(core);
-                            },
-                            None => {
-                                error!("Uneven number of CPU cores !");
-                            }
-                        }
-                    }
-                }
-            }
+            //#[cfg(target_os = "windows")]
+            //{
+                //TODO: fix
+                //let nb_sockets = &self.sockets.len();
+                //let mut socket_counter = 0;
+                //let nb_cores_per_socket = &cores.len() / nb_sockets;
+                //warn!("nb_cores_per_socket: {} cores_len: {} sockets_len: {}", nb_cores_per_socket, &cores.len(), &self.sockets.len());
+                //for s in self.sockets.iter_mut() {
+                //    for c in (socket_counter * nb_cores_per_socket)..((socket_counter+1) * nb_cores_per_socket) {
+                //        match cores.pop() {
+                //            Some(core) => {
+                //                warn!("adding core {} to socket {}", core.id, s.id);
+                //                s.add_cpu_core(core);
+                //            },
+                //            None => {
+                //                error!("Uneven number of CPU cores !");
+                //            }
+                //        }
+                //    }
+                //    socket_counter = socket_counter + 1;
+                //}
+            //}
         } else {
             panic!("Couldn't retrieve any CPU Core from the topology. (generate_cpu_cores)");
         }
@@ -1553,7 +1571,7 @@ mod tests {
         #[cfg(target_os = "linux")]
         let sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
         #[cfg(not(target_os = "linux"))]
-        let sensor = msr_rapl::MsrRAPLSensor::new(1);
+        let sensor = msr_rapl::MsrRAPLSensor::new();
         let topo = (*sensor.get_topology()).unwrap();
         println!("{:?}", topo.read_stats());
     }
@@ -1563,7 +1581,7 @@ mod tests {
         #[cfg(target_os = "linux")]
         let sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
         #[cfg(not(target_os = "linux"))]
-        let sensor = msr_rapl::MsrRAPLSensor::new(1);
+        let sensor = msr_rapl::MsrRAPLSensor::new();
         let mut topo = (*sensor.get_topology()).unwrap();
         for s in topo.get_sockets() {
             for c in s.get_cores() {
@@ -1577,7 +1595,7 @@ mod tests {
         #[cfg(target_os = "linux")]
         let sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
         #[cfg(not(target_os = "linux"))]
-        let sensor = msr_rapl::MsrRAPLSensor::new(1);
+        let sensor = msr_rapl::MsrRAPLSensor::new();
         let mut topo = (*sensor.get_topology()).unwrap();
         for s in topo.get_sockets() {
             println!("{:?}", s.read_stats());

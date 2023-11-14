@@ -74,11 +74,6 @@ struct Cli {
     #[cfg(target_os = "linux")]
     #[arg(long, default_value_t = powercap_rapl::DEFAULT_BUFFER_PER_SOCKET_MAX_KBYTES)]
     sensor_buffer_per_socket_max_kb: u16,
-
-    /// Number of physical CPU packages/sockets enabled on the host
-    #[cfg(target_os = "windows")]
-    #[arg(long, default_value_t = 1)]
-    sensor_nb_cpu_sockets: u16,
 }
 
 /// Defines the possible subcommands, one per exporter.
@@ -286,9 +281,7 @@ fn build_sensor(cli: &Cli) -> impl Sensor {
 
     #[cfg(target_os = "windows")]
     let msr_sensor_win = || {
-        msr_rapl::MsrRAPLSensor::new(
-            cli.sensor_nb_cpu_sockets
-        )
+        msr_rapl::MsrRAPLSensor::new()
     };
 
     match cli.sensor.as_deref() {
