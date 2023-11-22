@@ -1048,6 +1048,10 @@ impl CPUSocket {
         }
     }
 
+    pub fn set_id(&mut self, id: u16) {
+        self.id = id
+    }
+
     /// Adds a new Domain instance to the domains vector if and only if it doesn't exist in the vector already.
     fn safe_add_domain(&mut self, domain: Domain) {
         if !self.domains.iter().any(|d| d.id == domain.id) {
