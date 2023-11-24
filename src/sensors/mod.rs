@@ -64,27 +64,19 @@ impl RecordGenerator for Topology {
     /// and returns a clone of this record.
     ///
     fn refresh_record(&mut self) {
-        //let mut value: u64 = 0;
-        //let mut last_timestamp = current_system_time_since_epoch();
-        //for s in self.get_sockets() {
-        //    let records = s.get_records_passive();
-        //    if !records.is_empty() {
-        //        let last = records.last();
-        //        let last_record = last.unwrap();
-        //        last_timestamp = last_record.timestamp;
-        //        let res = last_record.value.trim();
-        //        if let Ok(val) = res.parse::<u64>() {
-        //            value += val;
-        //        } else {
-        //            trace!("couldn't parse value : {}", res);
-        //        }
-        //    }
-        //}
-        //debug!("Record value from topo (addition of sockets) : {}", value);
-        //let record = Record::new(last_timestamp, value.to_string(), units::Unit::MicroJoule);
-
-        if let Ok(record) = self.read_record() {
-            self.record_buffer.push(record);
+        match self.read_record() {
+            Ok(record) => {
+                self.record_buffer.push(record);
+            }
+            Err(e) => {
+                warn!(
+                    "Could'nt read record from {}, error was : {:?}",
+                    self._sensor_data
+                        .get("source_file")
+                        .unwrap_or(&String::from("SRCFILENOTKNOWN")),
+                    e
+                );
+            }
         }
 
         if !self.record_buffer.is_empty() {
@@ -930,9 +922,19 @@ impl RecordGenerator for CPUSocket {
     /// Generates a new record of the socket energy consumption and stores it in the record_buffer.
     /// Returns a clone of this Record instance.
     fn refresh_record(&mut self) {
-        //if let Ok(record) = self.read_record_uj() {
-        if let Ok(record) = self.read_record() {
-            self.record_buffer.push(record);
+        match self.read_record() {
+            Ok(record) => {
+                self.record_buffer.push(record);
+            }
+            Err(e) => {
+                warn!(
+                    "Could'nt read record from {}, error was: {:?}",
+                    self.sensor_data
+                        .get("source_file")
+                        .unwrap_or(&String::from("SRCFILENOTKNOWN")),
+                    e
+                );
+            }
         }
 
         if !self.record_buffer.is_empty() {
@@ -1288,9 +1290,19 @@ impl RecordGenerator for Domain {
     /// Computes a measurement of energy comsumption for this CPU domain,
     /// stores a copy in self.record_buffer and returns it.
     fn refresh_record(&mut self) {
-        //if let Ok(record) = self.read_record_uj() {
-        if let Ok(record) = self.read_record() {
-            self.record_buffer.push(record);
+        match self.read_record() {
+            Ok(record) => {
+                self.record_buffer.push(record);
+            }
+            Err(e) => {
+                warn!(
+                    "Could'nt read record from {}. Error was : {:?}.",
+                    self.sensor_data
+                        .get("source_file")
+                        .unwrap_or(&String::from("SRCFILENOTKNOWN")),
+                    e
+                );
+            }
         }
 
         if !self.record_buffer.is_empty() {
