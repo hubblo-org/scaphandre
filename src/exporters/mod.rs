@@ -914,7 +914,6 @@ impl MetricGenerator {
                         Ok(events) => {
                             if !events.is_empty() {
                                 self.gen_docker_containers_basic_metadata();
-                            } else {
                             }
                         }
                         Err(err) => debug!("couldn't get docker events - {:?} - {}", err, err),
