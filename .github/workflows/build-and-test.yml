@@ -98,7 +98,7 @@ jobs:
       - name: Install python requirements (awxkit)
         run: |
           python -m pip install --upgrade pip
-          pip install awxkit
+          pip install awxkit setuptools
       - name: Log on AWX 
         id: login
         run: |
