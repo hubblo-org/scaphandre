@@ -672,6 +672,14 @@ impl Topology {
     }
 }
 
+fn warn_error_reading_sensor(err: Box<dyn Error>) {
+    warn!(
+        "Couldn't read energy consumption: {err}. \
+        You may need to check: \
+        https://hubblo-org.github.io/scaphandre-documentation/troubleshooting.html#i-get-a-couldnt-read-energy-consumption-permission-denied-os-error-13"
+    )
+}
+
 // !!!!!!!!!!!!!!!!! CPUSocket !!!!!!!!!!!!!!!!!!!!!!!
 /// CPUSocket struct represents a CPU socket (matches physical_id attribute in /proc/cpuinfo),
 /// owning CPU cores (processor in /proc/cpuinfo).
@@ -703,8 +711,11 @@ impl RecordGenerator for CPUSocket {
     /// Returns a clone of this Record instance.
     fn refresh_record(&mut self) {
         //if let Ok(record) = self.read_record_uj() {
-        if let Ok(record) = self.read_record() {
-            self.record_buffer.push(record);
+        match self.read_record() {
+            Ok(record) => {
+                self.record_buffer.push(record);
+            }
+            Err(err) => warn_error_reading_sensor(err)
         }
 
         if !self.record_buffer.is_empty() {
@@ -1043,8 +1054,11 @@ impl RecordGenerator for Domain {
     /// stores a copy in self.record_buffer and returns it.
     fn refresh_record(&mut self) {
         //if let Ok(record) = self.read_record_uj() {
-        if let Ok(record) = self.read_record() {
-            self.record_buffer.push(record);
+        match self.read_record() {
+            Ok(record) => {
+                self.record_buffer.push(record);
+            }
+            Err(err) => warn_error_reading_sensor(err),
         }
 
         if !self.record_buffer.is_empty() {
