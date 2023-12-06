@@ -262,6 +262,10 @@ impl Topology {
         self.domains_names = Some(domain_names);
     }
 
+    pub fn set_domains_names(&mut self, names: Vec<String>) {
+        self.domains_names = Some(names);
+    }
+
     /// Adds a Domain instance to a given socket, if and only if the domain
     /// id doesn't exist already for the socket.
     pub fn safe_add_domain_to_socket(

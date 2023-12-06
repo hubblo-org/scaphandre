@@ -177,11 +177,11 @@ impl MsrRAPLSensor {
 impl RecordReader for Topology {
     fn read_record(&self) -> Result<Record, Box<dyn Error>> {
         let mut res: u64 = 0;
-        warn!("Topology: I have {} sockets", self.sockets.len());
+        debug!("Topology: I have {} sockets", self.sockets.len());
         for s in &self.sockets {
             match s.read_record() {
                 Ok(rec) => {
-                    warn!("rec: {:?}", rec);
+                    debug!("rec: {:?}", rec);
                     res = res + rec.value.parse::<u64>()?;
                 },
                 Err(e) => {
@@ -246,12 +246,12 @@ impl RecordReader for CPUSocket {
             let mut thread_group_affinity: GROUP_AFFINITY = GROUP_AFFINITY { Mask: 255, Group: processorgroup_id, Reserved: [0,0,0] };
             let thread_affinity = GetThreadGroupAffinity(current_thread, &mut thread_group_affinity);
             if thread_affinity.as_bool() {
-                warn!("got thead_affinity : {:?}", thread_group_affinity);
+                debug!("got thead_affinity : {:?}", thread_group_affinity);
                 let core_id = self.cpu_cores.last().unwrap().id; //(self.cpu_cores.last().unwrap().id + self.id * self.cpu_cores.len() as u16) as usize
                 let newaffinity = GROUP_AFFINITY { Mask: (self.cpu_cores.len() + self.id as usize * self.cpu_cores.len() - 1) as usize, Group: processorgroup_id, Reserved: [0, 0, 0]};
                 let res = SetThreadGroupAffinity(current_thread, &newaffinity, &mut thread_group_affinity);                
                 if res.as_bool() {
-                    warn!("Asking get_msr_value, from socket, with core_id={}", core_id);
+                    debug!("Asking get_msr_value, from socket, with core_id={}", core_id);
                     match get_msr_value(core_id as usize, MSR_PKG_ENERGY_STATUS as u64, &self.sensor_data) {
                         Ok(rec) => {
                             return Ok(Record { timestamp: current_system_time_since_epoch(), value: rec.value, unit: super::units::Unit::MicroJoule })
@@ -278,10 +278,10 @@ impl RecordReader for Domain {
     fn read_record(&self) -> Result<Record, Box<dyn Error>> {
         if let Some(core_id) = self.sensor_data.get("CORE_ID") {
             let usize_coreid = core_id.parse::<usize>().unwrap();
-            warn!("Reading Domain {} on Core {}", self.name, usize_coreid);
+            debug!("Reading Domain {} on Core {}", self.name, usize_coreid);
             if let Some(msr_addr) = self.sensor_data.get("MSR_ADDR") {
                 unsafe {
-                    warn!("Asking, from Domain, get_msr_value with core_id={}", usize_coreid);
+                    debug!("Asking, from Domain, get_msr_value with core_id={}", usize_coreid);
                     match get_msr_value(usize_coreid, msr_addr.parse::<u64>().unwrap(), &self.sensor_data) {
                         Ok(rec) => {
                             return Ok(Record {
@@ -325,7 +325,7 @@ impl Sensor for MsrRAPLSensor {
             let current_thread = GetCurrentThread();
 
             let group_count = GetActiveProcessorGroupCount();
-            warn!("GROUP COUNT : {}", group_count);
+            debug!("GROUP COUNT : {}", group_count);
 
             for group_id in 0..group_count {
                 //TODO fix that to actually count the number of sockets
@@ -350,40 +350,40 @@ impl Sensor for MsrRAPLSensor {
                 }
                 let mut i: u16 = 0;
                 let mut no_more_sockets = false;
-                warn!("Entering ProcessorGroup {}", group_id);
+                debug!("Entering ProcessorGroup {}", group_id);
                 let newaffinity = GROUP_AFFINITY { Mask: 255, Group: group_id, Reserved: [0, 0, 0]};
                 let mut thread_group_affinity: GROUP_AFFINITY = GROUP_AFFINITY { Mask: 255, Group: 0, Reserved: [0,0,0] };
                 let thread_affinity = GetThreadGroupAffinity(current_thread, &mut thread_group_affinity);
-                warn!("Thread group affinity result : {:?}", thread_affinity);
+                debug!("Thread group affinity result : {:?}", thread_affinity);
                 if thread_affinity.as_bool() {
-                    warn!("got thead_affinity : {:?}", thread_group_affinity);
+                    debug!("got thead_affinity : {:?}", thread_group_affinity);
                     let res = SetThreadGroupAffinity(current_thread, &newaffinity, &mut thread_group_affinity);                
                     if res.as_bool() {
-                        warn!("Have set thread affinity: {:?}", newaffinity);
+                        debug!("Have set thread affinity: {:?}", newaffinity);
                         match core_affinity::get_core_ids() {
                             Some(core_ids) => {
-                                warn!("CPU SETUP - Cores from core_affinity, len={} : {:?}", core_ids.len(), core_ids);
-                                warn!("CPU SETUP - Logical CPUs from sysinfo: {}", logical_cpus.len());
+                                debug!("CPU SETUP - Cores from core_affinity, len={} : {:?}", core_ids.len(), core_ids);
+                                debug!("CPU SETUP - Logical CPUs from sysinfo: {}", logical_cpus.len());
                                 while !no_more_sockets {
                                     let start = i * logical_cpus_from_cpuid;
                                     let stop = (i+1)*logical_cpus_from_cpuid;
-                                    warn!("Looping over {} .. {}", start, stop);
+                                    debug!("Looping over {} .. {}", start, stop);
                                     sensor_data.insert(String::from("PROCESSORGROUP_ID"), group_id.to_string());
                                     let mut current_socket = CPUSocket::new(i, vec![], vec![], String::from(""),1,  sensor_data.clone());
                                     for c in start..stop {//core_ids {
                                         if core_affinity::set_for_current(CoreId { id: c.into() }) {
                                             match cpuid.get_vendor_info() {
                                                 Some(info) => {
-                                                    warn!("Got CPU {:?}", info);
+                                                    debug!("Got CPU {:?}", info);
                                                 },
                                                 None => {
                                                     warn!("Couldn't get cpuinfo");
                                                 }
                                             }
-                                            warn!("Set core_affinity to {}", c);
+                                            debug!("Set core_affinity to {}", c);
                                             match cpuid.get_extended_topology_info() {
                                                 Some(info) => {
-                                                    warn!("Got CPU topo info {:?}", info);
+                                                    debug!("Got CPU topo info {:?}", info);
                                                     for t in info {
                                                         if t.level_type() == TopologyType::Core {
                                                             //nb_cpu_sockets = logical_cpus.len() as u16 / t.processors();
@@ -392,16 +392,16 @@ impl Sensor for MsrRAPLSensor {
                                                             let socket_id = (x2apic_id & 240) >> 4; // upper bits of x2apic_id are socket_id, mask them, then bit shift to get socket_id
                                                             current_socket.set_id(socket_id as u16);
                                                             let core_id = x2apic_id & 15; // 4 last bits of x2apic_id are the core_id (per-socket)
-                                                            warn!("Found socketid={} and coreid={}", socket_id, core_id);
+                                                            debug!("Found socketid={} and coreid={}", socket_id, core_id);
                                                             let mut attributes = HashMap::<String, String>::new();
                                                             let ref_core = logical_cpus.first().unwrap();
                                                             attributes.insert(String::from("frequency"), ref_core.frequency().to_string());
                                                             attributes.insert(String::from("name"), ref_core.name().to_string());
                                                             attributes.insert(String::from("vendor_id"), ref_core.vendor_id().to_string());
                                                             attributes.insert(String::from("brand"), ref_core.brand().to_string());
-                                                            warn!("Adding core id {} to socket_id {}", ((i * (logical_cpus_from_cpuid - 1)) + core_id as u16), current_socket.id);
+                                                            debug!("Adding core id {} to socket_id {}", ((i * (logical_cpus_from_cpuid - 1)) + core_id as u16), current_socket.id);
                                                             current_socket.add_cpu_core(CPUCore::new((i * (logical_cpus_from_cpuid - 1)) + core_id as u16, attributes));
-                                                            warn!("Reviewing sockets : {:?}", topology.get_sockets_passive());
+                                                            debug!("Reviewing sockets : {:?}", topology.get_sockets_passive());
                                                         }
                                                     }
                                                 },
@@ -411,12 +411,12 @@ impl Sensor for MsrRAPLSensor {
                                             }
                                         } else {
                                             no_more_sockets = true;
-                                            warn!("There's likely to be no more socket to explore.");
+                                            debug!("There's likely to be no more socket to explore.");
                                             break;
                                         }
                                     }    
                                     if !no_more_sockets {
-                                        warn!("inserting socket {:?}", current_socket);
+                                        debug!("inserting socket {:?}", current_socket);
                                         topology.safe_insert_socket(current_socket);
                                         i = i + 1;
                                     }
@@ -430,7 +430,7 @@ impl Sensor for MsrRAPLSensor {
                         if let Some(info) = CpuId::new().get_extended_topology_info() {
                             for c in info {
                                 if c.level_type() == TopologyType::Core {
-                                    warn!("CPUID : {:?}", c);
+                                    debug!("CPUID : {:?}", c);
                                 }
                             }
                         }
@@ -440,7 +440,7 @@ impl Sensor for MsrRAPLSensor {
                         panic!("Error was : {:?}", last_error);
                     }
                 } else {
-                    warn!("Getting thread group affinity failed !");
+                    panic!("Getting thread group affinity failed !");
                     let last_error = GetLastError();
                     panic!("Error was: {:?}", last_error); // win32 error 122 is insufficient buffer
                 }
@@ -506,46 +506,49 @@ impl Sensor for MsrRAPLSensor {
         //}
 
         //topology.add_cpu_cores();
-            
+        let mut domains = vec![]; 
         for s in topology.get_sockets() {
-            warn!("Inspecting CPUSocket: {:?}", s);
+            debug!("Inspecting CPUSocket: {:?}", s);
             unsafe {
                 let core_id = s.get_cores_passive().last().unwrap().id + s.id * s.cpu_cores.len() as u16;
-                warn!("Asking get_msr_value, from generate_tpopo, with core_id={}", core_id);
+                debug!("Asking get_msr_value, from generate_tpopo, with core_id={}", core_id);
                 match get_msr_value(core_id as usize, MSR_DRAM_ENERGY_STATUS as u64, &sensor_data) {
                     Ok(rec) => {
-                        warn!("Added domain Dram !");
+                        debug!("Added domain Dram !");
                         let mut domain_sensor_data = sensor_data.clone();
                         domain_sensor_data.insert(String::from("MSR_ADDR"), MSR_DRAM_ENERGY_STATUS.to_string());
                         domain_sensor_data.insert(String::from("CORE_ID"), core_id.to_string()); // nb of cores in a socket * socket_id + local_core_id
+                        domains.push(String::from("dram"));
                         s.safe_add_domain(Domain::new(2, String::from("dram"), String::from(""), 5, domain_sensor_data))
                     },
                     Err(e) => {
-                        error!("Could'nt add Dram domain.");
+                        warn!("Could'nt add Dram domain.");
                     }
                 }
                 match get_msr_value(core_id as usize, MSR_PP0_ENERGY_STATUS as u64, &sensor_data) {
                     Ok(rec) => {
-                        warn!("Added domain Core !");
+                        debug!("Added domain Core !");
                         let mut domain_sensor_data = sensor_data.clone();
                         domain_sensor_data.insert(String::from("MSR_ADDR"), MSR_PP0_ENERGY_STATUS.to_string());
                         domain_sensor_data.insert(String::from("CORE_ID"), core_id.to_string());
+                        domains.push(String::from("core"));
                         s.safe_add_domain(Domain::new(2, String::from("core"), String::from(""), 5, domain_sensor_data))
                     },
                     Err(e) => {
-                        error!("Could'nt add Core domain.");
+                        warn!("Could'nt add Core domain.");
                     }
                 }
                 match get_msr_value(core_id as usize, MSR_PP1_ENERGY_STATUS as u64, &sensor_data) {
                     Ok(rec) => {
-                        warn!("Added domain Uncore !");
+                        debug!("Added domain Uncore !");
                         let mut domain_sensor_data = sensor_data.clone();
                         domain_sensor_data.insert(String::from("MSR_ADDR"), MSR_PP1_ENERGY_STATUS.to_string());
                         domain_sensor_data.insert(String::from("CORE_ID"), core_id.to_string());
+                        domains.push(String::from("uncore"));
                         s.safe_add_domain(Domain::new(2, String::from("uncore"), String::from(""), 5, domain_sensor_data))
                     },
                     Err(e) => {
-                        error!("Could'nt add Uncore domain.");
+                        warn!("Could'nt add Uncore domain.");
                     }
                 }
                 //match get_msr_value(core_id as usize, MSR_PLATFORM_ENERGY_STATUS as u64, &sensor_data) {
@@ -558,6 +561,7 @@ impl Sensor for MsrRAPLSensor {
             }
         }
 
+        topology.set_domains_names(domains);
         Ok(topology)
     }
 
@@ -576,7 +580,7 @@ unsafe fn get_msr_value(core_id: usize, msr_addr: u64, sensor_data: &HashMap<Str
     let mut thread_group_affinity = GROUP_AFFINITY { Mask: 255, Group: 9, Reserved: [0,0,0] };
     let thread_affinity_res  = GetThreadGroupAffinity(current_thread, &mut thread_group_affinity);
     if thread_affinity_res.as_bool() {
-        warn!("Thread affinity found : {:?}", thread_group_affinity);
+        debug!("Thread affinity found : {:?}", thread_group_affinity);
     } else {
         error!("Could'nt get thread group affinity");
     }
@@ -584,25 +588,25 @@ unsafe fn get_msr_value(core_id: usize, msr_addr: u64, sensor_data: &HashMap<Str
     let mut process_group_array_len = 8;
     let process_affinity_res = GetProcessGroupAffinity(current_process, &mut process_group_array_len, process_group_array.as_mut_ptr());
     if process_affinity_res.as_bool() {
-        warn!("Process affinity found: {:?}", process_group_array);
+        debug!("Process affinity found: {:?}", process_group_array);
     } else {
         error!("Could'nt get process group affinity");
         error!("Error was : {:?}", GetLastError());
     }
-    warn!("Core ID requested to the driver : {}", core_id);
+    debug!("Core ID requested to the driver : {}", core_id);
     match get_handle(sensor_data.get("DRIVER_NAME").unwrap()) {
         Ok(device) => {
             let mut msr_result: u64 = 0;
             let ptr_result = &mut msr_result as *mut u64;
-            warn!("msr_addr: {:b}", msr_addr);
-            warn!("core_id: {:x} {:b}", (core_id as u64), (core_id as u64));
-            warn!("core_id: {:b}", ((core_id as u64) << 32));
+            debug!("msr_addr: {:b}", msr_addr);
+            debug!("core_id: {:x} {:b}", (core_id as u64), (core_id as u64));
+            debug!("core_id: {:b}", ((core_id as u64) << 32));
             let src = ((core_id as u64) << 32) | msr_addr; //let src = ((core_id as u64) << 32) | msr_addr;
             let ptr = &src as *const u64;
         
-            warn!("src: {:x}", src);
-            warn!("src: {:b}", src);
-            warn!("*ptr: {:b}", *ptr);
+            debug!("src: {:x}", src);
+            debug!("src: {:b}", src);
+            debug!("*ptr: {:b}", *ptr);
             //warn!("*ptr: {}", *ptr);
             //warn!("*ptr: {:b}", *ptr);
 
@@ -623,7 +627,7 @@ unsafe fn get_msr_value(core_id: usize, msr_addr: u64, sensor_data: &HashMap<Str
                         .parse::<f64>()
                         .unwrap();
                     let current_value = MsrRAPLSensor::extract_rapl_current_power(msr_result, energy_unit);
-                    warn!("current_value: {}", current_value);
+                    debug!("current_value: {}", current_value);
 
                     Ok(Record {
                         timestamp: current_system_time_since_epoch(),

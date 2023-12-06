@@ -134,7 +134,7 @@ impl StdoutExporter {
             .iter()
             .filter(|x| x.name == "scaph_socket_power_microwatts")
         {
-            warn!("✅ Found socket power metric !");
+            debug!("✅ Found socket power metric !");
             let power = format!("{}", s.metric_value).parse::<f32>().unwrap() / 1000000.0;
             let mut power_str = String::from("----");
             if power > 0.0 {
