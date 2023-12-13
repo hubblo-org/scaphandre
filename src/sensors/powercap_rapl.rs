@@ -78,24 +78,26 @@ impl RecordReader for Topology {
         if let Some(psys_record) = self.get_rapl_psys_energy_microjoules() {
             Ok(psys_record)
         } else {
-            let mut total: i64 = 0;
+            let mut total: i128 = 0;
             debug!("Suming socket metrics to get host metric");
             for s in &self.sockets {
                 if let Ok(r) = s.read_record() {
-                    match r.value.trim().parse::<i64>() {
+                    match r.value.trim().parse::<i128>() {
                         Ok(val) => {
                             total += val;
                         },
                         Err(e) => {
-                            debug!("could'nt convert {} to i64: {}", r.value, e);
+                            debug!("could'nt convert {} to i128: {}", r.value, e);
                         }
                     }
                 }
-                //for d in &s.domains {
-                //    if let Ok(r) = d.read_record() {
-                //        total = total + r.value.parse::<i32>().unwrap()
-                //    }
-                //}
+                for d in &s.domains {
+                    if d.name == "dram" {
+                        if let Ok(dr) = d.read_record() {
+                            total = total + dr.value.parse::<i128>().unwrap()
+                        }
+                    }
+                }
             }
             Ok(Record::new(
                 current_system_time_since_epoch(),
