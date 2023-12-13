@@ -79,6 +79,7 @@ impl RecordReader for Topology {
             Ok(psys_record)
         } else {
             let mut total = 0;
+            debug!("Suming socket metrics to get host metric");
             for s in &self.sockets {
                 if let Ok(r) = s.read_record() {
                     if let Ok(val) = r.value.parse::<i32>() {
