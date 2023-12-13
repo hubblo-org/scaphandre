@@ -5,8 +5,8 @@
 Scaphandre can be compiled with a limited set of features. You have the choice to only install Scaphandre with prometheus-push exporter (alongside with stdout and json exporters, which might be useful locally).
 
 RPM packages containing only those features are provided for RHEL 8 and 9 :
-- [RPM package for RHEL8](https://scaphandre.s3.fr-par.scw.cloud/x86_64/scaphandre-prometheuspush-dev0.5.10-1.el8.x86_64.rpm)
-- [RPM package for RHEL9](https://scaphandre.s3.fr-par.scw.cloud/x86_64/scaphandre-prometheuspush-dev0.5.10-1.el9.x86_64.rpm)
+- [RPM package for RHEL8](https://scaphandre.s3.fr-par.scw.cloud/x86_64/scaphandre-prometheuspush-dev0.5.18-1.el8.x86_64.rpm)
+- [RPM package for RHEL9](https://scaphandre.s3.fr-par.scw.cloud/x86_64/scaphandre-prometheuspush-dev0.5.18-1.el9.x86_64.rpm)
 
 You can download it and install it just providing the right URL to dnf :
 
