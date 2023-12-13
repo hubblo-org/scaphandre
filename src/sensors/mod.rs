@@ -864,6 +864,7 @@ impl Topology {
         if let Some(psys) = self._sensor_data.get("psys") {
             match &fs::read_to_string(format!("{psys}/energy_uj")) {
                 Ok(val) => {
+                    debug!("Read PSYS from {psys}/energy_uj: {}", val.to_string());
                     return Some(Record::new(
                         current_system_time_since_epoch(),
                         val.to_string(),
