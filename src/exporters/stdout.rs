@@ -111,8 +111,14 @@ impl StdoutExporter {
     fn summarized_view(&mut self, metrics: Vec<Metric>) {
         let mut metrics_iter = metrics.iter();
         let none_value = MetricValueType::Text("0".to_string());
+        let mut host_power_source = String::from("");
         let host_power = match metrics_iter.find(|x| x.name == "scaph_host_power_microwatts") {
-            Some(m) => &m.metric_value,
+            Some(m) => {
+                if let Some(src) = &m.attributes.get("value_source") {
+                    host_power_source = src.to_string()
+                }
+                &m.metric_value
+            },
             None => &none_value,
         };
 
@@ -122,8 +128,9 @@ impl StdoutExporter {
         }
 
         println!(
-            "Host:\t{} W",
-            (format!("{host_power}").parse::<f64>().unwrap() / 1000000.0)
+            "Host:\t{} W from {}",
+            (format!("{host_power}").parse::<f64>().unwrap() / 1000000.0),
+            host_power_source
         );
 
         if domain_names.is_some() {
@@ -143,6 +150,8 @@ impl StdoutExporter {
             let socket_id = s.attributes.get("socket_id").unwrap().clone();
 
             let mut to_print = format!("Socket{socket_id}\t{power_str} W |\t");
+
+            
 
             let domains = metrics.iter().filter(|x| {
                 x.name == "scaph_domain_power_microwatts"

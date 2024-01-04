@@ -18,7 +18,7 @@ pub mod utils;
 pub mod warpten;
 use crate::sensors::{
     utils::{current_system_time_since_epoch, IProcess},
-    RecordGenerator, Topology,
+    RecordGenerator, Topology, Record
 };
 use chrono::Utc;
 use std::collections::HashMap;
@@ -644,22 +644,6 @@ impl MetricGenerator {
             metric_value: MetricValueType::Text(metric_value.value),
         });
 
-        if let Some(psys) = self.topology.get_rapl_psys_energy_microjoules() {
-            self.data.push(Metric {
-                name: String::from("scaph_host_rapl_psys_microjoules"),
-                metric_type: String::from("counter"),
-                ttl: 60.0,
-                timestamp: psys.timestamp,
-                hostname: self.hostname.clone(),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from(
-                    "Raw extract of RAPL PSYS domain energy value, in microjoules",
-                ),
-                metric_value: MetricValueType::Text(psys.value),
-            })
-        }
     }
 
     /// Generate socket metrics.

@@ -3,8 +3,10 @@
 //! `Sensor` is the root for all sensors. It defines the [Sensor] trait
 //! needed to implement a sensor.
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "windows")]
 pub mod msr_rapl;
+#[cfg(target_os="windows")]
+use msr_rapl::get_msr_value;
 #[cfg(target_os = "linux")]
 pub mod powercap_rapl;
 pub mod units;
@@ -459,29 +461,35 @@ impl Topology {
                 .record_buffer
                 .get(self.record_buffer.len() - 2)
                 .unwrap();
+            match previous_record.value.trim().parse::<u128>() {
+                Ok(previous_microjoules) => {
+                    match last_record.value.trim().parse::<u128>() {
+                        Ok(last_microjoules) => {
+                            if previous_microjoules > last_microjoules {
+                                return None;
+                            }
+                            let microjoules = last_microjoules - previous_microjoules;
+                            let time_diff = last_record.timestamp.as_secs_f64()
+                                - previous_record.timestamp.as_secs_f64();
+                            let microwatts = microjoules as f64 / time_diff;
+                            return Some(Record::new(
+                                last_record.timestamp,
+                                (microwatts as u64).to_string(),
+                                units::Unit::MicroWatt,
+                            ));
+                        },
+                        Err(e) => {
+                            warn!(
+                                "Could'nt get previous_microjoules - value : '{}' - error : {:?}",
+                                previous_record.value, e
+                            );
+                        }
 
-            if let Ok(last_microjoules) = last_record.value.trim().parse::<u64>() {
-                if let Ok(previous_microjoules) = previous_record.value.trim().parse::<u64>() {
-                    if previous_microjoules > last_microjoules {
-                        return None;
                     }
-                    let microjoules = last_microjoules - previous_microjoules;
-                    let time_diff = last_record.timestamp.as_secs_f64()
-                        - previous_record.timestamp.as_secs_f64();
-                    let microwatts = microjoules as f64 / time_diff;
-                    return Some(Record::new(
-                        last_record.timestamp,
-                        (microwatts as u64).to_string(),
-                        units::Unit::MicroWatt,
-                    ));
-                } else {
-                    warn!(
-                        "Could'nt get previous_microjoules: {}",
-                        previous_record.value
-                    );
+                },
+                Err(e) => {
+                    warn!("Couldn't parse previous_microjoules - value : '{}' - error : {:?}", previous_record.value.trim(), e);   
                 }
-            } else {
-                warn!("Could'nt get last_microjoules: {}", last_record.value);
             }
         }
         None
@@ -910,6 +918,7 @@ impl Topology {
         None
     }
 
+    #[cfg(target_os="linux")]
     pub fn get_rapl_psys_energy_microjoules(&self) -> Option<Record> {
         if let Some(psys) = self._sensor_data.get("psys") {
             match &fs::read_to_string(format!("{psys}/energy_uj")) {
@@ -924,22 +933,30 @@ impl Topology {
                     warn!("PSYS Error: {:?}", e);
                 }
             }
+        } else {
+            debug!("Asked for PSYS but there is no psys entry in sensor_data.");
         }
         None
     }
 
-    //pub fn get_rapl_psys_power_microwatts(&self) -> Option<Record> {
-    //    if let Some(psys) = self._sensor_data.get("psys") {
-    //        if let Ok(val) = &fs::read_to_string(format!("{psys}/energy_uj")) {
-    //            return Some(Record::new(
-    //                current_system_time_since_epoch(),
-    //                val.to_string(),
-    //                units::Unit::MicroJoule
-    //            ));
-    //        }
-    //    }
-    //    None
-    //}
+    #[cfg(target_os="windows")]
+    pub unsafe fn get_rapl_psys_energy_microjoules(&self) -> Option<Record> {
+        let msr_addr = msr_rapl::MSR_PLATFORM_ENERGY_STATUS;
+        match msr_rapl::get_msr_value(0, msr_addr.into(), &self._sensor_data) {
+            Ok(res) => {
+                return Some(Record::new(
+                    current_system_time_since_epoch(),
+                    res.value.to_string(),
+                    units::Unit::MicroJoule
+                ))
+            },
+            Err(e) => {
+                debug!("get_msr_value returned error : {}", e);
+            }
+        }
+        None
+    }
+
 }
 
 // !!!!!!!!!!!!!!!!! CPUSocket !!!!!!!!!!!!!!!!!!!!!!!

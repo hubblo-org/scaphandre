@@ -20,9 +20,9 @@ use windows::Win32::System::SystemInformation::GROUP_AFFINITY;
 
 use core_affinity::{self, CoreId};
 
-use x86::cpuid;
+pub use x86::cpuid;
 // Intel RAPL MSRs
-use x86::msr::{
+pub use x86::msr::{
     MSR_RAPL_POWER_UNIT,
     MSR_PKG_POWER_LIMIT,
     MSR_PKG_POWER_INFO,
@@ -33,13 +33,13 @@ use x86::msr::{
     MSR_PP0_PERF_STATUS,
     MSR_PP1_ENERGY_STATUS,
 };
-const MSR_PLATFORM_ENERGY_STATUS: u32 = 0x0000064d;
-const MSR_PLATFORM_POWER_LIMIT: u32 = 0x0000065c ;
+pub const MSR_PLATFORM_ENERGY_STATUS: u32 = 0x0000064d;
+pub const MSR_PLATFORM_POWER_LIMIT: u32 = 0x0000065c ;
 
 // AMD RAPL MSRs
-const MSR_AMD_RAPL_POWER_UNIT: u32 = 0xc0010299;
-const MSR_AMD_CORE_ENERGY_STATUS: u32 = 0xc001029a;
-const MSR_AMD_PKG_ENERGY_STATUS: u32 = 0xc001029b;
+pub const MSR_AMD_RAPL_POWER_UNIT: u32 = 0xc0010299;
+pub const MSR_AMD_CORE_ENERGY_STATUS: u32 = 0xc001029a;
+pub const MSR_AMD_PKG_ENERGY_STATUS: u32 = 0xc001029b;
 
 
 unsafe fn ctl_code(device_type: u32, request_code: u32, method: u32, access: u32) -> u32 {
@@ -176,24 +176,32 @@ impl MsrRAPLSensor {
 
 impl RecordReader for Topology {
     fn read_record(&self) -> Result<Record, Box<dyn Error>> {
-        let mut res: u64 = 0;
-        debug!("Topology: I have {} sockets", self.sockets.len());
-        for s in &self.sockets {
-            match s.read_record() {
-                Ok(rec) => {
-                    debug!("rec: {:?}", rec);
-                    res = res + rec.value.parse::<u64>()?;
-                },
-                Err(e) => {
-                    error!("Failed to get socket record : {:?}", e);
+        let mut record: Option<Record> = None;
+        unsafe {
+            record = self.get_rapl_psys_energy_microjoules();
+        }
+        if let Some(psys_record) = record {
+            Ok(psys_record)
+        } else {
+            let mut res: u64 = 0;
+            debug!("Topology: I have {} sockets", self.sockets.len());
+            for s in &self.sockets {
+                match s.read_record() {
+                    Ok(rec) => {
+                        debug!("rec: {:?}", rec);
+                        res = res + rec.value.parse::<u64>()?;
+                    },
+                    Err(e) => {
+                        error!("Failed to get socket record : {:?}", e);
+                    }
                 }
             }
+            Ok(Record {
+                timestamp: current_system_time_since_epoch(),
+                unit: super::units::Unit::MicroJoule,
+                value: res.to_string(),
+            })
         }
-        Ok(Record {
-            timestamp: current_system_time_since_epoch(),
-            unit: super::units::Unit::MicroJoule,
-            value: res.to_string(),
-        })
     }
 }
 
@@ -513,8 +521,8 @@ impl Sensor for MsrRAPLSensor {
                 let core_id = s.get_cores_passive().last().unwrap().id + s.id * s.cpu_cores.len() as u16;
                 debug!("Asking get_msr_value, from generate_tpopo, with core_id={}", core_id);
                 match get_msr_value(core_id as usize, MSR_DRAM_ENERGY_STATUS as u64, &sensor_data) {
-                    Ok(rec) => {
-                        debug!("Added domain Dram !");
+                    Ok(_rec) => {
+                        debug!("Adding domain Dram !");
                         let mut domain_sensor_data = sensor_data.clone();
                         domain_sensor_data.insert(String::from("MSR_ADDR"), MSR_DRAM_ENERGY_STATUS.to_string());
                         domain_sensor_data.insert(String::from("CORE_ID"), core_id.to_string()); // nb of cores in a socket * socket_id + local_core_id
@@ -522,12 +530,12 @@ impl Sensor for MsrRAPLSensor {
                         s.safe_add_domain(Domain::new(2, String::from("dram"), String::from(""), 5, domain_sensor_data))
                     },
                     Err(e) => {
-                        warn!("Could'nt add Dram domain.");
+                        warn!("Could'nt add Dram domain: {}", e);
                     }
                 }
                 match get_msr_value(core_id as usize, MSR_PP0_ENERGY_STATUS as u64, &sensor_data) {
-                    Ok(rec) => {
-                        debug!("Added domain Core !");
+                    Ok(_rec) => {
+                        debug!("Adding domain Core !");
                         let mut domain_sensor_data = sensor_data.clone();
                         domain_sensor_data.insert(String::from("MSR_ADDR"), MSR_PP0_ENERGY_STATUS.to_string());
                         domain_sensor_data.insert(String::from("CORE_ID"), core_id.to_string());
@@ -535,12 +543,12 @@ impl Sensor for MsrRAPLSensor {
                         s.safe_add_domain(Domain::new(2, String::from("core"), String::from(""), 5, domain_sensor_data))
                     },
                     Err(e) => {
-                        warn!("Could'nt add Core domain.");
+                        warn!("Could'nt add Core domain: {}", e);
                     }
                 }
                 match get_msr_value(core_id as usize, MSR_PP1_ENERGY_STATUS as u64, &sensor_data) {
-                    Ok(rec) => {
-                        debug!("Added domain Uncore !");
+                    Ok(_rec) => {
+                        debug!("Adding domain Uncore !");
                         let mut domain_sensor_data = sensor_data.clone();
                         domain_sensor_data.insert(String::from("MSR_ADDR"), MSR_PP1_ENERGY_STATUS.to_string());
                         domain_sensor_data.insert(String::from("CORE_ID"), core_id.to_string());
@@ -548,7 +556,7 @@ impl Sensor for MsrRAPLSensor {
                         s.safe_add_domain(Domain::new(2, String::from("uncore"), String::from(""), 5, domain_sensor_data))
                     },
                     Err(e) => {
-                        warn!("Could'nt add Uncore domain.");
+                        warn!("Could'nt add Uncore domain: {}", e);
                     }
                 }
                 //match get_msr_value(core_id as usize, MSR_PLATFORM_ENERGY_STATUS as u64, &sensor_data) {
@@ -558,6 +566,18 @@ impl Sensor for MsrRAPLSensor {
                 //        error!("Could'nt find Platform/PSYS domain.");
                 //    }
                 //}
+            }
+        }
+
+        unsafe {
+            match get_msr_value(0, MSR_PLATFORM_ENERGY_STATUS as u64, &sensor_data) {
+                Ok(_rec) => {
+                    debug!("Adding domain Platform / PSYS !");
+                    topology._sensor_data.insert(String::from("psys"), String::from(""));
+                },
+                Err(e) => {
+                    warn!("Could'nt add Uncore domain: {}", e);
+                }
             }
         }
 
@@ -574,7 +594,7 @@ impl Sensor for MsrRAPLSensor {
     }
 }
 
-unsafe fn get_msr_value(core_id: usize, msr_addr: u64, sensor_data: &HashMap<String, String>) -> Result<Record, String> {
+pub unsafe fn get_msr_value(core_id: usize, msr_addr: u64, sensor_data: &HashMap<String, String>) -> Result<Record, String> {
     let current_process = GetCurrentProcess();
     let current_thread = GetCurrentThread();
     let mut thread_group_affinity = GROUP_AFFINITY { Mask: 255, Group: 9, Reserved: [0,0,0] };
