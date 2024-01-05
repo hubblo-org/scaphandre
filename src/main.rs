@@ -167,7 +167,7 @@ fn my_service_main(_arguments: Vec<OsString>) {
                     "Starting main thread, service status has been set: {:?}",
                     status_set
                 );
-                thread_handle = Some(thread::spawn(move || {
+                thread_handle = Some(std::thread::spawn(move || {
                     parse_cli_and_run_exporter();
                 }));
             }
