@@ -318,7 +318,7 @@ impl Topology {
                     warn!("coud't not match core to socket - mapping to first socket instead - if you are not using --vm there is something wrong")
                 }
             }
-            
+
             //#[cfg(target_os = "windows")]
             //{
             //TODO: fix
@@ -941,7 +941,7 @@ impl Topology {
     ///
     /// This function is unsafe rust as it calls get_msr_value function from msr_rapl sensor module.
     /// It calls the msr_RAPL::MSR_PLATFORM_ENERGY_STATUS MSR address, which has been tested on several Intel x86 processors
-    /// but might fail on AMD (needs testing). That being said, it returns None if the msr query fails (which means if the Windows 
+    /// but might fail on AMD (needs testing). That being said, it returns None if the msr query fails (which means if the Windows
     /// driver fails.) and should not prevent from using a value coming from elsewhere, which means from another get_msr_value calls
     /// targeting another msr address.
     #[cfg(target_os = "windows")]

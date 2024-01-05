@@ -3,7 +3,6 @@
 use clap::{command, ArgAction, Parser, Subcommand};
 use colored::Colorize;
 use scaphandre::{exporters, sensors::Sensor};
-use std::thread;
 
 #[cfg(target_os = "linux")]
 use scaphandre::sensors::powercap_rapl;
@@ -20,7 +19,7 @@ use windows_service::{
     service::ServiceStatus,
     service::ServiceType,
     service_control_handler::{self, ServiceControlHandlerResult},
-    service_dispatcher
+    service_dispatcher,
 };
 
 #[cfg(target_os = "windows")]

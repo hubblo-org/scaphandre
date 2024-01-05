@@ -10,7 +10,6 @@ use riemann_client::proto::{Attribute, Event};
 use riemann_client::Client;
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::sync::mpsc::Receiver;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// Riemann server default ipv4/ipv6 address
@@ -169,7 +168,7 @@ impl RiemannExporter {
 
 impl Exporter for RiemannExporter {
     /// Entry point of the RiemannExporter.
-    fn run(&mut self, channel: &Receiver<u8>) {
+    fn run(&mut self) {
         info!(
             "{}: Starting Riemann exporter",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")

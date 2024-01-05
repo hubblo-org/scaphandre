@@ -279,13 +279,11 @@ impl RecordReader for CPUSocket {
                         MSR_PKG_ENERGY_STATUS as u64,
                         &self.sensor_data,
                     ) {
-                        Ok(rec) => {
-                            Ok(Record {
-                                timestamp: current_system_time_since_epoch(),
-                                value: rec.value,
-                                unit: super::units::Unit::MicroJoule,
-                            })
-                        }
+                        Ok(rec) => Ok(Record {
+                            timestamp: current_system_time_since_epoch(),
+                            value: rec.value,
+                            unit: super::units::Unit::MicroJoule,
+                        }),
                         Err(e) => {
                             error!(
                                 "Could'nt get MSR value for {}: {}",
@@ -324,13 +322,11 @@ impl RecordReader for Domain {
                         msr_addr.parse::<u64>().unwrap(),
                         &self.sensor_data,
                     ) {
-                        Ok(rec) => {
-                            Ok(Record {
-                                timestamp: current_system_time_since_epoch(),
-                                unit: super::units::Unit::MicroJoule,
-                                value: rec.value,
-                            })
-                        }
+                        Ok(rec) => Ok(Record {
+                            timestamp: current_system_time_since_epoch(),
+                            unit: super::units::Unit::MicroJoule,
+                            value: rec.value,
+                        }),
                         Err(e) => {
                             error!("Could'nt get MSR value for {}: {}", msr_addr, e);
                             Ok(Record {

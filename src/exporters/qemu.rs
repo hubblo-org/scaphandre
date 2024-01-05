@@ -1,7 +1,6 @@
 use crate::exporters::Exporter;
 use crate::sensors::Topology;
 use crate::sensors::{utils::ProcessRecord, Sensor};
-use std::sync::mpsc::Receiver;
 use std::{fs, io, thread, time};
 
 /// An Exporter that extracts power consumption data of running
@@ -18,7 +17,7 @@ pub struct QemuExporter {
 
 impl Exporter for QemuExporter {
     /// Runs [iterate()] in a loop.
-    fn run(&mut self, channel: Receiver<u8>) {
+    fn run(&mut self) {
         info!("Starting qemu exporter");
         let path = "/var/lib/libvirt/scaphandre";
         let cleaner_step = 120;
