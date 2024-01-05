@@ -99,7 +99,7 @@ impl RecordReader for Topology {
                                 Ok(val) => {
                                     total += val;
                                 }
-                                Err(e) =>{
+                                Err(e) => {
                                     warn!("could'nt convert {} to i128: {}", dr.value.trim(), e);
                                 }
                             }
