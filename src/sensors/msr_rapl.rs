@@ -176,16 +176,26 @@ impl RecordReader for Topology {
         if let Some(psys_record) = record {
             Ok(psys_record)
         } else {
-            let mut res: u64 = 0;
+            let mut res: u128 = 0;
             debug!("Topology: I have {} sockets", self.sockets.len());
             for s in &self.sockets {
                 match s.read_record() {
                     Ok(rec) => {
                         debug!("rec: {:?}", rec);
-                        res += rec.value.parse::<u64>()?;
+                        res += rec.value.trim().parse::<u128>()?;
                     }
                     Err(e) => {
                         error!("Failed to get socket record : {:?}", e);
+                    }
+                }
+                let dram_filter: Vec<&Domain> = s
+                    .get_domains_passive()
+                    .iter()
+                    .filter(|d| d.name == "dram")
+                    .collect();
+                if let Some(dram) = dram_filter.first() {
+                    if let Ok(val) = dram.read_record() {
+                        res += val.value.trim().parse::<u128>()?;
                     }
                 }
             }
