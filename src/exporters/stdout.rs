@@ -4,7 +4,6 @@ use regex::Regex;
 use std::fmt::Write;
 use std::thread;
 use std::time::{Duration, Instant};
-use std::sync::mpsc::Receiver;
 
 /// An Exporter that displays power consumption data of the host
 /// and its processes on the standard output of the terminal.
@@ -54,7 +53,7 @@ pub struct ExporterArgs {
 
 impl Exporter for StdoutExporter {
     /// Runs [iterate()] every `step` until `timeout`
-    fn run(&mut self, channel: &Receiver<u8>) {
+    fn run(&mut self) {
         let time_step = Duration::from_secs(self.args.step);
         let time_limit = if self.args.timeout < 0 {
             None
@@ -118,7 +117,7 @@ impl StdoutExporter {
                     host_power_source = src.to_string()
                 }
                 &m.metric_value
-            },
+            }
             None => &none_value,
         };
 
@@ -150,8 +149,6 @@ impl StdoutExporter {
             let socket_id = s.attributes.get("socket_id").unwrap().clone();
 
             let mut to_print = format!("Socket{socket_id}\t{power_str} W |\t");
-
-            
 
             let domains = metrics.iter().filter(|x| {
                 x.name == "scaph_domain_power_microwatts"

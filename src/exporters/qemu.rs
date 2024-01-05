@@ -1,8 +1,8 @@
 use crate::exporters::Exporter;
 use crate::sensors::Topology;
 use crate::sensors::{utils::ProcessRecord, Sensor};
-use std::{fs, io, thread, time};
 use std::sync::mpsc::Receiver;
+use std::{fs, io, thread, time};
 
 /// An Exporter that extracts power consumption data of running
 /// Qemu/KVM virtual machines on the host and store those data

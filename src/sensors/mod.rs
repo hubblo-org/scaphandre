@@ -5,7 +5,7 @@
 
 #[cfg(target_os = "windows")]
 pub mod msr_rapl;
-#[cfg(target_os="windows")]
+#[cfg(target_os = "windows")]
 use msr_rapl::get_msr_value;
 #[cfg(target_os = "linux")]
 pub mod powercap_rapl;
@@ -227,13 +227,10 @@ impl Topology {
         }
     }
 
-    pub fn safe_insert_socket(
-        &mut self,
-        socket: CPUSocket
-    ) {
+    pub fn safe_insert_socket(&mut self, socket: CPUSocket) {
         if !self.sockets.iter().any(|s| s.id == socket.id) {
             self.sockets.push(socket);
-        } 
+        }
     }
 
     /// Returns a immutable reference to self.proc_tracker
@@ -296,53 +293,53 @@ impl Topology {
 
     /// Generates CPUCore instances for the host and adds them
     /// to appropriate CPUSocket instance from self.sockets
+    #[cfg(target_os = "linux")]
     pub fn add_cpu_cores(&mut self) {
         if let Some(mut cores) = Topology::generate_cpu_cores() {
-            #[cfg(target_os = "linux")] {
-                while let Some(c) = cores.pop() {
-                    let socket_id = &c
-                        .attributes
-                        .get("physical id")
-                        .unwrap()
-                        .parse::<u16>()
-                        .unwrap();
-                    let socket_match = self.sockets.iter_mut().find(|x| &x.id == socket_id);
+            while let Some(c) = cores.pop() {
+                let socket_id = &c
+                    .attributes
+                    .get("physical id")
+                    .unwrap()
+                    .parse::<u16>()
+                    .unwrap();
+                let socket_match = self.sockets.iter_mut().find(|x| &x.id == socket_id);
 
-                    //In VMs there might be a missmatch betwen Sockets and Cores - see Issue#133 as a first fix we just map all cores that can't be mapped to the first
-                    let socket = match socket_match {
-                        Some(x) => x,
-                        None =>self.sockets.first_mut().expect("Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line")
-                    };
+                //In VMs there might be a missmatch betwen Sockets and Cores - see Issue#133 as a first fix we just map all cores that can't be mapped to the first
+                let socket = match socket_match {
+                    Some(x) => x,
+                    None =>self.sockets.first_mut().expect("Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line")
+                };
 
-                    if socket_id == &socket.id {
-                        socket.add_cpu_core(c);
-                    } else {
-                        socket.add_cpu_core(c);
-                        warn!("coud't not match core to socket - mapping to first socket instead - if you are not using --vm there is something wrong")
-                    }
+                if socket_id == &socket.id {
+                    socket.add_cpu_core(c);
+                } else {
+                    socket.add_cpu_core(c);
+                    warn!("coud't not match core to socket - mapping to first socket instead - if you are not using --vm there is something wrong")
                 }
             }
+            
             //#[cfg(target_os = "windows")]
             //{
-                //TODO: fix
-                //let nb_sockets = &self.sockets.len();
-                //let mut socket_counter = 0;
-                //let nb_cores_per_socket = &cores.len() / nb_sockets;
-                //warn!("nb_cores_per_socket: {} cores_len: {} sockets_len: {}", nb_cores_per_socket, &cores.len(), &self.sockets.len());
-                //for s in self.sockets.iter_mut() {
-                //    for c in (socket_counter * nb_cores_per_socket)..((socket_counter+1) * nb_cores_per_socket) {
-                //        match cores.pop() {
-                //            Some(core) => {
-                //                warn!("adding core {} to socket {}", core.id, s.id);
-                //                s.add_cpu_core(core);
-                //            },
-                //            None => {
-                //                error!("Uneven number of CPU cores !");
-                //            }
-                //        }
-                //    }
-                //    socket_counter = socket_counter + 1;
-                //}
+            //TODO: fix
+            //let nb_sockets = &self.sockets.len();
+            //let mut socket_counter = 0;
+            //let nb_cores_per_socket = &cores.len() / nb_sockets;
+            //warn!("nb_cores_per_socket: {} cores_len: {} sockets_len: {}", nb_cores_per_socket, &cores.len(), &self.sockets.len());
+            //for s in self.sockets.iter_mut() {
+            //    for c in (socket_counter * nb_cores_per_socket)..((socket_counter+1) * nb_cores_per_socket) {
+            //        match cores.pop() {
+            //            Some(core) => {
+            //                warn!("adding core {} to socket {}", core.id, s.id);
+            //                s.add_cpu_core(core);
+            //            },
+            //            None => {
+            //                error!("Uneven number of CPU cores !");
+            //            }
+            //        }
+            //    }
+            //    socket_counter = socket_counter + 1;
+            //}
             //}
         } else {
             panic!("Couldn't retrieve any CPU Core from the topology. (generate_cpu_cores)");
@@ -462,33 +459,34 @@ impl Topology {
                 .get(self.record_buffer.len() - 2)
                 .unwrap();
             match previous_record.value.trim().parse::<u128>() {
-                Ok(previous_microjoules) => {
-                    match last_record.value.trim().parse::<u128>() {
-                        Ok(last_microjoules) => {
-                            if previous_microjoules > last_microjoules {
-                                return None;
-                            }
-                            let microjoules = last_microjoules - previous_microjoules;
-                            let time_diff = last_record.timestamp.as_secs_f64()
-                                - previous_record.timestamp.as_secs_f64();
-                            let microwatts = microjoules as f64 / time_diff;
-                            return Some(Record::new(
-                                last_record.timestamp,
-                                (microwatts as u64).to_string(),
-                                units::Unit::MicroWatt,
-                            ));
-                        },
-                        Err(e) => {
-                            warn!(
-                                "Could'nt get previous_microjoules - value : '{}' - error : {:?}",
-                                previous_record.value, e
-                            );
+                Ok(previous_microjoules) => match last_record.value.trim().parse::<u128>() {
+                    Ok(last_microjoules) => {
+                        if previous_microjoules > last_microjoules {
+                            return None;
                         }
-
+                        let microjoules = last_microjoules - previous_microjoules;
+                        let time_diff = last_record.timestamp.as_secs_f64()
+                            - previous_record.timestamp.as_secs_f64();
+                        let microwatts = microjoules as f64 / time_diff;
+                        return Some(Record::new(
+                            last_record.timestamp,
+                            (microwatts as u64).to_string(),
+                            units::Unit::MicroWatt,
+                        ));
+                    }
+                    Err(e) => {
+                        warn!(
+                            "Could'nt get previous_microjoules - value : '{}' - error : {:?}",
+                            previous_record.value, e
+                        );
                     }
                 },
                 Err(e) => {
-                    warn!("Couldn't parse previous_microjoules - value : '{}' - error : {:?}", previous_record.value.trim(), e);   
+                    warn!(
+                        "Couldn't parse previous_microjoules - value : '{}' - error : {:?}",
+                        previous_record.value.trim(),
+                        e
+                    );
                 }
             }
         }
@@ -918,7 +916,7 @@ impl Topology {
         None
     }
 
-    #[cfg(target_os="linux")]
+    #[cfg(target_os = "linux")]
     pub fn get_rapl_psys_energy_microjoules(&self) -> Option<Record> {
         if let Some(psys) = self._sensor_data.get("psys") {
             match &fs::read_to_string(format!("{psys}/energy_uj")) {
@@ -939,24 +937,30 @@ impl Topology {
         None
     }
 
-    #[cfg(target_os="windows")]
+    /// # Safety
+    ///
+    /// This function is unsafe rust as it calls get_msr_value function from msr_rapl sensor module.
+    /// It calls the msr_RAPL::MSR_PLATFORM_ENERGY_STATUS MSR address, which has been tested on several Intel x86 processors
+    /// but might fail on AMD (needs testing). That being said, it returns None if the msr query fails (which means if the Windows 
+    /// driver fails.) and should not prevent from using a value coming from elsewhere, which means from another get_msr_value calls
+    /// targeting another msr address.
+    #[cfg(target_os = "windows")]
     pub unsafe fn get_rapl_psys_energy_microjoules(&self) -> Option<Record> {
         let msr_addr = msr_rapl::MSR_PLATFORM_ENERGY_STATUS;
-        match msr_rapl::get_msr_value(0, msr_addr.into(), &self._sensor_data) {
+        match get_msr_value(0, msr_addr.into(), &self._sensor_data) {
             Ok(res) => {
                 return Some(Record::new(
                     current_system_time_since_epoch(),
                     res.value.to_string(),
-                    units::Unit::MicroJoule
+                    units::Unit::MicroJoule,
                 ))
-            },
+            }
             Err(e) => {
                 debug!("get_msr_value returned error : {}", e);
             }
         }
         None
     }
-
 }
 
 // !!!!!!!!!!!!!!!!! CPUSocket !!!!!!!!!!!!!!!!!!!!!!!

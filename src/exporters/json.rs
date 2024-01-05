@@ -8,7 +8,6 @@ use std::{
     path::{Path, PathBuf},
     thread,
     time::{Duration, Instant},
-    sync::mpsc::Receiver
 };
 
 /// An Exporter that writes power consumption data of the host
@@ -157,7 +156,7 @@ struct Report {
 
 impl Exporter for JsonExporter {
     /// Runs [iterate()] every `step` until `timeout`
-    fn run(&mut self, channel: &Receiver<u8>) {
+    fn run(&mut self) {
         let step = self.time_step;
         info!("Measurement step is: {step:?}");
 

@@ -10,8 +10,8 @@ use riemann_client::proto::{Attribute, Event};
 use riemann_client::Client;
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::sync::mpsc::Receiver;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// Riemann server default ipv4/ipv6 address
 const DEFAULT_IP_ADDRESS: &str = "localhost";

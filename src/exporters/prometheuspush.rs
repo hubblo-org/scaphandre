@@ -13,7 +13,6 @@ use isahc::{prelude::*, Request};
 use std::fmt::Write;
 use std::thread;
 use std::time::Duration;
-use std::sync::mpsc::Receiver;
 
 pub struct PrometheusPushExporter {
     topo: Topology,
@@ -73,7 +72,7 @@ impl PrometheusPushExporter {
 }
 
 impl Exporter for PrometheusPushExporter {
-    fn run(&mut self, channel: &Receiver<u8>) {
+    fn run(&mut self) {
         info!(
             "{}: Starting Prometheus Push exporter",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
@@ -97,10 +96,6 @@ impl Exporter for PrometheusPushExporter {
         );
 
         loop {
-            if self.watch_signal(channel).is_some() {
-                info!("Daemon/Service has received a stop signal.");
-                break;
-            }
             metric_generator.topology.refresh();
             metric_generator.gen_all_metrics();
             let mut body = String::from("");
@@ -159,10 +154,6 @@ impl Exporter for PrometheusPushExporter {
                 }
             }
 
-            if self.watch_signal(channel).is_some() {
-                info!("Daemon/Service has received a stop signal.");
-                break;
-            }
             thread::sleep(Duration::new(self.args.step, 0));
         }
     }

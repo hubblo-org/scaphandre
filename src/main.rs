@@ -3,7 +3,6 @@
 use clap::{command, ArgAction, Parser, Subcommand};
 use colored::Colorize;
 use scaphandre::{exporters, sensors::Sensor};
-use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 
 #[cfg(target_os = "linux")]
@@ -21,7 +20,7 @@ use windows_service::{
     service::ServiceStatus,
     service::ServiceType,
     service_control_handler::{self, ServiceControlHandlerResult},
-    service_dispatcher, Result,
+    service_dispatcher
 };
 
 #[cfg(target_os = "windows")]
@@ -113,14 +112,13 @@ enum ExporterChoice {
 }
 
 #[cfg(target_os = "windows")]
-fn my_service_main(arguments: Vec<OsString>) {
+fn my_service_main(_arguments: Vec<OsString>) {
     use std::thread::JoinHandle;
     let graceful_period = 3;
 
-    let (tx, rx) = mpsc::channel();
     let start_status = ServiceStatus {
         service_type: ServiceType::OWN_PROCESS, // Should match the one from system service registry
-        current_state: ServiceState::Running, // The new state
+        current_state: ServiceState::Running,   // The new state
         controls_accepted: ServiceControlAccept::STOP, // Accept stop events when running
         exit_code: ServiceExitCode::Win32(0), // Used to report an error when starting or stopping only, otherwise must be zero
         checkpoint: 0, // Only used for pending states, otherwise must be zero
@@ -134,7 +132,7 @@ fn my_service_main(arguments: Vec<OsString>) {
         exit_code: ServiceExitCode::Win32(0),
         checkpoint: 0,
         wait_hint: Duration::default(),
-        process_id: None
+        process_id: None,
     };
     let stoppending_status = ServiceStatus {
         service_type: ServiceType::OWN_PROCESS,
@@ -143,18 +141,17 @@ fn my_service_main(arguments: Vec<OsString>) {
         exit_code: ServiceExitCode::Win32(0),
         checkpoint: 0,
         wait_hint: Duration::from_secs(graceful_period),
-        process_id: None
+        process_id: None,
     };
 
-    let mut thread_handle: Option<JoinHandle<()>> = None;
-    let mut stop = false;
+    let thread_handle: Option<JoinHandle<()>>;
+    let mut _stop = false;
     let event_handler = move |control_event| -> ServiceControlHandlerResult {
         println!("Got service control event: {:?}", control_event);
         match control_event {
             ServiceControl::Stop => {
                 // Handle stop event and return control back to the system.
-                stop = true;
-                let _ = &tx.send(1);
+                _stop = true;
                 ServiceControlHandlerResult::NoError
             }
             // All services must accept Interrogate even if it's a no-op.
@@ -164,27 +161,42 @@ fn my_service_main(arguments: Vec<OsString>) {
     };
 
     if let Ok(system_handler) = service_control_handler::register("scaphandre", event_handler) {
-        // Tell the system that the service is running now and run it 
+        // Tell the system that the service is running now and run it
         match system_handler.set_service_status(start_status.clone()) {
             Ok(status_set) => {
-                println!("Starting main thread, service status has been set: {:?}", status_set);
-                thread_handle = Some(thread::spawn(move || { parse_cli_and_run_exporter(&rx); }));
-            },
+                println!(
+                    "Starting main thread, service status has been set: {:?}",
+                    status_set
+                );
+                thread_handle = Some(thread::spawn(move || {
+                    parse_cli_and_run_exporter();
+                }));
+            }
             Err(e) => {
                 panic!("Couldn't set Windows service status. Error: {:?}", e);
             }
         }
         loop {
-            if stop {
+            if _stop {
                 // Wait for the thread to finnish, then end the current function
                 match system_handler.set_service_status(stoppending_status.clone()) {
                     Ok(status_set) => {
                         println!("Stop status has been set for service: {:?}", status_set);
                         if let Some(thr) = thread_handle {
-                            if let Ok(_) = thr.join() {
+                            if thr.join().is_ok() {
                                 match system_handler.set_service_status(stop_status.clone()) {
-                                    Ok(laststatus_set) => {println!("Scaphandre gracefully stopped: {:?}", laststatus_set);},
-                                    Err(e) => {panic!("Could'nt set Stop status on scaphandre service: {:?}", e);}
+                                    Ok(laststatus_set) => {
+                                        println!(
+                                            "Scaphandre gracefully stopped: {:?}",
+                                            laststatus_set
+                                        );
+                                    }
+                                    Err(e) => {
+                                        panic!(
+                                            "Could'nt set Stop status on scaphandre service: {:?}",
+                                            e
+                                        );
+                                    }
                                 }
                             } else {
                                 panic!("Joining the thread failed.");
@@ -193,7 +205,7 @@ fn my_service_main(arguments: Vec<OsString>) {
                         } else {
                             panic!("Thread handle was not initialized.");
                         }
-                    },
+                    }
                     Err(e) => {
                         panic!("Couldn't set Windows service status. Error: {:?}", e);
                     }
@@ -214,12 +226,10 @@ fn main() {
         }
     }
 
-    let (_, rx) = mpsc::channel();
-
-    parse_cli_and_run_exporter(&rx);
+    parse_cli_and_run_exporter();
 }
 
-fn parse_cli_and_run_exporter(channel: &Receiver<u8>) {
+fn parse_cli_and_run_exporter() {
     let cli = Cli::parse();
     loggerv::init_with_verbosity(cli.verbose.into()).expect("unable to initialize the logger");
 
@@ -229,7 +239,7 @@ fn parse_cli_and_run_exporter(channel: &Receiver<u8>) {
         print_scaphandre_header(exporter.kind());
     }
 
-    exporter.run(channel);
+    exporter.run();
 }
 
 fn build_exporter(choice: ExporterChoice, sensor: &dyn Sensor) -> Box<dyn exporters::Exporter> {
@@ -280,9 +290,7 @@ fn build_sensor(cli: &Cli) -> impl Sensor {
     };
 
     #[cfg(target_os = "windows")]
-    let msr_sensor_win = || {
-        msr_rapl::MsrRAPLSensor::new()
-    };
+    let msr_sensor_win = msr_rapl::MsrRAPLSensor::new;
 
     match cli.sensor.as_deref() {
         Some("powercap_rapl") => {

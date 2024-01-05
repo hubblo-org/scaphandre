@@ -5,7 +5,7 @@
 //! [scrape](https://prometheus.io/docs/prometheus/latest/getting_started).
 
 use super::utils;
-use crate::current_system_time_since_epoch;
+use crate::sensors::utils::current_system_time_since_epoch;
 use crate::exporters::{Exporter, MetricGenerator, MetricValueType};
 use crate::sensors::{Sensor, Topology};
 use chrono::Utc;
@@ -16,9 +16,9 @@ use std::{
     collections::HashMap,
     fmt::Write,
     net::{IpAddr, Ipv4Addr, SocketAddr},
+    sync::mpsc::Receiver,
     sync::{Arc, Mutex},
     time::Duration,
-    sync::mpsc::Receiver
 };
 
 /// Default ipv4/ipv6 address to expose the service is any
@@ -73,7 +73,7 @@ impl PrometheusExporter {
 
 impl Exporter for PrometheusExporter {
     /// Starts an HTTP server to expose the metrics in Prometheus format.
-    fn run(&mut self, channel: &Receiver<u8>) {
+    fn run(&mut self) {
         info!(
             "{}: Starting Prometheus exporter",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")

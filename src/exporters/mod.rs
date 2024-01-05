@@ -18,14 +18,13 @@ pub mod utils;
 pub mod warpten;
 use crate::sensors::{
     utils::{current_system_time_since_epoch, IProcess},
-    RecordGenerator, Topology, Record
+    RecordGenerator, Topology,
 };
 use chrono::Utc;
 use std::collections::HashMap;
 use std::fmt;
 use std::time::Duration;
 use utils::get_scaphandre_version;
-use std::sync::mpsc::Receiver;
 #[cfg(feature = "containers")]
 use {
     docker_sync::{container::Container, Docker},
@@ -109,22 +108,10 @@ impl fmt::Debug for MetricValueType {
 /// with the structs provided by the sensor.
 pub trait Exporter {
     /// Runs the exporter.
-    fn run(&mut self, channel: &Receiver<u8>);
+    fn run(&mut self);
 
     /// The name of the kind of the exporter, for example "json".
     fn kind(&self) -> &str;
-
-    fn watch_signal(&mut self, channel: &Receiver<u8>) -> Option<i32> {
-        match channel.try_recv() {
-            Ok(received) => {
-                info!("Received signal: {}", received);
-                Some(1)
-            },
-            Err(_) => {
-                None
-            }
-        }
-    }
 }
 
 /// MetricGenerator is an exporter helper structure to collect Scaphandre metrics.
@@ -643,7 +630,6 @@ impl MetricGenerator {
             description: String::from("Total swap space on the host, in bytes."),
             metric_value: MetricValueType::Text(metric_value.value),
         });
-
     }
 
     /// Generate socket metrics.
