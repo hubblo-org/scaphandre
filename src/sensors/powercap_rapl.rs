@@ -86,7 +86,7 @@ impl RecordReader for Topology {
                     match r.value.trim().parse::<i128>() {
                         Ok(val) => {
                             total += val;
-                        },
+                        }
                         Err(e) => {
                             warn!("could'nt convert {} to i128: {}", r.value.trim(), e);
                         }
@@ -98,7 +98,7 @@ impl RecordReader for Topology {
                             match dr.value.trim().parse::<i128>() {
                                 Ok(val) => {
                                     total += val;
-                                },
+                                }
                                 Err(e) =>{
                                     warn!("could'nt convert {} to i128: {}", dr.value.trim(), e);
                                 }
