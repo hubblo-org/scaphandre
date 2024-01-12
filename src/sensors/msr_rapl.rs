@@ -185,7 +185,7 @@ impl RecordReader for Topology {
                         res += rec.value.trim().parse::<u128>()?;
                     }
                     Err(e) => {
-                        error!("Failed to get socket record : {:?}", e);
+                        warn!("Failed to get socket record : {:?}", e);
                     }
                 }
                 let dram_filter: Vec<&Domain> = s
@@ -245,7 +245,7 @@ unsafe fn send_request(
         info!("Device answered");
         Ok(String::from("Device answered !"))
     } else {
-        error!("DeviceIoControl failed");
+        info!("DeviceIoControl failed");
         Err(String::from("DeviceIoControl failed"))
     }
 }
@@ -802,7 +802,7 @@ pub unsafe fn get_msr_value(
                     })
                 }
                 Err(e) => {
-                    error!("Failed to get data from send_request: {:?}", e);
+                    info!("Failed to get data from send_request: {:?}", e);
                     close_handle(device);
                     Err(format!("Failed to get data from send_request: {:?}", e))
                 }
