@@ -9,3 +9,23 @@ on:
       - 'book.toml'
       - 'CONTRIBUTING.md'
     tags: [ 'v*.*.*', 'dev*.*.*' ]
+
+env:
+  VERSION: ${{ vars.GITHUB_REF_NAME }}
+
+
+jobs:
+  create_debian_pkg_with_tag:
+    name: Create Debian package associated to version tag
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout scaphandre-debian repository
+      uses: actions/checkout@v4
+      with:
+        repository: 'barnumbirr/scaphandre-debian'
+    - name: Build package with version tag and Debian 11 Bullseye
+      run : |
+        ./build.sh -v {{ $VERSION }}
+    - name: Build package with version tag and Debian 12 Bookworm
+      run: |
+        $IMAGE="debian:bookworm-slim" ./build.sh -v {{ $VERSION }}
