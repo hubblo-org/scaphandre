@@ -1,0 +1,11 @@
+name: debian-release
+
+on:
+  push:
+    paths-ignore:
+      - 'docs_src/**'
+      - 'README.md'
+      - 'CITATION'
+      - 'book.toml'
+      - 'CONTRIBUTING.md'
+    tags: [ 'v*.*.*', 'dev*.*.*' ]
