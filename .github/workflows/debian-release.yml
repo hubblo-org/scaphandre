@@ -1,7 +1,8 @@
 name: Build Debian package on release
 
 on:
-  release:
+  push:
+    branches: [ feat-create-debian-package-with-tag ]
     paths-ignore:
       - 'docs_src/**'
       - 'README.md'
