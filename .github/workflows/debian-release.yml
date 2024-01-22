@@ -1,4 +1,4 @@
-name: debian-release
+name: Build Debian package on release
 
 on:
   release:
@@ -29,4 +29,4 @@ jobs:
         ./build.sh -v {{ $VERSION }}
     - name: Build package with version tag and Debian 12 Bookworm
       run: |
-        ./build.sh  -i debian:bookworm-slim -v {{ $VERSION }}
+        ./build.sh -i debian:bookworm-slim -v {{ $VERSION }}
