@@ -1,8 +1,7 @@
 name: Build Debian package on release
 
 on:
-  push:
-    branches: [ feat-create-debian-package-with-tag ]
+  release:
     paths-ignore:
       - 'docs_src/**'
       - 'README.md'
@@ -18,15 +17,18 @@ jobs:
     name: Create Debian package associated to version tag
     runs-on: ubuntu-latest
     steps:
-    - name: debug version env variable name
-      run: echo "${{ github.ref }}"
     - name: Checkout scaphandre-debian repository
       uses: actions/checkout@v4
       with:
         repository: barnumbirr/scaphandre-debian
+    - name: Get latest tag of scaphandre repository
+      id: latest-scaphandre-tag
+      uses: "WyriHaximus/github-action-get-previous-tag@v1.3.0"
+      with:
+        fallback: dev0.5.18
     - name: Build package with version tag and Debian 11 Bullseye
       run : |
-        ./build.sh -v ${{ github.ref }}
+        ./build.sh -v ${{ steps.latest-scaphandre-tag.outputs.tag }}
     - name: Build package with version tag and Debian 12 Bookworm
       run: |
-        ./build.sh -i debian:bookworm-slim -v ${{ github.ref }}
+        ./build.sh -i debian:bookworm-slim -v ${{ steps.latest-scaphandre-tag.outputs.tag }}
