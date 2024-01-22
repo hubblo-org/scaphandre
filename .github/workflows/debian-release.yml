@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 env:
-  VERSION: ${{ vars.GITHUB_REF }}
+  VERSION: ${{ GITHUB_REF }}
 
 
 jobs:
