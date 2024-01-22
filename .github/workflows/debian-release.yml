@@ -21,6 +21,8 @@ jobs:
     name: Create Debian package associated to version tag
     runs-on: ubuntu-latest
     steps:
+    - name: debug version env variable name
+      run: echo "${{ env.VERSION }}"
     - name: Checkout scaphandre-debian repository
       uses: actions/checkout@v4
       with:
