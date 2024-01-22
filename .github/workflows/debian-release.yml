@@ -1,16 +1,6 @@
 name: Build Debian package on release
 
-on:
-  workflow_dispatch:
-  release:
-    paths-ignore:
-      - 'docs_src/**'
-      - 'README.md'
-      - 'CITATION'
-      - 'book.toml'
-      - 'CONTRIBUTING.md'
-    tags: [ 'v*.*.*', 'dev*.*.*' ]
-    types: [published]                                                                      
+on: [workflow_dispatch, release]                                                              
 
 env:
   VERSION: ${{ vars.GITHUB_REF_NAME }}
