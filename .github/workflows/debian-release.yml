@@ -12,9 +12,6 @@ on:
     tags: [ 'v*.*.*', 'dev*.*.*' ]
   workflow_dispatch:
 
-env:
-  VERSION: ${{ GITHUB_REF }}
-
 
 jobs:
   create_debian_pkg_with_tag:
@@ -22,14 +19,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: debug version env variable name
-      run: echo "${{ env.VERSION }}"
+      run: echo "${{ GITHUB_REF }}"
     - name: Checkout scaphandre-debian repository
       uses: actions/checkout@v4
       with:
         repository: barnumbirr/scaphandre-debian
     - name: Build package with version tag and Debian 11 Bullseye
       run : |
-        ./build.sh -v ${{ env.VERSION }}
+        ./build.sh -v ${{ GITHUB_REF }}
     - name: Build package with version tag and Debian 12 Bookworm
       run: |
-        ./build.sh -i debian:bookworm-slim -v ${{ env.VERSION }}
+        ./build.sh -i debian:bookworm-slim -v ${{ GITHUB_REF }}
