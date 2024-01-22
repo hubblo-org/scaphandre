@@ -27,7 +27,7 @@ jobs:
         repository: barnumbirr/scaphandre-debian
     - name: Build package with version tag and Debian 11 Bullseye
       run : |
-        ./build.sh -v $VERSION
+        ./build.sh -v ${{ env.VERSION }}
     - name: Build package with version tag and Debian 12 Bookworm
       run: |
-        ./build.sh -i debian:bookworm-slim -v $VERSION
+        ./build.sh -i debian:bookworm-slim -v ${{ env.VERSION }}
