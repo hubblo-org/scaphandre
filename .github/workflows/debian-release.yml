@@ -1,7 +1,7 @@
 name: debian-release
 
 on:
-  push:
+  release:
     paths-ignore:
       - 'docs_src/**'
       - 'README.md'
@@ -9,6 +9,7 @@ on:
       - 'book.toml'
       - 'CONTRIBUTING.md'
     tags: [ 'v*.*.*', 'dev*.*.*' ]
+    types: [published]                                                                      
 
 env:
   VERSION: ${{ vars.GITHUB_REF_NAME }}
@@ -28,4 +29,4 @@ jobs:
         ./build.sh -v {{ $VERSION }}
     - name: Build package with version tag and Debian 12 Bookworm
       run: |
-        $IMAGE="debian:bookworm-slim" ./build.sh -v {{ $VERSION }}
+        ./build.sh  -i debian:bookworm-slim -v {{ $VERSION }}
