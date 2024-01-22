@@ -1,6 +1,7 @@
 name: Build Debian package on release
 
 on:
+  workflow_dispatch:
   release:
     paths-ignore:
       - 'docs_src/**'
@@ -23,7 +24,7 @@ jobs:
     - name: Checkout scaphandre-debian repository
       uses: actions/checkout@v4
       with:
-        repository: 'barnumbirr/scaphandre-debian'
+        repository: barnumbirr/scaphandre-debian
     - name: Build package with version tag and Debian 11 Bullseye
       run : |
         ./build.sh -v {{ $VERSION }}
