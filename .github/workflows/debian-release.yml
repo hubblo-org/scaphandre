@@ -19,14 +19,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: debug version env variable name
-      run: echo "${{ GITHUB_REF }}"
+      run: echo "${{ github.ref }}"
     - name: Checkout scaphandre-debian repository
       uses: actions/checkout@v4
       with:
         repository: barnumbirr/scaphandre-debian
     - name: Build package with version tag and Debian 11 Bullseye
       run : |
-        ./build.sh -v ${{ GITHUB_REF }}
+        ./build.sh -v ${{ github.ref }}
     - name: Build package with version tag and Debian 12 Bookworm
       run: |
-        ./build.sh -i debian:bookworm-slim -v ${{ GITHUB_REF }}
+        ./build.sh -i debian:bookworm-slim -v ${{ github.ref }}
