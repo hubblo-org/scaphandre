@@ -21,7 +21,7 @@ jobs:
     - name: Checkout scaphandre-debian repository
       uses: actions/checkout@v4
       with:
-        repository: barnumbirr/scaphandre-debian
+        repository: hubblo-org/scaphandre-debian
     - name: Get latest tag of scaphandre repository
       id: latest-scaphandre-tag
       uses: "WyriHaximus/github-action-get-previous-tag@v1.3.0"
