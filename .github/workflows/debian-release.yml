@@ -18,15 +18,17 @@ jobs:
     name: Create Debian package associated to version tag
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout scaphandre-debian repository
+    - name: Checkout scaphandre repository
       uses: actions/checkout@v4
-      with:
-        repository: hubblo-org/scaphandre-debian
     - name: Get latest tag of scaphandre repository
       id: latest-scaphandre-tag
       uses: "WyriHaximus/github-action-get-previous-tag@v1.3.0"
       with:
         fallback: dev0.5.18
+    - name: Checkout scaphandre-debian repository
+      uses: actions/checkout@v4
+      with:
+        repository: hubblo-org/scaphandre-debian
     - name: Build package with version tag and Debian 11 Bullseye
       run : |
         ./build.sh -v ${{ steps.latest-scaphandre-tag.outputs.tag }}
