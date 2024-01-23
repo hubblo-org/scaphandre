@@ -21,8 +21,7 @@ jobs:
     - name: Checkout scaphandre repository
       uses: actions/checkout@v4
       with:
-        sparse-checkout: .
-        ref: dev
+        fetch-depth: 0
     - name: Get latest tag of scaphandre repository
       id: latest-scaphandre-tag
       uses: "WyriHaximus/github-action-get-previous-tag@v1.3.0"
