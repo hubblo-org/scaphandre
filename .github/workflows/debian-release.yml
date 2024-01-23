@@ -45,7 +45,7 @@ jobs:
         echo "DEB11_PKG=$PKG_NAME" >> "$GITHUB_OUTPUT"
     - name: Upload to scw s3
       run: |
-        ls
+        cd target
         s3cmd --access_key="${{ secrets.S3_ACCESS_KEY_ID }}" --secret_key="${{ secrets.S3_SECRET_ACCESS_KEY }}" --region="fr-par" --acl-public --host="s3.fr-par.scw.cloud" --host-bucket="%(bucket).s3.fr-par.scw.cloud" put ${{ steps.deb11pkg.outputs.DEB11_PKG }} s3://scaphandre/x86_64/
     - name: Build package with version tag and Debian 12 Bookworm
       run: |
@@ -59,5 +59,6 @@ jobs:
         echo "DEB12_PKG=$PKG_NAME" >> "$GITHUB_OUTPUT"
     - name: Upload to scw s3
       run: |
+        cd target
         s3cmd --access_key="${{ secrets.S3_ACCESS_KEY_ID }}" --secret_key="${{ secrets.S3_SECRET_ACCESS_KEY }}" --region="fr-par" --acl-public --host="s3.fr-par.scw.cloud" --host-bucket="%(bucket).s3.fr-par.scw.cloud" put {{ steps.deb12pkg.outputs.DEB12_PKG }} s3://scaphandre/x86_64/
 
