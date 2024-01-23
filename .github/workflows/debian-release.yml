@@ -43,13 +43,13 @@ jobs:
         PKG_NAME=$(ls | sed "s/\([0-9]\+\.\)\{2\}[0-9]\+\-[0-9]\+\?/${{ steps.latest-scaphandre-tag.outputs.tag }}-deb11/")
         mv *.deb $PKG_NAME
         echo "DEB11_PKG=$PKG_NAME" >> "$GITHUB_OUTPUT"
-    - name: Upload to scw s3
+    - name: Upload to scw s3 and remove package
       run: |
         cd target
         s3cmd --access_key="${{ secrets.S3_ACCESS_KEY_ID }}" --secret_key="${{ secrets.S3_SECRET_ACCESS_KEY }}" --region="fr-par" --acl-public --host="s3.fr-par.scw.cloud" --host-bucket="%(bucket).s3.fr-par.scw.cloud" put ${{ steps.deb11pkg.outputs.DEB11_PKG }} s3://scaphandre/x86_64/
-    - name: Remove previous package and build package with version tag and Debian 12 Bookworm
-      run: |
         rm *.deb
+    - name: Build package with version tag and Debian 12 Bookworm
+      run: |
         ./build.sh -i debian:bookworm-slim -v ${{ steps.latest-scaphandre-tag.outputs.tag }}
     - name: Modify name of package to include tag version for Debian 12
       id: deb12pkg
