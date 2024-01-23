@@ -35,7 +35,6 @@ jobs:
       run : |
         ./build.sh -v ${{ steps.latest-scaphandre-tag.outputs.tag }}
     - name: Modify name of package to include tag version for Debian 11
-      id: package-name
       run: |
         cd target
         PKG_NAME=$(ls | sed "s/\([0-9]\+\.\)\{2\}[0-9]\+\-[0-9]\+\?/${{ steps.latest-scaphandre-tag.outputs.tag }}-deb11/")
@@ -47,7 +46,6 @@ jobs:
       run: |
         ./build.sh -i debian:bookworm-slim -v ${{ steps.latest-scaphandre-tag.outputs.tag }}
     - name: Modify name of package to include tag version for Debian 12
-      id: package-name
       run: |
         cd target
         PKG_NAME=$(ls | sed "s/\([0-9]\+\.\)\{2\}[0-9]\+\-[0-9]\+\?/${{ steps.latest-scaphandre-tag.outputs.tag }}-deb12/")
