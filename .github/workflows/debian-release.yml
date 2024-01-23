@@ -47,8 +47,9 @@ jobs:
       run: |
         cd target
         s3cmd --access_key="${{ secrets.S3_ACCESS_KEY_ID }}" --secret_key="${{ secrets.S3_SECRET_ACCESS_KEY }}" --region="fr-par" --acl-public --host="s3.fr-par.scw.cloud" --host-bucket="%(bucket).s3.fr-par.scw.cloud" put ${{ steps.deb11pkg.outputs.DEB11_PKG }} s3://scaphandre/x86_64/
-    - name: Build package with version tag and Debian 12 Bookworm
+    - name: Remove previous package and build package with version tag and Debian 12 Bookworm
       run: |
+        rm *.deb
         ./build.sh -i debian:bookworm-slim -v ${{ steps.latest-scaphandre-tag.outputs.tag }}
     - name: Modify name of package to include tag version for Debian 12
       id: deb12pkg
