@@ -9,7 +9,7 @@ on:
       - 'CITATION'
       - 'book.toml'
       - 'CONTRIBUTING.md'
-    tags: [ 'v*.*.*', 'dev*.*.*' ]
+    tags: [ 'v*.*.*', 'dev*.*.*', 'feat-*' ]
   workflow_dispatch:
 
 
