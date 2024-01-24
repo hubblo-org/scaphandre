@@ -80,10 +80,10 @@ jobs:
           apt install -y curl
       - name: Download Debian 11 scaphandre package
         run: |
-          curl -o https://s3.fr-par.scw.cloud/scaphandre/x86_64/$DEB11_PKG
+          curl -o https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ env.DEB11_PKG }}
       - name: Install and run scaphandre Stdout exporter for 10 seconds
         run: |
-          apt install -y ./$DEB11_PKG
+          apt install -y ./${{ env.DEB11_PKG }}
           scaphandre stdout -t 10
   deb12-container-install-scaphandre:
     name: Create Debian 12 container and install scaphandre with URL
@@ -100,8 +100,8 @@ jobs:
           apt install -y curl
       - name: Download Debian 12 scaphandre package
         run: |
-          curl -o https://s3.fr-par.scw.cloud/scaphandre/x86_64/$DEB12_PKG
+          curl -o https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ env.DEB12_PKG }}
       - name: Install and run scaphandre Stdout exporter for 10 seconds
         run: |
-          apt install -y ./$DEB12_PKG
+          apt install -y ./${{ env.DEB12_PKG }}
           scaphandre stdout -t 10
