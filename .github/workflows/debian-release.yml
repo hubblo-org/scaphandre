@@ -80,7 +80,7 @@ jobs:
           apt install -y curl
       - name: Download Debian 11 scaphandre package
         run: |
-          curl -o https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ env.DEB11PKG }}
+          curl -O https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ env.DEB11PKG }}
       - name: Install and run scaphandre Stdout exporter for 10 seconds
         run: |
           apt install -y ./${{ env.DEB11PKG }}
@@ -100,7 +100,7 @@ jobs:
           apt install -y curl
       - name: Download Debian 12 scaphandre package
         run: |
-          curl -o https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ env.DEB12PKG }}
+          curl -O https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ env.DEB12PKG }}
       - name: Install and run scaphandre Stdout exporter for 10 seconds
         run: |
           apt install -y ./${{ env.DEB12PKG }}
