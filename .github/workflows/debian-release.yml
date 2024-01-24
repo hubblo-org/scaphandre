@@ -62,4 +62,37 @@ jobs:
       run: |
         cd target
         s3cmd --access_key="${{ secrets.S3_ACCESS_KEY_ID }}" --secret_key="${{ secrets.S3_SECRET_ACCESS_KEY }}" --region="fr-par" --acl-public --host="s3.fr-par.scw.cloud" --host-bucket="%(bucket).s3.fr-par.scw.cloud" put ${{ steps.deb12pkg.outputs.DEB12_PKG }} s3://scaphandre/x86_64/
-
+  deb11-container-install-scaphandre:
+    name: Create Debian 11 container and install scaphandre with URL
+    runs-on: ubuntu-latest
+    container:
+      image: debian:buster-slim
+    steps:
+      - name: Install dependencies
+        run: |
+          apt update
+          apt install curl
+      - name: Download Debian 11 scaphandre package
+        run: |
+          curl -o https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ steps.deb11pkg.outputs.DEB11_PKG }}
+      - name: Install and run scaphandre Stdout exporter for 10 seconds
+        run: |
+          apt install ./${{ steps.deb11pkg.outputs.DEB11_PKG }}
+          scaphandre stdout -t 10
+  deb12-container-install-scaphandre:
+    name: Create Debian 12 container and install scaphandre with URL
+    runs-on: ubuntu-latest
+    container:
+      image: debian:bookworm-slim
+    steps:
+      - name: Install dependencies
+        run: |
+          apt update
+          apt install curl
+      - name: Download Debian 12 scaphandre package
+        run: |
+          curl -o https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ steps.deb12pkg.outputs.DEB12_PKG }}
+      - name: Install and run scaphandre Stdout exporter for 10 seconds
+        run: |
+          apt install ./${{ steps.deb12pkg.outputs.DEB12_PKG }}
+          scaphandre stdout -t 10
