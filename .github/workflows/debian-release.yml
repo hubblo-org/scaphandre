@@ -68,12 +68,12 @@ jobs:
   deb11-container-install-scaphandre:
     name: Create Debian 11 container and install scaphandre with URL
     needs: create_debian_pkg_with_tag
+    env:
+      DEB11_PKG: ${{needs.create_debian_pkg_with_tags.outputs.deb11-pkg}}
     runs-on: ubuntu-latest
     container:
       image: debian:buster-slim
     steps:
-      - env:
-          DEB11_PKG: ${{needs.create_debian_pkg_with_tags.outputs.deb11-pkg}}
       - name: Install dependencies
         run: |
           apt update
@@ -89,11 +89,11 @@ jobs:
     name: Create Debian 12 container and install scaphandre with URL
     needs: create_debian_pkg_with_tag
     runs-on: ubuntu-latest
+    env:
+      DEB12_PKG: ${{needs.create_debian_pkg_with_tags.outputs.deb12-pkg}}
     container:
       image: debian:bookworm-slim
     steps:
-      - env:
-          DEB12_PKG: ${{needs.create_debian_pkg_with_tags.outputs.deb12-pkg}}
       - name: Install dependencies
         run: |
           apt update
