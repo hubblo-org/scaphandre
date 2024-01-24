@@ -64,6 +64,7 @@ jobs:
         s3cmd --access_key="${{ secrets.S3_ACCESS_KEY_ID }}" --secret_key="${{ secrets.S3_SECRET_ACCESS_KEY }}" --region="fr-par" --acl-public --host="s3.fr-par.scw.cloud" --host-bucket="%(bucket).s3.fr-par.scw.cloud" put ${{ steps.deb12pkg.outputs.DEB12_PKG }} s3://scaphandre/x86_64/
   deb11-container-install-scaphandre:
     name: Create Debian 11 container and install scaphandre with URL
+    needs: create_debian_pkg_with_tag
     runs-on: ubuntu-latest
     container:
       image: debian:buster-slim
@@ -81,6 +82,7 @@ jobs:
           scaphandre stdout -t 10
   deb12-container-install-scaphandre:
     name: Create Debian 12 container and install scaphandre with URL
+    needs: create_debian_pkg_with_tag
     runs-on: ubuntu-latest
     container:
       image: debian:bookworm-slim
