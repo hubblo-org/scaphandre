@@ -74,20 +74,16 @@ jobs:
     container:
       image: debian:buster-slim
     steps:
-      - name: Debug env variable
-        run: |
-          echo "$DEB11PKG"
-          echo ${{ env.DEB11PKG }}
       - name: Install dependencies
         run: |
           apt update
           apt install -y curl
       - name: Download Debian 11 scaphandre package
         run: |
-          curl -o "https://s3.fr-par.scw.cloud/scaphandre/x86_64/$DEB11PKG"
+          curl -o https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ env.DEB11PKG }}
       - name: Install and run scaphandre Stdout exporter for 10 seconds
         run: |
-          apt install -y ./$DEB11PKG
+          apt install -y ./${{ env.DEB11PKG }}
           scaphandre stdout -t 10
   deb12-container-install-scaphandre:
     name: Create Debian 12 container and install scaphandre with URL
@@ -98,18 +94,14 @@ jobs:
     container:
       image: debian:bookworm-slim
     steps:
-      - name: Debug env variable
-        run: |
-          echo ${{ env.DEB12PKG }}
-          echo "$DEB12PKG"
       - name: Install dependencies
         run: |
           apt update
           apt install -y curl
       - name: Download Debian 12 scaphandre package
         run: |
-          curl -o "https://s3.fr-par.scw.cloud/scaphandre/x86_64/$DEB12PKG"
+          curl -o https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ env.DEB12PKG }}
       - name: Install and run scaphandre Stdout exporter for 10 seconds
         run: |
-          apt install -y ./$DEB12PKG
+          apt install -y ./${{ env.DEB12PKG }}
           scaphandre stdout -t 10
