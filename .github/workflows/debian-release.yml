@@ -17,6 +17,9 @@ jobs:
   create_debian_pkg_with_tag:
     name: Create Debian package associated to version tag
     runs-on: ubuntu-latest
+    outputs:
+      deb11-pkg: ${{ steps.deb11pkg.outputs.DEB11_PKG }}
+      deb12-pkg: ${{ steps.deb12pkg.outputs.DEB12_PKG }}
     steps:
     - name: Install s3cmd
       run: sudo apt install python3-pip -y && sudo pip3 install s3cmd awxkit
@@ -78,7 +81,7 @@ jobs:
           curl -o https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ steps.deb11pkg.outputs.DEB11_PKG }}
       - name: Install and run scaphandre Stdout exporter for 10 seconds
         run: |
-          apt install -y ./${{ steps.deb11pkg.outputs.DEB11_PKG }}
+          apt install -y ./${{ needs.create_debian_pkg_with_tags.outputs.DEB11_PKG }}
           scaphandre stdout -t 10
   deb12-container-install-scaphandre:
     name: Create Debian 12 container and install scaphandre with URL
@@ -93,7 +96,7 @@ jobs:
           apt install -y curl
       - name: Download Debian 12 scaphandre package
         run: |
-          curl -o https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ steps.deb12pkg.outputs.DEB12_PKG }}
+          curl -o https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ needs.create_debian_pkg_with_tags.outputs.DEB11_PKG }}
       - name: Install and run scaphandre Stdout exporter for 10 seconds
         run: |
           apt install -y ./${{ steps.deb12pkg.outputs.DEB12_PKG }}
