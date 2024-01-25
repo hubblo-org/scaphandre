@@ -16,7 +16,7 @@
       "changelog": true,
       "artifacts": {
           "auto": true
-      }
+      },
       "funding": {
           "preferred_funding": "github"
       }
