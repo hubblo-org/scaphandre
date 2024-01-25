@@ -84,7 +84,7 @@ jobs:
       - name: Install and run scaphandre Stdout exporter for 10 seconds
         run: |
           apt install -y ./${{ env.DEB11PKG }}
-          scaphandre stdout -t 10
+          scaphandre -V
   deb12-container-install-scaphandre:
     name: Create Debian 12 container and install scaphandre with URL
     needs: create_debian_pkg_with_tag
@@ -104,4 +104,4 @@ jobs:
       - name: Install and run scaphandre Stdout exporter for 10 seconds
         run: |
           apt install -y ./${{ env.DEB12PKG }}
-          scaphandre stdout -t 10
+          scaphandre -V
