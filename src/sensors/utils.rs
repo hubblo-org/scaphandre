@@ -324,7 +324,7 @@ impl ProcessTracker {
             // check if the previous records in the vector are from the same process
             // (if the process with that pid is not a new one) and if so, drop it for a new one
             if !vector.is_empty()
-                && process_record.process.comm != vector.get(0).unwrap().process.comm
+                && process_record.process.comm != vector.first().unwrap().process.comm
             {
                 *vector = vec![];
             }
@@ -627,13 +627,13 @@ impl ProcessTracker {
         let mut result = self
             .procs
             .iter()
-            .filter(|x| !x.is_empty() && x.get(0).unwrap().process.pid == pid);
+            .filter(|x| !x.is_empty() && x.first().unwrap().process.pid == pid);
         let process = result.next().unwrap();
         if result.next().is_some() {
             panic!("Found two vectors of processes with the same id, maintainers should fix this.");
         }
         debug!("End of get process name.");
-        process.get(0).unwrap().process.comm.clone()
+        process.first().unwrap().process.comm.clone()
     }
 
     /// Returns the cmdline string associated to a PID
@@ -641,7 +641,7 @@ impl ProcessTracker {
         let mut result = self
             .procs
             .iter()
-            .filter(|x| !x.is_empty() && x.get(0).unwrap().process.pid == pid);
+            .filter(|x| !x.is_empty() && x.first().unwrap().process.pid == pid);
         let process = result.next().unwrap();
         if let Some(p) = process.first() {
             let cmdline_request = p.process.cmdline(self);
