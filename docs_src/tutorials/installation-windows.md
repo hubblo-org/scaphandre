@@ -1,18 +1,31 @@
 # Install Scaphandre on Windows
 
-**!! Warning: This is a first testing version of the package and installation procedure.**
-**!! A new version is on its way with proper driver signature and Windows service proper management.**
+**!! Warning: Windows version of Scaphandre is still in early stage. !!**
 
 ## Using the installer
 
-In this first itration of the package, you'll need to enable Test Mode on Windows prior to proceed to this installation, then reboot. (Next version will have an officially signed version of the driver, so this won't be ncessaerry anymore.)
+Download the [package](https://scaphandre.s3.fr-par.scw.cloud/x86_64/scaphandre_0.5.0_installer.exe) and install it **as an administrator**.
+
+### Configuring a Windows service to run Scaphandre in the background
+
+For example, to run the prometheus-push exporter in the background and target the Prometheus Push Gateway server with ip address `198.51.100.5` using HTTPS on port 443 and a step to send metrics of 45s, without checking the certificate of the push gateway (remove that option if you have a properly signed TLS certificate):
+
+    sc.exe create Scaphandre binPath="C:\Program Files (x86)\scaphandre\scaphandre.exe prometheus-push -H 198.51.100.5 -s 45 -S https -p 443 --no-tls-check" DisplayName=Scaphandre start=auto
+
+Ensure the service is started in Services.msc, start it by right clicking on it, then Start, otherwise.
+
+To delete the service, you can do it in Services.msc, or: 
+
+    sc.exe delete Scaphandre
+
+### Using an installer including a development version of the driver
+
+If you are running a development version of the installer (which probably means a development version of the [driver](https://github.com/hubblo-org/windows-rapl-driver/)), you'll need to enable Test Mode on Windows prior to proceed to this installation, then reboot.
 
     bcdedit.exe -set TESTSIGNING ON
     bcdedit.exe -set nointegritychecks on
 
-The installer will ensure that test mode is enabled and fail otherwise, but activation of test mode **and a reboot** is needed before anyway.
-
-Then download the [package](https://scaphandre.s3.fr-par.scw.cloud/x86_64/scaphandre_0.5.0_installer.exe) and install it **as an administrator**.
+Beware: in this case, activation of test mode **and a reboot** is needed before anyway.
 
 Once installed, you should be able to run scaphandre from Powershell, by running :
 

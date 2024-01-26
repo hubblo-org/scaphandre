@@ -449,12 +449,12 @@ impl ProcessTracker {
     ) -> HashMap<String, String> {
         let mut result = self.procs.iter().filter(
             // get all processes that have process records
-            |x| !x.is_empty() && x.get(0).unwrap().process.pid == pid,
+            |x| !x.is_empty() && x.first().unwrap().process.pid == pid,
         );
         let process = result.next().unwrap();
         let mut description = HashMap::new();
         let regex_clean_container_id = Regex::new("[[:alnum:]]{12,}").unwrap();
-        if let Some(_p) = process.get(0) {
+        if let Some(_p) = process.first() {
             // if we have the cgroups data from the original process struct
             if let Ok(procfs_process) =
                 procfs::process::Process::new(pid.to_string().parse::<i32>().unwrap())
@@ -632,6 +632,8 @@ impl ProcessTracker {
         if result.next().is_some() {
             panic!("Found two vectors of processes with the same id, maintainers should fix this.");
         }
+
+        debug!("End of get process name.");
         process.first().unwrap().process.comm.clone()
     }
 
