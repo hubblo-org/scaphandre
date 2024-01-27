@@ -15,10 +15,19 @@
     "components": {
       "changelog": true,
       "artifacts": {
-          "auto": true
+          "auto": true,
+          "cargo_dist": false
       },
       "funding": {
           "preferred_funding": "github"
+      },
+      "package_managers": {
+        "preferred": {
+          "crates.io": "cargo install scaphandre"
+        },
+        "additional": {
+          "binstall": "cargo binstall scaphandre"
+        }
       }
     }
 }
