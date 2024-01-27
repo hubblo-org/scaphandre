@@ -16,18 +16,18 @@
       "changelog": true,
       "artifacts": {
           "auto": true,
-          "cargo_dist": false
+          "cargo_dist": false,
+          "package_managers": {
+            "preferred": {
+              "crates.io": "cargo install scaphandre"
+            },
+            "additional": {
+              "binstall": "cargo binstall scaphandre"
+            }
+          }
       },
       "funding": {
           "preferred_funding": "github"
-      },
-      "package_managers": {
-        "preferred": {
-          "crates.io": "cargo install scaphandre"
-        },
-        "additional": {
-          "binstall": "cargo binstall scaphandre"
-        }
       }
     }
 }
