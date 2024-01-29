@@ -9,7 +9,7 @@ Please check dev branch.
 
 ### Added
 
-- Per-process resources consumption metrics :
+- Per-process resources consumption metrics for disks : `scaph_host_disk_total_bytes`, `scaph_host_disk_available_bytes` - see https://hubblo-org.github.io/scaphandre-documentation/references/metrics.html
 
 ### Changed
 
