@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Please check dev branch.
 
+### Added
+
+- Per-process resources consumption metrics :
+
+### Changed
+
+- `scaph_self_mem_total_program_size`, `scaph_self_mem_resident_set_size` and `scaph_self_mem_shared_resident_size` are replaced by `scaph_self_memory_bytes` and `scaph_self_memory_virtual_bytes`, see https://github.com/hubblo-org/scaphandre/pull/274/files
+
 ## [0.5.0](https://github.com/hubblo-org/scaphandre/releases/tag/v0.5.0)
 
 ### Changed
