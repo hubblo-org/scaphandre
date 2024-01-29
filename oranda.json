@@ -2,6 +2,9 @@
     "build": {
       "path_prefix": "scaphandre"
     },
+    "project": {
+        "repository": "https://github.com/hubblo-org/scaphandre"    
+    },
     "styles": {
       "theme": "light",
       "favicon": "https://raw.githubusercontent.com/hubblo-org/scaphandre/dev/docs_src/scaphandre.small.cleaned.png"
