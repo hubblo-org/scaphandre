@@ -391,9 +391,6 @@ impl Sensor for MsrRAPLSensor {
                         panic!("Could'nt get cpuid data.");
                     }
                 }
-                if logical_cpus_from_cpuid <= 1 {
-                    panic!("CpuID data is likely to be wrong.");
-                }
                 let mut i: u16 = 0;
                 let mut no_more_sockets = false;
                 debug!("Entering ProcessorGroup {}", group_id);

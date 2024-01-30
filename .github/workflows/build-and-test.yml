@@ -94,11 +94,11 @@ jobs:
       - name: Install dependencies (awxkit)
         uses: actions/setup-python@v3
         with:
-          python-version: '3.x'
+          python-version: '3.11'
       - name: Install python requirements (awxkit)
         run: |
           python -m pip install --upgrade pip
-          pip install awxkit
+          pip install awxkit setuptools
       - name: Log on AWX 
         id: login
         run: |
@@ -126,7 +126,7 @@ jobs:
       - name: Install dependencies (awxkit)
         uses: actions/setup-python@v3
         with:
-          python-version: '3.x'
+          python-version: '3.11'
       - name: Install python requirements (awxkit)
         run: |
           python -m pip install --upgrade pip

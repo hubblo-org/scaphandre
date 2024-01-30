@@ -76,22 +76,36 @@ impl RecordReader for Topology {
         // else return pkg + dram + F(disks)
 
         if let Some(psys_record) = self.get_rapl_psys_energy_microjoules() {
+            debug!("Using PSYS metric");
             Ok(psys_record)
         } else {
-            let mut total = 0;
+            let mut total: i128 = 0;
+            debug!("Suming socket PKG and DRAM metrics to get host metric");
             for s in &self.sockets {
                 if let Ok(r) = s.read_record() {
-                    if let Ok(val) = r.value.parse::<i32>() {
-                        total += val;
-                    } else {
-                        trace!("could'nt convert {} to i32", r.value);
+                    match r.value.trim().parse::<i128>() {
+                        Ok(val) => {
+                            total += val;
+                        }
+                        Err(e) => {
+                            warn!("could'nt convert {} to i128: {}", r.value.trim(), e);
+                        }
                     }
                 }
-                //for d in &s.domains {
-                //    if let Ok(r) = d.read_record() {
-                //        total = total + r.value.parse::<i32>().unwrap()
-                //    }
-                //}
+                for d in &s.domains {
+                    if d.name == "dram" {
+                        if let Ok(dr) = d.read_record() {
+                            match dr.value.trim().parse::<i128>() {
+                                Ok(val) => {
+                                    total += val;
+                                }
+                                Err(e) => {
+                                    warn!("could'nt convert {} to i128: {}", dr.value.trim(), e);
+                                }
+                            }
+                        }
+                    }
+                }
             }
             Ok(Record::new(
                 current_system_time_since_epoch(),

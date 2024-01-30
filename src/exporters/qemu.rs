@@ -137,7 +137,7 @@ impl QemuExporter {
         trace!("Got {} processes to filter.", processes.len());
         for vecp in processes.iter() {
             if !vecp.is_empty() {
-                if let Some(pr) = vecp.get(0) {
+                if let Some(pr) = vecp.first() {
                     if let Some(res) = pr
                         .process
                         .cmdline
