@@ -171,7 +171,7 @@ jobs:
           rustup toolchain install stable-x86_64-pc-windows-msvc
       - name: Tests
         run: |
-          cargo test --no-default-features --features "prometheus json riemann"
+          cargo test --no-default-features --features "prometheus prometheuspush json riemann" exporters
       - name: Build (debug mode)
         run: |
-          cargo build --no-default-features --features "prometheus json riemann"
+          cargo build --no-default-features --features "prometheus prometheuspush json riemann"

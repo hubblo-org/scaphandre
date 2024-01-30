@@ -45,11 +45,10 @@ Source: "../../ScaphandreDrv.sys"; DestDir: "{app}";
 Source: "../../ScaphandreDrv.cat"; DestDir: "{app}";
 ; Source: "../../ScaphandreDrv.cat"; DestDir: "{#SystemFolder}";
 ; Source: "../../ScaphandreDrv.cat"; DestDir: "{#System64Folder}";
-Source: "../../devcon.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "../../certmgr.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Program Files (x86)\Windows Kits\10\Tools\10.0.22621.0\x64\devcon.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\certmgr.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "../../README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "../../CHANGELOG.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "../../ScaphandreDrvTest.cer"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

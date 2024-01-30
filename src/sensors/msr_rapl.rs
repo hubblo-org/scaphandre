@@ -756,58 +756,65 @@ pub unsafe fn get_msr_value(
         error!("Error was : {:?}", GetLastError());
     }
     debug!("Core ID requested to the driver : {}", core_id);
-    match get_handle(sensor_data.get("DRIVER_NAME").unwrap()) {
-        Ok(device) => {
-            let mut msr_result: u64 = 0;
-            let ptr_result = &mut msr_result as *mut u64;
-            debug!("msr_addr: {:b}", msr_addr);
-            debug!("core_id: {:x} {:b}", (core_id as u64), (core_id as u64));
-            debug!("core_id: {:b}", ((core_id as u64) << 32));
-            let src = ((core_id as u64) << 32) | msr_addr; //let src = ((core_id as u64) << 32) | msr_addr;
-            let ptr = &src as *const u64;
+    match sensor_data.get("DRIVER_NAME") {
+        Some(driver) => {
+            match get_handle(driver) {
+                Ok(device) => {
+                    let mut msr_result: u64 = 0;
+                    let ptr_result = &mut msr_result as *mut u64;
+                    debug!("msr_addr: {:b}", msr_addr);
+                    debug!("core_id: {:x} {:b}", (core_id as u64), (core_id as u64));
+                    debug!("core_id: {:b}", ((core_id as u64) << 32));
+                    let src = ((core_id as u64) << 32) | msr_addr; //let src = ((core_id as u64) << 32) | msr_addr;
+                    let ptr = &src as *const u64;
 
-            debug!("src: {:x}", src);
-            debug!("src: {:b}", src);
-            debug!("*ptr: {:b}", *ptr);
-            //warn!("*ptr: {}", *ptr);
-            //warn!("*ptr: {:b}", *ptr);
+                    debug!("src: {:x}", src);
+                    debug!("src: {:b}", src);
+                    debug!("*ptr: {:b}", *ptr);
+                    //warn!("*ptr: {}", *ptr);
+                    //warn!("*ptr: {:b}", *ptr);
 
-            match send_request(
-                device,
-                MSR_PKG_ENERGY_STATUS,
-                ptr,
-                8,
-                ptr_result,
-                size_of::<u64>(),
-            ) {
-                Ok(_res) => {
-                    close_handle(device);
+                    match send_request(
+                        device,
+                        MSR_PKG_ENERGY_STATUS,
+                        ptr,
+                        8,
+                        ptr_result,
+                        size_of::<u64>(),
+                    ) {
+                        Ok(_res) => {
+                            close_handle(device);
 
-                    let energy_unit = sensor_data
-                        .get("ENERGY_UNIT")
-                        .unwrap()
-                        .parse::<f64>()
-                        .unwrap();
-                    let current_value =
-                        MsrRAPLSensor::extract_rapl_current_power(msr_result, energy_unit);
-                    debug!("current_value: {}", current_value);
+                            let energy_unit = sensor_data
+                                .get("ENERGY_UNIT")
+                                .unwrap()
+                                .parse::<f64>()
+                                .unwrap();
+                            let current_value =
+                                MsrRAPLSensor::extract_rapl_current_power(msr_result, energy_unit);
+                            debug!("current_value: {}", current_value);
 
-                    Ok(Record {
-                        timestamp: current_system_time_since_epoch(),
-                        unit: super::units::Unit::MicroJoule,
-                        value: current_value,
-                    })
+                            Ok(Record {
+                                timestamp: current_system_time_since_epoch(),
+                                unit: super::units::Unit::MicroJoule,
+                                value: current_value,
+                            })
+                        }
+                        Err(e) => {
+                            info!("Failed to get data from send_request: {:?}", e);
+                            close_handle(device);
+                            Err(format!("Failed to get data from send_request: {:?}", e))
+                        }
+                    }
                 }
                 Err(e) => {
-                    info!("Failed to get data from send_request: {:?}", e);
-                    close_handle(device);
-                    Err(format!("Failed to get data from send_request: {:?}", e))
+                    error!("Couldn't get driver handle : {:?}", e);
+                    Err(format!("Couldn't get driver handle : {:?}", e))
                 }
             }
         }
-        Err(e) => {
-            error!("Couldn't get driver handle : {:?}", e);
-            Err(format!("Couldn't get driver handle : {:?}", e))
+        None => {
+            panic!("DRIVER_NAME not set.");
         }
     }
 }
