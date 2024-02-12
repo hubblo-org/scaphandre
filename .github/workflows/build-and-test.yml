@@ -12,6 +12,7 @@ on:
       - 'CONTRIBUTING.md'
       - '.github/workflows/exe-release-prometheuspush.yml'
       - '*.md'
+      - 'oranda.json'
   pull_request:
     branches: [ main, dev ]
     paths-ignore:
@@ -22,6 +23,7 @@ on:
       - 'book.toml'
       - '.github/workflows/exe-release-prometheuspush.yml'
       - '*.md'
+      - 'oranda.json'
 
 env:
   CARGO_TERM_COLOR: always

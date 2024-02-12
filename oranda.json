@@ -7,7 +7,7 @@
     },
     "styles": {
       "theme": "light",
-      "favicon": "https://raw.githubusercontent.com/hubblo-org/scaphandre/dev/docs_src/scaphandre.small.cleaned.ico"
+      "favicon": "docs_src/scaphandre.small.cleaned.ico"
     },
     "marketing": {
       "social": {

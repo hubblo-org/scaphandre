@@ -8,6 +8,8 @@ on:
       - 'CITATION'
       - 'book.toml'
       - 'CONTRIBUTING.md'
+      - '*.md'
+      - 'oranda.json'
     tags: [ 'v*.*.*', 'dev*.*.*' ]
     branches: [ '336-proper-handling-of-windows-service-management' ]
 
