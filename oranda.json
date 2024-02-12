@@ -24,10 +24,9 @@
           "package_managers": {
             "preferred": {
               "crates.io": "cargo install scaphandre",
-              "debian package": "dpkg -i scaphandre.X.deb"
-            },
-            "additional": {
-              "binstall": "cargo binstall scaphandre"
+              "DEB package": "dpkg -i scaphandre.X.deb",
+              "docker": "docker pull hubblo/scaphandre",
+              "RPM package": "rpm -ivh scaphandre.X.rpm"
             }
           }
       },
