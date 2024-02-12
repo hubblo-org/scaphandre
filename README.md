@@ -65,3 +65,8 @@ The ongoing roadmap can be seen [here](https://github.com/hubblo-org/scaphandre/
 ## ⚖️  Footprint
 
 In opposition to its name, scaphandre aims to be as light and clean as possible. One of the main focus areas of the project is to come as close as possible to a 0 overhead, both about resources consumption and power consumption.
+
+## 🙏 Sponsoring
+
+If you like this project and would like to provide financial help, here's our [sponsoring page](https://github.com/sponsors/hubblo-org).
+Thanks a lot for considering it !
