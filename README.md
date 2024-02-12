@@ -39,6 +39,8 @@ Join us on [Gitter](https://gitter.im/hubblo-org/scaphandre) or [Matrix](https:/
 - works on **[kubernetes](https://kubernetes.io/)**
 - storing power consumption metrics in a **JSON** file
 - showing basic power consumption metrics **in the terminal**
+- operating systems supported so far : **Gnu/Linux**, **Windows 10, 11 and Server 2016/2019/2022**
+- packages available for **RHEL 8 and 9, Debian 11 and 12 and Windows**, also **NixOS** (community support)
 
 Here is an example dashboard built thanks to scaphandre: [https://metrics.hubblo.org](https://metrics.hubblo.org).
 

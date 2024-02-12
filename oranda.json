@@ -7,10 +7,11 @@
     },
     "styles": {
       "theme": "light",
-      "favicon": "https://raw.githubusercontent.com/hubblo-org/scaphandre/dev/docs_src/scaphandre.small.cleaned.png"
+      "favicon": "https://raw.githubusercontent.com/hubblo-org/scaphandre/dev/docs_src/scaphandre.small.cleaned.ico"
     },
     "marketing": {
       "social": {
+        "image": "https://raw.githubusercontent.com/hubblo-org/scaphandre/dev/docs_src/scaphandre.cleaned.png",
         "image_alt": "Hubblo's twitter/x account",
         "twitter_account": "@HubbloOrg"
       }
