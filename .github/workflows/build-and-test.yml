@@ -11,6 +11,7 @@ on:
       - 'book.toml'
       - 'CONTRIBUTING.md'
       - '.github/workflows/exe-release-prometheuspush.yml'
+      - '*.md'
   pull_request:
     branches: [ main, dev ]
     paths-ignore:
@@ -20,6 +21,7 @@ on:
       - 'CITATION'
       - 'book.toml'
       - '.github/workflows/exe-release-prometheuspush.yml'
+      - '*.md'
 
 env:
   CARGO_TERM_COLOR: always
