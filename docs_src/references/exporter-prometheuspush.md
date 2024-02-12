@@ -2,7 +2,7 @@
 
 ## Usage
 
-You can launch the prometheus exporter this way (running the default powercap_rapl sensor):
+You can launch the prometheus exporter this way:
 
 	scaphandre prometheus-push
 
