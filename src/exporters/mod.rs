@@ -630,23 +630,6 @@ impl MetricGenerator {
             description: String::from("Total swap space on the host, in bytes."),
             metric_value: MetricValueType::Text(metric_value.value),
         });
-
-        if let Some(psys) = self.topology.get_rapl_psys_energy_microjoules() {
-            self.data.push(Metric {
-                name: String::from("scaph_host_rapl_psys_microjoules"),
-                metric_type: String::from("counter"),
-                ttl: 60.0,
-                timestamp: psys.timestamp,
-                hostname: self.hostname.clone(),
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: HashMap::new(),
-                description: String::from(
-                    "Raw extract of RAPL PSYS domain energy value, in microjoules",
-                ),
-                metric_value: MetricValueType::Text(psys.value),
-            })
-        }
     }
 
     /// Generate socket metrics.
@@ -887,7 +870,7 @@ impl MetricGenerator {
 
     /// Generate process metrics.
     fn gen_process_metrics(&mut self) {
-        debug!("In gen_process_metrics.");
+        trace!("In gen_process_metrics.");
         #[cfg(feature = "containers")]
         if self.watch_containers {
             let now = current_system_time_since_epoch().as_secs().to_string();
@@ -1029,7 +1012,7 @@ impl MetricGenerator {
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
         );
         self.gen_process_metrics();
-        debug!("self_metrics: {:#?}", self.data);
+        trace!("self_metrics: {:#?}", self.data);
     }
 
     pub fn pop_metrics(&mut self) -> Vec<Metric> {

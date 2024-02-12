@@ -3,8 +3,10 @@
 //! `Sensor` is the root for all sensors. It defines the [Sensor] trait
 //! needed to implement a sensor.
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "windows")]
 pub mod msr_rapl;
+#[cfg(target_os = "windows")]
+use msr_rapl::get_msr_value;
 #[cfg(target_os = "linux")]
 pub mod powercap_rapl;
 pub mod units;
@@ -169,6 +171,7 @@ impl Topology {
 
         let sysinfo_system = System::new_all();
         let sysinfo_cores = sysinfo_system.cpus();
+        warn!("Sysinfo sees {}", sysinfo_cores.len());
         #[cfg(target_os = "linux")]
         let cpuinfo = CpuInfo::new().unwrap();
         for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
@@ -198,7 +201,7 @@ impl Topology {
         counter_uj_path: String,
         buffer_max_kbytes: u16,
         sensor_data: HashMap<String, String>,
-    ) {
+    ) -> Option<CPUSocket> {
         if !self.sockets.iter().any(|s| s.id == socket_id) {
             let socket = CPUSocket::new(
                 socket_id,
@@ -208,6 +211,16 @@ impl Topology {
                 buffer_max_kbytes,
                 sensor_data,
             );
+            let res = socket.clone();
+            self.sockets.push(socket);
+            Some(res)
+        } else {
+            None
+        }
+    }
+
+    pub fn safe_insert_socket(&mut self, socket: CPUSocket) {
+        if !self.sockets.iter().any(|s| s.id == socket.id) {
             self.sockets.push(socket);
         }
     }
@@ -240,6 +253,10 @@ impl Topology {
         self.domains_names = Some(domain_names);
     }
 
+    pub fn set_domains_names(&mut self, names: Vec<String>) {
+        self.domains_names = Some(names);
+    }
+
     /// Adds a Domain instance to a given socket, if and only if the domain
     /// id doesn't exist already for the socket.
     pub fn safe_add_domain_to_socket(
@@ -268,6 +285,7 @@ impl Topology {
 
     /// Generates CPUCore instances for the host and adds them
     /// to appropriate CPUSocket instance from self.sockets
+    #[cfg(target_os = "linux")]
     pub fn add_cpu_cores(&mut self) {
         if let Some(mut cores) = Topology::generate_cpu_cores() {
             while let Some(c) = cores.pop() {
@@ -292,8 +310,31 @@ impl Topology {
                     warn!("coud't not match core to socket - mapping to first socket instead - if you are not using --vm there is something wrong")
                 }
             }
+
+            //#[cfg(target_os = "windows")]
+            //{
+            //TODO: fix
+            //let nb_sockets = &self.sockets.len();
+            //let mut socket_counter = 0;
+            //let nb_cores_per_socket = &cores.len() / nb_sockets;
+            //warn!("nb_cores_per_socket: {} cores_len: {} sockets_len: {}", nb_cores_per_socket, &cores.len(), &self.sockets.len());
+            //for s in self.sockets.iter_mut() {
+            //    for c in (socket_counter * nb_cores_per_socket)..((socket_counter+1) * nb_cores_per_socket) {
+            //        match cores.pop() {
+            //            Some(core) => {
+            //                warn!("adding core {} to socket {}", core.id, s.id);
+            //                s.add_cpu_core(core);
+            //            },
+            //            None => {
+            //                error!("Uneven number of CPU cores !");
+            //            }
+            //        }
+            //    }
+            //    socket_counter = socket_counter + 1;
+            //}
+            //}
         } else {
-            warn!("Couldn't retrieve any CPU Core from the topology. (generate_cpu_cores)");
+            panic!("Couldn't retrieve any CPU Core from the topology. (generate_cpu_cores)");
         }
     }
 
@@ -409,29 +450,36 @@ impl Topology {
                 .record_buffer
                 .get(self.record_buffer.len() - 2)
                 .unwrap();
-
-            if let Ok(last_microjoules) = last_record.value.trim().parse::<u64>() {
-                if let Ok(previous_microjoules) = previous_record.value.trim().parse::<u64>() {
-                    if previous_microjoules > last_microjoules {
-                        return None;
+            match previous_record.value.trim().parse::<u128>() {
+                Ok(previous_microjoules) => match last_record.value.trim().parse::<u128>() {
+                    Ok(last_microjoules) => {
+                        if previous_microjoules > last_microjoules {
+                            return None;
+                        }
+                        let microjoules = last_microjoules - previous_microjoules;
+                        let time_diff = last_record.timestamp.as_secs_f64()
+                            - previous_record.timestamp.as_secs_f64();
+                        let microwatts = microjoules as f64 / time_diff;
+                        return Some(Record::new(
+                            last_record.timestamp,
+                            (microwatts as u64).to_string(),
+                            units::Unit::MicroWatt,
+                        ));
                     }
-                    let microjoules = last_microjoules - previous_microjoules;
-                    let time_diff = last_record.timestamp.as_secs_f64()
-                        - previous_record.timestamp.as_secs_f64();
-                    let microwatts = microjoules as f64 / time_diff;
-                    return Some(Record::new(
-                        last_record.timestamp,
-                        (microwatts as u64).to_string(),
-                        units::Unit::MicroWatt,
-                    ));
-                } else {
+                    Err(e) => {
+                        warn!(
+                            "Could'nt get previous_microjoules - value : '{}' - error : {:?}",
+                            previous_record.value, e
+                        );
+                    }
+                },
+                Err(e) => {
                     warn!(
-                        "Could'nt get previous_microjoules: {}",
-                        previous_record.value
+                        "Couldn't parse previous_microjoules - value : '{}' - error : {:?}",
+                        previous_record.value.trim(),
+                        e
                     );
                 }
-            } else {
-                warn!("Could'nt get last_microjoules: {}", last_record.value);
             }
         }
         None
@@ -860,6 +908,7 @@ impl Topology {
         None
     }
 
+    #[cfg(target_os = "linux")]
     pub fn get_rapl_psys_energy_microjoules(&self) -> Option<Record> {
         if let Some(psys) = self._sensor_data.get("psys") {
             match &fs::read_to_string(format!("{psys}/energy_uj")) {
@@ -875,22 +924,36 @@ impl Topology {
                     warn!("PSYS Error: {:?}", e);
                 }
             }
+        } else {
+            debug!("Asked for PSYS but there is no psys entry in sensor_data.");
         }
         None
     }
 
-    //pub fn get_rapl_psys_power_microwatts(&self) -> Option<Record> {
-    //    if let Some(psys) = self._sensor_data.get("psys") {
-    //        if let Ok(val) = &fs::read_to_string(format!("{psys}/energy_uj")) {
-    //            return Some(Record::new(
-    //                current_system_time_since_epoch(),
-    //                val.to_string(),
-    //                units::Unit::MicroJoule
-    //            ));
-    //        }
-    //    }
-    //    None
-    //}
+    /// # Safety
+    ///
+    /// This function is unsafe rust as it calls get_msr_value function from msr_rapl sensor module.
+    /// It calls the msr_RAPL::MSR_PLATFORM_ENERGY_STATUS MSR address, which has been tested on several Intel x86 processors
+    /// but might fail on AMD (needs testing). That being said, it returns None if the msr query fails (which means if the Windows
+    /// driver fails.) and should not prevent from using a value coming from elsewhere, which means from another get_msr_value calls
+    /// targeting another msr address.
+    #[cfg(target_os = "windows")]
+    pub unsafe fn get_rapl_psys_energy_microjoules(&self) -> Option<Record> {
+        let msr_addr = msr_rapl::MSR_PLATFORM_ENERGY_STATUS;
+        match get_msr_value(0, msr_addr.into(), &self._sensor_data) {
+            Ok(res) => {
+                return Some(Record::new(
+                    current_system_time_since_epoch(),
+                    res.value.to_string(),
+                    units::Unit::MicroJoule,
+                ))
+            }
+            Err(e) => {
+                debug!("get_msr_value returned error : {}", e);
+            }
+        }
+        None
+    }
 }
 
 // !!!!!!!!!!!!!!!!! CPUSocket !!!!!!!!!!!!!!!!!!!!!!!
@@ -1013,6 +1076,10 @@ impl CPUSocket {
         }
     }
 
+    pub fn set_id(&mut self, id: u16) {
+        self.id = id
+    }
+
     /// Adds a new Domain instance to the domains vector if and only if it doesn't exist in the vector already.
     fn safe_add_domain(&mut self, domain: Domain) {
         if !self.domains.iter().any(|d| d.id == domain.id) {
@@ -1112,16 +1179,17 @@ impl CPUSocket {
             steal: Some(0),
         };
         for c in &self.cpu_cores {
-            let c_stats = c.read_stats().unwrap();
-            stats.user += c_stats.user;
-            stats.nice += c_stats.nice;
-            stats.system += c_stats.system;
-            stats.idle += c_stats.idle;
-            stats.iowait =
-                Some(stats.iowait.unwrap_or_default() + c_stats.iowait.unwrap_or_default());
-            stats.irq = Some(stats.irq.unwrap_or_default() + c_stats.irq.unwrap_or_default());
-            stats.softirq =
-                Some(stats.softirq.unwrap_or_default() + c_stats.softirq.unwrap_or_default());
+            if let Some(c_stats) = c.read_stats() {
+                stats.user += c_stats.user;
+                stats.nice += c_stats.nice;
+                stats.system += c_stats.system;
+                stats.idle += c_stats.idle;
+                stats.iowait =
+                    Some(stats.iowait.unwrap_or_default() + c_stats.iowait.unwrap_or_default());
+                stats.irq = Some(stats.irq.unwrap_or_default() + c_stats.irq.unwrap_or_default());
+                stats.softirq =
+                    Some(stats.softirq.unwrap_or_default() + c_stats.softirq.unwrap_or_default());
+            }
         }
         Some(stats)
     }
@@ -1187,9 +1255,9 @@ impl CPUSocket {
                 &last_record.value, &previous_record.value
             );
             let last_rec_val = last_record.value.trim();
-            debug!("socket : l1049 : trying to parse {} as u64", last_rec_val);
+            debug!("socket : l1187 : trying to parse {} as u64", last_rec_val);
             let prev_rec_val = previous_record.value.trim();
-            debug!("socket : l1051 : trying to parse {} as u64", prev_rec_val);
+            debug!("socket : l1189 : trying to parse {} as u64", prev_rec_val);
             if let (Ok(last_microjoules), Ok(previous_microjoules)) =
                 (last_rec_val.parse::<u64>(), prev_rec_val.parse::<u64>())
             {
@@ -1213,7 +1281,7 @@ impl CPUSocket {
                 ));
             }
         } else {
-            debug!("Not enough records for socket");
+            warn!("Not enough records for socket");
         }
         None
     }

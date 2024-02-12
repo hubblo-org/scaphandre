@@ -10,6 +10,7 @@ on:
       - 'CITATION'
       - 'book.toml'
       - 'CONTRIBUTING.md'
+      - '.github/workflows/exe-release-prometheuspush.yml'
   pull_request:
     branches: [ main, dev ]
     paths-ignore:
@@ -18,6 +19,7 @@ on:
       - 'CHANGELOG.md'
       - 'CITATION'
       - 'book.toml'
+      - '.github/workflows/exe-release-prometheuspush.yml'
 
 env:
   CARGO_TERM_COLOR: always
@@ -171,7 +173,7 @@ jobs:
           rustup toolchain install stable-x86_64-pc-windows-msvc
       - name: Tests
         run: |
-          cargo test --no-default-features --features "prometheus json riemann"
+          cargo test --no-default-features --features "prometheus prometheuspush json riemann" exporters
       - name: Build (debug mode)
         run: |
-          cargo build --no-default-features --features "prometheus json riemann"
+          cargo build --no-default-features --features "prometheus prometheuspush json riemann"

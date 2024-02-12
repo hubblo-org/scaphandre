@@ -5,8 +5,8 @@
 //! [scrape](https://prometheus.io/docs/prometheus/latest/getting_started).
 
 use super::utils;
-use crate::current_system_time_since_epoch;
 use crate::exporters::{Exporter, MetricGenerator, MetricValueType};
+use crate::sensors::utils::current_system_time_since_epoch;
 use crate::sensors::{Sensor, Topology};
 use chrono::Utc;
 use hyper::service::{make_service_fn, service_fn};
