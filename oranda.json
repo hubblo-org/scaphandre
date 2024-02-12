@@ -19,7 +19,7 @@
     "components": {
       "changelog": true,
       "artifacts": {
-          "auto": true,
+          "auto": false,
           "cargo_dist": false,
           "package_managers": {
             "preferred": {
