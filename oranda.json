@@ -7,7 +7,7 @@
     },
     "styles": {
       "theme": "light",
-      "favicon": "docs_src/scaphandre.small.cleaned.ico"
+      "favicon": "docs_src/favicon.ico"
     },
     "marketing": {
       "social": {
@@ -23,7 +23,8 @@
           "cargo_dist": false,
           "package_managers": {
             "preferred": {
-              "crates.io": "cargo install scaphandre"
+              "crates.io": "cargo install scaphandre",
+              "debian package": "dpkg -i scaphandre.X.deb"
             },
             "additional": {
               "binstall": "cargo binstall scaphandre"
