@@ -24,6 +24,7 @@ Please check dev branch.
 
 ### Changed
 
+- Global power metrics have changed and could give higher numbers than previously. Please have a look at the [documentation](https://hubblo-org.github.io/scaphandre-documentation/explanations/host_metrics.html).
 - `scaph_self_mem_total_program_size`, `scaph_self_mem_resident_set_size` and `scaph_self_mem_shared_resident_size` are replaced by `scaph_self_memory_bytes` and `scaph_self_memory_virtual_bytes`, see https://github.com/hubblo-org/scaphandre/pull/274/files
 - Refactored warp10 exporter, see https://github.com/hubblo-org/scaphandre/pull/291 and https://github.com/hubblo-org/scaphandre/issues/105
 - Refactored exporters creation with clap4, see https://github.com/hubblo-org/scaphandre/pull/292, thanks @TheElectronWill

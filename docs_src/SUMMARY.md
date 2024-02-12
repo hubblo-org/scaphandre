@@ -18,6 +18,7 @@
 
 # Explanations
 
+- [Explanations about host level power and energy metrics](explanations/host_metrics.md)
 - [How scaphandre computes per process power consumption](explanations/how-scaph-computes-per-process-power-consumption.md)
 - [Internal structure](explanations/internal-structure.md)
 - [About containers](explanations/about-containers.md)
