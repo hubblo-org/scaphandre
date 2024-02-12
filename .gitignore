@@ -33,3 +33,5 @@ packaging/*/BUILDROOT/*
 *.tar.gz
 *.swp
 packaging/*/BUILDROOT/*
+
+.vscode
