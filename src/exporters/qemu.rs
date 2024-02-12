@@ -1,5 +1,6 @@
 use crate::exporters::Exporter;
-use crate::sensors::{utils::ProcessRecord, Sensor, Topology};
+use crate::sensors::Topology;
+use crate::sensors::{utils::ProcessRecord, Sensor};
 use std::{fs, io, thread, time};
 
 /// An Exporter that extracts power consumption data of running
@@ -9,18 +10,20 @@ use std::{fs, io, thread, time};
 /// to collect and deal with their power consumption metrics, the same way
 /// they would do it if they managed bare metal machines.
 pub struct QemuExporter {
+    // We don't need a MetricGenerator for this exporter, because it "justs"
+    // puts the metrics in files in the same way as the powercap kernel module.
     topology: Topology,
 }
 
 impl Exporter for QemuExporter {
-    /// Runs iteration() in a loop.
-    fn run(&mut self, _parameters: clap::ArgMatches) {
+    /// Runs [iterate()] in a loop.
+    fn run(&mut self) {
         info!("Starting qemu exporter");
         let path = "/var/lib/libvirt/scaphandre";
         let cleaner_step = 120;
         let mut timer = time::Duration::from_secs(cleaner_step);
         loop {
-            self.iteration(String::from(path));
+            self.iterate(String::from(path));
             let step = time::Duration::from_secs(5);
             thread::sleep(step);
             if timer - step > time::Duration::from_millis(0) {
@@ -34,62 +37,60 @@ impl Exporter for QemuExporter {
         }
     }
 
-    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
-        Vec::new()
+    fn kind(&self) -> &str {
+        "qemu"
     }
 }
 
 impl QemuExporter {
     /// Instantiates and returns a new QemuExporter
-    pub fn new(mut sensor: Box<dyn Sensor>) -> QemuExporter {
-        let some_topology = *sensor.get_topology();
-        QemuExporter {
-            topology: some_topology.unwrap(),
-        }
+    pub fn new(sensor: &dyn Sensor) -> QemuExporter {
+        let topology = sensor
+            .get_topology()
+            .expect("sensor topology should be available");
+        QemuExporter { topology }
     }
 
-    /// Performs processing of metrics, using self.topology
-    pub fn iteration(&mut self, path: String) {
+    /// Processes the metrics of `self.topology` and exposes them at the given `path`.
+    pub fn iterate(&mut self, path: String) {
         trace!("path: {}", path);
+
         self.topology.refresh();
-        let topo_uj_diff = self.topology.get_records_diff();
-        let topo_stat_diff = self.topology.get_stats_diff();
-        if let Some(topo_rec_uj) = topo_uj_diff {
-            debug!("Got topo uj diff: {:?}", topo_rec_uj);
-            let proc_tracker = self.topology.get_proc_tracker();
-            let processes = proc_tracker.get_alive_processes();
+        if let Some(topo_energy) = self.topology.get_records_diff_power_microwatts() {
+            let processes = self.topology.proc_tracker.get_alive_processes();
             let qemu_processes = QemuExporter::filter_qemu_vm_processes(&processes);
-            debug!(
-                "Number of filtered qemu processes: {}",
-                qemu_processes.len()
-            );
             for qp in qemu_processes {
-                info!("Working on {:?}", qp);
                 if qp.len() > 2 {
                     let last = qp.first().unwrap();
-                    let previous = qp.get(1).unwrap();
                     let vm_name = QemuExporter::get_vm_name_from_cmdline(
-                        &last.process.original.cmdline().unwrap(),
+                        &last.process.cmdline(&self.topology.proc_tracker).unwrap(),
                     );
-                    let time_pdiff = last.total_time_jiffies() - previous.total_time_jiffies();
-                    if let Some(time_tdiff) = &topo_stat_diff {
-                        let first_domain_path = format!("{path}/{vm_name}/intel-rapl:0:0");
-                        if fs::read_dir(&first_domain_path).is_err() {
-                            match fs::create_dir_all(&first_domain_path) {
-                                Ok(_) => info!("Created {} folder.", &path),
-                                Err(error) => panic!("Couldn't create {}. Got: {}", &path, error),
-                            }
+                    let first_domain_path = format!("{path}/{vm_name}/intel-rapl:0:0");
+                    if fs::read_dir(&first_domain_path).is_err() {
+                        match fs::create_dir_all(&first_domain_path) {
+                            Ok(_) => info!("Created {} folder.", &path),
+                            Err(error) => panic!("Couldn't create {}. Got: {}", &path, error),
                         }
-                        let tdiff = time_tdiff.total_time_jiffies();
-                        trace!("Time_pdiff={} time_tdiff={}", time_pdiff.to_string(), tdiff);
-                        let ratio = time_pdiff / tdiff;
-                        trace!("Ratio is {}", ratio.to_string());
-                        let uj_to_add = ratio * topo_rec_uj.value.parse::<u64>().unwrap();
-                        trace!("Adding {} uJ", uj_to_add);
+                    }
+                    if let Some(ratio) = self
+                        .topology
+                        .get_process_cpu_usage_percentage(last.process.pid)
+                    {
+                        let uj_to_add = ratio.value.parse::<f64>().unwrap()
+                            * topo_energy.value.parse::<f64>().unwrap()
+                            / 100.0;
                         let complete_path = format!("{path}/{vm_name}/intel-rapl:0");
-                        if let Ok(result) = QemuExporter::add_or_create(&complete_path, uj_to_add) {
-                            trace!("{:?}", result);
-                            debug!("Updated {}", complete_path);
+                        match QemuExporter::add_or_create(&complete_path, uj_to_add as u64) {
+                            Ok(result) => {
+                                trace!("{:?}", result);
+                                debug!("Updated {}", complete_path);
+                            }
+                            Err(err) => {
+                                error!(
+                                    "Could'nt edit {}. Please check file permissions : {}",
+                                    complete_path, err
+                                );
+                            }
                         }
                     }
                 }
@@ -107,7 +108,7 @@ impl QemuExporter {
                 return String::from(splitted.next().unwrap().split(',').next().unwrap());
             }
         }
-        String::from("")
+        String::from("") // TODO return Option<String> None instead, and stop at line 76 (it won't work with {path}//intel-rapl)
     }
 
     /// Either creates an energy_uj file (as the ones managed by powercap kernel module)
@@ -136,16 +137,19 @@ impl QemuExporter {
         trace!("Got {} processes to filter.", processes.len());
         for vecp in processes.iter() {
             if !vecp.is_empty() {
-                if let Some(pr) = vecp.get(0) {
-                    if let Ok(cmdline) = pr.process.original.cmdline() {
-                        if let Some(res) = cmdline.iter().find(|x| x.contains("qemu-system")) {
-                            debug!("Found a process with {}", res);
-                            let mut tmp: Vec<ProcessRecord> = vec![];
-                            for p in vecp.iter() {
-                                tmp.push(p.clone());
-                            }
-                            qemu_processes.push(tmp);
+                if let Some(pr) = vecp.first() {
+                    if let Some(res) = pr
+                        .process
+                        .cmdline
+                        .iter()
+                        .find(|x| x.contains("qemu-system"))
+                    {
+                        debug!("Found a process with {}", res);
+                        let mut tmp: Vec<ProcessRecord> = vec![];
+                        for p in vecp.iter() {
+                            tmp.push(p.clone());
                         }
+                        qemu_processes.push(tmp);
                     }
                 }
             }

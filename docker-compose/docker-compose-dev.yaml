@@ -16,7 +16,9 @@ services:
       - type: bind
         source: /var/run/docker.sock
         target: /var/run/docker.sock
-    command: ["-v", "prometheus", "--containers"] 
+    command: ["-vvvv", "prometheus", "--containers"] 
+    environment:
+      RUST_BACKTRACE: "full"
     networks:
       - scaphandre-network
     

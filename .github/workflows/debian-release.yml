@@ -1,0 +1,107 @@
+name: Build Debian package on release
+
+on:
+  push:
+    paths-ignore:
+      - 'docs_src/**'
+      - 'README.md'
+      - 'CITATION'
+      - 'book.toml'
+      - 'CONTRIBUTING.md'
+      - '*.md'
+      - 'oranda.json'
+    tags: [ 'v*.*.*', 'dev*.*.*' ]
+
+
+jobs:
+  create_debian_pkg_with_tag:
+    name: Create Debian package associated to version tag
+    runs-on: ubuntu-latest
+    outputs:
+      deb11output: ${{ steps.deb11pkgname.outputs.deb11pkg }}
+      deb12output: ${{ steps.deb12pkgname.outputs.deb12pkg }}
+    steps:
+    - name: Install s3cmd
+      run: sudo apt install python3-pip -y && sudo pip3 install s3cmd awxkit
+    - name: Checkout scaphandre repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Get latest tag of scaphandre repository
+      id: latest-scaphandre-tag
+      uses: "WyriHaximus/github-action-get-previous-tag@v1.3.0"
+      with:
+        fallback: dev0.5.18
+    - name: Checkout scaphandre-debian repository
+      uses: actions/checkout@v4
+      with:
+        repository: hubblo-org/scaphandre-debian
+    - name: Build package with version tag and Debian 11 Bullseye
+      run : |
+        ./build.sh -v ${{ steps.latest-scaphandre-tag.outputs.tag }}
+    - name: Modify name of package to include tag version for Debian 11
+      id: deb11pkgname
+      run: |
+        cd target
+        PKG_NAME=$(ls | sed "s/\([0-9]\+\.\)\{2\}[0-9]\+\-[0-9]\+\?/${{ steps.latest-scaphandre-tag.outputs.tag }}-deb11/")
+        mv *.deb $PKG_NAME
+        echo "deb11pkg=$PKG_NAME" >> "$GITHUB_OUTPUT"
+    - name: Upload to scw s3 and remove package
+      run: |
+        cd target
+        s3cmd --access_key="${{ secrets.S3_ACCESS_KEY_ID }}" --secret_key="${{ secrets.S3_SECRET_ACCESS_KEY }}" --region="fr-par" --acl-public --host="s3.fr-par.scw.cloud" --host-bucket="%(bucket).s3.fr-par.scw.cloud" put ${{ steps.deb11pkgname.outputs.deb11pkg }} s3://scaphandre/x86_64/
+        rm *.deb
+    - name: Build package with version tag and Debian 12 Bookworm
+      run: |
+        ./build.sh -i debian:bookworm-slim -v ${{ steps.latest-scaphandre-tag.outputs.tag }}
+    - name: Modify name of package to include tag version for Debian 12
+      id: deb12pkgname
+      run: |
+        cd target
+        PKG_NAME=$(ls | sed "s/\([0-9]\+\.\)\{2\}[0-9]\+\-[0-9]\+\?/${{ steps.latest-scaphandre-tag.outputs.tag }}-deb12/")
+        mv *.deb $PKG_NAME
+        echo "deb12pkg=$PKG_NAME" >> "$GITHUB_OUTPUT"
+    - name: Upload to scw s3
+      run: |
+        cd target
+        s3cmd --access_key="${{ secrets.S3_ACCESS_KEY_ID }}" --secret_key="${{ secrets.S3_SECRET_ACCESS_KEY }}" --region="fr-par" --acl-public --host="s3.fr-par.scw.cloud" --host-bucket="%(bucket).s3.fr-par.scw.cloud" put ${{ steps.deb12pkgname.outputs.deb12pkg }} s3://scaphandre/x86_64/
+  deb11-container-install-scaphandre:
+    name: Create Debian 11 container and install scaphandre with URL
+    needs: create_debian_pkg_with_tag
+    env:
+      DEB11PKG: ${{ needs.create_debian_pkg_with_tag.outputs.deb11output }}
+    runs-on: ubuntu-latest
+    container:
+      image: debian:buster-slim
+    steps:
+      - name: Install dependencies
+        run: |
+          apt update
+          apt install -y curl
+      - name: Download Debian 11 scaphandre package
+        run: |
+          curl -O https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ env.DEB11PKG }}
+      - name: Install and show scaphandre version
+        run: |
+          apt install -y ./${{ env.DEB11PKG }}
+          scaphandre -V
+  deb12-container-install-scaphandre:
+    name: Create Debian 12 container and install scaphandre with URL
+    needs: create_debian_pkg_with_tag
+    runs-on: ubuntu-latest
+    env:
+      DEB12PKG: ${{ needs.create_debian_pkg_with_tag.outputs.deb12output }}
+    container:
+      image: debian:bookworm-slim
+    steps:
+      - name: Install dependencies
+        run: |
+          apt update
+          apt install -y curl
+      - name: Download Debian 12 scaphandre package
+        run: |
+          curl -O https://s3.fr-par.scw.cloud/scaphandre/x86_64/${{ env.DEB12PKG }}
+      - name: Install and show scaphandre version
+        run: |
+          apt install -y ./${{ env.DEB12PKG }}
+          scaphandre -V

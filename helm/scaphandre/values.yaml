@@ -6,18 +6,25 @@ port: 8080
 
 resources:
   limits:
-    memory: 75Mi
+    memory: 200Mi
   requests:
     cpu: 75m
-    memory: 50Mi
+    memory: 100Mi
 
 scaphandre:
   command: prometheus
   args: {}
   extraArgs:
-    containers: true
+    containers:
 #  rustBacktrace: '1'
 
 # Run as root user to get proper permissions
 userID: 0
 groupID: 0
+
+serviceMonitor:
+  # Specifies whether ServiceMonitor for Prometheus operator should be created
+  enabled: false
+  interval: 1m
+  # Specifies namespace, where ServiceMonitor should be installed
+  # namespace: monitoring

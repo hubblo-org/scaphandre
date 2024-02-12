@@ -2,11 +2,16 @@
 //!
 //! The utils module provides common functions used by the exporters.
 use clap::crate_version;
+use std::collections::HashMap;
+use std::fmt::Write;
 #[cfg(feature = "containers")]
 use {
     docker_sync::Docker,
     k8s_sync::{errors::KubernetesError, kubernetes::Kubernetes},
 };
+
+/// Default ipv4/ipv6 address to expose the service is any
+pub const DEFAULT_IP_ADDRESS: &str = "::";
 
 /// Returns a cmdline String filtered from potential characters that
 /// could break exporters output.
@@ -16,6 +21,30 @@ use {
 /// 2. Remove carriage return.
 pub fn filter_cmdline(cmdline: &str) -> String {
     cmdline.replace('\"', "\\\"").replace('\n', "")
+}
+
+/// Returns a well formatted Prometheus metric string.
+pub fn format_prometheus_metric(
+    key: &str,
+    value: &str,
+    labels: Option<&HashMap<String, String>>,
+) -> String {
+    let mut result = key.to_string();
+    if let Some(labels) = labels {
+        result.push('{');
+        for (k, v) in labels.iter() {
+            let _ = write!(
+                result,
+                "{}=\"{}\",",
+                k,
+                v.replace('\"', "_").replace('\\', "")
+            );
+        }
+        result.remove(result.len() - 1);
+        result.push('}');
+    }
+    let _ = writeln!(result, " {value}");
+    result
 }
 
 /// Returns an Option containing the VM name of a qemu process.

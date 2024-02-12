@@ -16,8 +16,9 @@ Here are some other ways to install scaphandre depending on your context:
 
 - [quickly try the project with docker-compose/docker stack](docker-compose.md)
 - [run scaphandre on kubernetes](kubernetes.md)
+- [run scaphandre on RHEL, with prometheus-push mode](../how-to_guides/install-prometheuspush-only-rhel.md)
 
-Brave contributors work on system packages, please have a try and/or contribute to:
+Kudos to contributors who work on system packages, please have a try and/or contribute to:
 
 - [Debian package](https://github.com/barnumbirr/scaphandre-debian), maintainer: @barnumbirr
 - [NixOS package](https://github.com/mmai/scaphandre-flake), maintainer: @mmai

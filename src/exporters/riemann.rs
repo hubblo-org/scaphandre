@@ -1,25 +1,22 @@
 //! # RiemannExporter
 //!
-//! `RiemannExporter` implementation, sends metrics to a [Riemann](https://riemann.io/)
-//! server.
+//! The Riemann exporter sends metrics to a [Riemann](https://riemann.io/) server.
+
 use crate::exporters::utils::get_hostname;
 use crate::exporters::*;
 use crate::sensors::Sensor;
 use chrono::Utc;
-use clap::Arg;
-use riemann_client::proto::Attribute;
-use riemann_client::proto::Event;
+use riemann_client::proto::{Attribute, Event};
 use riemann_client::Client;
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// Riemann server default ipv4/ipv6 address
 const DEFAULT_IP_ADDRESS: &str = "localhost";
 
 /// Riemann server default port
-const DEFAULT_PORT: &str = "5555";
+const DEFAULT_PORT: u16 = 5555;
 
 /// RiemannClient is a simple client implementation on top of the
 /// [rust-riemann_client](https://github.com/borntyping/rust-riemann_client) library.
@@ -30,27 +27,6 @@ struct RiemannClient {
 }
 
 impl RiemannClient {
-    /// Instanciate the Riemann client either with mTLS or using raw TCP.
-    fn new(parameters: &ArgMatches) -> RiemannClient {
-        let address = String::from(parameters.value_of("address").unwrap());
-        let port = parameters
-            .value_of("port")
-            .unwrap()
-            .parse::<u16>()
-            .expect("Fail parsing port number");
-        let client: Client = if parameters.is_present("mtls") {
-            let cafile = parameters.value_of("cafile").unwrap();
-            let certfile = parameters.value_of("certfile").unwrap();
-            let keyfile = parameters.value_of("keyfile").unwrap();
-            Client::connect_tls(&address, port, cafile, certfile, keyfile)
-                .expect("Fail to connect to Riemann server using mTLS")
-        } else {
-            Client::connect(&(address, port))
-                .expect("Fail to connect to Riemann server using raw TCP")
-        };
-        RiemannClient { client }
-    }
-
     /// Send metrics to the server.
     fn send_metric(&mut self, metric: &Metric) {
         let mut event = Event::new();
@@ -82,7 +58,7 @@ impl RiemannClient {
         match metric.metric_value {
             // MetricValueType::IntSigned(value) => event.set_metric_sint64(value),
             // MetricValueType::Float(value) => event.set_metric_f(value),
-            MetricValueType::FloatDouble(value) => event.set_metric_d(value),
+            //MetricValueType::FloatDouble(value) => event.set_metric_d(value),
             MetricValueType::IntUnsigned(value) => event.set_metric_sint64(
                 i64::try_from(value).expect("Metric cannot be converted to signed integer."),
             ),
@@ -104,47 +80,103 @@ impl RiemannClient {
     }
 }
 
-/// Exporter sends metrics to a Riemann server.
+/// An exporter that sends metrics to a Riemann server.
 pub struct RiemannExporter {
-    /// Sensor instance that is used to generate the Topology and
-    /// thus get power consumption metrics.
-    sensor: Box<dyn Sensor>,
+    metric_generator: MetricGenerator,
+    riemann_client: RiemannClient,
+    args: ExporterArgs,
+}
+
+/// Contains the options of the Riemann exporter.
+#[derive(clap::Args, Debug)]
+pub struct ExporterArgs {
+    /// Address of the Riemann server. If mTLS is used this must be the server's FQDN.
+    #[arg(short, long, default_value = DEFAULT_IP_ADDRESS)]
+    pub address: String,
+
+    /// TCP port number of the Riemann server
+    #[arg(short, long, default_value_t = DEFAULT_PORT)]
+    pub port: u16,
+
+    /// Duration between each metric dispatch, in seconds
+    #[arg(short, long, default_value_t = 5)]
+    pub dispatch_interval: u64,
+
+    /// Apply labels to metrics of processes looking like a Qemu/KVM virtual machine
+    #[arg(short, long)]
+    pub qemu: bool,
+
+    /// Monitor and apply labels for processes running as containers
+    #[arg(long)]
+    pub containers: bool,
+
+    /// Connect to Riemann using mTLS instead of plain TCP.
+    #[arg(
+        long,
+        requires = "address",
+        requires = "ca_file",
+        requires = "cert_file",
+        requires = "key_file"
+    )]
+    pub mtls: bool,
+
+    /// CA certificate file (.pem format)
+    #[arg(long = "ca", requires = "mtls")]
+    pub ca_file: Option<String>,
+
+    /// Client certificate file (.pem format)
+    #[arg(long = "cert", requires = "mtls")]
+    pub cert_file: Option<String>,
+
+    /// Client RSA key file
+    #[arg(long = "key", requires = "mtls")]
+    pub key_file: Option<String>,
 }
 
 impl RiemannExporter {
     /// Returns a RiemannExporter instance.
-    pub fn new(sensor: Box<dyn Sensor>) -> RiemannExporter {
-        RiemannExporter { sensor }
+    pub fn new(sensor: &dyn Sensor, args: ExporterArgs) -> RiemannExporter {
+        // Prepare the retrieval of the measurements
+        let topo = sensor
+            .get_topology()
+            .expect("sensor topology should be available");
+        let metric_generator =
+            MetricGenerator::new(topo, utils::get_hostname(), args.qemu, args.containers);
+
+        // Initialize the connection to the Riemann server
+        let client = if args.mtls {
+            Client::connect_tls(
+                &args.address,
+                args.port,
+                &args.ca_file.clone().unwrap(),
+                &args.cert_file.clone().unwrap(),
+                &args.key_file.clone().unwrap(),
+            )
+            .expect("failed to connect to Riemann using mTLS")
+        } else {
+            Client::connect(&(args.address.clone(), args.port))
+                .expect("failed to connect to Riemann using raw TCP")
+        };
+        let riemann_client = RiemannClient { client };
+        RiemannExporter {
+            metric_generator,
+            riemann_client,
+            args,
+        }
     }
 }
 
 impl Exporter for RiemannExporter {
     /// Entry point of the RiemannExporter.
-    fn run(&mut self, parameters: ArgMatches) {
-        let dispatch_duration: u64 = parameters
-            .value_of("dispatch_duration")
-            .unwrap()
-            .parse()
-            .expect("Wrong dispatch_duration value, should be a number of seconds");
-
-        let hostname = get_hostname();
-
-        let mut rclient = RiemannClient::new(&parameters);
-
+    fn run(&mut self) {
         info!(
             "{}: Starting Riemann exporter",
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
         );
         println!("Press CTRL-C to stop scaphandre");
-        println!("Measurement step is: {dispatch_duration}s");
 
-        let topology = self.sensor.get_topology().unwrap();
-        let mut metric_generator = MetricGenerator::new(
-            topology,
-            hostname,
-            parameters.is_present("qemu"),
-            parameters.is_present("containers"),
-        );
+        let dispatch_interval = Duration::from_secs(self.args.dispatch_interval);
+        println!("Dispatch interval is {dispatch_interval:?}");
 
         loop {
             info!(
@@ -152,7 +184,7 @@ impl Exporter for RiemannExporter {
                 Utc::now().format("%Y-%m-%dT%H:%M:%S")
             );
 
-            metric_generator
+            self.metric_generator
                 .topology
                 .proc_tracker
                 .clean_terminated_process_records_vectors();
@@ -161,17 +193,17 @@ impl Exporter for RiemannExporter {
                 "{}: Refresh topology",
                 Utc::now().format("%Y-%m-%dT%H:%M:%S")
             );
-            metric_generator.topology.refresh();
+            self.metric_generator.topology.refresh();
 
             info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
             // Here we need a specific behavior for process metrics, so we call each gen function
             // and then implement that specific behavior (we don't use gen_all_metrics).
-            metric_generator.gen_self_metrics();
-            metric_generator.gen_host_metrics();
-            metric_generator.gen_socket_metrics();
+            self.metric_generator.gen_self_metrics();
+            self.metric_generator.gen_host_metrics();
+            self.metric_generator.gen_socket_metrics();
 
             let mut data = vec![];
-            let processes_tracker = &metric_generator.topology.proc_tracker;
+            let processes_tracker = &self.metric_generator.topology.proc_tracker;
 
             for pid in processes_tracker.get_alive_pids() {
                 let exe = processes_tracker.get_process_name(pid);
@@ -185,7 +217,7 @@ impl Exporter for RiemannExporter {
                 if let Some(cmdline_str) = cmdline {
                     attributes.insert("cmdline".to_string(), cmdline_str.replace('\"', "\\\""));
 
-                    if parameters.is_present("qemu") {
+                    if self.args.qemu {
                         if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
                             attributes.insert("vmname".to_string(), vmname);
                         }
@@ -198,7 +230,8 @@ impl Exporter for RiemannExporter {
                     "{}_{}_{}",
                     "scaph_process_power_consumption_microwatts", pid, exe
                 );
-                if let Some(power) = metric_generator
+                if let Some(power) = self
+                    .metric_generator
                     .topology
                     .get_process_power_consumption_microwatts(pid)
                 {
@@ -218,91 +251,20 @@ impl Exporter for RiemannExporter {
             }
             // Send all data
             info!("{}: Send data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
-            for metric in metric_generator.pop_metrics() {
-                rclient.send_metric(&metric);
+            for metric in self.metric_generator.pop_metrics() {
+                self.riemann_client.send_metric(&metric);
             }
             for metric in data {
-                rclient.send_metric(&metric);
+                self.riemann_client.send_metric(&metric);
             }
 
-            thread::sleep(Duration::new(dispatch_duration, 0));
+            // Pause for some time
+            std::thread::sleep(dispatch_interval);
         }
     }
 
-    /// Returns options understood by the exporter.
-    fn get_options() -> Vec<clap::Arg<'static, 'static>> {
-        let mut options = Vec::new();
-        let arg = Arg::with_name("address")
-            .default_value(DEFAULT_IP_ADDRESS)
-            .help("Riemann ipv6 or ipv4 address. If mTLS is used then server fqdn must be provided")
-            .long("address")
-            .short("a")
-            .required(false)
-            .takes_value(true);
-        options.push(arg);
-
-        let arg = Arg::with_name("port")
-            .default_value(DEFAULT_PORT)
-            .help("Riemann TCP port number")
-            .long("port")
-            .short("p")
-            .required(false)
-            .takes_value(true);
-        options.push(arg);
-
-        let arg = Arg::with_name("dispatch_duration")
-            .default_value("5")
-            .help("Duration between metrics dispatch")
-            .long("dispatch")
-            .short("d")
-            .required(false)
-            .takes_value(true);
-        options.push(arg);
-
-        let arg = Arg::with_name("qemu")
-            .help("Instruct that scaphandre is running on an hypervisor")
-            .long("qemu")
-            .short("q")
-            .required(false)
-            .takes_value(false);
-        options.push(arg);
-
-        let arg = Arg::with_name("mtls")
-            .help("Connect to a Riemann server using mTLS. Parameters address, ca, cert and key must be defined.")
-            .long("mtls")
-            .required(false)
-            .takes_value(false)
-            .requires_all(&["address","cafile", "certfile", "keyfile"]);
-        options.push(arg);
-
-        let arg = Arg::with_name("cafile")
-            .help("CA certificate file (.pem format)")
-            .long("ca")
-            .required(false)
-            .takes_value(true)
-            .display_order(1000)
-            .requires("mtls");
-        options.push(arg);
-
-        let arg = Arg::with_name("certfile")
-            .help("Client certificate file (.pem format)")
-            .long("cert")
-            .required(false)
-            .takes_value(true)
-            .display_order(1001)
-            .requires("mtls");
-        options.push(arg);
-
-        let arg = Arg::with_name("keyfile")
-            .help("Client RSA key")
-            .long("key")
-            .required(false)
-            .takes_value(true)
-            .display_order(1001)
-            .requires("mtls");
-        options.push(arg);
-
-        options
+    fn kind(&self) -> &str {
+        "riemann"
     }
 }
 

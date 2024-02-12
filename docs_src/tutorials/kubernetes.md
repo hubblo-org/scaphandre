@@ -12,6 +12,14 @@ to be installed from the source code.
     git clone https://github.com/hubblo-org/scaphandre
     cd scaphandre
     helm install scaphandre helm/scaphandre
+### Parameters
+#### Service monitor parameters
+
+| Name                                       | Description                                                                                                     | Value                     |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| `serviceMonitor.enabled`           | Create ServiceMonitor Resource for scraping metrics using PrometheusOperator                                    | `false`                    |
+| `serviceMonitor.namespace`         | The namespace in which the ServiceMonitor will be created   (if not set, default to namespace on which this chart is installed)                                                    | `""`                      |
+| `serviceMonitor.interval`          | The interval at which metrics should be scraped                                                                 | `1m`                     |
 
 ## Install Prometheus
 
