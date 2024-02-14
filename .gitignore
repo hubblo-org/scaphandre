@@ -35,3 +35,5 @@ packaging/*/BUILDROOT/*
 packaging/*/BUILDROOT/*
 
 .vscode
+
+.idea/
