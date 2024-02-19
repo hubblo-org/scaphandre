@@ -1271,6 +1271,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 
 [[package]]
+name = "protobuf"
+version = "3.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b65f4a8ec18723a734e5dc09c173e0abf9690432da5340285d536edcb4dac190"
+dependencies = [
+ "once_cell",
+ "protobuf-support",
+ "thiserror",
+]
+
+[[package]]
+name = "protobuf-support"
+version = "3.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6872f4d4f4b98303239a2b5838f5bbbb77b01ffc892d627957f37a22d7cfe69c"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1405,7 +1425,7 @@ checksum = "1005d55a9a8cb53f6ab2380792031394fff549b020cde16cecbc0978df9e7242"
 dependencies = [
  "docopt",
  "libc",
- "protobuf",
+ "protobuf 2.28.0",
  "rustls",
  "rustls-pemfile",
  "serde",
@@ -1501,7 +1521,7 @@ dependencies = [
  "loggerv",
  "ordered-float",
  "procfs",
- "protobuf",
+ "protobuf 3.3.0",
  "rand",
  "raw-cpuid",
  "regex",
