@@ -67,5 +67,7 @@ cargo-dist-version = "0.10.0"
 installers = []
 # Target platforms to build apps for (Rust target-triple syntax)
 targets = ["x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
+# Disabling builtin cargo-dist CI jobs to build binaries and archives
 build-local-artifacts = false
+# Do not checksum archives
 checksum = "false"
