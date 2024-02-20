@@ -20,7 +20,6 @@
       "changelog": true,
       "artifacts": {
           "auto": true,
-          "cargo_dist": false,
           "package_managers": {
             "preferred": {
               "crates.io": "cargo install scaphandre",
