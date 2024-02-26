@@ -2,7 +2,7 @@
 
 Scaphandre is a tool that makes it possible to see the power being used by a single process on a computer.
 
-This sounds like a simple thing thing to be able to do, but in practice a number of details can make this more complex.
+This sounds like a simple thing to be able to do, but in practice a number of details can make this more complex.
 
 So having a good mental model of how it works will make it easier to understand when and how to use Scaphandre. Let's start with a simplified mental model below, before moving on to multiple processors or virtual machines - but once you understand the key ideas outlined below, it's easier to see how they can be applied to thinking about tracking power on virtual machines, or when multiple processors are available.
 
