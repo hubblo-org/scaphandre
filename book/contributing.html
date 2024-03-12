@@ -1,0 +1,242 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js oranda-light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Contributing guide - Scaphandre documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Extensible and lightweight monitoring agent for energy consumption metrics">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="oranda-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "oranda-light" : "oranda-light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('orandamdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('orandamdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('orandamdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('oranda-light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorials/getting_started.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="tutorials/installation-linux.html"><strong aria-hidden="true">2.</strong> Installation on GNU/Linux</a></li><li class="chapter-item expanded "><a href="tutorials/installation-windows.html"><strong aria-hidden="true">3.</strong> Installation on Windows</a></li><li class="chapter-item expanded "><a href="tutorials/docker-compose.html"><strong aria-hidden="true">4.</strong> Docker-compose</a></li><li class="chapter-item expanded "><a href="tutorials/compilation-linux.html"><strong aria-hidden="true">5.</strong> Compilation for GNU/Linux</a></li><li class="chapter-item expanded "><a href="tutorials/compilation-windows.html"><strong aria-hidden="true">6.</strong> Compilation for Windows</a></li><li class="chapter-item expanded "><a href="tutorials/kubernetes.html"><strong aria-hidden="true">7.</strong> Power consumption of a Kubernetes cluster with scaphandre, prometheus and grafana</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">8.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">9.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded "><a href="how-to_guides/install-prometheuspush-only-rhel.html"><strong aria-hidden="true">10.</strong> Install Scaphandre with only Prometheus-push exporter compiled, for Prometheus Push Gateway, on RHEL 8 and 9</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="explanations/host_metrics.html"><strong aria-hidden="true">11.</strong> Explanations about host level power and energy metrics</a></li><li class="chapter-item expanded "><a href="explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">12.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="explanations/internal-structure.html"><strong aria-hidden="true">13.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="explanations/about-containers.html"><strong aria-hidden="true">14.</strong> About containers</a></li><li class="chapter-item expanded "><a href="explanations/rapl-domains.html"><strong aria-hidden="true">15.</strong> About RAPL domains</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="references/metrics.html"><strong aria-hidden="true">16.</strong> Metrics available</a></li><li class="chapter-item expanded "><a href="references/exporter-json.html"><strong aria-hidden="true">17.</strong> JSON exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-prometheus.html"><strong aria-hidden="true">18.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-qemu.html"><strong aria-hidden="true">19.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-riemann.html"><strong aria-hidden="true">20.</strong> Riemann exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-stdout.html"><strong aria-hidden="true">21.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="references/exporter-warp10.html"><strong aria-hidden="true">22.</strong> Warp10 exporter</a></li><li class="chapter-item expanded "><a href="references/sensor-msr_rapl.html"><strong aria-hidden="true">23.</strong> MSR_RAPL sensor</a></li><li class="chapter-item expanded "><a href="references/sensor-powercap_rapl.html"><strong aria-hidden="true">24.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded "><a href="references/sensor-msr_rapl.html"><strong aria-hidden="true">25.</strong> MSRRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="contributing.html" class="active">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="sources.html">External references you may be interested in</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="oranda-light">Oranda Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="oranda-dark">Oranda Dark</button></li>
+
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Scaphandre documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="contributing-guide"><a class="header" href="#contributing-guide">Contributing guide</a></h1>
+<p>If you are reading this, you may be  to contribute. Just for that, a big thank you ! 👏</p>
+<p>Feel free to propose pull requests, or open new <a href="https://github.com/hubblo-org/scaphandre/discussions">discussions</a> or <a href="https://github.com/hubblo-org/scaphandre/issues">issues</a> at will. Scaphandre is a collaborative project and all opinions and propositions shall be heard and studied. The contributions will be received with kindness, gratitude and with an open mind. Remember that we are all <a href="https://en.wikipedia.org/wiki/Standing_on_the_shoulders_of_giants">dwarfs standing on the shoulders of giants</a>. We all have to learn from others and to give back, with due mutual respect.</p>
+<h3 id="code-of-conduct"><a class="header" href="#code-of-conduct">Code of conduct</a></h3>
+<p>This project adheres to the Rust Code of Conduct, which <a href="https://www.rust-lang.org/conduct.html">can be found here</a>.</p>
+<h3 id="ways-to-contribute"><a class="header" href="#ways-to-contribute">Ways to contribute</a></h3>
+<p>Contributions may take multiple forms:</p>
+<ul>
+<li>💻 <strong>code</strong>, of course, but not only (there is a lot more !)</li>
+<li>📖 <strong>documentation</strong> : <a href="#edit-and-build-the-documentation">here</a> is a guide to edit and build the documentation</li>
+<li>🎤 Any help on <strong>communication</strong>: writing blog posts, speaking about scaphandre in conferences, speaking and writing about the responsibility of tech to be sustainable as well !</li>
+<li>🧬 <strong>structuring the project</strong> and the <strong>community</strong> is also a very important topic. Feel free to propose help, or start <a href="https://github.com/hubblo-org/scaphandre/discussions">discussions</a> about that.</li>
+</ul>
+<p>This project intends to unite a lot of people to have a lot of positive impact. Any action going helping us to get there will be very much appreciated ! 🎉</p>
+<h3 id="contact"><a class="header" href="#contact">Contact</a></h3>
+<p>Discussions and questions about the project are welcome on <a href="https://gitter.im/hubblo-org/scaphandre?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge">gitter</a> or by <a href="mailto://bpetit@hubblo.org?Subject=About%20Scaphandre">email</a>.</p>
+<h3 id="contribution-guidelines"><a class="header" href="#contribution-guidelines">Contribution guidelines</a></h3>
+<p>This project intends to use <a href="https://conventionalcommits.org/">conventional commit messages</a> and the <a href="https://nvie.com/posts/a-successful-git-branching-model/">gitflow</a> workflow.</p>
+<p>Please open your pull requests on the <strong>dev</strong> branch :)</p>
+<p>Scaphandre is a not only a tool, but a framework. Modules dedicated to collect energy consumption data from the host are called <a href="explanations/internal-structure.html#sensors"><strong>Sensors</strong></a>.
+Modules that are dedicated to send this data to a given channel or remote system are called <a href="explanations/internal-structure.html#exporters"><strong>Exporters</strong></a>. New Sensors and Exporters are going to be created and all contributions are welcome. For more on the internal structure please jump <a href="explanations/internal-structure.html">here</a>.</p>
+<h3 id="edit-and-build-the-documentation"><a class="header" href="#edit-and-build-the-documentation">Edit and build the documentation</a></h3>
+<p>Documentation source files are in <code>docs_src</code>, edit the content there and propose pull-requests on the scaphandre repository as if it was a code pull-request.</p>
+<p>Here is how to build and publish the documentation after a change. First download <a href="https://github.com/rust-lang/mdBook">mdbook</a>, the static site generator we use for the <a href="https://hubblo-org.github.io/scaphandre-documentation">documentation website</a>:</p>
+<pre><code>cargo install mdbook
+</code></pre>
+<p>Then fork the <a href="https://github.com/hubblo-org/scaphandre-documentation">scaphandre-documentation</a> repository and clone the resulting repository locally.</p>
+<p>Place the resulting documentation folder next to scaphandre's folder. Then run the build:</p>
+<pre><code>cd scaphandre &amp;&amp; mdbook build
+</code></pre>
+<p>You should then have the result in <code>scaphandre-documentation/docs</code>. Commit, push and propose a PR to publish the changes.</p>
+<p>You can also serve the current content locally to see your changes before commit:</p>
+<pre><code>mdbook serve
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="troubleshooting.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next" href="sources.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="troubleshooting.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next" href="sources.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="ace.js"></script>
+        <script src="editor.js"></script>
+        <script src="mode-rust.js"></script>
+        <script src="theme-dawn.js"></script>
+        <script src="theme-tomorrow_night.js"></script>
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

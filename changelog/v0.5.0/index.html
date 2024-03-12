@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" id="oranda" class="light">
+  <head>
+    <title>scaphandre</title>
+    
+      <meta property="og:url" content="https://scaphandre.hubblo.org" />
+    
+    
+      <link rel="icon" href="/scaphandre/favicon.ico" />
+    
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+      <meta name="description" content="Electric power/energy consumption monitoring agent." />
+      <meta property="og:description" content="Electric power/energy consumption monitoring agent." />
+    
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="scaphandre" />
+    
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta property="og:image" content="https://raw.githubusercontent.com/hubblo-org/scaphandre/dev/docs_src/scaphandre.cleaned.png" />
+    
+    
+      <meta property="og:image:alt" content="Hubblo's twitter/x account" />
+    
+    
+      <meta name="twitter:creator" content="@HubbloOrg" />
+      <meta name="twitter:site" content="@HubbloOrg" />
+    
+    <meta http-equiv="Permissions-Policy" content="interest-cohort=()" />
+    <link rel="stylesheet" href="/scaphandre/oranda-v0.6.1.css" />
+    
+    
+  </head>
+  <body>
+    <div class="container">
+      <div class="page-body">
+        
+          <div class="repo_banner">
+            <a href="https://github.com/hubblo-org/scaphandre">
+              <div class="github-icon" aria-hidden="true"></div>
+              Check out our GitHub!
+            </a>
+          </div>
+        
+
+        <main>
+          <header>
+            
+            <h1 class="title">scaphandre</h1>
+            
+  <nav class="nav">
+    <ul>
+      <li><a href="/scaphandre/">Home</a></li>
+
+      
+
+      
+        <li><a href="/scaphandre/artifacts/">Install</a></li>
+      
+
+      
+        <li><a href="/scaphandre/book/">Docs</a></li>
+      
+
+      
+        <li><a href="/scaphandre/funding/">Funding</a></li>
+      
+
+      
+        <li><a href="/scaphandre/changelog/">Changelog</a></li>
+      
+    </ul>
+  </nav>
+
+          </header>
+
+          
+  <div>
+    <h1>Scaphandre v0.5.0</h1>
+    <div class="releases-body">
+      
+      
+      <section class="release ">
+  
+  <div class="release-info">
+    <span class="flex items-center gap-2">
+      <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor' class='w-6 h-6'>
+    <path stroke-linecap='round' stroke-linejoin='round' d='M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z' />
+    <path stroke-linecap='round' stroke-linejoin='round' d='M6 6h.008v.008H6V6z' /></svg>
+      v0.5.0
+    </span>
+    <span class="flex items-center gap-2">
+      
+        <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor' class='w-6 h-6'><path stroke-linecap='round' stroke-linejoin='round' d='M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5' /></svg>
+        Jan 30 2023 at 11:52 UTC
+      
+    </span>
+  </div>
+  <div class="release-body">
+    <h3>Changed</h3>
+<ul>
+<li>Upgraded procfs to 0.12 : <a href="https://github.com/hubblo-org/scaphandre/pull/144" rel="noopener noreferrer">#144</a></li>
+<li>Rollbacked to ubuntu 20.04 as the base docker image : <a href="https://github.com/hubblo-org/scaphandre/pull/151" rel="noopener noreferrer">#151</a>, thanks to @demeringo</li>
+<li>Using github action to tag docker image : <a href="https://github.com/hubblo-org/scaphandre/pull/160" rel="noopener noreferrer">#160</a>, thanks to @rossf7</li>
+</ul>
+<h3>Added</h3>
+<ul>
+<li>New level of abstraction regarding structs managed by Sensors, so we could implement more sensors in an easier way : <a href="https://github.com/hubblo-org/scaphandre/pull/149" rel="noopener noreferrer">#149</a></li>
+<li>Enable JSON exporter to run as a daemon : <a href="https://github.com/hubblo-org/scaphandre/issues/169" rel="noopener noreferrer">#169</a></li>
+<li>First building blocks for conditional compilation depending on the OS : <a href="https://github.com/hubblo-org/scaphandre/pull/148" rel="noopener noreferrer">#148</a></li>
+<li>Mitigation for machines where powercap is not able to feed rapl domain folders, and only has socket ones : <a href="https://github.com/hubblo-org/scaphandre/pull/198" rel="noopener noreferrer">#198</a></li>
+<li>Experimental support for Windows 10, 11, server 2019 : <a href="https://github.com/hubblo-org/scaphandre/issues/74" rel="noopener noreferrer">#74</a> and <a href="https://github.com/hubblo-org/scaphandre/issues/247" rel="noopener noreferrer">#247</a></li>
+<li>Added --containers option to JSON exporter : <a href="https://github.com/hubblo-org/scaphandre/issues/217" rel="noopener noreferrer">#217</a></li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Kubernetes pods using containerd are now supported : <a href="https://github.com/hubblo-org/scaphandre/pull/130" rel="noopener noreferrer">#130</a>, thanks to @rossf7</li>
+<li>Excluded unrelevant procfs metrics from calculation of cpu cycles consumed by processes : <a href="https://github.com/hubblo-org/scaphandre/pull/132" rel="noopener noreferrer">#132</a></li>
+<li>Mitigated possible decrepancies between host (rapl) total power usage metric and the sum of per-process power usage metrics : <a href="https://github.com/hubblo-org/scaphandre/issues/20" rel="noopener noreferrer">#20</a>, note that some issues show remaining issues on this topic. Further investigation and work needed.</li>
+<li>Documentation fix for helm install : <a href="https://github.com/hubblo-org/scaphandre/pull/136" rel="noopener noreferrer">#136</a>, thanks to @arthurzenika</li>
+<li>New helm chart values: arguments and backtrace : <a href="https://github.com/hubblo-org/scaphandre/pull/139" rel="noopener noreferrer">#139</a>, thanks to @jotak</li>
+<li>Some documentation typos : <a href="https://github.com/hubblo-org/scaphandre/pull/157" rel="noopener noreferrer">#157</a>, thanks to @metacosm</li>
+<li>Aligning on new clippy rules : <a href="https://github.com/hubblo-org/scaphandre/pull/162" rel="noopener noreferrer">#162</a>, thanks to @demeringo</li>
+<li>Always set last pods check timestamp : <a href="https://github.com/hubblo-org/scaphandre/pull/173" rel="noopener noreferrer">#173</a>, thanks to @rossf7</li>
+<li>Support kubelets using systemd cgroup driver: <a href="https://github.com/hubblo-org/scaphandre/pull/146" rel="noopener noreferrer">#146</a>, thanks to @rossf7</li>
+<li>Fix missing volume in psp (helm chart): <a href="https://github.com/hubblo-org/scaphandre/pull/168" rel="noopener noreferrer">#168</a>, thanks to @olevitt</li>
+<li>Spelling check in documentation : <a href="https://github.com/hubblo-org/scaphandre/pull/183" rel="noopener noreferrer">#183</a>, thanks to @irishgordo</li>
+<li>No more duplicated HELP and TYPE lines in prometheus exporter: <a href="https://github.com/hubblo-org/scaphandre/issues/165" rel="noopener noreferrer">#165</a> and <a href="https://github.com/hubblo-org/scaphandre/pull/192" rel="noopener noreferrer">#192</a></li>
+<li>Escaping newlines in cmdline: <a href="https://github.com/hubblo-org/scaphandre/issues/175" rel="noopener noreferrer">#175</a>, thanks to @uggla</li>
+</ul>
+
+  </div>
+</section>
+    </div>
+  </div>
+
+        </main>
+      </div>
+
+      <footer>
+        
+          <a href="https://github.com/hubblo-org/scaphandre"><div class="github-icon" aria-hidden="true"></div></a>
+        
+        <span>
+          scaphandre, Apache-2.0
+        </span>
+      </footer>
+    </div>
+
+    
+    
+
+    
+  </body>
+</html>

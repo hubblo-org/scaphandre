@@ -1,0 +1,254 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js oranda-light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>How scaphandre computes per process power consumption - Scaphandre documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Extensible and lightweight monitoring agent for energy consumption metrics">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+        <link rel="stylesheet" href="../oranda-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "oranda-light" : "oranda-light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('orandamdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('orandamdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('orandamdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('oranda-light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="../tutorials/getting_started.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="../tutorials/installation-linux.html"><strong aria-hidden="true">2.</strong> Installation on GNU/Linux</a></li><li class="chapter-item expanded "><a href="../tutorials/installation-windows.html"><strong aria-hidden="true">3.</strong> Installation on Windows</a></li><li class="chapter-item expanded "><a href="../tutorials/docker-compose.html"><strong aria-hidden="true">4.</strong> Docker-compose</a></li><li class="chapter-item expanded "><a href="../tutorials/compilation-linux.html"><strong aria-hidden="true">5.</strong> Compilation for GNU/Linux</a></li><li class="chapter-item expanded "><a href="../tutorials/compilation-windows.html"><strong aria-hidden="true">6.</strong> Compilation for Windows</a></li><li class="chapter-item expanded "><a href="../tutorials/kubernetes.html"><strong aria-hidden="true">7.</strong> Power consumption of a Kubernetes cluster with scaphandre, prometheus and grafana</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">8.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="../how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">9.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded "><a href="../how-to_guides/install-prometheuspush-only-rhel.html"><strong aria-hidden="true">10.</strong> Install Scaphandre with only Prometheus-push exporter compiled, for Prometheus Push Gateway, on RHEL 8 and 9</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="../explanations/host_metrics.html"><strong aria-hidden="true">11.</strong> Explanations about host level power and energy metrics</a></li><li class="chapter-item expanded "><a href="../explanations/how-scaph-computes-per-process-power-consumption.html" class="active"><strong aria-hidden="true">12.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="../explanations/internal-structure.html"><strong aria-hidden="true">13.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="../explanations/about-containers.html"><strong aria-hidden="true">14.</strong> About containers</a></li><li class="chapter-item expanded "><a href="../explanations/rapl-domains.html"><strong aria-hidden="true">15.</strong> About RAPL domains</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="../references/metrics.html"><strong aria-hidden="true">16.</strong> Metrics available</a></li><li class="chapter-item expanded "><a href="../references/exporter-json.html"><strong aria-hidden="true">17.</strong> JSON exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-prometheus.html"><strong aria-hidden="true">18.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-qemu.html"><strong aria-hidden="true">19.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-riemann.html"><strong aria-hidden="true">20.</strong> Riemann exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-stdout.html"><strong aria-hidden="true">21.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-warp10.html"><strong aria-hidden="true">22.</strong> Warp10 exporter</a></li><li class="chapter-item expanded "><a href="../references/sensor-msr_rapl.html"><strong aria-hidden="true">23.</strong> MSR_RAPL sensor</a></li><li class="chapter-item expanded "><a href="../references/sensor-powercap_rapl.html"><strong aria-hidden="true">24.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded "><a href="../references/sensor-msr_rapl.html"><strong aria-hidden="true">25.</strong> MSRRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="../why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="../compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="../troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="../contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="../sources.html">External references you may be interested in</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="oranda-light">Oranda Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="oranda-dark">Oranda Dark</button></li>
+
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Scaphandre documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="how-scaphandre-computes-per-process-power-consumption"><a class="header" href="#how-scaphandre-computes-per-process-power-consumption">How scaphandre computes per process power consumption</a></h1>
+<p>Scaphandre is a tool that makes it possible to see the power being used by a single process on a computer.</p>
+<p>This sounds like a simple thing thing to be able to do, but in practice a number of details can make this more complex.</p>
+<p>So having a good mental model of how it works will make it easier to understand when and how to use Scaphandre. Let's start with a simplified mental model below, before moving on to multiple processors or virtual machines - but once you understand the key ideas outlined below, it's easier to see how they can be applied to thinking about tracking power on virtual machines, or when multiple processors are available.</p>
+<h3 id="how-a-computer-works-on-multiple-jobs-at-the-same-time"><a class="header" href="#how-a-computer-works-on-multiple-jobs-at-the-same-time">How a computer works on multiple jobs at the same time</a></h3>
+<p>When we first think about how much energy a single process running in a computer might use, we might start with a mental model that looks like the figure below, with large, uninterrupted chunks of compute time allocated to each process.</p>
+<p>This is easy to understand, and it matches how we might be billed for a share of a larger machine when paying for cloud services.</p>
+<p><img src="../img/what-scaphandre-does.png" alt="what scaphandre does - per process power usage" /></p>
+<h4 id="timesharing-of-work"><a class="header" href="#timesharing-of-work">Timesharing of work</a></h4>
+<p>However, if the reality was <em>exactly</em> like this diagram, our computers would only ever be able to do one thing at a time. It's more accurate and helpful to think of computers working on lots of different jobs at the same time - they work on one job for short interval of time, then another, and another and so one. You'll often see these small intervals of time referred to as <em><a href="https://www.anshulpatel.in/posts/linux_cpu_percentage/">jiffies</a></em>.</p>
+<p><img src="../img/jiffies.png" alt="work on jobs is split into jiffies" /></p>
+<p>In a given amount of time, some jobs that are prioritized or more resource intensive will use more jiffies than others. Fortunately, each job keeps a running total of the total jiffies allocated to it, so if we know how many jiffies have been used in total, it can give us an idea how much of a machine's resources are being used by a given process.</p>
+<p><img src="../img/total-time-share.png" alt="work on jobs is split into jiffies" /></p>
+<h3 id="going-from-share-of-resources-to-actual-power-figures"><a class="header" href="#going-from-share-of-resources-to-actual-power-figures">Going from share of resources to actual power figures</a></h3>
+<p>It's possible without Scaphandre to understand how large a share of a machines' resources are being used by a given process.</p>
+<p>This is useful, by itself, but if we want to understand how much <em>power</em> is used per process, not just the share of the machine's resources, we need to know how much power is being used by the machine in absolute terms.</p>
+<p>To do this, we need a sensor of some kind to track power usage by the machine itself. Some servers have these, like with Intel's RAPL sensors, which we cover this in more detail later on. This makes it possible to understand how much power is being used by CPUs, GPUs and so on, in terms of watts, or, if we are looking at just a single process, various fractions of a watt.</p>
+<p><img src="../img/power-over-time.png" alt="Sensors provide power over time" /></p>
+<p>To understand the power used by a single process we combine both of these ideas. We count the jiffies used by <em>our</em> job when it's being worked on, and for each jiffy, we check how much power is being drawn at those moments in time.</p>
+<p><img src="../img/power-and-share-of-usage.png" alt="Combined we can see how much the power during 'our' jiffies" /></p>
+<p>Finally, when we group together all the power readings for all our jiffies over a given time period, we can arrive at a usable figure for how much power has been used, in terms of watt hours.</p>
+<p>Once we have a figure in terms of watt hours, there are various ways we can convert this to environmental impact. A common way is to use an <em>emission factor</em> for the electricity used, to turn the power consumption data into an estimate of associated carbon emissions.</p>
+<p><img src="../img/power-by-process.png" alt="Combined we can see how much the power during 'our' jiffies" /></p>
+<h3 id="working-with-virtualisation-and-multiple-processors"><a class="header" href="#working-with-virtualisation-and-multiple-processors">Working with virtualisation and multiple processors</a></h3>
+<p>While the reality is again more complicated than the diagram below, the same ideas broadly apply when you introduce multiple processors too.</p>
+<p>If you are able to read from sensors that can share how much power is being used by the various processors at work, and know how much of the time is being allocated to our processes during those moments, you can get a good idea of what these figures are, at a per-process level.</p>
+<p><img src="../img/multiple-processors.png" alt="Seeing this with multiple processors" /></p>
+<p>Things get a bit more complicated with virtualised environments, because in many cases, virtual machines only have a partial view of the system they are part of, and frequently do not have access to any power usage figures from the host physical machine.</p>
+<p>However, if a guest virtual machine or guest container <em>does</em> have access to readings provided by the host physical machine, it is possible to work out the same kinds of per-process power figures. Scaphandre supports exposing these kinds of power readings to virtual machines and containers, which means, if you are running on infrastructure that is running scaphandre and exposing these readings, you can see these figures for the energy used by your own processes.</p>
+<hr />
+<h2 id="more-details-about-how-scaphandre-works"><a class="header" href="#more-details-about-how-scaphandre-works">More details about how Scaphandre works</a></h2>
+<p>As you can see with the <a href="../references/exporter-prometheus.html">prometheus exporter reference</a>, scaphandre exporters can provide process level power consumption metrics. This section will explain how it is done and how it may be improved in the future.</p>
+<h2 id="some-details-about-rapl"><a class="header" href="#some-details-about-rapl">Some details about RAPL</a></h2>
+<p>We'll talk here about the case where scaphandre is able to effectively measure the power consumption of the host (see <a href="../compatibility.html">compatibility</a> section for more on sensors and their prerequisites) and specifically about the <a href="../references/sensor-powercap_rapl.html">PowercapRAPL</a> sensor.</p>
+<p>Let's clarify what's happening when you collect metrics with scaphandre and the RAPL sensor.
+RAPL stands for <a href="https://01.org/blogs/2014/running-average-power-limit-%E2%80%93-rapl">Running Average Power Limit</a>. It's a technology embedded in most Intel and AMD x86 CPUs produced after 2012.</p>
+<p>Thanks to this technology it is possible to get the total energy consumption of the CPU, of the consumption per CPU socket, plus in some cases, the consumption of the DRAM controller. In most cases it represents the vast majority of the energy consumption of the machine (except when running GPU intensive workloads, for example).</p>
+<p>Further improvements shall be made in scaphandre to fully measure the consumption when GPU are involved (or a lot of hard drives on the same host...).</p>
+<p>Between scaphandre and this data is the powercap kernel module that writes the energy consumption to files. Scaphandre reads those files, stores the data in buffers and then allows for more processing through the exporters.</p>
+<h3 id="how-to-get-the-consumption-of-one-process-"><a class="header" href="#how-to-get-the-consumption-of-one-process-">How to get the consumption of one process ?</a></h3>
+<p>The PowercapRAPL sensor does actually more than just collecting those energy consumption metrics (and converting them to power consumption metrics).</p>
+<p>Every time the exporter asks for a measurement (either periodically like in the <a href="../references/exporter-stdout.html">Stdout</a> exporter, or every time a request comes as would be the case for the Prometheus exporter) the sensor reads the values of the energy counters from powercap. It then stores those values, and does the same for the CPU usage statistics of the CPU (the one you can see in <code>/proc/stats</code>) and for each running process on the machine at that time (see <code>/proc/PID/stats</code>).</p>
+<p>With this data it is possible to compute the ratio of CPU time actively spent for a given PID on the CPU time actively spent doing something. With this ratio we can then get the subset of power consumption that is related to that PID on a given timeframe (between two measurement requests).</p>
+<h3 id="how-to-get-the-consumption-of-an-applicationa-service-"><a class="header" href="#how-to-get-the-consumption-of-an-applicationa-service-">How to get the consumption of an application/a service ?</a></h3>
+<p>Services and programs are often not running on only one PID. It's needed to aggregate the consumption of all related PIDs to know what this service is actually consuming.</p>
+<p>To do that, in the current state of scaphandre development, you can use the Prometheus exporter, and then use Prometheus and its query language capabilities. You'll find examples looking at the graphs and queries <a href="https://metrics.hubblo.org">here</a>. In a near future, more advanced features may be implemented in scaphandre to allow such classification even if you don't have access to a proper <a href="https://en.wikipedia.org/wiki/Time_series_database">Time Series database (TSDB)</a>.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../explanations/host_metrics.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next" href="../explanations/internal-structure.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../explanations/host_metrics.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next" href="../explanations/internal-structure.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../ace.js"></script>
+        <script src="../editor.js"></script>
+        <script src="../mode-rust.js"></script>
+        <script src="../theme-dawn.js"></script>
+        <script src="../theme-tomorrow_night.js"></script>
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

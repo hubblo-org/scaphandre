@@ -1,0 +1,312 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js oranda-light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Metrics available - Scaphandre documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Extensible and lightweight monitoring agent for energy consumption metrics">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+        <link rel="stylesheet" href="../oranda-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "oranda-light" : "oranda-light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('orandamdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('orandamdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('orandamdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('oranda-light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="../tutorials/getting_started.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="../tutorials/installation-linux.html"><strong aria-hidden="true">2.</strong> Installation on GNU/Linux</a></li><li class="chapter-item expanded "><a href="../tutorials/installation-windows.html"><strong aria-hidden="true">3.</strong> Installation on Windows</a></li><li class="chapter-item expanded "><a href="../tutorials/docker-compose.html"><strong aria-hidden="true">4.</strong> Docker-compose</a></li><li class="chapter-item expanded "><a href="../tutorials/compilation-linux.html"><strong aria-hidden="true">5.</strong> Compilation for GNU/Linux</a></li><li class="chapter-item expanded "><a href="../tutorials/compilation-windows.html"><strong aria-hidden="true">6.</strong> Compilation for Windows</a></li><li class="chapter-item expanded "><a href="../tutorials/kubernetes.html"><strong aria-hidden="true">7.</strong> Power consumption of a Kubernetes cluster with scaphandre, prometheus and grafana</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">8.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="../how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">9.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded "><a href="../how-to_guides/install-prometheuspush-only-rhel.html"><strong aria-hidden="true">10.</strong> Install Scaphandre with only Prometheus-push exporter compiled, for Prometheus Push Gateway, on RHEL 8 and 9</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="../explanations/host_metrics.html"><strong aria-hidden="true">11.</strong> Explanations about host level power and energy metrics</a></li><li class="chapter-item expanded "><a href="../explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">12.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="../explanations/internal-structure.html"><strong aria-hidden="true">13.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="../explanations/about-containers.html"><strong aria-hidden="true">14.</strong> About containers</a></li><li class="chapter-item expanded "><a href="../explanations/rapl-domains.html"><strong aria-hidden="true">15.</strong> About RAPL domains</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="../references/metrics.html" class="active"><strong aria-hidden="true">16.</strong> Metrics available</a></li><li class="chapter-item expanded "><a href="../references/exporter-json.html"><strong aria-hidden="true">17.</strong> JSON exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-prometheus.html"><strong aria-hidden="true">18.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-qemu.html"><strong aria-hidden="true">19.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-riemann.html"><strong aria-hidden="true">20.</strong> Riemann exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-stdout.html"><strong aria-hidden="true">21.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-warp10.html"><strong aria-hidden="true">22.</strong> Warp10 exporter</a></li><li class="chapter-item expanded "><a href="../references/sensor-msr_rapl.html"><strong aria-hidden="true">23.</strong> MSR_RAPL sensor</a></li><li class="chapter-item expanded "><a href="../references/sensor-powercap_rapl.html"><strong aria-hidden="true">24.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded "><a href="../references/sensor-msr_rapl.html"><strong aria-hidden="true">25.</strong> MSRRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="../why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="../compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="../troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="../contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="../sources.html">External references you may be interested in</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="oranda-light">Oranda Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="oranda-dark">Oranda Dark</button></li>
+
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Scaphandre documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="metrics-exposed-by-scaphandre"><a class="header" href="#metrics-exposed-by-scaphandre">Metrics exposed by Scaphandre</a></h1>
+<p>With <a href="exporter-stdout.html">Stdout</a> exporter, you can see all metrics available on your machine with flag <code>--raw-metrics</code>.
+With <a href="exporter-prometheus.html">prometheus</a> exporter, all metrics have a HELP section provided on /metrics (or whatever suffix you choosed to expose them).</p>
+<p>Here are some key metrics that you will most probably be interested in:</p>
+<ul>
+<li><code>scaph_host_power_microwatts</code>: Aggregation of several measurements to give a try on the power usage of the the whole host, in microwatts (GAUGE). It might be the same as RAPL PSYS (see <a href="../explanations/rapl-domains.html">RAPL domains</a>) measurement if available, or a combination of RAPL PKG and DRAM domains + an estimation of other hardware componentes power usage.</li>
+<li><code>scaph_process_power_consumption_microwatts{exe=&quot;$PROCESS_EXE&quot;,pid=&quot;$PROCESS_PID&quot;,cmdline=&quot;path/to/exe --and-maybe-options&quot;}</code>: Power consumption due to the process, measured on at the topology level, in microwatts. PROCESS_EXE being the name of the executable and PROCESS_PID being the pid of the process. (GAUGE)</li>
+</ul>
+<p>For more details on that metric labels, see <a href="#getting-per-process-data-with-scaph_process_-metrics">this section</a>.</p>
+<p>And some more deep metrics that you may want if you need to make more complex calculations and data processing:</p>
+<ul>
+<li><code>scaph_host_energy_microjoules</code> : Energy measurement for the whole host, as extracted from the sensor, in microjoules. (COUNTER)</li>
+<li><code>scaph_socket_power_microwatts{socket_id=&quot;$SOCKET_ID&quot;}</code>: Power measurement relative to a CPU socket, in microwatts. SOCKET_ID being the socket numerical id (GAUGE)</li>
+</ul>
+<p>If your machine provides RAPL PSYS domain (see <a href="../explanations/rapl-domains.html">RAPL domains</a>), you can get the raw energy counter for PSYS/platform with <code>scaph_host_rapl_psys_microjoules</code>. Note that <code>scaph_host_power_microwatts</code> is based on this PSYS counter if it is available.</p>
+<p>Since 1.0.0 the following host metrics are availalable as well ;</p>
+<ul>
+<li><code>scaph_host_swap_total_bytes</code>: Total swap space on the host, in bytes.</li>
+<li><code>scaph_host_swap_free_bytes</code>: Swap space free to be used on the host, in bytes.</li>
+<li><code>scaph_host_memory_free_bytes</code>: Random Access Memory free to be used (not reused) on the host, in bytes.</li>
+<li><code>scaph_host_memory_available_bytes</code>: Random Access Memory available to be re-used on the host, in bytes.</li>
+<li><code>scaph_host_memory_total_bytes</code>: Random Access Memory installed on the host, in bytes.</li>
+<li><code>scaph_host_disk_total_bytes</code>: Total disk size, in bytes.</li>
+<li><code>scaph_host_disk_available_bytes</code>: Available disk space, in bytes.</li>
+</ul>
+<p>Disk metrics have the following labels : disk_file_system, disk_is_removable, disk_type, disk_mount_point, disk_name</p>
+<ul>
+<li><code>scaph_host_cpu_frequency</code>: Global frequency of all the cpus. In MegaHertz</li>
+<li><code>scaph_host_load_avg_fifteen</code>: Load average on 15 minutes.</li>
+<li><code>scaph_host_load_avg_five</code>: Load average on 5 minutes.</li>
+<li><code>scaph_host_load_avg_one</code>: Load average on 1 minute.</li>
+</ul>
+<p>If you hack scaph or just want to investigate its behavior, you may be interested in some internal metrics:</p>
+<ul>
+<li>
+<p><code>scaph_self_memory_bytes</code>: Scaphandre memory usage, in bytes</p>
+</li>
+<li>
+<p><code>scaph_self_memory_virtual_bytes</code>: Scaphandre virtual memory usage, in bytes</p>
+</li>
+<li>
+<p><code>scaph_self_topo_stats_nb</code>: Number of CPUStat traces stored for the host</p>
+</li>
+<li>
+<p><code>scaph_self_topo_records_nb</code>: Number of energy consumption Records stored for the host</p>
+</li>
+<li>
+<p><code>scaph_self_topo_procs_nb</code>: Number of processes monitored by scaph</p>
+</li>
+<li>
+<p><code>scaph_self_socket_stats_nb{socket_id=&quot;SOCKET_ID&quot;}</code>: Number of CPUStat traces stored for each socket</p>
+</li>
+<li>
+<p><code>scaph_self_socket_records_nb{socket_id=&quot;SOCKET_ID&quot;}</code>: Number of energy consumption Records stored for each socket, with SOCKET_ID being the id of the socket measured</p>
+</li>
+<li>
+<p><code>scaph_self_domain_records_nb{socket_id=&quot;SOCKET_ID&quot;,rapl_domain_name=&quot;RAPL_DOMAIN_NAME &quot;}</code>: Number of energy consumption Records stored for a Domain, where SOCKET_ID identifies the socket and RAPL_DOMAIN_NAME identifies the rapl domain measured on that socket</p>
+</li>
+</ul>
+<h3 id="getting-per-process-data-with-scaph_process_-metrics"><a class="header" href="#getting-per-process-data-with-scaph_process_-metrics">Getting per process data with scaph_process_* metrics</a></h3>
+<p>Here are available labels for the <code>scaph_process_power_consumption_microwatts</code> metric that you may need to extract the data you need:</p>
+<ul>
+<li><code>exe</code>: is the name of the executable that is the origin of that process. This is good to be used when your application is running one or only a few processes.</li>
+<li><code>cmdline</code>: this contains the whole command line with the executable path and its parameters (concatenated). You can filter on this label by using prometheus <code>=~</code> operator to match a regular expression pattern. This is very practical in many situations.</li>
+<li><code>instance</code>: this is a prometheus generated label to enable you to filter the metrics by the originating host. This is very useful when you monitor distributed services, so that you can not only sum the metrics for the same service on the different hosts but also see what instance of that service is consuming the most, or notice differences beteween hosts that may not have the same hardware, and so on...</li>
+<li><code>pid</code>: is the process id, which is useful if you want to track a specific process and have your eyes on what's happening on the host, but not so practical to use in a more general use case</li>
+</ul>
+<p>Since 1.0.0 the following per-process metrics are available as well :</p>
+<ul>
+<li><code>scaph_process_cpu_usage_percentage</code>: CPU time consumed by the process, as a percentage of the capacity of all the CPU Cores</li>
+<li><code>scaph_process_memory_bytes</code>: Physical RAM usage by the process, in bytes</li>
+<li><code>scaph_process_memory_virtual_bytes</code>: Virtual RAM usage by the process, in bytes</li>
+<li><code>scaph_process_disk_total_write_bytes</code>: Total data written on disk by the process, in bytes</li>
+<li><code>scaph_process_disk_write_bytes</code>: Data written on disk by the process, in bytes</li>
+<li><code>scaph_process_disk_read_bytes</code>: Data read on disk by the process, in bytes</li>
+<li><code>scaph_process_disk_total_read_bytes</code>: Total data read on disk by the process, in bytes</li>
+</ul>
+<h3 id="get-container-specific-labels-on-scaph_process_-metrics"><a class="header" href="#get-container-specific-labels-on-scaph_process_-metrics">Get container-specific labels on scaph_process_* metrics</a></h3>
+<p>The flag --containers enables Scaphandre to collect data about the running Docker containers or Kubernetes pods on the local machine. This way, it adds specific labels to make filtering processes power consumption metrics by their encapsulation in containers easier.</p>
+<p>Generic labels help to identify the container runtime and scheduler used (based on the content of <code>/proc/PID/cgroup</code>):</p>
+<p><code>container_scheduler</code>: possible values are <code>docker</code> or <code>kubernetes</code>. If this label is not attached to the metric, it means that scaphandre didn't manage to identify the container scheduler based on cgroups data.</p>
+<p>Then the label <code>container_runtime</code> could be attached. The only possible value for now is <code>containerd</code>.</p>
+<p><code>container_id</code> is the ID scaphandre got from /proc/PID/cgroup for that container.</p>
+<p>For Docker containers (if <code>container_scheduler</code> is set), available labels are :</p>
+<ul>
+<li><code>container_names</code>: is a string containing names attached to that container, according to the docker daemon</li>
+<li><code>container_docker_version</code>: version of the docker daemon</li>
+<li><code>container_label_maintainer</code>: content of the maintainer field for this container</li>
+</ul>
+<p>For containers coming from a docker-compose file, there are a bunch of labels related to data coming from the docker daemon:</p>
+<ul>
+<li><code>container_label_com_docker_compose_project_working_dir</code></li>
+<li><code>container_label_com_docker_compose_container_number</code></li>
+<li><code>container_label_com_docker_compose_project_config_files</code></li>
+<li><code>container_label_com_docker_compose_version</code></li>
+<li><code>container_label_com_docker_compose_service</code></li>
+<li><code>container_label_com_docker_compose_oneoff</code></li>
+</ul>
+<p>For Kubernetes pods (if <code>container_scheduler</code> is set), available labels are :</p>
+<ul>
+<li><code>kubernetes_node_name</code>: identifies the name of the kubernetes node scaphandre is running on</li>
+<li><code>kubernetes_pod_name</code>: the name of the pod the container belongs to</li>
+<li><code>kubernetes_pod_namespace</code>: the namespace of the pod the container belongs to</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../explanations/rapl-domains.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next" href="../references/exporter-json.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../explanations/rapl-domains.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next" href="../references/exporter-json.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../ace.js"></script>
+        <script src="../editor.js"></script>
+        <script src="../mode-rust.js"></script>
+        <script src="../theme-dawn.js"></script>
+        <script src="../theme-tomorrow_night.js"></script>
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

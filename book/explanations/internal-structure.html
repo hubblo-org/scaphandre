@@ -1,0 +1,227 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js oranda-light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Internal structure - Scaphandre documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Extensible and lightweight monitoring agent for energy consumption metrics">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+        <link rel="stylesheet" href="../oranda-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "oranda-light" : "oranda-light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('orandamdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('orandamdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('orandamdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('oranda-light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="../tutorials/getting_started.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="../tutorials/installation-linux.html"><strong aria-hidden="true">2.</strong> Installation on GNU/Linux</a></li><li class="chapter-item expanded "><a href="../tutorials/installation-windows.html"><strong aria-hidden="true">3.</strong> Installation on Windows</a></li><li class="chapter-item expanded "><a href="../tutorials/docker-compose.html"><strong aria-hidden="true">4.</strong> Docker-compose</a></li><li class="chapter-item expanded "><a href="../tutorials/compilation-linux.html"><strong aria-hidden="true">5.</strong> Compilation for GNU/Linux</a></li><li class="chapter-item expanded "><a href="../tutorials/compilation-windows.html"><strong aria-hidden="true">6.</strong> Compilation for Windows</a></li><li class="chapter-item expanded "><a href="../tutorials/kubernetes.html"><strong aria-hidden="true">7.</strong> Power consumption of a Kubernetes cluster with scaphandre, prometheus and grafana</a></li><li class="chapter-item expanded affix "><li class="part-title">How-to guides</li><li class="chapter-item expanded "><a href="../how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html"><strong aria-hidden="true">8.</strong> Propagate power consumption metrics from hypervisor to virtual machines (Qemu/KVM)</a></li><li class="chapter-item expanded "><a href="../how-to_guides/get-process-level-power-in-grafana.html"><strong aria-hidden="true">9.</strong> Get process-level power consumption in my grafana dashboard</a></li><li class="chapter-item expanded "><a href="../how-to_guides/install-prometheuspush-only-rhel.html"><strong aria-hidden="true">10.</strong> Install Scaphandre with only Prometheus-push exporter compiled, for Prometheus Push Gateway, on RHEL 8 and 9</a></li><li class="chapter-item expanded affix "><li class="part-title">Explanations</li><li class="chapter-item expanded "><a href="../explanations/host_metrics.html"><strong aria-hidden="true">11.</strong> Explanations about host level power and energy metrics</a></li><li class="chapter-item expanded "><a href="../explanations/how-scaph-computes-per-process-power-consumption.html"><strong aria-hidden="true">12.</strong> How scaphandre computes per process power consumption</a></li><li class="chapter-item expanded "><a href="../explanations/internal-structure.html" class="active"><strong aria-hidden="true">13.</strong> Internal structure</a></li><li class="chapter-item expanded "><a href="../explanations/about-containers.html"><strong aria-hidden="true">14.</strong> About containers</a></li><li class="chapter-item expanded "><a href="../explanations/rapl-domains.html"><strong aria-hidden="true">15.</strong> About RAPL domains</a></li><li class="chapter-item expanded affix "><li class="part-title">References</li><li class="chapter-item expanded "><a href="../references/metrics.html"><strong aria-hidden="true">16.</strong> Metrics available</a></li><li class="chapter-item expanded "><a href="../references/exporter-json.html"><strong aria-hidden="true">17.</strong> JSON exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-prometheus.html"><strong aria-hidden="true">18.</strong> Prometheus exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-qemu.html"><strong aria-hidden="true">19.</strong> Qemu exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-riemann.html"><strong aria-hidden="true">20.</strong> Riemann exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-stdout.html"><strong aria-hidden="true">21.</strong> Stdout exporter</a></li><li class="chapter-item expanded "><a href="../references/exporter-warp10.html"><strong aria-hidden="true">22.</strong> Warp10 exporter</a></li><li class="chapter-item expanded "><a href="../references/sensor-msr_rapl.html"><strong aria-hidden="true">23.</strong> MSR_RAPL sensor</a></li><li class="chapter-item expanded "><a href="../references/sensor-powercap_rapl.html"><strong aria-hidden="true">24.</strong> PowercapRAPL sensor</a></li><li class="chapter-item expanded "><a href="../references/sensor-msr_rapl.html"><strong aria-hidden="true">25.</strong> MSRRAPL sensor</a></li><li class="chapter-item expanded affix "><a href="../why.html">Why this project ?</a></li><li class="chapter-item expanded affix "><a href="../compatibility.html">Compatibility</a></li><li class="chapter-item expanded affix "><a href="../troubleshooting.html">Troubleshooting</a></li><li class="chapter-item expanded affix "><a href="../contributing.html">Contributing guide</a></li><li class="chapter-item expanded affix "><a href="../sources.html">External references you may be interested in</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="oranda-light">Oranda Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="oranda-dark">Oranda Dark</button></li>
+
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Scaphandre documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="internal-structure"><a class="header" href="#internal-structure">Internal structure</a></h1>
+<p>Scaphandre is designed to be extensible. As it performs basically two tasks: <strong>collecting</strong>/pre-computing the power consumption metrics and <strong>publishing</strong> it, it is composed of two main components: a <strong>sensor</strong> and an <strong>exporter</strong>. Each can be implemented in different ways to match a certain use case. When you run scaphandre from the command line, <code>-s</code> allows you to choose the sensor you want to use, and the next subcommand is the name of the exporter.</p>
+<h2 id="sensors"><a class="header" href="#sensors">Sensors</a></h2>
+<p>Sensors are meant to:</p>
+<ol>
+<li>get the power consumptions metrics of the host</li>
+<li>make it available for the exporter</li>
+</ol>
+<p>The <a href="../references/sensor-powercap_rapl.html">PowercapRAPL</a> for instance, gets and transforms metrics coming from the powercap Linux kernel module, that serves as an interface to get the data from the <a href="https://01.org/blogs/2014/running-average-power-limit-%E2%80%93-rapl">RAPL</a> feature of x86 CPUs. Because this feature is only accessible when you are running on a bare metal machine, this sensor will not work in a virtual machine, except if you first run scaphandre on the hypervisor and make the VM metrics available, with the <a href="../references/exporter-qemu.html">qemu exporter</a>, to scaphandre running inside the virtual machine.</p>
+<p>When you don't have access to the hypervisor/bare-metal machine (ie. when you run on public cloud instances and your provider doesn't run scaphandre) you still have the option to estimate the power consumption, based on both the ressources (cpu/gpu/ram/io...) consumed by the virtual machine at a given time, and the characteristics of the underlying hardware. This is the way we are designing the future <a href="https://github.com/hubblo-org/scaphandre/issues/25">estimation-based sensor</a>, to match that use case.</p>
+<p>Looking at the code, you'll find that the interface between metrics and the exporters is in fact the <a href="https://docs.rs/scaphandre/0.1.1/scaphandre/sensors/struct.Topology.html">Topology</a> object. This is intended to be asked by the exporter through the <a href="https://docs.rs/scaphandre/0.1.1/scaphandre/sensors/trait.Sensor.html#tymethod.get_topology">get_topology</a> method of the sensor.</p>
+<h2 id="exporters"><a class="header" href="#exporters">Exporters</a></h2>
+<p>An exporter is expected to:</p>
+<ol>
+<li>ask the sensors to get new metrics and store them for later, potential usage</li>
+<li>export the current metrics </li>
+</ol>
+<p>The <a href="../references/exporter-stdout.html">Stdout</a> exporter exposes the metrics on the standard output (in your terminal). The <a href="../references/exporter-prometheus.html">prometheus</a> exporter exposes the metrics on an HTTP endpoint, to be scraped by a <a href="https://prometheus.io">prometheus</a> instance. An exporter should be created for each monitoring scenario (do you want to feed your favorite monitoring/data analysis tool with scaphandre metrics ? feel free to open a <a href="https://github.com/hubblo-org/scaphandre/pulls">PR</a> to create a new exporter !).</p>
+<p>As introduced in the <a href="#sensors">sensors</a> section, the <a href="../references/exporter-qemu.html">Qemu</a> exporter, is very specific. It is only intended to collect metrics related to running virtual machines on a Qemu/KVM hypervisor. Those metrics can then be made available to each virtual machine and their own scaphandre instance, running the <a href="../references/sensor-powercap_rapl.html">PowercapRAPL</a> sensor (with the <code>--vm</code> flag on). The qemu exporter puts VM's metrics in files the same way the powercap kernel module does it. It mimics this behavior, so the sensor can act the same way it would on a bare metal machine.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../explanations/how-scaph-computes-per-process-power-consumption.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next" href="../explanations/about-containers.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../explanations/how-scaph-computes-per-process-power-consumption.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next" href="../explanations/about-containers.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../ace.js"></script>
+        <script src="../editor.js"></script>
+        <script src="../mode-rust.js"></script>
+        <script src="../theme-dawn.js"></script>
+        <script src="../theme-tomorrow_night.js"></script>
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
