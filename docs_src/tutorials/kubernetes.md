@@ -15,11 +15,20 @@ to be installed from the source code.
 ### Parameters
 #### Service monitor parameters
 
-| Name                                       | Description                                                                                                     | Value                     |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `serviceMonitor.enabled`           | Create ServiceMonitor Resource for scraping metrics using PrometheusOperator                                    | `false`                    |
-| `serviceMonitor.namespace`         | The namespace in which the ServiceMonitor will be created   (if not set, default to namespace on which this chart is installed)                                                    | `""`                      |
-| `serviceMonitor.interval`          | The interval at which metrics should be scraped                                                                 | `1m`                     |
+| Name                           | Description                                                                                   | Value                     |
+| ------------------------- -----| ----------------------------------------------------------------------------------------------| ------------------------- |
+| `serviceMonitor.enabled`       | Create ServiceMonitor Resource for scraping metrics using PrometheusOperator                  | `false`                   |
+| `serviceMonitor.namespace`     | The namespace in which the ServiceMonitor will be created   (if not set, default to namespace on which this chart is installed)  | `""`                      |
+| `serviceMonitor.interval`      | The interval at which metrics should be scraped                                               | `1m`                     |
+| `serviceMonitor.labels`        | Extra labels for the ServiceMonitor                                                           | `{}`                     |
+| `serviceMonitor.scrapeTimeout` | Specify the timeout after which the scrape is ended                                           | `30s`                    |
+| `serviceMonitor.relabelings`   | Allow to add extra labels to metrics                                                          | Add node metrics         |
+
+#### Other parameters
+| Name                                       | Description                                                                                     | Value                     |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------| ------------------------- |
+| `affinity`                                 | Pod scheduling preference. Can be used for instance when some node does not support scaphandre. | `{}`                      |
+| `tolerations`                              | Tolerations for pod assignment. Evaluated as a template.                                        | `- operator: "Exists"`    |
 
 ## Install Prometheus
 
