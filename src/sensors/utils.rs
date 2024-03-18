@@ -673,12 +673,12 @@ impl ProcessTracker {
         let mut consumers: Vec<(IProcess, OrderedFloat<f64>)> = vec![];
         for p in &self.procs {
             if p.len() > 1 {
-                let diff = self
-                    .get_cpu_usage_percentage(p.first().unwrap().process.pid as _, self.nb_cores);
+                let diff =
+                    self.get_cpu_usage_percentage(p.first().unwrap().process.pid, self.nb_cores);
                 if consumers
                     .iter()
                     .filter(|x| {
-                        if let Some(p) = self.sysinfo.process(x.0.pid as _) {
+                        if let Some(p) = self.sysinfo.process(x.0.pid) {
                             return p.cpu_usage() > diff;
                         }
                         false
@@ -687,7 +687,7 @@ impl ProcessTracker {
                     < top as usize
                 {
                     let pid = p.first().unwrap().process.pid;
-                    if let Some(sysinfo_process) = self.sysinfo.process(pid as _) {
+                    if let Some(sysinfo_process) = self.sysinfo.process(pid) {
                         let new_consumer = IProcess::new(sysinfo_process);
                         consumers.push((new_consumer, OrderedFloat(diff as f64)));
                         consumers.sort_by(|x, y| y.1.cmp(&x.1));
@@ -712,8 +712,8 @@ impl ProcessTracker {
         let mut consumers: Vec<(IProcess, OrderedFloat<f64>)> = vec![];
         for p in &self.procs {
             if p.len() > 1 {
-                let diff = self
-                    .get_cpu_usage_percentage(p.first().unwrap().process.pid as _, self.nb_cores);
+                let diff =
+                    self.get_cpu_usage_percentage(p.first().unwrap().process.pid, self.nb_cores);
                 let p_record = p.last().unwrap();
                 let process_exe = p_record.process.exe(self).unwrap_or_default();
                 let process_cmdline = p_record.process.cmdline(self).unwrap_or_default();
