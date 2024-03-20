@@ -926,10 +926,11 @@ impl MetricGenerator {
 
         for pid in self.topology.proc_tracker.get_alive_pids() {
             let exe = self.topology.proc_tracker.get_process_name(pid);
+            let name = self.topology.proc_tracker.get_process_os_name(pid);
             let cmdline = self.topology.proc_tracker.get_process_cmdline(pid);
 
             let mut attributes = HashMap::new();
-            debug!("Working on {}: {}", pid, exe);
+            debug!("Working on {}: {}", pid, name);
 
             #[cfg(feature = "containers")]
             if self.watch_containers && (!self.containers.is_empty() || !self.pods.is_empty()) {
@@ -954,6 +955,8 @@ impl MetricGenerator {
             attributes.insert("pid".to_string(), pid.to_string());
 
             attributes.insert("exe".to_string(), exe.clone());
+
+            attributes.insert("name".to_string(), name.clone());
 
             if let Some(cmdline_str) = cmdline {
                 attributes.insert("cmdline".to_string(), utils::filter_cmdline(&cmdline_str));
