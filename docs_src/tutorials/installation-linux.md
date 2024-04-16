@@ -4,11 +4,21 @@ Depending on your kernel version, you could need to modprobe the module intel_ra
 
     modprobe intel_rapl_common # or intel_rapl for kernels < 5
 
+## Docker
 To quickly run scaphandre in your terminal you may use [docker](https://www.docker.com/):
 
     docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -ti hubblo/scaphandre stdout -t 15
 
-Or if you downloaded or built a binary, you'd run:
+## Debian/Ubuntu
+On Debian or Ubuntu, you can use the available `.deb` [package](https://github.com/barnumbirr/scaphandre-debian).
+
+    VERSION="1.0.0-1" ARCH="amd64" DIST="bookworm" && \
+    wget https://github.com/barnumbirr/scaphandre-debian/releases/download/v$VERSION/scaphandre_$VERSION\_$ARCH\_$DIST.deb && \
+    dpkg -i scaphandre_$VERSION\_$ARCH\_$DIST.deb && \
+    rm scaphandre_$VERSION\_$ARCH\_$DIST.deb
+
+## Run the binary
+Once you downloaded or built a binary, you'd run:
 
     scaphandre stdout -t 15
 
