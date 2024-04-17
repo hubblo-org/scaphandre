@@ -45,7 +45,7 @@ core_affinity = { version = "0.8.1"}
 x86 = { version = "0.52.0" }
 
 [features]
-default = ["prometheus", "riemann", "warpten", "json", "containers", "prometheuspush"]
+default = ["prometheus", "riemann", "warpten", "json", "containers", "prometheuspush", "qemu"]
 prometheus = ["hyper", "tokio"]
 riemann = ["riemann_client"]
 json = ["serde", "serde_json"]
