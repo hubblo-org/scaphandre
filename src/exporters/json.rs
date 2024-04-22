@@ -2,7 +2,8 @@ use crate::exporters::*;
 use crate::sensors::Sensor;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::{ fs::File,
+use std::{
+    fs::File,
     io::{BufWriter, Write},
     path::{Path, PathBuf},
     thread,
@@ -22,6 +23,7 @@ pub struct JsonExporter {
     container_regex: Option<Regex>,
     monitor_resources: bool,
     watch_containers: bool,
+    reports: Vec<Report>,
 }
 
 // Note: clap::Args automatically generate Args for the fields of this struct,
@@ -171,6 +173,10 @@ impl Exporter for JsonExporter {
                 thread::sleep(self.time_step);
             }
         }
+
+        // Serialize the report to json
+        serde_json::to_writer(&mut self.out_writer, &self.reports)
+            .expect("report should be serializable to JSON");
     }
 
     fn kind(&self) -> &str {
@@ -210,6 +216,7 @@ impl JsonExporter {
             None => Box::new(std::io::stdout()),
         };
         let out_writer = BufWriter::new(output);
+        let reports = vec![];
         JsonExporter {
             metric_generator,
             time_step,
@@ -220,6 +227,7 @@ impl JsonExporter {
             container_regex,
             monitor_resources,
             watch_containers: args.containers,
+            reports,
         }
     }
 
@@ -509,9 +517,7 @@ impl JsonExporter {
                     sockets: all_sockets,
                 };
 
-                // Serialize the report to json
-                serde_json::to_writer(&mut self.out_writer, &report)
-                    .expect("report should be serializable to JSON");
+                self.reports.insert(0, report);
             }
             None => {
                 info!("No data yet, didn't write report.");
