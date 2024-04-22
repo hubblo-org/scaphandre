@@ -2,8 +2,7 @@ use crate::exporters::*;
 use crate::sensors::Sensor;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::{
-    fs::File,
+use std::{ fs::File,
     io::{BufWriter, Write},
     path::{Path, PathBuf},
     thread,
