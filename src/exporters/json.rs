@@ -2,10 +2,13 @@ use crate::exporters::*;
 use crate::sensors::Sensor;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
 use std::{
     fs::File,
     io::{BufWriter, Write},
     path::{Path, PathBuf},
+    sync::Arc,
     thread,
     time::{Duration, Instant},
 };
@@ -23,7 +26,6 @@ pub struct JsonExporter {
     container_regex: Option<Regex>,
     monitor_resources: bool,
     watch_containers: bool,
-    reports: Vec<Report>,
 }
 
 // Note: clap::Args automatically generate Args for the fields of this struct,
@@ -161,22 +163,68 @@ impl Exporter for JsonExporter {
         let step = self.time_step;
         info!("Measurement step is: {step:?}");
 
+        // Serialize the report to json
+        let res = self.out_writer.write("[".as_bytes());
+
+        match res {
+            Ok(_) => {}
+            Err(e) => {
+                warn!("Couldn't write in out_writer: {}", e);
+            }
+        }
+
         if let Some(timeout) = self.time_limit {
             let t0 = Instant::now();
             while t0.elapsed() <= timeout {
                 self.iterate();
                 thread::sleep(self.time_step);
+                if timeout <= t0.elapsed() {
+                    let res = self.out_writer.write("]".as_bytes());
+                    match res {
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!("Couldn't write in out_writer: {}", e);
+                        }
+                    }
+                } else {
+                    let res = self.out_writer.write(",".as_bytes());
+                    match res {
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!("Couldn't write in out_writer: {}", e);
+                        }
+                    }
+                }
             }
         } else {
-            loop {
+            let running: Arc<AtomicBool> = Arc::new(AtomicBool::new(true));
+            let r = running.clone();
+            ctrlc::set_handler(move || {
+                println!("received Ctrl+C!");
+                r.store(false, Ordering::SeqCst)
+            })
+            .expect("Error setting Ctrl-C handler");
+            while running.load(Ordering::SeqCst) {
                 self.iterate();
                 thread::sleep(self.time_step);
+                if running.load(Ordering::SeqCst) {
+                    let res = self.out_writer.write(",".as_bytes());
+                    match res {
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!("Couldn't write in out_writer: {}", e);
+                        }
+                    }
+                }
+            }
+            let res = self.out_writer.write("]".as_bytes());
+            match res {
+                Ok(_) => {}
+                Err(e) => {
+                    warn!("Couldn't write in out_writer: {}", e);
+                }
             }
         }
-
-        // Serialize the report to json
-        serde_json::to_writer(&mut self.out_writer, &self.reports)
-            .expect("report should be serializable to JSON");
     }
 
     fn kind(&self) -> &str {
@@ -215,8 +263,8 @@ impl JsonExporter {
             }
             None => Box::new(std::io::stdout()),
         };
-        let out_writer = BufWriter::new(output);
-        let reports = vec![];
+        let out_writer =
+            BufWriter::with_capacity(8000 * (time_step.as_secs() as usize / 10), output);
         JsonExporter {
             metric_generator,
             time_step,
@@ -227,7 +275,6 @@ impl JsonExporter {
             container_regex,
             monitor_resources,
             watch_containers: args.containers,
-            reports,
         }
     }
 
@@ -517,10 +564,39 @@ impl JsonExporter {
                     sockets: all_sockets,
                 };
 
-                self.reports.insert(0, report);
+                // Serialize the report to json
+                serde_json::to_writer(&mut self.out_writer, &report)
+                    .expect("report should be serializable to JSON");
+                let res = self.out_writer.flush();
+                match res {
+                    Ok(_) => {}
+                    Err(e) => {
+                        warn!("Couldn't flush out_writer: {}", e);
+                    }
+                }
             }
             None => {
                 info!("No data yet, didn't write report.");
+                let report = Report {
+                    host: Host {
+                        timestamp: current_system_time_since_epoch().as_secs_f64(),
+                        consumption: 0.0,
+                        components: Components {
+                            disks: Some(vec![]),
+                        },
+                    },
+                    consumers: vec![],
+                    sockets: vec![],
+                };
+                serde_json::to_writer(&mut self.out_writer, &report)
+                    .expect("report should be serializable to JSON");
+                let res = self.out_writer.flush();
+                match res {
+                    Ok(_) => {}
+                    Err(e) => {
+                        warn!("Couldn't flush out_writer: {}", e);
+                    }
+                }
             }
         }
     }
