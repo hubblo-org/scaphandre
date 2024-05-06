@@ -284,7 +284,7 @@ impl JsonExporter {
             let metric_disk_name = m.attributes.get("disk_name").unwrap();
             if let Some(disk) = res.iter_mut().find(|x| metric_disk_name == &x.disk_name) {
                 info!("editing disk");
-                disk.disk_name = metric_disk_name.clone();
+                disk.disk_name.clone_from(metric_disk_name);
                 if m.name == "scaph_host_disk_available_bytes" {
                     disk.disk_available_bytes = m.metric_value.to_string();
                 } else if m.name == "scaph_host_disk_total_bytes" {

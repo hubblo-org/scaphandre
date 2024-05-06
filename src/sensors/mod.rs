@@ -977,7 +977,7 @@ pub struct CPUSocket {
     pub cpu_cores: Vec<CPUCore>,
     /// Usage statistics records stored for this socket.
     pub stat_buffer: Vec<CPUStat>,
-    ///
+    /// Sensor-specific data that has been stored at the topology generation step.
     #[allow(dead_code)]
     pub sensor_data: HashMap<String, String>,
 }
@@ -1351,7 +1351,7 @@ pub struct Domain {
     pub record_buffer: Vec<Record>,
     /// Maximum size of record_buffer, in kilobytes
     pub buffer_max_kbytes: u16,
-    ///
+    /// Sensor-specific data that has been stored at the topology generation step.
     #[allow(dead_code)]
     sensor_data: HashMap<String, String>,
 }

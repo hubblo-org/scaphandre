@@ -131,7 +131,7 @@ pub struct MetricGenerator {
     /// Tells MetricGenerator if it has to watch for containers.
     #[cfg(feature = "containers")]
     watch_containers: bool,
-    ///
+    /// Last time, containers state has been checked.
     #[cfg(feature = "containers")]
     containers_last_check: String,
     /// `containers` contains the containers descriptions when --containers is true
@@ -155,7 +155,7 @@ pub struct MetricGenerator {
     /// Kubernetes pods
     #[cfg(feature = "containers")]
     pods: Vec<Pod>,
-    ///
+    /// Last time pods state has been checked.
     #[cfg(feature = "containers")]
     pods_last_check: String,
 }
