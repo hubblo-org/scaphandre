@@ -171,7 +171,7 @@ impl Topology {
 
         let sysinfo_system = System::new_all();
         let sysinfo_cores = sysinfo_system.cpus();
-        warn!("Sysinfo sees {}", sysinfo_cores.len());
+        debug!("Sysinfo sees {}", sysinfo_cores.len());
         #[cfg(target_os = "linux")]
         let cpuinfo = CpuInfo::new().unwrap();
         for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
@@ -1281,7 +1281,7 @@ impl CPUSocket {
                 ));
             }
         } else {
-            warn!("Not enough records for socket");
+            info!("Not enough records for socket");
         }
         None
     }

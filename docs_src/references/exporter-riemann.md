@@ -87,7 +87,7 @@ As a reference here is a Riemann configuration:
 
 ## Metrics exposed
 
-Metrics provided Scaphandre are documented [here](references/metrics.md).
+Metrics provided Scaphandre are documented [here](metrics.md).
 
 There is only one exception about `process_power_consumption_microwatts` each process has a service name `process_power_consumption_microwatts_pid_exe`.
 
