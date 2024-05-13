@@ -69,6 +69,7 @@ pub struct IStatus {
 pub struct IProcess {
     pub pid: Pid,
     pub owner: u32,
+    pub name: String,
     pub comm: String,
     pub cmdline: Vec<String>,
     //CPU (all of them) time usage, as a percentage
@@ -109,6 +110,7 @@ impl IProcess {
             IProcess {
                 pid: process.pid(),
                 owner: 0,
+                name: process.name().to_string(),
                 comm: String::from(process.exe().to_str().unwrap()),
                 cmdline: process.cmd().to_vec(),
                 cpu_usage_percentage: process.cpu_usage(),
@@ -127,6 +129,7 @@ impl IProcess {
             IProcess {
                 pid: process.pid(),
                 owner: 0,
+                name: process.name().to_string(),
                 comm: String::from(process.exe().to_str().unwrap()),
                 cmdline: process.cmd().to_vec(),
                 cpu_usage_percentage: process.cpu_usage(),
@@ -635,6 +638,21 @@ impl ProcessTracker {
 
         debug!("End of get process name.");
         process.first().unwrap().process.comm.clone()
+    }
+
+    /// Returns the OS process name associated to a PID
+    pub fn get_process_os_name(&self, pid: Pid) -> String {
+        let mut result = self
+            .procs
+            .iter()
+            .filter(|x| !x.is_empty() && x.first().unwrap().process.pid == pid);
+        let process = result.next().unwrap();
+        if result.next().is_some() {
+            panic!("Found two vectors of processes with the same id, maintainers should fix this.");
+        }
+
+        debug!("End of get process os name.");
+        process.first().unwrap().process.name.clone()
     }
 
     /// Returns the cmdline string associated to a PID
