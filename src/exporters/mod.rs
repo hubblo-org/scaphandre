@@ -239,7 +239,7 @@ impl MetricGenerator {
         for p in &self.topology.proc_tracker.procs {
             if p.len() > 1 {
                 let diff = self.topology.proc_tracker.get_cpu_usage_percentage(
-                    p.first().unwrap().process.pid as _,
+                    p.first().unwrap().process.pid,
                     self.topology.proc_tracker.nb_cores,
                 );
                 let p_record = p.last().unwrap();
