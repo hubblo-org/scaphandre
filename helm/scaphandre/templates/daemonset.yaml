@@ -56,9 +56,14 @@ spec:
         runAsUser: {{ .Values.userID }}
         runAsGroup: {{ .Values.userGroup }}
       serviceAccountName: {{ template "scaphandre.name" . }}
+      affinity:
+        {{- with .Values.affinity }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    {{- with .Values.tolerations }}
       tolerations:
-      # Tolerate all taints for observability
-      - operator: "Exists"
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
       volumes:
       - hostPath:
           path: /proc
