@@ -101,6 +101,13 @@ impl QemuExporter {
     /// Parses a cmdline String (as contained in procs::Process instances) and returns
     /// the name of the qemu virtual machine if this process is a qemu/kvm guest process
     fn get_vm_name_from_cmdline(cmdline: &[String]) -> String {
+        //If native KVM driver
+        for i in 0..cmdline.len() {
+          if cmdline[i].starts_with("-name") {
+            return String::from(cmdline[i+1].split(',').next().unwrap());
+          }
+        }
+        //If using qemu-system
         for elmt in cmdline {
             if elmt.starts_with("guest=") {
                 let mut splitted = elmt.split('=');
@@ -142,7 +149,7 @@ impl QemuExporter {
                         .process
                         .cmdline
                         .iter()
-                        .find(|x| x.contains("qemu-system"))
+                        .find(|x| x.contains("qemu-system") | x.contains("/usr/bin/kvm"))
                     {
                         debug!("Found a process with {}", res);
                         let mut tmp: Vec<ProcessRecord> = vec![];
