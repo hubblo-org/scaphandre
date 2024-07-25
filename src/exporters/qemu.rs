@@ -24,7 +24,7 @@ impl Exporter for QemuExporter {
         let mut timer = time::Duration::from_secs(cleaner_step);
         loop {
             self.iterate(String::from(path));
-            let step = time::Duration::from_secs(5);
+            let step = time::Duration::from_secs(1);
             thread::sleep(step);
             if timer - step > time::Duration::from_millis(0) {
                 timer -= step;
