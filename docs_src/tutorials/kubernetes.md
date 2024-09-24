@@ -26,7 +26,7 @@ to be installed from the source code.
 
 | Name                                       | Description                                                                                                     | Value                     |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `securityContext.privileged`           | Gives full host access, bypassing container isolation                                    | `false`                    |
+| `securityContext.privileged`           | Gives full host access, bypassing container isolation (can be needed to run on physical server)                                    | `false`                    |
 | `securityContext.runAsUser`         | Run as root user to get proper permissions                                                     | `0`                      |
 | `securityContext.runAsGroup`          | Run as root group to get proper permissions                                                                  | `0`                     | 
 ## Install Prometheus
