@@ -18,11 +18,13 @@ scaphandre:
     containers:
 #  rustBacktrace: '1'
 
-# Gives full host access, bypassing container isolation. true or false
-privileged: false
+
+securityContext:
+  # Gives full host access, bypassing container isolation. true or false
+  privileged: false
 # Run as root user to get proper permissions
-userID: 0
-groupID: 0
+  userID: 0
+  groupID: 0
 
 serviceMonitor:
   # Specifies whether ServiceMonitor for Prometheus operator should be created

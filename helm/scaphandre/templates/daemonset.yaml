@@ -53,9 +53,9 @@ spec:
           name: powercap
           readOnly: false
       securityContext:
-        privileged: {{ .Values.privileged }}
-        runAsUser: {{ .Values.userID }}
-        runAsGroup: {{ .Values.userGroup }}
+        privileged: {{ .Values.securityContext.privileged }}
+        runAsUser: {{ .Values.securityContext.userID }}
+        runAsGroup: {{ .Values.securityContext.userGroup }}
       serviceAccountName: {{ template "scaphandre.name" . }}
       tolerations:
       # Tolerate all taints for observability
