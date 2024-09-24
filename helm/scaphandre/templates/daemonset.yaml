@@ -53,6 +53,7 @@ spec:
           name: powercap
           readOnly: false
       securityContext:
+        privileged: {{ .Values.privileged }}
         runAsUser: {{ .Values.userID }}
         runAsGroup: {{ .Values.userGroup }}
       serviceAccountName: {{ template "scaphandre.name" . }}

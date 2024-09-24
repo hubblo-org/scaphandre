@@ -18,6 +18,8 @@ scaphandre:
     containers:
 #  rustBacktrace: '1'
 
+# Gives full host access, bypassing container isolation. true or false
+privileged: false
 # Run as root user to get proper permissions
 userID: 0
 groupID: 0
