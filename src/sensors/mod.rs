@@ -171,7 +171,7 @@ impl Topology {
 
         let sysinfo_system = System::new_all();
         let sysinfo_cores = sysinfo_system.cpus();
-        warn!("Sysinfo sees {}", sysinfo_cores.len());
+        debug!("Sysinfo sees {}", sysinfo_cores.len());
         #[cfg(target_os = "linux")]
         let cpuinfo = CpuInfo::new().unwrap();
         for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
@@ -977,7 +977,7 @@ pub struct CPUSocket {
     pub cpu_cores: Vec<CPUCore>,
     /// Usage statistics records stored for this socket.
     pub stat_buffer: Vec<CPUStat>,
-    ///
+    /// Sensor-specific data that has been stored at the topology generation step.
     #[allow(dead_code)]
     pub sensor_data: HashMap<String, String>,
 }
@@ -1281,7 +1281,7 @@ impl CPUSocket {
                 ));
             }
         } else {
-            warn!("Not enough records for socket");
+            info!("Not enough records for socket");
         }
         None
     }
@@ -1351,7 +1351,7 @@ pub struct Domain {
     pub record_buffer: Vec<Record>,
     /// Maximum size of record_buffer, in kilobytes
     pub buffer_max_kbytes: u16,
-    ///
+    /// Sensor-specific data that has been stored at the topology generation step.
     #[allow(dead_code)]
     sensor_data: HashMap<String, String>,
 }

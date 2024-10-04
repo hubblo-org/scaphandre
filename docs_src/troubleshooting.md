@@ -2,7 +2,7 @@
 
 ### I get a **permission denied** error when I run scaphandre, no matter what is the exporter
 
-On some Linux distributions (ubuntu 20.04 for sure), the energy counters files that the [PowercapRAPL sensor](references/sensor-powercap_rapl.md) uses, are owned by root. (since late 2020)
+Since Linux kernel 5.10 (late 2020), the energy counters files that the [PowercapRAPL sensor](references/sensor-powercap_rapl.md) uses, are owned by root.
 
 To ensure this is your issue and fix that quickly you can run the [init.sh](https://raw.githubusercontent.com/hubblo-org/scaphandre/main/init.sh) script:
 
