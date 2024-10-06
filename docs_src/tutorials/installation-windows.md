@@ -4,7 +4,7 @@
 
 ## Using the installer
 
-Download the [package](https://scaphandre.s3.fr-par.scw.cloud/x86_64/scaphandre_0.5.0_installer.exe) and install it **as an administrator**.
+Download the latest exe installer [from the release page](https://github.com/hubblo-org/scaphandre/releases) and install it **as an administrator**.
 
 ### Configuring a Windows service to run Scaphandre in the background
 
