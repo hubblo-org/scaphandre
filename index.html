@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html lang="en" id="oranda" class="light">
+  <head>
+    <title>scaphandre</title>
+    
+      <meta property="og:url" content="https://scaphandre.hubblo.org" />
+    
+    
+      <link rel="icon" href="/scaphandre/favicon.ico" />
+    
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+      <meta name="description" content="Electric power/energy consumption monitoring agent." />
+      <meta property="og:description" content="Electric power/energy consumption monitoring agent." />
+    
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="scaphandre" />
+    
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta property="og:image" content="https://raw.githubusercontent.com/hubblo-org/scaphandre/dev/docs_src/scaphandre.cleaned.png" />
+    
+    
+      <meta property="og:image:alt" content="Hubblo's twitter/x account" />
+    
+    
+      <meta name="twitter:creator" content="@HubbloOrg" />
+      <meta name="twitter:site" content="@HubbloOrg" />
+    
+    <meta http-equiv="Permissions-Policy" content="interest-cohort=()" />
+    <link rel="stylesheet" href="/scaphandre/oranda-v0.6.1.css" />
+    
+    
+  </head>
+  <body>
+    <div class="container">
+      <div class="page-body">
+        
+          <div class="repo_banner">
+            <a href="https://github.com/hubblo-org/scaphandre">
+              <div class="github-icon" aria-hidden="true"></div>
+              Check out our GitHub!
+            </a>
+          </div>
+        
+
+        <main>
+          <header>
+            
+            <h1 class="title">scaphandre</h1>
+            
+  <nav class="nav">
+    <ul>
+      <li><a href="/scaphandre/">Home</a></li>
+
+      
+
+      
+        <li><a href="/scaphandre/artifacts/">Install</a></li>
+      
+
+      
+        <li><a href="/scaphandre/book/">Docs</a></li>
+      
+
+      
+        <li><a href="/scaphandre/funding/">Funding</a></li>
+      
+
+      
+        <li><a href="/scaphandre/changelog/">Changelog</a></li>
+      
+    </ul>
+  </nav>
+
+          </header>
+
+          
+
+    
+
+
+
+<div class="artifacts" data-tag="v1.0.0">
+  <div class="artifact-header target">
+    <h4>Install v1.0.0</h4>
+    
+      <div><small class="published-date">Published on Feb 12 2024 at 13:48 UTC</small></div>
+    
+
+    <ul class="arches">
+      
+        <li class="arch hidden" data-arch="aarch64-apple-darwin">
+          
+            <ul class="tabs">
+              
+                
+                
+                <li class="install-tab" data-id="1" data-triple="aarch64-apple-darwin">
+                  DEB package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="3" data-triple="aarch64-apple-darwin">
+                  RPM package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="0" data-triple="aarch64-apple-darwin">
+                  crates.io
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="2" data-triple="aarch64-apple-darwin">
+                  docker
+
+                  
+                </li>
+              
+            </ul>
+          
+
+          <ul class="contents">
+            
+              
+              <li data-id="1" data-triple="aarch64-apple-darwin" class="install-content">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">dpkg</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">i</span><span style="color:#82aaff;"> scaphandre.X.deb</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="dpkg -i scaphandre.X.deb">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="3" data-triple="aarch64-apple-darwin" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">rpm</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">ivh</span><span style="color:#82aaff;"> scaphandre.X.rpm</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="rpm -ivh scaphandre.X.rpm">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="0" data-triple="aarch64-apple-darwin" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">cargo install scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="cargo install scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="2" data-triple="aarch64-apple-darwin" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">docker pull hubblo/scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="docker pull hubblo/scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+          </ul>
+        </li>
+      
+        <li class="arch hidden" data-arch="aarch64-unknown-linux-gnu">
+          
+            <ul class="tabs">
+              
+                
+                
+                <li class="install-tab" data-id="5" data-triple="aarch64-unknown-linux-gnu">
+                  deb
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="6" data-triple="aarch64-unknown-linux-gnu">
+                  deb
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="4" data-triple="aarch64-unknown-linux-gnu">
+                  rpm
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="1" data-triple="aarch64-unknown-linux-gnu">
+                  DEB package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="3" data-triple="aarch64-unknown-linux-gnu">
+                  RPM package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="0" data-triple="aarch64-unknown-linux-gnu">
+                  crates.io
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="2" data-triple="aarch64-unknown-linux-gnu">
+                  docker
+
+                  
+                </li>
+              
+            </ul>
+          
+
+          <ul class="contents">
+            
+              
+              <li data-id="5" data-triple="aarch64-unknown-linux-gnu" class="install-content">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre_v1.0.0-deb11_amd64.deb">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre_v1.0.0-deb11_amd64.deb</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="6" data-triple="aarch64-unknown-linux-gnu" class="install-content hidden">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre_v1.0.0-deb12_amd64.deb">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre_v1.0.0-deb12_amd64.deb</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="4" data-triple="aarch64-unknown-linux-gnu" class="install-content hidden">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre-1.0.0-1.el9.x86_64.rpm">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre-1.0.0-1.el9.x86_64.rpm</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="1" data-triple="aarch64-unknown-linux-gnu" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">dpkg</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">i</span><span style="color:#82aaff;"> scaphandre.X.deb</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="dpkg -i scaphandre.X.deb">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="3" data-triple="aarch64-unknown-linux-gnu" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">rpm</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">ivh</span><span style="color:#82aaff;"> scaphandre.X.rpm</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="rpm -ivh scaphandre.X.rpm">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="0" data-triple="aarch64-unknown-linux-gnu" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">cargo install scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="cargo install scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="2" data-triple="aarch64-unknown-linux-gnu" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">docker pull hubblo/scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="docker pull hubblo/scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+          </ul>
+        </li>
+      
+        <li class="arch hidden" data-arch="aarch64-unknown-linux-musl">
+          
+            <ul class="tabs">
+              
+                
+                
+                <li class="install-tab" data-id="5" data-triple="aarch64-unknown-linux-musl">
+                  deb
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="6" data-triple="aarch64-unknown-linux-musl">
+                  deb
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="4" data-triple="aarch64-unknown-linux-musl">
+                  rpm
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="1" data-triple="aarch64-unknown-linux-musl">
+                  DEB package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="3" data-triple="aarch64-unknown-linux-musl">
+                  RPM package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="0" data-triple="aarch64-unknown-linux-musl">
+                  crates.io
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="2" data-triple="aarch64-unknown-linux-musl">
+                  docker
+
+                  
+                </li>
+              
+            </ul>
+          
+
+          <ul class="contents">
+            
+              
+              <li data-id="5" data-triple="aarch64-unknown-linux-musl" class="install-content">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre_v1.0.0-deb11_amd64.deb">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre_v1.0.0-deb11_amd64.deb</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="6" data-triple="aarch64-unknown-linux-musl" class="install-content hidden">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre_v1.0.0-deb12_amd64.deb">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre_v1.0.0-deb12_amd64.deb</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="4" data-triple="aarch64-unknown-linux-musl" class="install-content hidden">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre-1.0.0-1.el9.x86_64.rpm">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre-1.0.0-1.el9.x86_64.rpm</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="1" data-triple="aarch64-unknown-linux-musl" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">dpkg</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">i</span><span style="color:#82aaff;"> scaphandre.X.deb</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="dpkg -i scaphandre.X.deb">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="3" data-triple="aarch64-unknown-linux-musl" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">rpm</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">ivh</span><span style="color:#82aaff;"> scaphandre.X.rpm</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="rpm -ivh scaphandre.X.rpm">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="0" data-triple="aarch64-unknown-linux-musl" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">cargo install scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="cargo install scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="2" data-triple="aarch64-unknown-linux-musl" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">docker pull hubblo/scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="docker pull hubblo/scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+          </ul>
+        </li>
+      
+        <li class="arch hidden" data-arch="i686-unknown-linux-gnu">
+          
+            <ul class="tabs">
+              
+                
+                
+                <li class="install-tab" data-id="5" data-triple="i686-unknown-linux-gnu">
+                  deb
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="6" data-triple="i686-unknown-linux-gnu">
+                  deb
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="4" data-triple="i686-unknown-linux-gnu">
+                  rpm
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="1" data-triple="i686-unknown-linux-gnu">
+                  DEB package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="3" data-triple="i686-unknown-linux-gnu">
+                  RPM package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="0" data-triple="i686-unknown-linux-gnu">
+                  crates.io
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="2" data-triple="i686-unknown-linux-gnu">
+                  docker
+
+                  
+                </li>
+              
+            </ul>
+          
+
+          <ul class="contents">
+            
+              
+              <li data-id="5" data-triple="i686-unknown-linux-gnu" class="install-content">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre_v1.0.0-deb11_amd64.deb">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre_v1.0.0-deb11_amd64.deb</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="6" data-triple="i686-unknown-linux-gnu" class="install-content hidden">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre_v1.0.0-deb12_amd64.deb">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre_v1.0.0-deb12_amd64.deb</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="4" data-triple="i686-unknown-linux-gnu" class="install-content hidden">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre-1.0.0-1.el9.x86_64.rpm">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre-1.0.0-1.el9.x86_64.rpm</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="1" data-triple="i686-unknown-linux-gnu" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">dpkg</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">i</span><span style="color:#82aaff;"> scaphandre.X.deb</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="dpkg -i scaphandre.X.deb">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="3" data-triple="i686-unknown-linux-gnu" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">rpm</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">ivh</span><span style="color:#82aaff;"> scaphandre.X.rpm</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="rpm -ivh scaphandre.X.rpm">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="0" data-triple="i686-unknown-linux-gnu" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">cargo install scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="cargo install scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="2" data-triple="i686-unknown-linux-gnu" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">docker pull hubblo/scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="docker pull hubblo/scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+          </ul>
+        </li>
+      
+        <li class="arch hidden" data-arch="i686-unknown-linux-musl">
+          
+            <ul class="tabs">
+              
+                
+                
+                <li class="install-tab" data-id="5" data-triple="i686-unknown-linux-musl">
+                  deb
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="6" data-triple="i686-unknown-linux-musl">
+                  deb
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="4" data-triple="i686-unknown-linux-musl">
+                  rpm
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="1" data-triple="i686-unknown-linux-musl">
+                  DEB package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="3" data-triple="i686-unknown-linux-musl">
+                  RPM package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="0" data-triple="i686-unknown-linux-musl">
+                  crates.io
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="2" data-triple="i686-unknown-linux-musl">
+                  docker
+
+                  
+                </li>
+              
+            </ul>
+          
+
+          <ul class="contents">
+            
+              
+              <li data-id="5" data-triple="i686-unknown-linux-musl" class="install-content">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre_v1.0.0-deb11_amd64.deb">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre_v1.0.0-deb11_amd64.deb</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="6" data-triple="i686-unknown-linux-musl" class="install-content hidden">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre_v1.0.0-deb12_amd64.deb">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre_v1.0.0-deb12_amd64.deb</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="4" data-triple="i686-unknown-linux-musl" class="install-content hidden">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre-1.0.0-1.el9.x86_64.rpm">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre-1.0.0-1.el9.x86_64.rpm</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="1" data-triple="i686-unknown-linux-musl" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">dpkg</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">i</span><span style="color:#82aaff;"> scaphandre.X.deb</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="dpkg -i scaphandre.X.deb">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="3" data-triple="i686-unknown-linux-musl" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">rpm</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">ivh</span><span style="color:#82aaff;"> scaphandre.X.rpm</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="rpm -ivh scaphandre.X.rpm">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="0" data-triple="i686-unknown-linux-musl" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">cargo install scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="cargo install scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="2" data-triple="i686-unknown-linux-musl" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">docker pull hubblo/scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="docker pull hubblo/scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+          </ul>
+        </li>
+      
+        <li class="arch hidden" data-arch="x86_64-apple-darwin">
+          
+            <ul class="tabs">
+              
+                
+                
+                <li class="install-tab" data-id="1" data-triple="x86_64-apple-darwin">
+                  DEB package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="3" data-triple="x86_64-apple-darwin">
+                  RPM package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="0" data-triple="x86_64-apple-darwin">
+                  crates.io
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="2" data-triple="x86_64-apple-darwin">
+                  docker
+
+                  
+                </li>
+              
+            </ul>
+          
+
+          <ul class="contents">
+            
+              
+              <li data-id="1" data-triple="x86_64-apple-darwin" class="install-content">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">dpkg</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">i</span><span style="color:#82aaff;"> scaphandre.X.deb</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="dpkg -i scaphandre.X.deb">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="3" data-triple="x86_64-apple-darwin" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">rpm</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">ivh</span><span style="color:#82aaff;"> scaphandre.X.rpm</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="rpm -ivh scaphandre.X.rpm">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="0" data-triple="x86_64-apple-darwin" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">cargo install scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="cargo install scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="2" data-triple="x86_64-apple-darwin" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">docker pull hubblo/scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="docker pull hubblo/scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+          </ul>
+        </li>
+      
+        <li class="arch hidden" data-arch="x86_64-pc-windows-msvc">
+          
+            <ul class="tabs">
+              
+                
+                
+                <li class="install-tab" data-id="1" data-triple="x86_64-pc-windows-msvc">
+                  DEB package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="3" data-triple="x86_64-pc-windows-msvc">
+                  RPM package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="0" data-triple="x86_64-pc-windows-msvc">
+                  crates.io
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="2" data-triple="x86_64-pc-windows-msvc">
+                  docker
+
+                  
+                </li>
+              
+            </ul>
+          
+
+          <ul class="contents">
+            
+              
+              <li data-id="1" data-triple="x86_64-pc-windows-msvc" class="install-content">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">dpkg</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">i</span><span style="color:#82aaff;"> scaphandre.X.deb</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="dpkg -i scaphandre.X.deb">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="3" data-triple="x86_64-pc-windows-msvc" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">rpm</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">ivh</span><span style="color:#82aaff;"> scaphandre.X.rpm</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="rpm -ivh scaphandre.X.rpm">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="0" data-triple="x86_64-pc-windows-msvc" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">cargo install scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="cargo install scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="2" data-triple="x86_64-pc-windows-msvc" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">docker pull hubblo/scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="docker pull hubblo/scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+          </ul>
+        </li>
+      
+        <li class="arch hidden" data-arch="x86_64-unknown-linux-gnu">
+          
+            <ul class="tabs">
+              
+                
+                
+                <li class="install-tab" data-id="5" data-triple="x86_64-unknown-linux-gnu">
+                  deb
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="6" data-triple="x86_64-unknown-linux-gnu">
+                  deb
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="4" data-triple="x86_64-unknown-linux-gnu">
+                  rpm
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="1" data-triple="x86_64-unknown-linux-gnu">
+                  DEB package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="3" data-triple="x86_64-unknown-linux-gnu">
+                  RPM package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="0" data-triple="x86_64-unknown-linux-gnu">
+                  crates.io
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="2" data-triple="x86_64-unknown-linux-gnu">
+                  docker
+
+                  
+                </li>
+              
+            </ul>
+          
+
+          <ul class="contents">
+            
+              
+              <li data-id="5" data-triple="x86_64-unknown-linux-gnu" class="install-content">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre_v1.0.0-deb11_amd64.deb">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre_v1.0.0-deb11_amd64.deb</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="6" data-triple="x86_64-unknown-linux-gnu" class="install-content hidden">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre_v1.0.0-deb12_amd64.deb">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre_v1.0.0-deb12_amd64.deb</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="4" data-triple="x86_64-unknown-linux-gnu" class="install-content hidden">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre-1.0.0-1.el9.x86_64.rpm">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre-1.0.0-1.el9.x86_64.rpm</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="1" data-triple="x86_64-unknown-linux-gnu" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">dpkg</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">i</span><span style="color:#82aaff;"> scaphandre.X.deb</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="dpkg -i scaphandre.X.deb">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="3" data-triple="x86_64-unknown-linux-gnu" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">rpm</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">ivh</span><span style="color:#82aaff;"> scaphandre.X.rpm</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="rpm -ivh scaphandre.X.rpm">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="0" data-triple="x86_64-unknown-linux-gnu" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">cargo install scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="cargo install scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="2" data-triple="x86_64-unknown-linux-gnu" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">docker pull hubblo/scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="docker pull hubblo/scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+          </ul>
+        </li>
+      
+        <li class="arch hidden" data-arch="x86_64-unknown-linux-musl">
+          
+            <ul class="tabs">
+              
+                
+                
+                <li class="install-tab" data-id="5" data-triple="x86_64-unknown-linux-musl">
+                  deb
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="6" data-triple="x86_64-unknown-linux-musl">
+                  deb
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="4" data-triple="x86_64-unknown-linux-musl">
+                  rpm
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="1" data-triple="x86_64-unknown-linux-musl">
+                  DEB package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="3" data-triple="x86_64-unknown-linux-musl">
+                  RPM package
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="0" data-triple="x86_64-unknown-linux-musl">
+                  crates.io
+
+                  
+                </li>
+              
+                
+                
+                <li class="install-tab" data-id="2" data-triple="x86_64-unknown-linux-musl">
+                  docker
+
+                  
+                </li>
+              
+            </ul>
+          
+
+          <ul class="contents">
+            
+              
+              <li data-id="5" data-triple="x86_64-unknown-linux-musl" class="install-content">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre_v1.0.0-deb11_amd64.deb">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre_v1.0.0-deb11_amd64.deb</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="6" data-triple="x86_64-unknown-linux-musl" class="install-content hidden">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre_v1.0.0-deb12_amd64.deb">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre_v1.0.0-deb12_amd64.deb</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="4" data-triple="x86_64-unknown-linux-musl" class="install-content hidden">
+                
+
+                
+                  
+                  <div class="download-wrapper">
+                    <a href="https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre-1.0.0-1.el9.x86_64.rpm">
+                      <button class="button primary">
+                        <span>Download</span>
+                        <span class="button-subtitle">scaphandre-1.0.0-1.el9.x86_64.rpm</span>
+                      </button>
+                    </a>
+                  </div>
+                
+              </li>
+            
+              
+              <li data-id="1" data-triple="x86_64-unknown-linux-musl" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">dpkg</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">i</span><span style="color:#82aaff;"> scaphandre.X.deb</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="dpkg -i scaphandre.X.deb">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="3" data-triple="x86_64-unknown-linux-musl" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">rpm</span><span style="color:#89ddff;"> -</span><span style="color:#f78c6c;">ivh</span><span style="color:#82aaff;"> scaphandre.X.rpm</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="rpm -ivh scaphandre.X.rpm">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="0" data-triple="x86_64-unknown-linux-musl" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">cargo install scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="cargo install scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+              
+              <li data-id="2" data-triple="x86_64-unknown-linux-musl" class="install-content hidden">
+                
+                  
+                  <div class="install-code-wrapper">
+  <pre style="background-color:#263238;">
+<span style="color:#82aaff;">docker pull hubblo/scaphandre</span></pre>
+
+  <button class="button copy-clipboard-button primary" data-copy="docker pull hubblo/scaphandre">
+    <svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 20 20' height='1em' width='1em' xmlns='http://www.w3.org/2000/svg'><path d='M8 2a1 1 0 000 2h2a1 1 0 100-2H8z'></path><path d='M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z'></path></svg>
+  </button>
+  
+  
+</div>
+                
+
+                
+              </li>
+            
+          </ul>
+        </li>
+      
+    </ul>
+  </div>
+
+  
+    <div class="no-autodetect hidden">
+      <span class="no-autodetect-details">We weren't able to detect your OS.</span>
+    </div>
+    <noscript>
+      <a href="/scaphandre/artifacts/">View all installation options</a>
+    </noscript>
+  
+  <div class="mac-switch hidden">This project doesn't offer Apple Silicon downloads, but you can run Intel macOS binaries via Rosetta 2.</div>
+
+  
+  
+  <div class="bottom-options ">
+    <a href="/scaphandre/artifacts/" class="backup-download primary">View all installation options</a>
+    
+      <div class="arch-select hidden">
+        <select id="install-arch-select">
+          <option disabled="true" selected="true" value=""></option>
+          
+            <option value="aarch64-unknown-linux-gnu">Linux arm64</option>
+          
+            <option value="x86_64-unknown-linux-gnu">Linux x64</option>
+          
+            <option value="i686-unknown-linux-gnu">Linux x86</option>
+          
+            <option value="aarch64-apple-darwin">macOS Apple Silicon</option>
+          
+            <option value="x86_64-apple-darwin">macOS Intel</option>
+          
+            <option value="aarch64-unknown-linux-musl">musl Linux arm64</option>
+          
+            <option value="x86_64-unknown-linux-musl">musl Linux x64</option>
+          
+            <option value="i686-unknown-linux-musl">musl Linux x86</option>
+          
+            <option value="x86_64-pc-windows-msvc">Windows x64</option>
+          
+        </select>
+      </div>
+    
+  </div>
+</div>
+
+<a href="/scaphandre/artifacts/" class="button mobile-download primary">View all installation options</a>
+
+
+    <p>
+    <img src="https://github.com/hubblo-org/scaphandre/raw/main/docs_src/scaphandre.cleaned.png" width="200">
+</p>
+<h1>
+  Scaphandre
+</h1>
+<h3>
+    Your tech stack doesn't need so much energy ⚡
+</h3>
+<hr>
+<p>Scaphandre <em>[skafɑ̃dʁ]</em> is a metrology agent dedicated to electric <a href="https://en.wikipedia.org/wiki/Electric_power" rel="noopener noreferrer">power</a> and energy consumption metrics. The goal of the project is to permit to any company or individual to <strong>measure</strong> the power consumption of its tech services and get this data in a convenient form, sending it through any monitoring or data analysis toolchain.</p>
+<p><strong>Scaphandre</strong> means <em>heavy</em> <strong>diving suit</strong> in <a href="https://fr.wikipedia.org/wiki/Scaphandre_%C3%A0_casque" rel="noopener noreferrer">:fr:</a>. It comes from the idea that tech related services often don't track their power consumption and thus don't expose it to their clients. Most of the time the reason is a presumed bad <a href="https://en.wikipedia.org/wiki/Return_on_investment" rel="noopener noreferrer">ROI</a>. Scaphandre makes, for tech providers and tech users, easier and cheaper to go under the surface to bring back the desired power consumption metrics, take better sustainability focused decisions, and then show the metrics to their clients to allow them to do the same.</p>
+<p>This project was born from a deep sense of duty from tech workers. Please refer to the <a href="https://hubblo-org.github.io/scaphandre-documentation/why.html" rel="noopener noreferrer">why</a> section to know more about its goals.</p>
+<p><strong>Warning</strong>: this is still a very early stage project. Any feedback or contribution will be highly appreciated. Please refer to the <a href="https://hubblo-org.github.io/scaphandre-documentation/contributing.html" rel="noopener noreferrer">contribution</a> section.</p>
+<p><img src="https://github.com/hubblo-org/scaphandre/workflows/Tests/badge.svg?branch=main" alt="Fmt+Clippy">
+<a href="https://crates.io/crates/scaphandre" rel="noopener noreferrer"><img src="https://img.shields.io/crates/v/scaphandre.svg?maxAge=25920" alt=""></a>
+<a href="https://gitter.im/hubblo-org/scaphandre?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge" rel="noopener noreferrer"><img src="https://badges.gitter.im/Join%20Chat.svg"></a></p>
+<p>Join us on <a href="https://gitter.im/hubblo-org/scaphandre" rel="noopener noreferrer">Gitter</a> or <a href="https://app.element.io/#/room/#hubblo-org_scaphandre:gitter.im" rel="noopener noreferrer">Matrix</a> !</p>
+<hr>
+<h2>✨ Features</h2>
+<ul>
+<li>measuring power/energy consumed on <strong>bare metal hosts</strong></li>
+<li>measuring power/energy consumed of <strong>qemu/kvm virtual machines</strong> from the host</li>
+<li><strong>exposing</strong> power/energy metrics of a virtual machine, to allow <strong>manipulating those metrics in the VM</strong> as if it was a bare metal machine (relies on hypervisor features)</li>
+<li>exposing metrics as a <strong><a href="https://prometheus.io" rel="noopener noreferrer">prometheus</a> (HTTP) exporter</strong></li>
+<li>sending metrics in push mode to a <strong><a href="https://prometheus.io" rel="noopener noreferrer">prometheus</a> <a href="https://github.com/prometheus/pushgateway" rel="noopener noreferrer">Push Gateway</a></strong></li>
+<li>sending metrics to <strong><a href="http://riemann.io/" rel="noopener noreferrer">riemann</a></strong></li>
+<li>sending metrics to <strong><a href="http://warp10.io/" rel="noopener noreferrer">Warp10</a></strong></li>
+<li>works on <strong><a href="https://kubernetes.io/" rel="noopener noreferrer">kubernetes</a></strong></li>
+<li>storing power consumption metrics in a <strong>JSON</strong> file</li>
+<li>showing basic power consumption metrics <strong>in the terminal</strong></li>
+<li>operating systems supported so far : <strong>Gnu/Linux</strong>, <strong>Windows 10, 11 and Server 2016/2019/2022</strong></li>
+<li>packages available for <strong>RHEL 8 and 9, Debian 11 and 12 and Windows</strong>, also <strong>NixOS</strong> (community support)</li>
+</ul>
+<p>Here is an example dashboard built thanks to scaphandre: <a href="https://metrics.hubblo.org" rel="noopener noreferrer">https://metrics.hubblo.org</a>.</p>
+<p><a href="https://metrics.hubblo.org" rel="noopener noreferrer"><img src="https://github.com/hubblo-org/scaphandre/raw/main/docs_src/grafana-dash-scaphandre.cleaned.png" width="800"></a></p>
+<h2>📄 How to ... ?</h2>
+<p>You'll find everything you may want to know about scaphandre in the <a href="https://hubblo-org.github.io/scaphandre-documentation" rel="noopener noreferrer">documentation</a>, like:</p>
+<ul>
+<li>🏁 <a href="https://hubblo-org.github.io/scaphandre-documentation/tutorials/getting_started.html" rel="noopener noreferrer">Getting started</a></li>
+<li>💻 <a href="https://hubblo-org.github.io/scaphandre-documentation/tutorials/installation-linux.html" rel="noopener noreferrer">Installation &amp; compilation on GNU/Linux</a> or <a href="https://hubblo-org.github.io/scaphandre-documentation/tutorials/installation-windows.html" rel="noopener noreferrer">on Windows</a></li>
+<li>👁️ <a href="https://hubblo-org.github.io/scaphandre-documentation/how-to_guides/propagate-metrics-hypervisor-to-vm_qemu-kvm.html" rel="noopener noreferrer">Give a virtual machine access to its power consumption metrics, and break the opacity of being on the computer of someone else</a></li>
+<li>🎉 <a href="https://hubblo-org.github.io/scaphandre-documentation/contributing.html" rel="noopener noreferrer">Contributing guide</a></li>
+<li><a href="https://hubblo-org.github.io/scaphandre-documentation" rel="noopener noreferrer">And much more</a></li>
+</ul>
+<p>If you are only interested in the code documentation <a href="https://docs.rs/scaphandre" rel="noopener noreferrer">here it is</a>.</p>
+<h2>📅 Roadmap</h2>
+<p>The ongoing roadmap can be seen <a href="https://github.com/hubblo-org/scaphandre/projects/1" rel="noopener noreferrer">here</a>. Feature requests are welcome, please join us.</p>
+<h2>⚖️  Footprint</h2>
+<p>In opposition to its name, scaphandre aims to be as light and clean as possible. One of the main focus areas of the project is to come as close as possible to a 0 overhead, both about resources consumption and power consumption.</p>
+<h2>🙏 Sponsoring</h2>
+<p>If you like this project and would like to provide financial help, here's our <a href="https://github.com/sponsors/hubblo-org" rel="noopener noreferrer">sponsoring page</a>.
+Thanks a lot for considering it !</p>
+
+
+
+        </main>
+      </div>
+
+      <footer>
+        
+          <a href="https://github.com/hubblo-org/scaphandre"><div class="github-icon" aria-hidden="true"></div></a>
+        
+        <span>
+          scaphandre, Apache-2.0
+        </span>
+      </footer>
+    </div>
+
+    
+    
+
+    
+
+    <script src="/scaphandre/artifacts.js"></script>
+
+
+  </body>
+</html>

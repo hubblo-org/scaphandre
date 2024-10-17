@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" id="oranda" class="light">
+  <head>
+    <title>scaphandre</title>
+    
+      <meta property="og:url" content="https://scaphandre.hubblo.org" />
+    
+    
+      <link rel="icon" href="/scaphandre/favicon.ico" />
+    
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+      <meta name="description" content="Electric power/energy consumption monitoring agent." />
+      <meta property="og:description" content="Electric power/energy consumption monitoring agent." />
+    
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="scaphandre" />
+    
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta property="og:image" content="https://raw.githubusercontent.com/hubblo-org/scaphandre/dev/docs_src/scaphandre.cleaned.png" />
+    
+    
+      <meta property="og:image:alt" content="Hubblo's twitter/x account" />
+    
+    
+      <meta name="twitter:creator" content="@HubbloOrg" />
+      <meta name="twitter:site" content="@HubbloOrg" />
+    
+    <meta http-equiv="Permissions-Policy" content="interest-cohort=()" />
+    <link rel="stylesheet" href="/scaphandre/oranda-v0.6.1.css" />
+    
+    
+  </head>
+  <body>
+    <div class="container">
+      <div class="page-body">
+        
+          <div class="repo_banner">
+            <a href="https://github.com/hubblo-org/scaphandre">
+              <div class="github-icon" aria-hidden="true"></div>
+              Check out our GitHub!
+            </a>
+          </div>
+        
+
+        <main>
+          <header>
+            
+            <h1 class="title">scaphandre</h1>
+            
+  <nav class="nav">
+    <ul>
+      <li><a href="/scaphandre/">Home</a></li>
+
+      
+
+      
+        <li><a href="/scaphandre/artifacts/">Install</a></li>
+      
+
+      
+        <li><a href="/scaphandre/book/">Docs</a></li>
+      
+
+      
+        <li><a href="/scaphandre/funding/">Funding</a></li>
+      
+
+      
+        <li><a href="/scaphandre/changelog/">Changelog</a></li>
+      
+    </ul>
+  </nav>
+
+          </header>
+
+          
+  <div>
+    <h1>Scaphandre v1.0.0</h1>
+    <div class="releases-body">
+      
+      
+      <section class="release ">
+  
+  <div class="release-info">
+    <span class="flex items-center gap-2">
+      <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor' class='w-6 h-6'>
+    <path stroke-linecap='round' stroke-linejoin='round' d='M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z' />
+    <path stroke-linecap='round' stroke-linejoin='round' d='M6 6h.008v.008H6V6z' /></svg>
+      v1.0.0
+    </span>
+    <span class="flex items-center gap-2">
+      
+        <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor' class='w-6 h-6'><path stroke-linecap='round' stroke-linejoin='round' d='M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5' /></svg>
+        Feb 12 2024 at 13:48 UTC
+      
+    </span>
+  </div>
+  <div class="release-body">
+    <h3>Added</h3>
+<ul>
+<li>Host resources consumption metrics : scaph_host_swap_total_bytes, scaph_host_swap_free_bytes, scaph_host_memory_free_bytes, scaph_host_memory_available_bytes, scaph_host_memory_total_bytes, scaph_host_disk_total_bytes, scaph_host_disk_available_bytes, scaph_host_cpu_frequency, scaph_host_load_avg_fifteen, scaph_host_load_avg_five, scaph_host_load_avg_one - see <a href="https://hubblo-org.github.io/scaphandre-documentation/references/metrics.html" rel="noopener noreferrer">https://hubblo-org.github.io/scaphandre-documentation/references/metrics.html</a> for details, <a href="https://github.com/hubblo-org/scaphandre/issues/271" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/271</a> and <a href="https://github.com/hubblo-org/scaphandre/pull/278" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/278</a> for reference</li>
+<li>Per-process resource consumption metrics : scaph_process_cpu_usage_percentage, scaph_process_memory_bytes, scaph_process_memory_virtual_bytes, scaph_process_disk_total_write_bytes, scaph_process_disk_write_bytes, scaph_process_disk_read_bytes, scaph_process_disk_total_read_bytes - see <a href="https://hubblo-org.github.io/scaphandre-documentation/references/metrics.html" rel="noopener noreferrer">https://hubblo-org.github.io/scaphandre-documentation/references/metrics.html</a> for details, <a href="https://github.com/hubblo-org/scaphandre/issues/141" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/141</a> and <a href="https://github.com/hubblo-org/scaphandre/pull/274" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/274</a> for reference</li>
+<li>Added service monitor to helm chart, see <a href="https://github.com/hubblo-org/scaphandre/pull/230" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/230</a>, thanks @mmadoo</li>
+<li>Added packaging folder with sample systemd services files, see <a href="https://github.com/hubblo-org/scaphandre/pull/317" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/317</a> and <a href="https://github.com/hubblo-org/scaphandre/issues/261" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/261</a>, thanks @jcaesar</li>
+<li>Added prometheus push mode exporter, see <a href="https://github.com/hubblo-org/scaphandre/issues/269" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/269</a></li>
+<li>Added RPM build github action workflow, see <a href="https://github.com/hubblo-org/scaphandre/issues/310" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/310</a></li>
+<li>Added RAPL mmio metric, when the domain is present, see <a href="https://github.com/hubblo-org/scaphandre/issues/318" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/318</a> and <a href="https://github.com/hubblo-org/scaphandre/pull/329" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/329</a></li>
+<li>Added specific RAPL PSYS metric, when available, see <a href="https://github.com/hubblo-org/scaphandre/issues/316" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/316</a> and <a href="https://github.com/hubblo-org/scaphandre/pull/329" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/329</a></li>
+<li>Filtering per process in JSON exporter, see <a href="https://github.com/hubblo-org/scaphandre/issues/216" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/216</a></li>
+<li>Github action workflow to build Windows EXE installer on each release, see <a href="https://github.com/hubblo-org/scaphandre/pull/333" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/333</a></li>
+<li>Github action workflow to build DEB package on each release, see <a href="https://github.com/hubblo-org/scaphandre/pull/352" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/352</a>, thanks @bdromard</li>
+<li>Added warning messages when powercap files permissions won't allow Scaphandre to read RAPL data, see <a href="https://github.com/hubblo-org/scaphandre/issues/214" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/214</a></li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Global power metrics have changed and could give higher numbers than previously. Please have a look at the <a href="https://hubblo-org.github.io/scaphandre-documentation/explanations/host_metrics.html" rel="noopener noreferrer">documentation</a>.</li>
+<li><code>scaph_self_mem_total_program_size</code>, <code>scaph_self_mem_resident_set_size</code> and <code>scaph_self_mem_shared_resident_size</code> are replaced by <code>scaph_self_memory_bytes</code> and <code>scaph_self_memory_virtual_bytes</code>, see <a href="https://github.com/hubblo-org/scaphandre/pull/274/files" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/274/files</a></li>
+<li>Refactored warp10 exporter, see <a href="https://github.com/hubblo-org/scaphandre/pull/291" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/291</a> and <a href="https://github.com/hubblo-org/scaphandre/issues/105" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/105</a></li>
+<li>Refactored exporters creation with clap4, see <a href="https://github.com/hubblo-org/scaphandre/pull/292" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/292</a>, thanks @TheElectronWill</li>
+<li>Default docker-compose sets a privileged container now, otherwise it doesn't work in an apparmor context, see <a href="https://github.com/hubblo-org/scaphandre/issues/135" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/135</a> and <a href="https://github.com/hubblo-org/scaphandre/commit/a1a06ea280b8e66067b2c3b73ac08a377604eb61" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/commit/a1a06ea280b8e66067b2c3b73ac08a377604eb61</a></li>
+<li>Moved from procfs, to sysinfo, see <a href="https://github.com/hubblo-org/scaphandre/issues/267" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/267</a></li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Fixed doc broken links, see <a href="https://github.com/hubblo-org/scaphandre/pull/259" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/259</a> and <a href="https://github.com/hubblo-org/scaphandre/issues/288" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/288</a>, thanks @homersimpsons</li>
+<li>Now works on more than 1 vcpu Qemu/KVM virtual machines, see <a href="https://github.com/hubblo-org/scaphandre/issues/133" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/133</a> and <a href="https://github.com/hubblo-org/scaphandre/pull/207" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/207</a>, thanks @tawalaya</li>
+<li>Fix for Kubernetes, don't create PSP if version of kubernetes is above 1.25, see <a href="https://github.com/hubblo-org/scaphandre/pull/250" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/250</a>, thanks @rossf7</li>
+<li>Fixed bug in --containers flag, see <a href="https://github.com/hubblo-org/scaphandre/pull/326" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/326</a>, thanks rossf7</li>
+<li>Fix on qemu exporter, see <a href="https://github.com/hubblo-org/scaphandre/issues/260" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/260</a></li>
+<li>Fixed panics on regex filters, see <a href="https://github.com/hubblo-org/scaphandre/issues/295" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/295</a></li>
+<li>Fixed invalid escape sequence in Prometheus exporter, see <a href="https://github.com/hubblo-org/scaphandre/issues/204" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/204</a>, thanks @demeringo</li>
+<li>Removed broken python bindings, until it is fixed, see <a href="https://github.com/hubblo-org/scaphandre/pull/315" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/315</a> and <a href="https://github.com/hubblo-org/scaphandre/issues/296" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/296</a></li>
+</ul>
+
+  </div>
+</section>
+    </div>
+  </div>
+
+        </main>
+      </div>
+
+      <footer>
+        
+          <a href="https://github.com/hubblo-org/scaphandre"><div class="github-icon" aria-hidden="true"></div></a>
+        
+        <span>
+          scaphandre, Apache-2.0
+        </span>
+      </footer>
+    </div>
+
+    
+    
+
+    
+  </body>
+</html>

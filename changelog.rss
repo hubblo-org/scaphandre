@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>scaphandre Changelog</title><link>http://127.0.0.1:7979/scaphandre/changelog</link><description>Changelog information for scaphandre</description><category domain="https://github.com/hubblo-org/scaphandre">scaphandre Changelog</category><atom:link href="http://127.0.0.1:7979/scaphandre/changelog.rss" rel="self"/><item><title>Scaphandre v1.0.0</title><link>http://127.0.0.1:7979/scaphandre/changelog/v1.0.0</link><category domain="https://github.com/hubblo-org/scaphandre">scaphandre Changelog</category><guid>http://127.0.0.1:7979/scaphandre/changelog/v1.0.0</guid><content:encoded><![CDATA[<h3>Added</h3>
+<ul>
+<li>Host resources consumption metrics : scaph_host_swap_total_bytes, scaph_host_swap_free_bytes, scaph_host_memory_free_bytes, scaph_host_memory_available_bytes, scaph_host_memory_total_bytes, scaph_host_disk_total_bytes, scaph_host_disk_available_bytes, scaph_host_cpu_frequency, scaph_host_load_avg_fifteen, scaph_host_load_avg_five, scaph_host_load_avg_one - see <a href="https://hubblo-org.github.io/scaphandre-documentation/references/metrics.html" rel="noopener noreferrer">https://hubblo-org.github.io/scaphandre-documentation/references/metrics.html</a> for details, <a href="https://github.com/hubblo-org/scaphandre/issues/271" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/271</a> and <a href="https://github.com/hubblo-org/scaphandre/pull/278" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/278</a> for reference</li>
+<li>Per-process resource consumption metrics : scaph_process_cpu_usage_percentage, scaph_process_memory_bytes, scaph_process_memory_virtual_bytes, scaph_process_disk_total_write_bytes, scaph_process_disk_write_bytes, scaph_process_disk_read_bytes, scaph_process_disk_total_read_bytes - see <a href="https://hubblo-org.github.io/scaphandre-documentation/references/metrics.html" rel="noopener noreferrer">https://hubblo-org.github.io/scaphandre-documentation/references/metrics.html</a> for details, <a href="https://github.com/hubblo-org/scaphandre/issues/141" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/141</a> and <a href="https://github.com/hubblo-org/scaphandre/pull/274" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/274</a> for reference</li>
+<li>Added service monitor to helm chart, see <a href="https://github.com/hubblo-org/scaphandre/pull/230" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/230</a>, thanks @mmadoo</li>
+<li>Added packaging folder with sample systemd services files, see <a href="https://github.com/hubblo-org/scaphandre/pull/317" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/317</a> and <a href="https://github.com/hubblo-org/scaphandre/issues/261" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/261</a>, thanks @jcaesar</li>
+<li>Added prometheus push mode exporter, see <a href="https://github.com/hubblo-org/scaphandre/issues/269" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/269</a></li>
+<li>Added RPM build github action workflow, see <a href="https://github.com/hubblo-org/scaphandre/issues/310" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/310</a></li>
+<li>Added RAPL mmio metric, when the domain is present, see <a href="https://github.com/hubblo-org/scaphandre/issues/318" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/318</a> and <a href="https://github.com/hubblo-org/scaphandre/pull/329" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/329</a></li>
+<li>Added specific RAPL PSYS metric, when available, see <a href="https://github.com/hubblo-org/scaphandre/issues/316" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/316</a> and <a href="https://github.com/hubblo-org/scaphandre/pull/329" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/329</a></li>
+<li>Filtering per process in JSON exporter, see <a href="https://github.com/hubblo-org/scaphandre/issues/216" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/216</a></li>
+<li>Github action workflow to build Windows EXE installer on each release, see <a href="https://github.com/hubblo-org/scaphandre/pull/333" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/333</a></li>
+<li>Github action workflow to build DEB package on each release, see <a href="https://github.com/hubblo-org/scaphandre/pull/352" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/352</a>, thanks @bdromard</li>
+<li>Added warning messages when powercap files permissions won't allow Scaphandre to read RAPL data, see <a href="https://github.com/hubblo-org/scaphandre/issues/214" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/214</a></li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Global power metrics have changed and could give higher numbers than previously. Please have a look at the <a href="https://hubblo-org.github.io/scaphandre-documentation/explanations/host_metrics.html" rel="noopener noreferrer">documentation</a>.</li>
+<li><code>scaph_self_mem_total_program_size</code>, <code>scaph_self_mem_resident_set_size</code> and <code>scaph_self_mem_shared_resident_size</code> are replaced by <code>scaph_self_memory_bytes</code> and <code>scaph_self_memory_virtual_bytes</code>, see <a href="https://github.com/hubblo-org/scaphandre/pull/274/files" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/274/files</a></li>
+<li>Refactored warp10 exporter, see <a href="https://github.com/hubblo-org/scaphandre/pull/291" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/291</a> and <a href="https://github.com/hubblo-org/scaphandre/issues/105" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/105</a></li>
+<li>Refactored exporters creation with clap4, see <a href="https://github.com/hubblo-org/scaphandre/pull/292" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/292</a>, thanks @TheElectronWill</li>
+<li>Default docker-compose sets a privileged container now, otherwise it doesn't work in an apparmor context, see <a href="https://github.com/hubblo-org/scaphandre/issues/135" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/135</a> and <a href="https://github.com/hubblo-org/scaphandre/commit/a1a06ea280b8e66067b2c3b73ac08a377604eb61" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/commit/a1a06ea280b8e66067b2c3b73ac08a377604eb61</a></li>
+<li>Moved from procfs, to sysinfo, see <a href="https://github.com/hubblo-org/scaphandre/issues/267" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/267</a></li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Fixed doc broken links, see <a href="https://github.com/hubblo-org/scaphandre/pull/259" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/259</a> and <a href="https://github.com/hubblo-org/scaphandre/issues/288" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/288</a>, thanks @homersimpsons</li>
+<li>Now works on more than 1 vcpu Qemu/KVM virtual machines, see <a href="https://github.com/hubblo-org/scaphandre/issues/133" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/133</a> and <a href="https://github.com/hubblo-org/scaphandre/pull/207" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/207</a>, thanks @tawalaya</li>
+<li>Fix for Kubernetes, don't create PSP if version of kubernetes is above 1.25, see <a href="https://github.com/hubblo-org/scaphandre/pull/250" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/250</a>, thanks @rossf7</li>
+<li>Fixed bug in --containers flag, see <a href="https://github.com/hubblo-org/scaphandre/pull/326" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/326</a>, thanks rossf7</li>
+<li>Fix on qemu exporter, see <a href="https://github.com/hubblo-org/scaphandre/issues/260" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/260</a></li>
+<li>Fixed panics on regex filters, see <a href="https://github.com/hubblo-org/scaphandre/issues/295" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/295</a></li>
+<li>Fixed invalid escape sequence in Prometheus exporter, see <a href="https://github.com/hubblo-org/scaphandre/issues/204" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/204</a>, thanks @demeringo</li>
+<li>Removed broken python bindings, until it is fixed, see <a href="https://github.com/hubblo-org/scaphandre/pull/315" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/pull/315</a> and <a href="https://github.com/hubblo-org/scaphandre/issues/296" rel="noopener noreferrer">https://github.com/hubblo-org/scaphandre/issues/296</a></li>
+</ul>
+]]></content:encoded></item><item><title>Scaphandre v0.5.0</title><link>http://127.0.0.1:7979/scaphandre/changelog/v0.5.0</link><category domain="https://github.com/hubblo-org/scaphandre">scaphandre Changelog</category><guid>http://127.0.0.1:7979/scaphandre/changelog/v0.5.0</guid><content:encoded><![CDATA[<h3>Changed</h3>
+<ul>
+<li>Upgraded procfs to 0.12 : <a href="https://github.com/hubblo-org/scaphandre/pull/144" rel="noopener noreferrer">#144</a></li>
+<li>Rollbacked to ubuntu 20.04 as the base docker image : <a href="https://github.com/hubblo-org/scaphandre/pull/151" rel="noopener noreferrer">#151</a>, thanks to @demeringo</li>
+<li>Using github action to tag docker image : <a href="https://github.com/hubblo-org/scaphandre/pull/160" rel="noopener noreferrer">#160</a>, thanks to @rossf7</li>
+</ul>
+<h3>Added</h3>
+<ul>
+<li>New level of abstraction regarding structs managed by Sensors, so we could implement more sensors in an easier way : <a href="https://github.com/hubblo-org/scaphandre/pull/149" rel="noopener noreferrer">#149</a></li>
+<li>Enable JSON exporter to run as a daemon : <a href="https://github.com/hubblo-org/scaphandre/issues/169" rel="noopener noreferrer">#169</a></li>
+<li>First building blocks for conditional compilation depending on the OS : <a href="https://github.com/hubblo-org/scaphandre/pull/148" rel="noopener noreferrer">#148</a></li>
+<li>Mitigation for machines where powercap is not able to feed rapl domain folders, and only has socket ones : <a href="https://github.com/hubblo-org/scaphandre/pull/198" rel="noopener noreferrer">#198</a></li>
+<li>Experimental support for Windows 10, 11, server 2019 : <a href="https://github.com/hubblo-org/scaphandre/issues/74" rel="noopener noreferrer">#74</a> and <a href="https://github.com/hubblo-org/scaphandre/issues/247" rel="noopener noreferrer">#247</a></li>
+<li>Added --containers option to JSON exporter : <a href="https://github.com/hubblo-org/scaphandre/issues/217" rel="noopener noreferrer">#217</a></li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Kubernetes pods using containerd are now supported : <a href="https://github.com/hubblo-org/scaphandre/pull/130" rel="noopener noreferrer">#130</a>, thanks to @rossf7</li>
+<li>Excluded unrelevant procfs metrics from calculation of cpu cycles consumed by processes : <a href="https://github.com/hubblo-org/scaphandre/pull/132" rel="noopener noreferrer">#132</a></li>
+<li>Mitigated possible decrepancies between host (rapl) total power usage metric and the sum of per-process power usage metrics : <a href="https://github.com/hubblo-org/scaphandre/issues/20" rel="noopener noreferrer">#20</a>, note that some issues show remaining issues on this topic. Further investigation and work needed.</li>
+<li>Documentation fix for helm install : <a href="https://github.com/hubblo-org/scaphandre/pull/136" rel="noopener noreferrer">#136</a>, thanks to @arthurzenika</li>
+<li>New helm chart values: arguments and backtrace : <a href="https://github.com/hubblo-org/scaphandre/pull/139" rel="noopener noreferrer">#139</a>, thanks to @jotak</li>
+<li>Some documentation typos : <a href="https://github.com/hubblo-org/scaphandre/pull/157" rel="noopener noreferrer">#157</a>, thanks to @metacosm</li>
+<li>Aligning on new clippy rules : <a href="https://github.com/hubblo-org/scaphandre/pull/162" rel="noopener noreferrer">#162</a>, thanks to @demeringo</li>
+<li>Always set last pods check timestamp : <a href="https://github.com/hubblo-org/scaphandre/pull/173" rel="noopener noreferrer">#173</a>, thanks to @rossf7</li>
+<li>Support kubelets using systemd cgroup driver: <a href="https://github.com/hubblo-org/scaphandre/pull/146" rel="noopener noreferrer">#146</a>, thanks to @rossf7</li>
+<li>Fix missing volume in psp (helm chart): <a href="https://github.com/hubblo-org/scaphandre/pull/168" rel="noopener noreferrer">#168</a>, thanks to @olevitt</li>
+<li>Spelling check in documentation : <a href="https://github.com/hubblo-org/scaphandre/pull/183" rel="noopener noreferrer">#183</a>, thanks to @irishgordo</li>
+<li>No more duplicated HELP and TYPE lines in prometheus exporter: <a href="https://github.com/hubblo-org/scaphandre/issues/165" rel="noopener noreferrer">#165</a> and <a href="https://github.com/hubblo-org/scaphandre/pull/192" rel="noopener noreferrer">#192</a></li>
+<li>Escaping newlines in cmdline: <a href="https://github.com/hubblo-org/scaphandre/issues/175" rel="noopener noreferrer">#175</a>, thanks to @uggla</li>
+</ul>
+]]></content:encoded></item><item><title>Scaphandre v0.4.1</title><link>http://127.0.0.1:7979/scaphandre/changelog/v0.4.1</link><category domain="https://github.com/hubblo-org/scaphandre">scaphandre Changelog</category><guid>http://127.0.0.1:7979/scaphandre/changelog/v0.4.1</guid><content:encoded><![CDATA[<h3>Changed</h3>
+<ul>
+<li>Updated k8s-sync crate to 0.2.3 to get authentication by token feature</li>
+</ul>
+]]></content:encoded></item><item><title>Scaphandre v0.4.0</title><link>http://127.0.0.1:7979/scaphandre/changelog/v0.4.0</link><category domain="https://github.com/hubblo-org/scaphandre">scaphandre Changelog</category><guid>http://127.0.0.1:7979/scaphandre/changelog/v0.4.0</guid><content:encoded><![CDATA[<h3>Added</h3>
+<ul>
+<li>Riemann exporter now supports mTLS: <a href="https://github.com/hubblo-org/scaphandre/pull/103" rel="noopener noreferrer">#103</a> thanks @uggla !</li>
+<li><code>--containers</code> option, in prometheus exporter, tells scaphandre to add labels to metrics related to a docker container or a kubernetes pod, to make getting metrics of a distributed application easier: <a href="https://github.com/hubblo-org/scaphandre/pull/109" rel="noopener noreferrer">#84</a> thanks @rossf7 for the tests, feedbacks, helm configuration and thanks @uggla for the reviews !</li>
+<li>stdout exporter now allows to choose the number of processes to watch, with the --process-number flag and to filter processes watched thanks to a regex, with the --regex-filter option: <a href="https://github.com/hubblo-org/scaphandre/pull/98" rel="noopener noreferrer">#98</a>, thanks @uggla !</li>
+<li>MetricGenerator includes timestamp in Metrics now : <a href="https://github.com/hubblo-org/scaphandre/pull/113" rel="noopener noreferrer">#113</a></li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Added Cargo.lock to the repository: <a href="https://github.com/hubblo-org/scaphandre/issues/111" rel="noopener noreferrer">#111</a></li>
+<li>Ensured domains names are feteched properly in any case : <a href="https://github.com/hubblo-org/scaphandre/pull/114" rel="noopener noreferrer">#114</a> thanks @PierreRust !</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Manipulating flags as a Vec of clap::Arg instead of a HashMap of ExporterOption in exporters: <a href="https://github.com/hubblo-org/scaphandre/pull/100" rel="noopener noreferrer">#100</a>, thanks @uggla !</li>
+<li>Json and Stdout exporters are now using MetricGenerator as an inteface to get metrics properly : <a href="https://github.com/hubblo-org/scaphandre/pull/113" rel="noopener noreferrer">#113</a></li>
+</ul>
+]]></content:encoded></item><item><title>Scaphandre v0.3.0</title><link>http://127.0.0.1:7979/scaphandre/changelog/v0.3.0</link><category domain="https://github.com/hubblo-org/scaphandre">scaphandre Changelog</category><guid>http://127.0.0.1:7979/scaphandre/changelog/v0.3.0</guid><content:encoded><![CDATA[<h3>Added</h3>
+<ul>
+<li>New MetricGenerator and Metric structs and helper functions to make writing exporters easier. Riemann and Prometheus exporters now share the same code pattern: <a href="https://github.com/hubblo-org/scaphandre/pull/79" rel="noopener noreferrer">#79</a> thanks @uggla !</li>
+<li>New <a href="https://warp10.io/" rel="noopener noreferrer">Warp10</a> exporter ! <a href="https://github.com/hubblo-org/scaphandre/pull/76" rel="noopener noreferrer">#76</a></li>
+<li>Updated riemann_client and protobuf crates dependencies <a href="https://github.com/hubblo-org/scaphandre/pull/70/files" rel="noopener noreferrer">#70</a> thanks @uggla !</li>
+<li>Successfully tested on AMD CPUs (AMD Ryzen 5 2600X): <a href="https://github.com/hubblo-org/scaphandre/issues/55" rel="noopener noreferrer">#55</a> (requires a kernel 5.11 or later) thanks @barnumbirr and @kamaradclimber !</li>
+<li>Scaphandre can now be tested locally thanks to a docker-compose stack ! <a href="https://github.com/hubblo-org/scaphandre/pull/61" rel="noopener noreferrer">#61</a> thanks @PierreRust !</li>
+<li>Added a CITATION file for references: <a href="https://github.com/hubblo-org/scaphandre/issues/95" rel="noopener noreferrer">#95</a> thanks @tstrempel !</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Allowing scaphandre to run even if intel_rapl modules are not found: <a href="https://github.com/hubblo-org/scaphandre/pull/65" rel="noopener noreferrer">#65</a> (needed to run scaphandre on AMD CPUs)</li>
+<li>Fixed typos and lacks in the documentation: <a href="https://github.com/hubblo-org/scaphandre/pull/81" rel="noopener noreferrer">#81</a>, <a href="https://github.com/hubblo-org/scaphandre/pull/77" rel="noopener noreferrer">#77</a>, <a href="https://github.com/hubblo-org/scaphandre/issues/80" rel="noopener noreferrer">#80</a> thanks @pierreozoux, @LudovicRousseau, @maethor, @wallet77</li>
+<li>Moved documentation output to another <a href="https://github.com/hubblo-org/scaphandre-documentation" rel="noopener noreferrer">repository</a>: <a href="https://github.com/hubblo-org/scaphandre/pull/94" rel="noopener noreferrer">#94</a> (documentation is now available here: <a href="https://hubblo-org.github.io/scaphandre-documentation" rel="noopener noreferrer">https://hubblo-org.github.io/scaphandre-documentation</a>)</li>
+<li>Json exporter has been refactored: <a href="https://github.com/hubblo-org/scaphandre/pull/87" rel="noopener noreferrer">#87</a> thanks @jdrouet !</li>
+</ul>
+]]></content:encoded></item><item><title>Scaphandre v0.2.0</title><link>http://127.0.0.1:7979/scaphandre/changelog/v0.2.0</link><category domain="https://github.com/hubblo-org/scaphandre">scaphandre Changelog</category><guid>http://127.0.0.1:7979/scaphandre/changelog/v0.2.0</guid><content:encoded><![CDATA[<h3>Added</h3>
+<ul>
+<li>Docker image (<a href="https://hub.docker.com/r/hubblo/scaphandre" rel="noopener noreferrer">hubblo/scaphandre</a>), ubuntu based: <a href="https://github.com/hubblo-org/scaphandre/pull/48" rel="noopener noreferrer">#48</a>, thanks @rossf7</li>
+<li>Helm chart to run scaphandre as a DaemonSet in a kubernetes cluster: <a href="https://github.com/hubblo-org/scaphandre/pull/72" rel="noopener noreferrer">#72</a> - thanks @rossf7</li>
+<li>JsonExporter, to get metrics in JSON either in stdout or files: <a href="https://github.com/hubblo-org/scaphandre/pull/68" rel="noopener noreferrer">#68</a> - thanks @wallet77</li>
+<li>RiemannExporter, to send metrics to <a href="http://riemann.io" rel="noopener noreferrer">Riemann</a> monitoring tool: <a href="https://github.com/hubblo-org/scaphandre/pull/58" rel="noopener noreferrer">#58</a> - thanks @uggla</li>
+<li>--qemu flag on PrometheusExporter, to add a "vmname" label to metrics related to processes that represent qemu-kvm virtual machines: <a href="https://github.com/hubblo-org/scaphandre/pull/41" rel="noopener noreferrer">#41</a> - thanks @uggla</li>
+<li>Better documentation structure (based on <a href="https://documentation.divio.com/" rel="noopener noreferrer">divio's documentation framework</a> and <a href="https://rust-lang.github.io/mdBook/" rel="noopener noreferrer">mdbook</a>): <a href="https://github.com/hubblo-org/scaphandre/pull/45" rel="noopener noreferrer">#45</a>, result here:  <a href="https://hubblo-org.github.io/scaphandre/" rel="noopener noreferrer">https://hubblo-org.github.io/scaphandre-documentation/</a></li>
+<li>Automated CI tests including cargo test --all, running on a (bare metal) machine: <a href="https://github.com/hubblo-org/scaphandre/pull/62" rel="noopener noreferrer">#62</a></li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Improved QemuExporter documentation: <a href="https://github.com/hubblo-org/scaphandre/pull/42" rel="noopener noreferrer">#42</a> - thanks @uggla</li>
+</ul>
+]]></content:encoded></item><item><title>Scaphandre v0.1.1</title><link>http://127.0.0.1:7979/scaphandre/changelog/v0.1.1</link><category domain="https://github.com/hubblo-org/scaphandre">scaphandre Changelog</category><guid>http://127.0.0.1:7979/scaphandre/changelog/v0.1.1</guid><content:encoded><![CDATA[<h3>Added</h3>
+<ul>
+<li><code>-s, --step</code> option added by @Uggla, to specify time step between two measurements, when using StdoutExporter</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>removed <code>energy_records_to_power_record</code> function <code>from src/sensors/mod.rs</code>. <code>get_records_diff_power_microwatts</code> functions from Topology and CPUSocket should be used instead</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>README typos and misusage of english fixed by @Uggla and @florimondmanca</li>
+<li>@Uggla made init.sh script more robust</li>
+<li>cleaning of internal structs (records, cpustat, processes) was buggy, it is fixed</li>
+<li>linux kernels &lt; 5, on intel CPUs (&gt;2012) may me measurable now (fixed kernel modules names check)</li>
+</ul>
+]]></content:encoded></item><item><title>Scaphandre v0.1.0</title><link>http://127.0.0.1:7979/scaphandre/changelog/v0.1.0</link><category domain="https://github.com/hubblo-org/scaphandre">scaphandre Changelog</category><guid>http://127.0.0.1:7979/scaphandre/changelog/v0.1.0</guid><content:encoded><![CDATA[<h3>Added</h3>
+<ul>
+<li>Exporters and sensors design.</li>
+<li>Stdout exporter.</li>
+<li>Prometheus exporter.</li>
+<li>Powercap_rapl sensor.</li>
+<li>Qemu exporter.</li>
+</ul>
+]]></content:encoded></item></channel></rss>
