@@ -428,6 +428,11 @@ impl ProcessTracker {
         }
         if container_id.contains("cri-containerd") {
             container_id = container_id.split(':').last().unwrap().to_string();
+            // cgroup name sometimes look like cri-containerd-[actual container_id] so we take
+            // that into account
+            if container_id.contains("cri-containerd") {
+                container_id = container_id.split('-').last().unwrap().to_string();
+            }
         }
         Ok(container_id)
     }
