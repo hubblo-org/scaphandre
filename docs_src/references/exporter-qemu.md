@@ -47,3 +47,25 @@ First create a tmpfs mount point to isolate metrics for that virtual machine:
     		scaphandre --vm prometheus
 
     6. Collect your virtual machine specific power usage metrics. (requesting http://VM_IP:8080/metrics in this example, using the prometheus exporter)
+  
+## Usage (PROXMOX VIM)
+   
+1. Run scaphandre with the qemu exporter on your bare metal hypervisor machine:
+	
+		scaphandre qemu # this is suitable for a test, please run it as a systemd service for a production setup
+
+2. Default is to expose virtual machines metrics in `/var/lib/libvirt/scaphandre/${VM_NAME}` with `VM_NAME` being the name of the virtual machine (VM).
+First, add the following line at the end of the `/etc/pve/qemu-server/${<VM_ID}.conf` file, with `VM_ID` being the ID that PROXMOX has assigned your VM.
+
+		args: -fsdev local,security_model=passthrough,id=fsdev0,path=/var/lib/libvirt/scaphandre/${VM_NAME} -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=${VM_NAME}
+
+3. If you perform this file change with the VM running, you need to restart it for this modification to take effect.
+4. In the guest (VM), mount the required directory in Read-Only mode:
+
+		mount -t 9p -o ro,trans=virtio,version=9p2000.L ${VM_NAME} /var/scaphandre
+
+5. Still in the guest, run scaphandre in VM mode with the default sensor:
+
+		scaphandre --vm prometheus
+
+6. Collect your virtual machine specific power usage metrics. (requesting http://${VM_IP}:8080/metrics in this example, using the prometheus exporter)

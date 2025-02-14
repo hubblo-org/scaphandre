@@ -55,6 +55,26 @@ You can now run scaphandre to export the metrics with the exporter of your choic
 
      scaphandre --vm prometheus
 
+## How to expose metrics in PROXMOX Virtual Environment
+   
+Run scaphandre with the qemu exporter on your bare metal hypervisor machine:
+	
+	scaphandre qemu
+
+The Qemu exporter will expose virtual machine metrics in `/var/lib/libvirt/scaphandre/${VM_NAME}` with `VM_NAME` being the name of the virtual machine (VM).
+Add the following line at the end of the `/etc/pve/qemu-server/${<VM_ID}.conf` file, with `VM_ID` being the ID that PROXMOX has assigned your VM.
+
+	args: -fsdev local,security_model=passthrough,id=fsdev0,path=/var/lib/libvirt/scaphandre/${VM_NAME} -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=${VM_NAME}
+
+If you perform this file change with the VM running, you need to restart it for this modification to take effect.
+In the guest (VM), mount the required directory in Read-Only mode:
+
+	mount -t 9p -o ro,trans=virtio,version=9p2000.L ${VM_NAME} /var/scaphandre
+
+Still in the guest, run scaphandre in VM mode with the default sensor:
+
+	scaphandre --vm prometheus
+ 
 Please refer to the [qemu exporter](../references/exporter-qemu.md) reference for more details.
 
-**Note:** This how to is only suitable for a "manual" use case. For all automated systems like openstack or proxmox, some more work needs to be done to make the integration of those steps easier.
+**Note:** This how to is only suitable for a "manual" use case. For automated systems like openstack, some more work needs to be done to make the integration of those steps easier.
