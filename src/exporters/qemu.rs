@@ -1,7 +1,8 @@
 use crate::exporters::Exporter;
 use crate::sensors::Topology;
-use crate::sensors::{utils::ProcessRecord, Sensor};
+use crate::sensors::{Sensor};
 use std::{fs, io, thread, time};
+use crate::exporters::utils::{filter_qemu_vm_processes, get_vm_name_from_cmdline};
 
 /// An Exporter that extracts power consumption data of running
 /// Qemu/KVM virtual machines on the host and store those data
@@ -58,11 +59,11 @@ impl QemuExporter {
         self.topology.refresh();
         if let Some(topo_energy) = self.topology.get_records_diff_power_microwatts() {
             let processes = self.topology.proc_tracker.get_alive_processes();
-            let qemu_processes = QemuExporter::filter_qemu_vm_processes(&processes);
+            let qemu_processes = filter_qemu_vm_processes(&processes);
             for qp in qemu_processes {
                 if qp.len() > 2 {
                     let last = qp.first().unwrap();
-                    let vm_name = QemuExporter::get_vm_name_from_cmdline(
+                    let vm_name = get_vm_name_from_cmdline(
                         &last.process.cmdline(&self.topology.proc_tracker).unwrap(),
                     );
                     let first_domain_path = format!("{path}/{vm_name}/intel-rapl:0:0");
@@ -98,19 +99,6 @@ impl QemuExporter {
         }
     }
 
-    /// Parses a cmdline String (as contained in procs::Process instances) and returns
-    /// the name of the qemu virtual machine if this process is a qemu/kvm guest process
-    fn get_vm_name_from_cmdline(cmdline: &[String]) -> String {
-        for elmt in cmdline {
-            if elmt.starts_with("guest=") {
-                let mut splitted = elmt.split('=');
-                splitted.next();
-                return String::from(splitted.next().unwrap().split(',').next().unwrap());
-            }
-        }
-        String::from("") // TODO return Option<String> None instead, and stop at line 76 (it won't work with {path}//intel-rapl)
-    }
-
     /// Either creates an energy_uj file (as the ones managed by powercap kernel module)
     /// in 'path' and adds 'uj_value' to its numerical content, or simply performs the
     /// addition if the file exists.
@@ -128,33 +116,6 @@ impl QemuExporter {
             content += uj_value;
         }
         fs::write(file_path, content.to_string())
-    }
-
-    /// Filters 'processes' to match processes that look like qemu/kvm guest processes.
-    /// Returns what was found.
-    fn filter_qemu_vm_processes(processes: &[&Vec<ProcessRecord>]) -> Vec<Vec<ProcessRecord>> {
-        let mut qemu_processes: Vec<Vec<ProcessRecord>> = vec![];
-        trace!("Got {} processes to filter.", processes.len());
-        for vecp in processes.iter() {
-            if !vecp.is_empty() {
-                if let Some(pr) = vecp.first() {
-                    if let Some(res) = pr
-                        .process
-                        .cmdline
-                        .iter()
-                        .find(|x| x.contains("qemu-system"))
-                    {
-                        debug!("Found a process with {}", res);
-                        let mut tmp: Vec<ProcessRecord> = vec![];
-                        for p in vecp.iter() {
-                            tmp.push(p.clone());
-                        }
-                        qemu_processes.push(tmp);
-                    }
-                }
-            }
-        }
-        qemu_processes
     }
 }
 
