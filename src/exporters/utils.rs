@@ -9,6 +9,7 @@ use {
     docker_sync::Docker,
     k8s_sync::{errors::KubernetesError, kubernetes::Kubernetes},
 };
+use crate::sensors::utils::ProcessRecord;
 
 /// Default ipv4/ipv6 address to expose the service is any
 pub const DEFAULT_IP_ADDRESS: &str = "::";
@@ -64,6 +65,46 @@ pub fn filter_qemu_cmdline(cmdline: &str) -> Option<String> {
         }
     }
     None
+}
+
+/// Parses a cmdline String (as contained in procs::Process instances) and returns
+/// the name of the qemu virtual machine if this process is a qemu/kvm guest process
+/// TODO: can this be merged with the function above?
+pub fn get_vm_name_from_cmdline(cmdline: &[String]) -> String {
+    for i in 0..cmdline.len() {
+        if cmdline[i].starts_with("-name") {
+            let cleaned = cmdline[i + 1].replace("guest=", "");
+            return String::from(cleaned.split(',').next().unwrap());
+        }
+    }
+    String::from("") // TODO return Option<String> None instead, and stop at line 76 (it won't work with {path}//intel-rapl)
+}
+
+/// Filters 'processes' to match processes that look like qemu/kvm guest processes.
+/// Returns what was found.
+pub fn filter_qemu_vm_processes(processes: &[&Vec<ProcessRecord>]) -> Vec<Vec<ProcessRecord>> {
+    let mut qemu_processes: Vec<Vec<ProcessRecord>> = vec![];
+    trace!("Got {} processes to filter.", processes.len());
+    for vecp in processes.iter() {
+        if !vecp.is_empty() {
+            if let Some(pr) = vecp.first() {
+                if let Some(res) = pr
+                    .process
+                    .cmdline
+                    .iter()
+                    .find(|x| x.contains("qemu-system") | x.contains("/usr/bin/kvm"))
+                {
+                    debug!("Found a process with {}", res);
+                    let mut tmp: Vec<ProcessRecord> = vec![];
+                    for p in vecp.iter() {
+                        tmp.push(p.clone());
+                    }
+                    qemu_processes.push(tmp);
+                }
+            }
+        }
+    }
+    qemu_processes
 }
 
 /// Returns scaphandre version.

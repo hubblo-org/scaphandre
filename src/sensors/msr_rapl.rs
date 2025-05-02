@@ -364,7 +364,7 @@ impl Sensor for MsrRAPLSensor {
         sensor_data.insert(String::from("POWER_UNIT"), self.power_unit.to_string());
         sensor_data.insert(String::from("TIME_UNIT"), self.time_unit.to_string());
 
-        let mut topology = Topology::new(sensor_data.clone());
+        let mut topology = Topology::new(sensor_data.clone(), false);
         let mut sys = System::new_all();
         sys.refresh_all();
 

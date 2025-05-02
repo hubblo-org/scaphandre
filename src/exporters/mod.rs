@@ -10,6 +10,8 @@ pub mod prometheus;
 pub mod prometheuspush;
 #[cfg(target_os = "linux")]
 pub mod qemu;
+#[cfg(target_os = "linux")]
+pub mod qemu_redis;
 #[cfg(feature = "riemann")]
 pub mod riemann;
 pub mod stdout;
@@ -24,6 +26,7 @@ use chrono::Utc;
 use std::collections::HashMap;
 use std::fmt;
 use std::time::Duration;
+use sysinfo::{ProcessExt, SystemExt};
 use utils::get_scaphandre_version;
 #[cfg(feature = "containers")]
 use {
@@ -924,6 +927,18 @@ impl MetricGenerator {
         }
         debug!("Before loop.");
 
+        let sum_of_cpu_usage: Option<f32> = if self.topology.calc_power_using_sum_of_cpu_usage_as_total {
+            Some(self.topology.proc_tracker
+                .sysinfo
+                .processes()
+                .values()
+                .map(|p| p.cpu_usage() / self.topology.proc_tracker.nb_cores as f32)
+                .sum())
+        } else {
+            None
+        };
+        debug!("CPU usage sum: {:?}", sum_of_cpu_usage);
+        
         for pid in self.topology.proc_tracker.get_alive_pids() {
             let exe = self.topology.proc_tracker.get_process_name(pid);
             let cmdline = self.topology.proc_tracker.get_process_cmdline(pid);
@@ -966,7 +981,7 @@ impl MetricGenerator {
                 }
             }
 
-            if let Some(metrics) = self.topology.get_all_per_process(pid) {
+            if let Some(metrics) = self.topology.get_all_per_process(pid, sum_of_cpu_usage) {
                 for (k, v) in metrics {
                     self.data.push(Metric {
                         name: k,

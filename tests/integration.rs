@@ -1,3 +1,5 @@
+use scaphandre::exporters::qemu::QemuExporterArgs;
+
 #[cfg(all(feature = "qemu", target_os = "linux"))]
 #[test]
 fn exporter_qemu() {
@@ -7,7 +9,7 @@ fn exporter_qemu() {
     use std::fs::{create_dir, read_dir};
 
     let sensor = PowercapRAPLSensor::new(1, 1, false);
-    let mut exporter = QemuExporter::new(&sensor);
+    let mut exporter = QemuExporter::new(&sensor, QemuExporterArgs{step: 5});
     // Create integration_tests directory if it does not exist
     let curdir = current_dir().unwrap();
     let path = curdir.join("integration_tests");

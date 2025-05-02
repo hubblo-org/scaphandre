@@ -827,7 +827,7 @@ mod tests {
         let self_pid_by_sysinfo = get_current_pid();
         let self_process_by_sysinfo = system.process(self_pid_by_sysinfo.unwrap()).unwrap();
 
-        let mut topo = Topology::new(HashMap::new());
+        let mut topo = Topology::new(HashMap::new(), false);
         topo.refresh();
         let self_process_by_scaph = IProcess::myself(&topo.proc_tracker).unwrap();
 
@@ -844,7 +844,7 @@ mod tests {
     fn process_records_added() {
         use super::*;
         use crate::sensors::Topology;
-        let mut topo = Topology::new(HashMap::new());
+        let mut topo = Topology::new(HashMap::new(), false);
         topo.refresh();
         let proc = IProcess::myself(&topo.proc_tracker).unwrap();
         let mut tracker = ProcessTracker::new(3);
