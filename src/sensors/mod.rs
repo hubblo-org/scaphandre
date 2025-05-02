@@ -59,6 +59,7 @@ pub struct Topology {
     pub domains_names: Option<Vec<String>>,
     /// Sensor-specific data needed in the topology
     pub _sensor_data: HashMap<String, String>,
+    pub calc_power_using_sum_of_cpu_usage_as_total: bool
 }
 
 impl RecordGenerator for Topology {
@@ -133,14 +134,14 @@ impl RecordGenerator for Topology {
 impl Default for Topology {
     fn default() -> Self {
         {
-            Self::new(HashMap::new())
+            Self::new(HashMap::new(), false)
         }
     }
 }
 
 impl Topology {
     /// Instanciates Topology and returns the instance
-    pub fn new(sensor_data: HashMap<String, String>) -> Topology {
+    pub fn new(sensor_data: HashMap<String, String>, calc_power_using_sum_of_cpu_usage_as_total: bool) -> Topology {
         Topology {
             sockets: vec![],
             proc_tracker: ProcessTracker::new(5),
@@ -149,6 +150,7 @@ impl Topology {
             buffer_max_kbytes: 1,
             domains_names: None,
             _sensor_data: sensor_data,
+            calc_power_using_sum_of_cpu_usage_as_total,
         }
     }
 
@@ -732,11 +734,17 @@ impl Topology {
         None
     }
 
-    pub fn get_all_per_process(&self, pid: Pid) -> Option<HashMap<String, (String, Record)>> {
+    pub fn get_all_per_process(&self, pid: Pid, sum_of_cpu_usage: Option<f32>) -> Option<HashMap<String, (String, Record)>> {
         let mut res = HashMap::new();
         if let Some(record) = self.get_proc_tracker().get_process_last_record(pid) {
             let process_cpu_percentage =
                 record.process.cpu_usage_percentage / self.proc_tracker.nb_cores as f32;
+
+            let process_cpu_percentage_for_power = if sum_of_cpu_usage.is_some() {
+                ((record.process.cpu_usage_percentage / self.proc_tracker.nb_cores as f32) / sum_of_cpu_usage.unwrap()) * 100.0_f32
+            } else {
+                process_cpu_percentage
+            };
             res.insert(
                 String::from("scaph_process_cpu_usage_percentage"),
                 (String::from("CPU time consumed by the process, as a percentage of the capacity of all the CPU Cores"),
@@ -816,7 +824,7 @@ impl Topology {
             let topo_conso = self.get_records_diff_power_microwatts();
             if let Some(conso) = &topo_conso {
                 let conso_f64 = conso.value.parse::<f64>().unwrap();
-                let result = (conso_f64 * process_cpu_percentage as f64) / 100.0_f64;
+                let result = (conso_f64 * process_cpu_percentage_for_power as f64) / 100.0_f64;
                 res.insert(
                     String::from("scaph_process_power_consumption_microwatts"),
                     (
