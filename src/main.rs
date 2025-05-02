@@ -6,6 +6,8 @@ use scaphandre::{exporters, sensors::Sensor};
 
 #[cfg(target_os = "linux")]
 use scaphandre::sensors::powercap_rapl;
+#[cfg(target_os = "linux")]
+use scaphandre::sensors::redis;
 
 #[cfg(target_os = "windows")]
 use scaphandre::sensors::msr_rapl;
@@ -72,6 +74,18 @@ struct Cli {
     #[cfg(target_os = "linux")]
     #[arg(long, default_value_t = powercap_rapl::DEFAULT_BUFFER_PER_SOCKET_MAX_KBYTES)]
     sensor_buffer_per_socket_max_kb: u16,
+
+    /// Redis server URL
+    #[arg(long, default_value = "redis://127.0.0.1/")]
+    pub redis_url: String,
+
+    /// Prefix for Redis keys
+    #[arg(long, default_value = "scaphandre")]
+    pub redis_prefix: String,
+   
+    /// Name of the VM to monitor, should be the name of the VM on which this Scaphandre instance is running.
+    #[arg(long, default_value = "vm_name")]
+    pub vm_name: String
 }
 
 /// Defines the possible subcommands, one per exporter.
@@ -97,6 +111,9 @@ enum ExporterChoice {
     #[cfg(feature = "qemu")]
     Qemu(exporters::qemu::QemuExporterArgs),
 
+    /// Publish QEMU VM energy consumption metrics to Redis
+    #[cfg(feature = "qemu")]
+    QemuRedis(exporters::qemu_redis::QemuRedisExporterArgs),
     /// Expose the metrics to a Riemann server
     #[cfg(feature = "riemann")]
     Riemann(exporters::riemann::ExporterArgs),
@@ -231,9 +248,10 @@ fn main() {
 fn parse_cli_and_run_exporter() {
     let cli = Cli::parse();
     loggerv::init_with_verbosity(cli.verbose.into()).expect("unable to initialize the logger");
-
-    let sensor = build_sensor(&cli);
-    let mut exporter = build_exporter(cli.exporter, &sensor);
+    
+    let sensor_boxed = build_sensor(&cli);
+    let sensor = sensor_boxed.as_ref();
+    let mut exporter = build_exporter(cli.exporter, sensor);
     if !cli.no_header {
         print_scaphandre_header(exporter.kind());
     }
@@ -258,6 +276,10 @@ fn build_exporter(choice: ExporterChoice, sensor: &dyn Sensor) -> Box<dyn export
         ExporterChoice::Qemu(args) => {
             Box::new(exporters::qemu::QemuExporter::new(sensor, args)) // keep this in braces
         }
+        #[cfg(feature = "qemu")]
+        ExporterChoice::QemuRedis(args) => {
+            Box::new(exporters::qemu_redis::QemuRedisExporter::new(sensor, args))
+        }
         #[cfg(feature = "riemann")]
         ExporterChoice::Riemann(args) => {
             Box::new(exporters::riemann::RiemannExporter::new(sensor, args))
@@ -278,7 +300,7 @@ fn build_exporter(choice: ExporterChoice, sensor: &dyn Sensor) -> Box<dyn export
 /// Returns the sensor to use, given the command-line arguments.
 /// Unless sensor-specific options are provided, this should return
 /// the same thing as [`scaphandre::get_default_sensor`].
-fn build_sensor(cli: &Cli) -> impl Sensor {
+fn build_sensor(cli: &Cli) -> Box<dyn Sensor> {
     #[cfg(target_os = "linux")]
     let rapl_sensor = || {
         powercap_rapl::PowercapRAPLSensor::new(
@@ -288,6 +310,10 @@ fn build_sensor(cli: &Cli) -> impl Sensor {
         )
     };
 
+    let redis_sensor = || {
+        redis::RedisSensor::new(&cli.redis_url, &cli.redis_prefix, &cli.vm_name)
+    };
+
     #[cfg(target_os = "windows")]
     let msr_sensor_win = msr_rapl::MsrRAPLSensor::new;
 
@@ -295,7 +321,7 @@ fn build_sensor(cli: &Cli) -> impl Sensor {
         Some("powercap_rapl") => {
             #[cfg(target_os = "linux")]
             {
-                rapl_sensor()
+                Box::new(rapl_sensor())
             }
             #[cfg(not(target_os = "linux"))]
             panic!("Invalid sensor: Scaphandre's powercap_rapl only works on Linux")
@@ -308,10 +334,15 @@ fn build_sensor(cli: &Cli) -> impl Sensor {
             #[cfg(not(target_os = "windows"))]
             panic!("Invalid sensor: Scaphandre's msr only works on Windows")
         }
+        Some("redis") => {
+            {
+                Box::new(redis_sensor())
+            }
+        }
         Some(s) => panic!("Unknown sensor type {}", s),
         None => {
             #[cfg(target_os = "linux")]
-            return rapl_sensor();
+            return Box::new(rapl_sensor());
 
             #[cfg(target_os = "windows")]
             return msr_sensor_win();
@@ -344,6 +375,8 @@ mod test {
         "warpten",
         #[cfg(feature = "qemu")]
         "qemu",
+        #[cfg(feature = "qemu")]
+        "qemu-redis",
     ];
 
     /// Test that `--help` works for Scaphandre _and_ for each subcommand.

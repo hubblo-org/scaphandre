@@ -9,6 +9,8 @@ pub mod msr_rapl;
 use msr_rapl::get_msr_value;
 #[cfg(target_os = "linux")]
 pub mod powercap_rapl;
+#[cfg(target_os = "linux")]
+pub mod redis;
 pub mod units;
 pub mod utils;
 #[cfg(target_os = "linux")]

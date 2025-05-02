@@ -10,6 +10,8 @@ pub mod prometheus;
 pub mod prometheuspush;
 #[cfg(target_os = "linux")]
 pub mod qemu;
+#[cfg(target_os = "linux")]
+pub mod qemu_redis;
 #[cfg(feature = "riemann")]
 pub mod riemann;
 pub mod stdout;

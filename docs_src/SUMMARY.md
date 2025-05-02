@@ -23,6 +23,7 @@
 - [Internal structure](explanations/internal-structure.md)
 - [About containers](explanations/about-containers.md)
 - [About RAPL domains](explanations/rapl-domains.md)
+- [About Redis exporter and sensor](explanations/redis-exporter-sensor.md)
 
 # References
 
@@ -34,6 +35,7 @@
 - [Prometheus exporter](references/exporter-prometheus.md)
 - [Prometheus-push exporter](references/exporter-prometheuspush.md)
 - [Qemu exporter](references/exporter-qemu.md)
+- [Qemu Redis exporter](references/exporter-qemu-redis.md)
 - [Riemann exporter](references/exporter-riemann.md)
 - [Stdout exporter](references/exporter-stdout.md)
 - [Warp10 exporter](references/exporter-warp10.md)
@@ -43,6 +45,7 @@
 - [MSR_RAPL sensor](references/sensor-msr_rapl.md)
 - [PowercapRAPL sensor](references/sensor-powercap_rapl.md)
 - [MSRRAPL sensor](references/sensor-msr_rapl.md)
+- [Redis sensor](references/sensor-redis.md)
 
 [Why this project ?](why.md)
 [Compatibility](compatibility.md)
