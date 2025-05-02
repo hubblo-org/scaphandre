@@ -14,6 +14,14 @@ pub struct QemuExporter {
     // We don't need a MetricGenerator for this exporter, because it "justs"
     // puts the metrics in files in the same way as the powercap kernel module.
     topology: Topology,
+    args: QemuExporterArgs,
+}
+
+#[derive(clap::Args, Debug)]
+pub struct QemuExporterArgs {
+    /// Interval between two measurements, in seconds
+    #[arg(short, long, value_name = "SECONDS", default_value_t = 2)]
+    pub step: u64,
 }
 
 impl Exporter for QemuExporter {
@@ -25,7 +33,7 @@ impl Exporter for QemuExporter {
         let mut timer = time::Duration::from_secs(cleaner_step);
         loop {
             self.iterate(String::from(path));
-            let step = time::Duration::from_secs(5);
+            let step = time::Duration::from_secs(self.args.step);
             thread::sleep(step);
             if timer - step > time::Duration::from_millis(0) {
                 timer -= step;
@@ -45,11 +53,11 @@ impl Exporter for QemuExporter {
 
 impl QemuExporter {
     /// Instantiates and returns a new QemuExporter
-    pub fn new(sensor: &dyn Sensor) -> QemuExporter {
+    pub fn new(sensor: &dyn Sensor, args: QemuExporterArgs) -> QemuExporter {
         let topology = sensor
             .get_topology()
             .expect("sensor topology should be available");
-        QemuExporter { topology }
+        QemuExporter { topology, args }
     }
 
     /// Processes the metrics of `self.topology` and exposes them at the given `path`.

@@ -95,7 +95,7 @@ enum ExporterChoice {
     /// Watch all Qemu-KVM virtual machines running on the host and expose the metrics
     /// of each of them in a dedicated folder
     #[cfg(feature = "qemu")]
-    Qemu,
+    Qemu(exporters::qemu::QemuExporterArgs),
 
     /// Expose the metrics to a Riemann server
     #[cfg(feature = "riemann")]
@@ -255,8 +255,8 @@ fn build_exporter(choice: ExporterChoice, sensor: &dyn Sensor) -> Box<dyn export
             Box::new(exporters::prometheus::PrometheusExporter::new(sensor, args))
         }
         #[cfg(feature = "qemu")]
-        ExporterChoice::Qemu => {
-            Box::new(exporters::qemu::QemuExporter::new(sensor)) // keep this in braces
+        ExporterChoice::Qemu(args) => {
+            Box::new(exporters::qemu::QemuExporter::new(sensor, args)) // keep this in braces
         }
         #[cfg(feature = "riemann")]
         ExporterChoice::Riemann(args) => {
