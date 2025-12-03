@@ -34,5 +34,6 @@ scrape_configs:
 
     static_configs:
       - targets: ['scaphandre:8080']
+    fallback_scrape_protocol: PrometheusText0.0.4
 
 
