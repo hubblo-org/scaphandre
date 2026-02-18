@@ -14,8 +14,10 @@ use sysinfo::{
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum BlockDevicesDrivers {
     NVME,
+    Unknown,
 }
 
 pub struct IStatM {
@@ -849,38 +851,49 @@ pub fn format_disk_name(disk_path: &str) -> String {
 }
 
 /// Returns the driver for a given stockage device
-pub fn find_driver(disk_name: &str, path: &str) -> String {
+pub fn find_driver(disk_name: &str, path: &str) -> BlockDevicesDrivers {
     let sys_block_path = PathBuf::from(path).join("sys/block");
     let disk_path = sys_block_path.join(disk_name);
     let disk_device_path = disk_path.join("device");
 
     let try_driver = disk_device_path.join("driver").try_exists();
 
-    if let Ok(true) = try_driver {
-        let driver_path = disk_device_path.join("driver").canonicalize().unwrap();
+    let driver_name = match try_driver {
+        Ok(true) => {
+            let driver_path = disk_device_path.join("driver").canonicalize().unwrap();
 
-        let driver_name = driver_path
-            .to_str()
-            .unwrap()
-            .split("/")
-            .last()
-            .expect("Should return the last path part")
-            .to_string();
-        driver_name
-    } else {
-        let child_device_path = disk_device_path.join("device");
-        let driver_name = child_device_path
-            .join("driver")
-            .canonicalize()
-            .expect("Should resolve the driver symbolic link to the absolute path")
-            .to_str()
-            .expect("Should return a string")
-            .split("/")
-            .last()
-            .expect("Should return the last path part")
-            .to_string();
-        driver_name
-    }
+            let driver_name = driver_path.clone()
+                .to_str()
+                .unwrap()
+                .split("/")
+                .last()
+                .expect("Should return the last path part").to_string()
+                ;
+            driver_name
+        }
+        Ok(false) => {
+            let child_device_path = disk_device_path.join("device");
+            let driver_name = child_device_path.clone()
+                .join("driver")
+                .canonicalize()
+                .expect("Should resolve the driver symbolic link to the absolute path")
+                .to_str()
+                .expect("Should return a string")
+                .split("/")
+                .last()
+                .expect("Should return the last path part").to_string()
+                ;
+            driver_name
+        }
+        Err(_) => String::from("Unknown path to driver"),
+    };
+
+    let driver = match driver_name.as_str() {
+        "nvme" => BlockDevicesDrivers::NVME,
+        _ => BlockDevicesDrivers::Unknown
+    };
+
+    driver
 }
 
 mod tests {
@@ -997,7 +1010,7 @@ mod tests {
 
         let driver = find_driver("nvme0n1", tmp_dir.to_str().unwrap());
 
-        assert_eq!(driver, "nvme");
+        assert_eq!(driver, BlockDevicesDrivers::NVME);
     }
 }
 

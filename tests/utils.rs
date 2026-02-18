@@ -1,4 +1,4 @@
-use scaphandre::sensors::utils::{find_driver, format_disk_name};
+use scaphandre::sensors::utils::{BlockDevicesDrivers, find_driver, format_disk_name};
 
 mod common;
 
@@ -10,7 +10,6 @@ fn find_nvme_driver() {
     patterns.iter().for_each(|p| {
         let disk_name = format_disk_name(p);
         let driver = find_driver(&disk_name, tmp_dir.to_str().unwrap());
-
-        assert_eq!(driver, "nvme");
+        assert_eq!(driver, BlockDevicesDrivers::NVME);
     });
 }
