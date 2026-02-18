@@ -14,6 +14,10 @@ use sysinfo::{
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
 
+pub enum BlockDevicesDrivers {
+    NVME,
+}
+
 pub struct IStatM {
     pub size: u64,
     pub resident: u64,
@@ -813,6 +817,72 @@ pub fn current_system_time_since_epoch() -> Duration {
         .unwrap()
 }
 
+// Sysinfo on Linux can return up to the partition number as disk name. Only the device name is
+// needed to find the driver.
+pub fn format_disk_name(disk_path: &str) -> String {
+    let disk_name = disk_path.split("/").last().unwrap();
+
+    let device_name = match disk_name {
+        // This gets the NVME controller and the namespace, useful to find the driver
+        nvme_device if disk_name.starts_with("nvme") => {
+            let pattern = Regex::new(r"nvme[0-9]n[0-9]").unwrap();
+            let maybe_with_namespace = pattern.captures(nvme_device);
+            match maybe_with_namespace {
+                None => nvme_device.to_string(),
+                Some(controller_and_namespace) => controller_and_namespace
+                    .get(0)
+                    .unwrap()
+                    .as_str()
+                    .to_string(),
+            }
+        }
+        // Removing the partition number to only get the storage device name for SCSI block device
+        scsi_device if disk_name.starts_with("sd") => {
+            let v: Vec<&str> = scsi_device.split(char::is_numeric).collect();
+            let device_name = v.first().unwrap().to_string();
+            device_name
+        }
+        _ => String::from("Unknown"),
+    };
+
+    device_name
+}
+
+/// Returns the driver for a given stockage device
+pub fn find_driver(disk_name: &str, path: &str) -> String {
+    let sys_block_path = PathBuf::from(path).join("sys/block");
+    let disk_path = sys_block_path.join(disk_name);
+    let disk_device_path = disk_path.join("device");
+
+    let try_driver = disk_device_path.join("driver").try_exists();
+
+    if let Ok(true) = try_driver {
+        let driver_path = disk_device_path.join("driver").canonicalize().unwrap();
+
+        let driver_name = driver_path
+            .to_str()
+            .unwrap()
+            .split("/")
+            .last()
+            .expect("Should return the last path part")
+            .to_string();
+        driver_name
+    } else {
+        let child_device_path = disk_device_path.join("device");
+        let driver_name = child_device_path
+            .join("driver")
+            .canonicalize()
+            .expect("Should resolve the driver symbolic link to the absolute path")
+            .to_str()
+            .expect("Should return a string")
+            .split("/")
+            .last()
+            .expect("Should return the last path part")
+            .to_string();
+        driver_name
+    }
+}
+
 mod tests {
 
     #[test]
@@ -871,6 +941,63 @@ mod tests {
         }
         assert_eq!(tracker.procs.len(), 1);
         assert_eq!(tracker.procs[0].len(), 3);
+    }
+
+    #[cfg(all(test, target_os = "linux"))]
+    #[test]
+    fn get_storage_device_name() {
+        use super::*;
+        let sysinfo_disk_name_nvme = "/dev/nvme0n1p3";
+
+        let storage_device_name = format_disk_name(sysinfo_disk_name_nvme);
+
+        assert_eq!(storage_device_name, "nvme0n1");
+
+        let sysinfo_disk_name_scsi = "/dev/sda1";
+
+        let storage_device_name = format_disk_name(sysinfo_disk_name_scsi);
+
+        assert_eq!(storage_device_name, "sda");
+    }
+
+    #[cfg(all(test, target_os = "linux"))]
+    #[test]
+    fn get_nvme_driver() {
+        use super::*;
+        use std::{
+            fs::{create_dir, create_dir_all, remove_dir_all},
+            path::Path,
+        };
+
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        let tests_dir = Path::new(manifest_dir).join("tests");
+        let tmp_dir = tests_dir.join("tmp");
+
+        let _ = remove_dir_all(tmp_dir.clone());
+
+        create_dir(tmp_dir.clone()).unwrap();
+
+        let mock_sys_block_path = "sys/block";
+        let tmp_mock_block_path = tmp_dir.clone().join(mock_sys_block_path);
+        let _ = create_dir_all(tmp_mock_block_path.clone());
+
+        let block_paths = ["nvme0n1", "loop1", "loop2", "loop3"];
+        block_paths.iter().for_each(|bp| {
+            let p = tmp_mock_block_path.join(bp);
+            let _ = create_dir(p);
+        });
+
+        let nvme_dev_path = tmp_mock_block_path.join("nvme0n1").join("device/device");
+        let _ = create_dir_all(nvme_dev_path.clone());
+        let mock_driver_path = tmp_dir.join("sys/bus/drivers/nvme");
+        let _ = create_dir_all(mock_driver_path.clone());
+
+        let driver_sl_path = nvme_dev_path.join("driver");
+        let _ = std::os::unix::fs::symlink(mock_driver_path, driver_sl_path);
+
+        let driver = find_driver("nvme0n1", tmp_dir.to_str().unwrap());
+
+        assert_eq!(driver, "nvme");
     }
 }
 
