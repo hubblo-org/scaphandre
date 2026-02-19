@@ -6,6 +6,7 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::time::{Duration, SystemTime};
 use sysinfo::{
     get_current_pid, CpuExt, CpuRefreshKind, Pid, Process, ProcessExt, ProcessStatus, System,
@@ -14,9 +15,11 @@ use sysinfo::{
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
 
+#[cfg(feature = "disks_evaluation")]
 #[derive(Clone, Debug, PartialEq)]
-pub enum BlockDevicesDrivers {
+pub enum HostBusAdapters {
     NVME,
+    SATA,
     Unknown,
 }
 
@@ -821,6 +824,7 @@ pub fn current_system_time_since_epoch() -> Duration {
 
 // Sysinfo on Linux can return up to the partition number as disk name. Only the device name is
 // needed to find the driver.
+#[cfg(feature = "disks_evaluation")]
 pub fn format_disk_name(disk_path: &str) -> String {
     let disk_name = disk_path.split("/").last().unwrap();
 
@@ -850,50 +854,97 @@ pub fn format_disk_name(disk_path: &str) -> String {
     device_name
 }
 
-/// Returns the driver for a given stockage device
-pub fn find_driver(disk_name: &str, path: &str) -> BlockDevicesDrivers {
+/// Return the host bus adadpter for a given stockage device, through driver identification
+#[cfg(feature = "disks_evaluation")]
+pub fn find_adapter(disk_name: &str, path: &str) -> HostBusAdapters {
     let sys_block_path = PathBuf::from(path).join("sys/block");
     let disk_path = sys_block_path.join(disk_name);
     let disk_device_path = disk_path.join("device");
 
-    let try_driver = disk_device_path.join("driver").try_exists();
+    let driver_name = match disk_name {
+        _nvme_block_device if disk_name.starts_with("nvme") => {
+            let try_driver = disk_device_path.join("driver").try_exists();
 
-    let driver_name = match try_driver {
-        Ok(true) => {
-            let driver_path = disk_device_path.join("driver").canonicalize().unwrap();
+            match try_driver {
+                Ok(true) => {
+                    let driver_path = disk_device_path.join("driver").canonicalize().unwrap();
 
-            let driver_name = driver_path.clone()
+                    let driver_name = driver_path
+                        .clone()
+                        .to_str()
+                        .unwrap()
+                        .split("/")
+                        .last()
+                        .expect("Should return the last path part")
+                        .to_string();
+                    driver_name
+                }
+                Ok(false) => {
+                    let parent_device_path = disk_device_path.join("device");
+                    let driver_name = parent_device_path
+                        .clone()
+                        .join("driver")
+                        .canonicalize()
+                        .expect("Should resolve the driver symbolic link to the absolute path")
+                        .to_str()
+                        .expect("Should return a string")
+                        .split("/")
+                        .last()
+                        .expect("Should return the last path part")
+                        .to_string();
+                    driver_name
+                }
+                Err(_) => String::from("Unknown path to driver"),
+            }
+        }
+        _scsi_block_device if disk_name.starts_with("sd") => {
+            let bus_node_resolved_link = disk_device_path
+                .canonicalize()
+                .expect("Should resolve the bus node path link to the absolute path");
+
+            let bus_path = bus_node_resolved_link
+                .to_str()
+                .expect("Should return a string");
+
+            let split_path: Vec<&str> = bus_path.split("/").collect();
+            let bus_address_regex = Regex::new(r"[\w][\w][\w][\w]:[\w][\w]:[\w][\w]").unwrap();
+            let find_bus_address: Vec<&&str> = split_path
+                .iter()
+                .filter(|path_section| bus_address_regex.is_match(path_section))
+                .collect();
+
+            let bus_address = find_bus_address.first().unwrap().to_string();
+
+            let path_to_driver = PathBuf::from_str(path)
+                .unwrap()
+                .join("sys/bus/pci/devices")
+                .join(bus_address)
+                .join("driver");
+
+            let resolve_symlink_to_driver = path_to_driver
+                .canonicalize()
+                .expect("Should resolve the bus driver symbolic link to the absolute path");
+
+            let driver_path: Vec<&str> = resolve_symlink_to_driver
                 .to_str()
                 .unwrap()
                 .split("/")
-                .last()
-                .expect("Should return the last path part").to_string()
-                ;
+                .collect();
+
+            let driver_name = driver_path.last().unwrap().to_string();
+
             driver_name
         }
-        Ok(false) => {
-            let child_device_path = disk_device_path.join("device");
-            let driver_name = child_device_path.clone()
-                .join("driver")
-                .canonicalize()
-                .expect("Should resolve the driver symbolic link to the absolute path")
-                .to_str()
-                .expect("Should return a string")
-                .split("/")
-                .last()
-                .expect("Should return the last path part").to_string()
-                ;
-            driver_name
-        }
-        Err(_) => String::from("Unknown path to driver"),
+        _ => String::from("Unknown block device"),
     };
 
-    let driver = match driver_name.as_str() {
-        "nvme" => BlockDevicesDrivers::NVME,
-        _ => BlockDevicesDrivers::Unknown
+    let adapter = match driver_name.as_str() {
+        "nvme" => HostBusAdapters::NVME,
+        "ahci" => HostBusAdapters::SATA,
+        _ => HostBusAdapters::Unknown,
     };
 
-    driver
+    adapter
 }
 
 mod tests {
@@ -957,6 +1008,7 @@ mod tests {
     }
 
     #[cfg(all(test, target_os = "linux"))]
+    #[cfg(feature = "disks_evaluation")]
     #[test]
     fn get_storage_device_name() {
         use super::*;
@@ -974,6 +1026,7 @@ mod tests {
     }
 
     #[cfg(all(test, target_os = "linux"))]
+    #[cfg(feature = "disks_evaluation")]
     #[test]
     fn get_nvme_driver() {
         use super::*;
@@ -1008,9 +1061,9 @@ mod tests {
         let driver_sl_path = nvme_dev_path.join("driver");
         let _ = std::os::unix::fs::symlink(mock_driver_path, driver_sl_path);
 
-        let driver = find_driver("nvme0n1", tmp_dir.to_str().unwrap());
+        let driver = find_adapter("nvme0n1", tmp_dir.to_str().unwrap());
 
-        assert_eq!(driver, BlockDevicesDrivers::NVME);
+        assert_eq!(driver, HostBusAdapters::NVME);
     }
 }
 
