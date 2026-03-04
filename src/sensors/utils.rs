@@ -23,6 +23,30 @@ pub enum HostBusAdapters {
     Unknown,
 }
 
+#[cfg(feature = "disks_evaluation")]
+#[derive(Clone, Debug, PartialEq)]
+pub struct PowerModel {
+    disks: Vec<DiskPowerModel>,
+}
+
+#[cfg(feature = "disks_evaluation")]
+#[derive(Clone, Debug, PartialEq)]
+pub struct DiskPowerModel {
+    capacity: u32,
+    form_factor: HostBusAdapters,
+    idle: f32,
+    write: f32,
+    read: f32,
+}
+
+#[cfg(feature = "disks_evaluation")]
+#[derive(Clone, Debug, PartialEq)]
+pub struct DiskPowerConsumption {
+    idle_consumption: f32,
+    read_consumption: f32,
+    write_consumption: f32,
+}
+
 pub struct IStatM {
     pub size: u64,
     pub resident: u64,
@@ -947,6 +971,34 @@ pub fn find_adapter(disk_name: &str, path: &str) -> HostBusAdapters {
     adapter
 }
 
+#[cfg(feature = "disks_evaluation")]
+pub fn get_disk_power(
+    form_factor: HostBusAdapters,
+    capacity: u64,
+    power_model: PowerModel,
+) -> DiskPowerConsumption {
+    let capacity_in_gigabytes = capacity / 1073741824;
+
+    let similar_disks_by_capacity: Vec<DiskPowerModel> = power_model
+        .disks
+        .into_iter()
+        .filter(|disk_pm| disk_pm.capacity == capacity_in_gigabytes as u32)
+        .collect();
+
+    let similar_disks_by_form_factor: Vec<DiskPowerModel> = similar_disks_by_capacity
+        .into_iter()
+        .filter(|disk_pm| disk_pm.form_factor == form_factor)
+        .collect();
+
+    let disk_power_consumption = DiskPowerConsumption {
+        idle_consumption: similar_disks_by_form_factor[0].idle,
+        write_consumption: similar_disks_by_form_factor[0].write,
+        read_consumption: similar_disks_by_form_factor[0].read,
+    };
+
+    disk_power_consumption
+}
+
 mod tests {
 
     #[test]
@@ -1064,6 +1116,41 @@ mod tests {
         let driver = find_adapter("nvme0n1", tmp_dir.to_str().unwrap());
 
         assert_eq!(driver, HostBusAdapters::NVME);
+    }
+
+    #[cfg(all(test, target_os = "linux"))]
+    #[cfg(feature = "disks_evaluation")]
+    #[test]
+    fn get_a_power_estimation_for_a_given_disk() {
+        use super::*;
+
+        let disk_first_row = DiskPowerModel {
+            capacity: 1024,
+            form_factor: HostBusAdapters::NVME,
+            idle: 0.05,
+            write: 8.0,
+            read: 3.0,
+        };
+        let disk_second_row = DiskPowerModel {
+            capacity: 2048,
+            form_factor: HostBusAdapters::SATA,
+            idle: 0.8,
+            write: 5.0,
+            read: 2.0,
+        };
+        let power_model = PowerModel {
+            disks: vec![disk_first_row.clone(), disk_second_row],
+        };
+        let disk_form_factor = HostBusAdapters::NVME;
+        let disk_capacity: u64 = 1099511627776;
+
+        let disk_power_consumption = get_disk_power(disk_form_factor, disk_capacity, power_model);
+        assert_eq!(disk_power_consumption.idle_consumption, disk_first_row.idle);
+        assert_eq!(
+            disk_power_consumption.write_consumption,
+            disk_first_row.write
+        );
+        assert_eq!(disk_power_consumption.read_consumption, disk_first_row.read);
     }
 }
 
