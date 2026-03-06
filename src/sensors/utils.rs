@@ -15,7 +15,17 @@ use sysinfo::{
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
 
-#[cfg(feature = "disks_evaluation")]
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+#[derive(Clone, Debug, PartialEq)]
+pub enum DiskState {
+    Idle,
+    Write,
+    Read,
+    ReadWrite,
+    Unknown,
+}
+
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 #[derive(Clone, Debug, PartialEq)]
 pub enum HostBusAdapters {
     NVME,
@@ -23,15 +33,26 @@ pub enum HostBusAdapters {
     Unknown,
 }
 
-#[cfg(feature = "disks_evaluation")]
-#[derive(Clone, Debug, PartialEq)]
-pub struct PowerModel {
-    disks: Vec<DiskPowerModel>,
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+impl HostBusAdapters {
+    pub fn to_string(&self) -> String {
+        match self {
+            HostBusAdapters::NVME => String::from("NVME"),
+            HostBusAdapters::SATA => String::from("SATA"),
+            HostBusAdapters::Unknown => String::from("Unknown form factor"),
+        }
+    }
 }
 
-#[cfg(feature = "disks_evaluation")]
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 #[derive(Clone, Debug, PartialEq)]
-pub struct DiskPowerModel {
+pub struct PowerModel {
+    disks: Vec<DiskPowerSpecs>,
+}
+
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+#[derive(Clone, Debug, PartialEq)]
+pub struct DiskPowerSpecs {
     capacity: u32,
     form_factor: HostBusAdapters,
     idle: f32,
@@ -39,9 +60,10 @@ pub struct DiskPowerModel {
     read: f32,
 }
 
-#[cfg(feature = "disks_evaluation")]
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct DiskPowerConsumption {
+    name: String,
     idle_consumption: f32,
     read_consumption: f32,
     write_consumption: f32,
@@ -848,7 +870,7 @@ pub fn current_system_time_since_epoch() -> Duration {
 
 // Sysinfo on Linux can return up to the partition number as disk name. Only the device name is
 // needed to find the driver.
-#[cfg(feature = "disks_evaluation")]
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 pub fn format_disk_name(disk_path: &str) -> String {
     let disk_name = disk_path.split("/").last().unwrap();
 
@@ -879,7 +901,7 @@ pub fn format_disk_name(disk_path: &str) -> String {
 }
 
 /// Return the host bus adadpter for a given stockage device, through driver identification
-#[cfg(feature = "disks_evaluation")]
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 pub fn find_adapter(disk_name: &str, path: &str) -> HostBusAdapters {
     let sys_block_path = PathBuf::from(path).join("sys/block");
     let disk_path = sys_block_path.join(disk_name);
@@ -971,32 +993,55 @@ pub fn find_adapter(disk_name: &str, path: &str) -> HostBusAdapters {
     adapter
 }
 
-#[cfg(feature = "disks_evaluation")]
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 pub fn get_disk_power(
+    disk_name: &str,
     form_factor: HostBusAdapters,
     capacity: u64,
     power_model: PowerModel,
 ) -> DiskPowerConsumption {
     let capacity_in_gigabytes = capacity / 1073741824;
 
-    let similar_disks_by_capacity: Vec<DiskPowerModel> = power_model
+    let similar_disks_by_form_factor: Vec<DiskPowerSpecs> = power_model
         .disks
-        .into_iter()
-        .filter(|disk_pm| disk_pm.capacity == capacity_in_gigabytes as u32)
-        .collect();
-
-    let similar_disks_by_form_factor: Vec<DiskPowerModel> = similar_disks_by_capacity
         .into_iter()
         .filter(|disk_pm| disk_pm.form_factor == form_factor)
         .collect();
 
+    let similar_disks_by_capacity: Vec<DiskPowerSpecs> = similar_disks_by_form_factor
+        .into_iter()
+        .filter(|disk_pm| disk_pm.capacity == capacity_in_gigabytes as u32)
+        .collect();
+
     let disk_power_consumption = DiskPowerConsumption {
-        idle_consumption: similar_disks_by_form_factor[0].idle,
-        write_consumption: similar_disks_by_form_factor[0].write,
-        read_consumption: similar_disks_by_form_factor[0].read,
+        name: disk_name.to_string(),
+        idle_consumption: similar_disks_by_capacity[0].idle,
+        write_consumption: similar_disks_by_capacity[0].write,
+        read_consumption: similar_disks_by_capacity[0].read,
     };
 
     disk_power_consumption
+}
+
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+pub fn evaluate_proc_disk_state(process: IProcess) -> DiskState {
+    let is_writing = match process.disk_written {
+        0 => false,
+        _ => true,
+    };
+    let is_reading = match process.disk_read {
+        0 => false,
+        _ => true,
+    };
+
+    let state = match (is_writing, is_reading) {
+        (true, false) => DiskState::Write,
+        (true, true) => DiskState::ReadWrite,
+        (false, true) => DiskState::Read,
+        _ => DiskState::Unknown,
+    };
+
+    state
 }
 
 mod tests {
@@ -1124,14 +1169,14 @@ mod tests {
     fn get_a_power_estimation_for_a_given_disk() {
         use super::*;
 
-        let disk_first_row = DiskPowerModel {
+        let disk_first_row = DiskPowerSpecs {
             capacity: 1024,
             form_factor: HostBusAdapters::NVME,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
         };
-        let disk_second_row = DiskPowerModel {
+        let disk_second_row = DiskPowerSpecs {
             capacity: 2048,
             form_factor: HostBusAdapters::SATA,
             idle: 0.8,
@@ -1144,13 +1189,80 @@ mod tests {
         let disk_form_factor = HostBusAdapters::NVME;
         let disk_capacity: u64 = 1099511627776;
 
-        let disk_power_consumption = get_disk_power(disk_form_factor, disk_capacity, power_model);
+        let disk_power_consumption =
+            get_disk_power("/dev/nvme0", disk_form_factor, disk_capacity, power_model);
         assert_eq!(disk_power_consumption.idle_consumption, disk_first_row.idle);
         assert_eq!(
             disk_power_consumption.write_consumption,
             disk_first_row.write
         );
         assert_eq!(disk_power_consumption.read_consumption, disk_first_row.read);
+    }
+
+    #[cfg(all(test, target_os = "linux", feature = "disks_evaluation"))]
+    #[test]
+    fn get_process_disk_state() {
+        use super::*;
+
+        let mock_process = IProcess {
+            pid: Pid::from(1234),
+            owner: 0,
+            comm: String::from("/bin/bash"),
+            cmdline: vec![String::from("/bin/bash")],
+            cpu_usage_percentage: 1.5,
+            memory: 12345,
+            virtual_memory: 12345,
+            disk_read: 1234,
+            disk_written: 0,
+            total_disk_read: 12053045,
+            total_disk_written: 0,
+            stime: 1234,
+            utime: 1234,
+        };
+
+        let process_disk_state = evaluate_proc_disk_state(mock_process);
+
+        assert_eq!(process_disk_state, DiskState::Read);
+
+        let mock_process = IProcess {
+            pid: Pid::from(1234),
+            owner: 0,
+            comm: String::from("/bin/bash"),
+            cmdline: vec![String::from("/bin/bash")],
+            cpu_usage_percentage: 1.5,
+            memory: 12345,
+            virtual_memory: 12345,
+            disk_read: 0,
+            disk_written: 1234,
+            total_disk_read: 12053045,
+            total_disk_written: 0,
+            stime: 1234,
+            utime: 1234,
+        };
+
+        let process_disk_state = evaluate_proc_disk_state(mock_process);
+
+        assert_eq!(process_disk_state, DiskState::Write);
+
+        let mock_process = IProcess {
+            pid: Pid::from(1234),
+            owner: 0,
+            comm: String::from("/bin/bash"),
+            cmdline: vec![String::from("/bin/bash")],
+            cpu_usage_percentage: 1.5,
+            memory: 12345,
+            virtual_memory: 12345,
+            disk_read: 1234,
+            disk_written: 1234,
+            total_disk_read: 12053045,
+            total_disk_written: 0,
+            stime: 1234,
+            utime: 1234,
+        };
+
+        let process_disk_state = evaluate_proc_disk_state(mock_process);
+
+        assert_eq!(process_disk_state, DiskState::ReadWrite);
     }
 }
 
