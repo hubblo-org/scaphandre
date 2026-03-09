@@ -58,6 +58,8 @@ pub struct DiskPowerSpecs {
     idle: f32,
     write: f32,
     read: f32,
+    read_bytes: u64,
+    written_bytes: u64,
 }
 
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
@@ -993,6 +995,7 @@ pub fn find_adapter(disk_name: &str, path: &str) -> HostBusAdapters {
     adapter
 }
 
+/// Returns the idle, write and read power consumption for a given disk
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 pub fn get_disk_power(
     disk_name: &str,
@@ -1013,35 +1016,30 @@ pub fn get_disk_power(
         .filter(|disk_pm| disk_pm.capacity == capacity_in_gigabytes as u32)
         .collect();
 
-    let disk_power_consumption = DiskPowerConsumption {
+    DiskPowerConsumption {
         name: disk_name.to_string(),
         idle_consumption: similar_disks_by_capacity[0].idle,
         write_consumption: similar_disks_by_capacity[0].write,
         read_consumption: similar_disks_by_capacity[0].read,
-    };
-
-    disk_power_consumption
+    }
 }
 
+/// Returns the disk's current state : idle, reading and / or writing
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-pub fn evaluate_proc_disk_state(process: IProcess) -> DiskState {
-    let is_writing = match process.disk_written {
-        0 => false,
-        _ => true,
-    };
-    let is_reading = match process.disk_read {
-        0 => false,
-        _ => true,
-    };
+pub fn evaluate_disk_state(disk_specs: (DiskPowerSpecs, DiskPowerSpecs)) -> DiskState {
+    let read_bytes_difference = disk_specs.1.read_bytes - disk_specs.0.read_bytes;
 
-    let state = match (is_writing, is_reading) {
-        (true, false) => DiskState::Write,
+    let written_bytes_difference = disk_specs.1.written_bytes - disk_specs.0.written_bytes;
+
+    let is_reading = !matches!(read_bytes_difference, 0);
+    let is_writing = !matches!(written_bytes_difference, 0);
+    match (is_reading, is_writing) {
+        (false, true) => DiskState::Write,
+        (true, false) => DiskState::Read,
         (true, true) => DiskState::ReadWrite,
-        (false, true) => DiskState::Read,
+        (false, false) => DiskState::Idle,
         _ => DiskState::Unknown,
-    };
-
-    state
+    }
 }
 
 mod tests {
@@ -1107,7 +1105,7 @@ mod tests {
     #[cfg(all(test, target_os = "linux"))]
     #[cfg(feature = "disks_evaluation")]
     #[test]
-    fn get_storage_device_name() {
+    fn it_should_format_the_storage_device_name() {
         use super::*;
         let sysinfo_disk_name_nvme = "/dev/nvme0n1p3";
 
@@ -1125,7 +1123,7 @@ mod tests {
     #[cfg(all(test, target_os = "linux"))]
     #[cfg(feature = "disks_evaluation")]
     #[test]
-    fn get_nvme_driver() {
+    fn it_should_identify_the_driver_for_nvme() {
         use super::*;
         use std::{
             fs::{create_dir, create_dir_all, remove_dir_all},
@@ -1166,7 +1164,7 @@ mod tests {
     #[cfg(all(test, target_os = "linux"))]
     #[cfg(feature = "disks_evaluation")]
     #[test]
-    fn get_a_power_estimation_for_a_given_disk() {
+    fn it_should_give_a_power_estimation_for_a_given_disk_specifications() {
         use super::*;
 
         let disk_first_row = DiskPowerSpecs {
@@ -1175,6 +1173,8 @@ mod tests {
             idle: 0.05,
             write: 8.0,
             read: 3.0,
+            read_bytes: 0,
+            written_bytes: 0,
         };
         let disk_second_row = DiskPowerSpecs {
             capacity: 2048,
@@ -1182,6 +1182,8 @@ mod tests {
             idle: 0.8,
             write: 5.0,
             read: 2.0,
+            read_bytes: 0,
+            written_bytes: 0,
         };
         let power_model = PowerModel {
             disks: vec![disk_first_row.clone(), disk_second_row],
@@ -1201,69 +1203,114 @@ mod tests {
 
     #[cfg(all(test, target_os = "linux", feature = "disks_evaluation"))]
     #[test]
-    fn get_process_disk_state() {
+    fn it_should_return_the_current_disk_state() {
         use super::*;
 
-        let mock_process = IProcess {
-            pid: Pid::from(1234),
-            owner: 0,
-            comm: String::from("/bin/bash"),
-            cmdline: vec![String::from("/bin/bash")],
-            cpu_usage_percentage: 1.5,
-            memory: 12345,
-            virtual_memory: 12345,
-            disk_read: 1234,
-            disk_written: 0,
-            total_disk_read: 12053045,
-            total_disk_written: 0,
-            stime: 1234,
-            utime: 1234,
+        let first_disk_specs = DiskPowerSpecs {
+            capacity: 1024,
+            form_factor: HostBusAdapters::NVME,
+            idle: 0.05,
+            write: 8.0,
+            read: 3.0,
+            read_bytes: 1024,
+            written_bytes: 0,
         };
 
-        let process_disk_state = evaluate_proc_disk_state(mock_process);
-
-        assert_eq!(process_disk_state, DiskState::Read);
-
-        let mock_process = IProcess {
-            pid: Pid::from(1234),
-            owner: 0,
-            comm: String::from("/bin/bash"),
-            cmdline: vec![String::from("/bin/bash")],
-            cpu_usage_percentage: 1.5,
-            memory: 12345,
-            virtual_memory: 12345,
-            disk_read: 0,
-            disk_written: 1234,
-            total_disk_read: 12053045,
-            total_disk_written: 0,
-            stime: 1234,
-            utime: 1234,
+        let refreshed_disk_specs = DiskPowerSpecs {
+            capacity: 1024,
+            form_factor: HostBusAdapters::NVME,
+            idle: 0.05,
+            write: 8.0,
+            read: 3.0,
+            read_bytes: 1024,
+            written_bytes: 1024,
         };
 
-        let process_disk_state = evaluate_proc_disk_state(mock_process);
+        let disk_specs = (first_disk_specs, refreshed_disk_specs);
 
-        assert_eq!(process_disk_state, DiskState::Write);
+        let disk_state = evaluate_disk_state(disk_specs);
 
-        let mock_process = IProcess {
-            pid: Pid::from(1234),
-            owner: 0,
-            comm: String::from("/bin/bash"),
-            cmdline: vec![String::from("/bin/bash")],
-            cpu_usage_percentage: 1.5,
-            memory: 12345,
-            virtual_memory: 12345,
-            disk_read: 1234,
-            disk_written: 1234,
-            total_disk_read: 12053045,
-            total_disk_written: 0,
-            stime: 1234,
-            utime: 1234,
+        assert_eq!(disk_state, DiskState::Write);
+
+        let first_disk_specs = DiskPowerSpecs {
+            capacity: 1024,
+            form_factor: HostBusAdapters::NVME,
+            idle: 0.05,
+            write: 8.0,
+            read: 3.0,
+            read_bytes: 0,
+            written_bytes: 0,
         };
 
-        let process_disk_state = evaluate_proc_disk_state(mock_process);
+        let refreshed_disk_specs = DiskPowerSpecs {
+            capacity: 1024,
+            form_factor: HostBusAdapters::NVME,
+            idle: 0.05,
+            write: 8.0,
+            read: 3.0,
+            read_bytes: 1024,
+            written_bytes: 0,
+        };
 
-        assert_eq!(process_disk_state, DiskState::ReadWrite);
+        let disk_specs = (first_disk_specs, refreshed_disk_specs);
+
+        let disk_state = evaluate_disk_state(disk_specs);
+
+        assert_eq!(disk_state, DiskState::Read);
+
+        let first_disk_specs = DiskPowerSpecs {
+            capacity: 1024,
+            form_factor: HostBusAdapters::NVME,
+            idle: 0.05,
+            write: 8.0,
+            read: 3.0,
+            read_bytes: 0,
+            written_bytes: 0,
+        };
+
+        let refreshed_disk_specs = DiskPowerSpecs {
+            capacity: 1024,
+            form_factor: HostBusAdapters::NVME,
+            idle: 0.05,
+            write: 8.0,
+            read: 3.0,
+            read_bytes: 1024,
+            written_bytes: 1024,
+        };
+
+        let disk_specs = (first_disk_specs, refreshed_disk_specs);
+
+        let disk_state = evaluate_disk_state(disk_specs);
+
+        assert_eq!(disk_state, DiskState::ReadWrite);
+
+        let first_disk_specs = DiskPowerSpecs {
+            capacity: 1024,
+            form_factor: HostBusAdapters::NVME,
+            idle: 0.05,
+            write: 8.0,
+            read: 3.0,
+            read_bytes: 0,
+            written_bytes: 0,
+        };
+
+        let refreshed_disk_specs = DiskPowerSpecs {
+            capacity: 1024,
+            form_factor: HostBusAdapters::NVME,
+            idle: 0.05,
+            write: 8.0,
+            read: 3.0,
+            read_bytes: 0,
+            written_bytes: 0,
+        };
+
+        let disk_specs = (first_disk_specs, refreshed_disk_specs);
+
+        let disk_state = evaluate_disk_state(disk_specs);
+
+        assert_eq!(disk_state, DiskState::Idle);
     }
+
 }
 
 //  Copyright 2020 The scaphandre authors.
