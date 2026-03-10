@@ -33,6 +33,7 @@ hyper = { version = "0.14", features = ["full"], optional = true }
 tokio = { version = "1.26.0", features = ["full"], optional = true}
 sysinfo = { version = "0.38.4"}
 isahc = { version = "1.7.2", optional = true }
+csv = { version = "1.4.0", optional = true }
 
 [target.'cfg(target_os="linux")'.dependencies]
 procfs = { version = "0.15.0" }
@@ -52,5 +53,5 @@ json = ["serde", "serde_json"]
 containers = ["docker-sync", "k8s-sync"]
 warpten = ["warp10"]
 prometheuspush = ["isahc"]
-disks_evaluation = []
+disks_evaluation = ["csv"]
 qemu = []
