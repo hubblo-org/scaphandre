@@ -15,8 +15,7 @@ pub mod utils;
 use procfs::{CpuInfo, CpuTime, KernelStats};
 use std::{collections::HashMap, error::Error, fmt, fs, mem::size_of_val, str, time::Duration};
 #[allow(unused_imports)]
-use sysinfo::{CpuExt, Pid, System, SystemExt};
-use sysinfo::{DiskExt, DiskType};
+use sysinfo::{Pid, System, DiskKind};
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 use utils::{DiskPowerSpecs, FormFactor};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
@@ -369,7 +368,7 @@ impl Topology {
     fn refresh_procs(&mut self) {
         {
             let pt = &mut self.proc_tracker;
-            pt.sysinfo.refresh_processes();
+            pt.sysinfo.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
             let current_procs = pt
                 .sysinfo
                 .processes()
@@ -611,7 +610,7 @@ impl Topology {
     }
 
     pub fn get_load_avg(&self) -> Option<Vec<Record>> {
-        let load = self.get_proc_tracker().sysinfo.load_average();
+        let load = sysinfo::System::load_average();
         let timestamp = current_system_time_since_epoch();
         Some(vec![
             Record::new(timestamp, load.one.to_string(), units::Unit::Numeric),
@@ -623,22 +622,23 @@ impl Topology {
     pub fn get_disks(&self) -> HashMap<String, (String, HashMap<String, String>, Record)> {
         let timestamp = current_system_time_since_epoch();
         let mut res = HashMap::new();
-        for d in self.proc_tracker.sysinfo.disks() {
+        let disks = sysinfo::Disks::new_with_refreshed_list();
+        for d in &disks {
             let mut attributes = HashMap::new();
-            if let Ok(file_system) = str::from_utf8(d.file_system()) {
+            if let Some(file_system) = d.file_system().to_str() {
                 attributes.insert(String::from("disk_file_system"), String::from(file_system));
             }
             if let Some(mount_point) = d.mount_point().to_str() {
                 attributes.insert(String::from("disk_mount_point"), String::from(mount_point));
             }
-            match d.type_() {
-                DiskType::SSD => {
+            match d.kind() {
+                DiskKind::SSD => {
                     attributes.insert(String::from("disk_type"), String::from("SSD"));
                 }
-                DiskType::HDD => {
+                DiskKind::HDD => {
                     attributes.insert(String::from("disk_type"), String::from("HDD"));
                 }
-                DiskType::Unknown(_) => {
+                DiskKind::Unknown(_) => {
                     attributes.insert(String::from("disk_type"), String::from("Unknown"));
                 }
             }
@@ -1594,6 +1594,7 @@ impl Clone for CPUStat {
 struct Disk {
     name: String,
     form_factor: FormFactor,
+    capacity: u64,
     power_specs: DiskPowerSpecs,
 }
 
@@ -1651,6 +1652,13 @@ mod tests {
         for s in topo.get_sockets() {
             println!("{:?}", s.read_stats());
         }
+    }
+
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    #[test]
+    fn it_should_identify_disks_with_power_specs() {
+        
+
     }
 }
 

@@ -62,9 +62,14 @@ impl QemuExporter {
             for qp in qemu_processes {
                 if qp.len() > 2 {
                     let last = qp.first().unwrap();
-                    let vm_name = QemuExporter::get_vm_name_from_cmdline(
-                        &last.process.cmdline(&self.topology.proc_tracker).unwrap(),
-                    );
+                    let vm_name = QemuExporter::get_vm_name_from_cmdline(&[last
+                        .process
+                        .cmdline(&self.topology.proc_tracker)
+                        .unwrap()
+                        .iter()
+                        .map(|sl| sl.to_str().unwrap())
+                        .collect::<Vec<&str>>()
+                        .concat()]);
                     let first_domain_path = format!("{path}/{vm_name}/intel-rapl:0:0");
                     if fs::read_dir(&first_domain_path).is_err() {
                         match fs::create_dir_all(&first_domain_path) {
@@ -142,9 +147,9 @@ impl QemuExporter {
                         .process
                         .cmdline
                         .iter()
-                        .find(|x| x.contains("qemu-system"))
+                        .find(|x| x.to_str().unwrap().contains("qemu-system"))
                     {
-                        debug!("Found a process with {}", res);
+                        debug!("Found a process with {:?}", res);
                         let mut tmp: Vec<ProcessRecord> = vec![];
                         for p in vecp.iter() {
                             tmp.push(p.clone());

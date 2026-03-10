@@ -4,14 +4,12 @@ use procfs;
 use regex::Regex;
 #[allow(unused_imports)]
 use std::collections::HashMap;
+use std::ffi::OsString;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::{Duration, SystemTime};
-use sysinfo::{
-    get_current_pid, CpuExt, CpuRefreshKind, Pid, Process, ProcessExt, ProcessStatus, System,
-    SystemExt,
-};
+use sysinfo::{get_current_pid, CpuRefreshKind, Pid, Process, ProcessStatus, System};
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
@@ -129,7 +127,7 @@ pub struct IProcess {
     pub pid: Pid,
     pub owner: u32,
     pub comm: String,
-    pub cmdline: Vec<String>,
+    pub cmdline: Vec<OsString>,
     //CPU (all of them) time usage, as a percentage
     pub cpu_usage_percentage: f32,
     // Virtual memory used by the process (at the time the struct is created), in bytes
@@ -165,10 +163,16 @@ impl IProcess {
                     utime += stat.utime;
                 }
             }
+
+            let exe = match process.exe() {
+                Some(path) => String::from(path.to_str().unwrap()),
+                None => String::from("Unknown path to exe."),
+            };
+
             IProcess {
                 pid: process.pid(),
                 owner: 0,
-                comm: String::from(process.exe().to_str().unwrap()),
+                comm: exe,
                 cmdline: process.cmd().to_vec(),
                 cpu_usage_percentage: process.cpu_usage(),
                 memory: process.memory(),
@@ -200,7 +204,7 @@ impl IProcess {
     }
 
     /// Returns the command line of related to the process, as found by sysinfo.
-    pub fn cmdline(&self, proc_tracker: &ProcessTracker) -> Result<Vec<String>, Error> {
+    pub fn cmdline(&self, proc_tracker: &ProcessTracker) -> Result<Vec<OsString>, Error> {
         if let Some(p) = proc_tracker.sysinfo.process(self.pid) {
             Ok(p.cmd().to_vec())
         } else {
@@ -214,7 +218,7 @@ impl IProcess {
     /// Returns the executable string related to the process
     pub fn exe(&self, proc_tracker: &ProcessTracker) -> Result<PathBuf, String> {
         if let Some(p) = proc_tracker.sysinfo.process(self.pid) {
-            Ok(PathBuf::from(p.exe().to_str().unwrap()))
+            Ok(PathBuf::from(p.exe().unwrap().to_str().unwrap()))
         } else {
             Err(String::from("Couldn't get process."))
         }
@@ -328,19 +332,22 @@ impl ProcessTracker {
     }
 
     pub fn refresh(&mut self) {
-        self.sysinfo.refresh_components();
+        sysinfo::Components::new_with_refreshed_list()
+            .iter_mut()
+            .for_each(|component| component.refresh());
+
+        sysinfo::Disks::new_with_refreshed_list().refresh(true);
         self.sysinfo.refresh_memory();
-        self.sysinfo.refresh_disks();
-        self.sysinfo.refresh_disks_list();
         self.sysinfo
             .refresh_cpu_specifics(CpuRefreshKind::everything());
     }
 
     pub fn components(&mut self) -> Vec<String> {
         let mut res = vec![];
-        for c in self.sysinfo.components() {
-            res.push(format!("{c:?}"));
-        }
+        let components = sysinfo::Components::new_with_refreshed_list();
+        components
+            .iter()
+            .for_each(|component| res.push(format!("{component:?}")));
         res
     }
 
@@ -352,10 +359,10 @@ impl ProcessTracker {
     /// use scaphandre::sensors::utils::{ProcessTracker, IProcess};
     /// use scaphandre::sensors::Topology;
     /// use std::collections::HashMap;
-    /// use sysinfo::SystemExt;
+    /// use sysinfo::{System, ProcessesToUpdate};
     /// let mut pt = ProcessTracker::new(5);
-    /// pt.sysinfo.refresh_processes();
-    /// pt.sysinfo.refresh_cpu();
+    /// pt.sysinfo.refresh_processes(ProcessesToUpdate::All, true);
+    /// pt.sysinfo.refresh_cpu_all();
     /// let current_procs = pt
     ///     .sysinfo
     ///     .processes()
@@ -440,7 +447,12 @@ impl ProcessTracker {
     }
 
     pub fn get_cpu_frequency(&self) -> u64 {
-        self.sysinfo.global_cpu_info().frequency()
+        self.sysinfo
+            .cpus()
+            .iter()
+            .map(|cpu| cpu.frequency())
+            .reduce(|acc, frequency| acc + frequency)
+            .expect("It should return the sum of all CPUs frequencies")
     }
 
     /// Returns all vectors of process records linked to a running, sleeping, waiting or zombie process.
@@ -709,7 +721,7 @@ impl ProcessTracker {
                 let mut cmdline = String::from("");
                 while !cmdline_vec.is_empty() {
                     if !cmdline_vec.is_empty() {
-                        cmdline.push_str(&cmdline_vec.remove(0));
+                        cmdline.push_str(&cmdline_vec.remove(0).to_str().unwrap());
                     }
                 }
                 return Some(cmdline);
@@ -719,7 +731,7 @@ impl ProcessTracker {
     }
 
     pub fn get_cpu_usage_percentage(&self, pid: Pid, nb_cores: usize) -> f32 {
-        let cpu_current_usage = self.sysinfo.global_cpu_info().cpu_usage();
+        let cpu_current_usage = self.sysinfo.global_cpu_usage();
         if let Some(p) = self.sysinfo.process(pid) {
             (cpu_current_usage * p.cpu_usage() / 100.0) / nb_cores as f32
         } else {
@@ -779,7 +791,13 @@ impl ProcessTracker {
                 if regex_filter.is_match(process_exe.to_str().unwrap_or_default()) {
                     consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
                     consumers.sort_by(|x, y| y.1.cmp(&x.1));
-                } else if regex_filter.is_match(&process_cmdline.concat()) {
+                } else if regex_filter.is_match(
+                    &process_cmdline
+                        .iter()
+                        .map(|sl| sl.to_str().unwrap())
+                        .collect::<Vec<&str>>()
+                        .concat(),
+                ) {
                     consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
                     consumers.sort_by(|x, y| y.1.cmp(&x.1));
                 }
@@ -818,6 +836,7 @@ impl ProcessTracker {
                             ProcessStatus::Sleep => {}
                             ProcessStatus::Parked => {}
                             ProcessStatus::UninterruptibleDiskSleep => {}
+                            ProcessStatus::Suspended => {}
                             ProcessStatus::Unknown(_code) => {}
                         }
                     } else {
@@ -1063,7 +1082,12 @@ mod tests {
         let self_process_by_scaph = IProcess::myself(&topo.proc_tracker).unwrap();
 
         assert_eq!(
-            self_process_by_sysinfo.cmd().concat(),
+            self_process_by_sysinfo
+                .cmd()
+                .iter()
+                .map(|sl| sl.to_str().unwrap())
+                .collect::<Vec<&str>>()
+                .concat(),
             topo.proc_tracker
                 .get_process_cmdline(self_process_by_scaph.pid)
                 .unwrap()
