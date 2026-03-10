@@ -17,6 +17,8 @@ use std::{collections::HashMap, error::Error, fmt, fs, mem::size_of_val, str, ti
 #[allow(unused_imports)]
 use sysinfo::{CpuExt, Pid, System, SystemExt};
 use sysinfo::{DiskExt, DiskType};
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+use utils::{DiskPowerSpecs, FormFactor};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
@@ -1586,6 +1588,13 @@ impl Clone for CPUStat {
             system: self.system,
         }
     }
+}
+
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+struct Disk {
+    name: String,
+    form_factor: FormFactor,
+    power_specs: DiskPowerSpecs,
 }
 
 #[cfg(test)]

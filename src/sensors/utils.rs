@@ -14,6 +14,8 @@ use sysinfo::{
 };
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+use std::fmt;
 
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 #[derive(Clone, Debug, PartialEq)]
@@ -27,19 +29,19 @@ pub enum DiskState {
 
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 #[derive(Clone, Debug, PartialEq)]
-pub enum HostBusAdapters {
+pub enum FormFactor {
     NVME,
     SATA,
     Unknown,
 }
 
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-impl HostBusAdapters {
-    pub fn to_string(&self) -> String {
+impl std::fmt::Display for FormFactor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            HostBusAdapters::NVME => String::from("NVME"),
-            HostBusAdapters::SATA => String::from("SATA"),
-            HostBusAdapters::Unknown => String::from("Unknown form factor"),
+            FormFactor::NVME => write!(f, "NVME"),
+            FormFactor::SATA => write!(f, "SATA"),
+            FormFactor::Unknown => write!(f, "Unknown form factor"),
         }
     }
 }
@@ -54,7 +56,7 @@ pub struct PowerModel {
 #[derive(Clone, Debug, PartialEq)]
 pub struct DiskPowerSpecs {
     capacity: u32,
-    form_factor: HostBusAdapters,
+    form_factor: FormFactor,
     idle: f32,
     write: f32,
     read: f32,
@@ -902,9 +904,9 @@ pub fn format_disk_name(disk_path: &str) -> String {
     device_name
 }
 
-/// Return the host bus adadpter for a given stockage device, through driver identification
+/// Return the form factor for a given stockage device, through driver identification
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-pub fn find_adapter(disk_name: &str, path: &str) -> HostBusAdapters {
+pub fn find_form_factor(disk_name: &str, path: &str) -> FormFactor {
     let sys_block_path = PathBuf::from(path).join("sys/block");
     let disk_path = sys_block_path.join(disk_name);
     let disk_device_path = disk_path.join("device");
@@ -987,9 +989,9 @@ pub fn find_adapter(disk_name: &str, path: &str) -> HostBusAdapters {
     };
 
     let adapter = match driver_name.as_str() {
-        "nvme" => HostBusAdapters::NVME,
-        "ahci" => HostBusAdapters::SATA,
-        _ => HostBusAdapters::Unknown,
+        "nvme" => FormFactor::NVME,
+        "ahci" => FormFactor::SATA,
+        _ => FormFactor::Unknown,
     };
 
     adapter
@@ -999,7 +1001,7 @@ pub fn find_adapter(disk_name: &str, path: &str) -> HostBusAdapters {
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 pub fn get_disk_power(
     disk_name: &str,
-    form_factor: HostBusAdapters,
+    form_factor: FormFactor,
     capacity: u64,
     power_model: PowerModel,
 ) -> DiskPowerConsumption {
@@ -1156,9 +1158,9 @@ mod tests {
         let driver_sl_path = nvme_dev_path.join("driver");
         let _ = std::os::unix::fs::symlink(mock_driver_path, driver_sl_path);
 
-        let driver = find_adapter("nvme0n1", tmp_dir.to_str().unwrap());
+        let driver = find_form_factor("nvme0n1", tmp_dir.to_str().unwrap());
 
-        assert_eq!(driver, HostBusAdapters::NVME);
+        assert_eq!(driver, FormFactor::NVME);
     }
 
     #[cfg(all(test, target_os = "linux"))]
@@ -1169,7 +1171,7 @@ mod tests {
 
         let disk_first_row = DiskPowerSpecs {
             capacity: 1024,
-            form_factor: HostBusAdapters::NVME,
+            form_factor: FormFactor::NVME,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -1178,7 +1180,7 @@ mod tests {
         };
         let disk_second_row = DiskPowerSpecs {
             capacity: 2048,
-            form_factor: HostBusAdapters::SATA,
+            form_factor: FormFactor::SATA,
             idle: 0.8,
             write: 5.0,
             read: 2.0,
@@ -1188,7 +1190,7 @@ mod tests {
         let power_model = PowerModel {
             disks: vec![disk_first_row.clone(), disk_second_row],
         };
-        let disk_form_factor = HostBusAdapters::NVME;
+        let disk_form_factor = FormFactor::NVME;
         let disk_capacity: u64 = 1099511627776;
 
         let disk_power_consumption =
@@ -1208,7 +1210,7 @@ mod tests {
 
         let first_disk_specs = DiskPowerSpecs {
             capacity: 1024,
-            form_factor: HostBusAdapters::NVME,
+            form_factor: FormFactor::NVME,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -1218,7 +1220,7 @@ mod tests {
 
         let refreshed_disk_specs = DiskPowerSpecs {
             capacity: 1024,
-            form_factor: HostBusAdapters::NVME,
+            form_factor: FormFactor::NVME,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -1234,7 +1236,7 @@ mod tests {
 
         let first_disk_specs = DiskPowerSpecs {
             capacity: 1024,
-            form_factor: HostBusAdapters::NVME,
+            form_factor: FormFactor::NVME,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -1244,7 +1246,7 @@ mod tests {
 
         let refreshed_disk_specs = DiskPowerSpecs {
             capacity: 1024,
-            form_factor: HostBusAdapters::NVME,
+            form_factor: FormFactor::NVME,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -1260,7 +1262,7 @@ mod tests {
 
         let first_disk_specs = DiskPowerSpecs {
             capacity: 1024,
-            form_factor: HostBusAdapters::NVME,
+            form_factor: FormFactor::NVME,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -1270,7 +1272,7 @@ mod tests {
 
         let refreshed_disk_specs = DiskPowerSpecs {
             capacity: 1024,
-            form_factor: HostBusAdapters::NVME,
+            form_factor: FormFactor::NVME,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -1286,7 +1288,7 @@ mod tests {
 
         let first_disk_specs = DiskPowerSpecs {
             capacity: 1024,
-            form_factor: HostBusAdapters::NVME,
+            form_factor: FormFactor::NVME,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -1296,7 +1298,7 @@ mod tests {
 
         let refreshed_disk_specs = DiskPowerSpecs {
             capacity: 1024,
-            form_factor: HostBusAdapters::NVME,
+            form_factor: FormFactor::NVME,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -1310,7 +1312,6 @@ mod tests {
 
         assert_eq!(disk_state, DiskState::Idle);
     }
-
 }
 
 //  Copyright 2020 The scaphandre authors.
