@@ -2,6 +2,8 @@ use ordered_float::*;
 #[cfg(target_os = "linux")]
 use procfs;
 use regex::Regex;
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+use serde::Deserialize;
 #[allow(unused_imports)]
 use std::collections::HashMap;
 use std::ffi::OsString;
@@ -26,7 +28,7 @@ pub enum DiskState {
 }
 
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 pub enum FormFactor {
     NVME,
     SATA,
@@ -47,28 +49,29 @@ impl std::fmt::Display for FormFactor {
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct PowerModel {
-    disks: Vec<DiskPowerSpecs>,
+    pub disks: Vec<DiskPowerSpecs>,
 }
 
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct DiskPowerSpecs {
-    capacity: u32,
-    form_factor: FormFactor,
-    idle: f32,
-    write: f32,
-    read: f32,
-    read_bytes: u64,
-    written_bytes: u64,
+    pub capacity: u64,
+    pub form_factor: FormFactor,
+    pub idle: f32,
+    pub write: f32,
+    pub read: f32,
+    pub read_bytes: u64,
+    pub written_bytes: u64,
 }
 
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct DiskPowerConsumption {
-    name: String,
-    idle_consumption: f32,
-    read_consumption: f32,
-    write_consumption: f32,
+    pub form_factor: FormFactor,
+    pub capacity: u64,
+    pub idle: f32,
+    pub read: f32,
+    pub write: f32,
 }
 
 pub struct IStatM {
@@ -1023,7 +1026,7 @@ pub fn get_disk_power(
     form_factor: FormFactor,
     capacity: u64,
     power_model: PowerModel,
-) -> DiskPowerConsumption {
+) -> DiskPowerSpecs {
     let capacity_in_gigabytes = capacity / 1073741824;
 
     let similar_disks_by_form_factor: Vec<DiskPowerSpecs> = power_model
@@ -1032,18 +1035,15 @@ pub fn get_disk_power(
         .filter(|disk_pm| disk_pm.form_factor == form_factor)
         .collect();
 
+    println!("{similar_disks_by_form_factor:?}");
     let similar_disks_by_capacity: Vec<DiskPowerSpecs> = similar_disks_by_form_factor
         .into_iter()
-        .filter(|disk_pm| disk_pm.capacity == capacity_in_gigabytes as u32)
+        .filter(|disk_pm| disk_pm.capacity / 1073741824 == capacity_in_gigabytes)
         .collect();
 
-    DiskPowerConsumption {
-        name: disk_name.to_string(),
-        idle_consumption: similar_disks_by_capacity[0].idle,
-        write_consumption: similar_disks_by_capacity[0].write,
-        read_consumption: similar_disks_by_capacity[0].read,
+    similar_disks_by_capacity[0].clone()
     }
-}
+
 
 /// Returns the disk's current state : idle, reading and / or writing
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
@@ -1059,7 +1059,6 @@ pub fn evaluate_disk_state(disk_specs: (DiskPowerSpecs, DiskPowerSpecs)) -> Disk
         (true, false) => DiskState::Read,
         (true, true) => DiskState::ReadWrite,
         (false, false) => DiskState::Idle,
-        _ => DiskState::Unknown,
     }
 }
 
@@ -1219,12 +1218,12 @@ mod tests {
 
         let disk_power_consumption =
             get_disk_power("/dev/nvme0", disk_form_factor, disk_capacity, power_model);
-        assert_eq!(disk_power_consumption.idle_consumption, disk_first_row.idle);
+        assert_eq!(disk_power_consumption.idle, disk_first_row.idle);
         assert_eq!(
-            disk_power_consumption.write_consumption,
+            disk_power_consumption.write,
             disk_first_row.write
         );
-        assert_eq!(disk_power_consumption.read_consumption, disk_first_row.read);
+        assert_eq!(disk_power_consumption.read, disk_first_row.read);
     }
 
     #[cfg(all(test, target_os = "linux", feature = "disks_evaluation"))]

@@ -11,14 +11,19 @@ use msr_rapl::get_msr_value;
 pub mod powercap_rapl;
 pub mod units;
 pub mod utils;
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+use csv;
 #[cfg(target_os = "linux")]
 use procfs::{CpuInfo, CpuTime, KernelStats};
+use std::path::PathBuf;
 use std::{collections::HashMap, error::Error, fmt, fs, mem::size_of_val, str, time::Duration};
 #[allow(unused_imports)]
-use sysinfo::{Pid, System, DiskKind};
+use sysinfo::{DiskKind, Pid, System};
+use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 use utils::{DiskPowerSpecs, FormFactor};
-use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
+
+use crate::sensors::utils::{find_form_factor, get_disk_power, DiskPowerConsumption, PowerModel};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
 /// Sensor trait, the Sensor API.
@@ -368,7 +373,8 @@ impl Topology {
     fn refresh_procs(&mut self) {
         {
             let pt = &mut self.proc_tracker;
-            pt.sysinfo.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+            pt.sysinfo
+                .refresh_processes(sysinfo::ProcessesToUpdate::All, true);
             let current_procs = pt
                 .sysinfo
                 .processes()
@@ -1598,9 +1604,59 @@ struct Disk {
     power_specs: DiskPowerSpecs,
 }
 
+impl Disk {
+    fn new(disk_data: &sysinfo::Disk, power_specs: DiskPowerSpecs) -> Self {
+        let disk_name = String::from(disk_data.name().to_str().unwrap());
+        let disk_form_factor = find_form_factor(&disk_name, "/");
+        Disk {
+            name: disk_name,
+            capacity: disk_data.total_space(),
+            form_factor: disk_form_factor,
+            power_specs,
+        }
+    }
+
+    fn identify_power_specs(
+        form_factor: FormFactor,
+        capacity: u64,
+        read_bytes: u64,
+        written_bytes: u64,
+        file_path: PathBuf,
+    ) -> DiskPowerSpecs {
+        let mut records = csv::Reader::from_path(file_path).unwrap();
+
+        let mut disks_power: Vec<DiskPowerSpecs> = vec![];
+        let mut iter = records.deserialize();
+
+        if let Some(result) = iter.next() {
+            let consumption: DiskPowerConsumption = result.unwrap();
+
+            let power_specs = DiskPowerSpecs {
+                form_factor: form_factor.clone(),
+                capacity,
+                idle: consumption.idle,
+                read: consumption.read,
+                write: consumption.write,
+                read_bytes,
+                written_bytes
+            };
+
+            disks_power.push(power_specs);
+        }
+
+        let power_model = PowerModel { disks: disks_power };
+
+        let identified_specs_for_disk =
+            get_disk_power("/dev/x", form_factor, capacity, power_model);
+
+        identified_specs_for_disk
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
     #[test]
     fn get_proc_cpuinfo() {
         let cores = Topology::generate_cpu_cores().unwrap();
@@ -1657,8 +1713,35 @@ mod tests {
     #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
     #[test]
     fn it_should_identify_disks_with_power_specs() {
-        
+        let disks = sysinfo::Disks::new_with_refreshed_list();
 
+        disks.iter().for_each(|disk| {
+            let power_specs = DiskPowerSpecs {
+                capacity: disk.total_space(),
+                form_factor: FormFactor::NVME,
+                idle: 0.5,
+                read: 3.0,
+                write: 5.0,
+                read_bytes: 1024,
+                written_bytes: 2048,
+            };
+            let scaph_disk = Disk::new(disk, power_specs.clone());
+            assert_eq!(scaph_disk.name, String::from(disk.name().to_str().unwrap()));
+            assert_eq!(scaph_disk.capacity, disk.total_space());
+            assert_eq!(scaph_disk.power_specs.idle, power_specs.clone().idle);
+        });
+    }
+
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    #[test]
+    fn it_should_generate_the_power_specs_for_a_disk() {
+        let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
+        let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
+
+        let power_specs = Disk::identify_power_specs(FormFactor::NVME, 1099511627776, 1024, 1024, file_path);
+        assert_eq!(power_specs.idle, 0.5);
+        assert_eq!(power_specs.read, 3.0);
+        assert_eq!(power_specs.write, 5.0);
     }
 }
 
