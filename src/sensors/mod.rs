@@ -23,7 +23,9 @@ use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 use utils::{DiskPowerSpecs, FormFactor};
 
-use crate::sensors::utils::{find_form_factor, get_disk_power, DiskPowerConsumption, PowerModel};
+use crate::sensors::utils::{
+    evaluate_disk_state, find_form_factor, get_disk_power, DiskPowerConsumption, PowerModel,
+};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
 /// Sensor trait, the Sensor API.
@@ -1602,6 +1604,7 @@ struct Disk {
     form_factor: FormFactor,
     capacity: u64,
     power_specs: DiskPowerSpecs,
+    record_buffer: Vec<Record>,
 }
 
 impl Disk {
@@ -1613,6 +1616,7 @@ impl Disk {
             capacity: disk_data.total_space(),
             form_factor: disk_form_factor,
             power_specs,
+            record_buffer: vec![],
         }
     }
 
@@ -1638,7 +1642,7 @@ impl Disk {
                 read: consumption.read,
                 write: consumption.write,
                 read_bytes,
-                written_bytes
+                written_bytes,
             };
 
             disks_power.push(power_specs);
@@ -1650,6 +1654,51 @@ impl Disk {
             get_disk_power("/dev/x", form_factor, capacity, power_model);
 
         identified_specs_for_disk
+    }
+
+    fn generate_power_record(&self, new_power_specs: DiskPowerSpecs) -> Option<Record> {
+        let disk_specs = (self.power_specs.clone(), new_power_specs);
+        let disk_state = evaluate_disk_state(disk_specs);
+
+        let consumption = match disk_state {
+            utils::DiskState::Idle => Some(self.power_specs.idle),
+            utils::DiskState::Read => Some(self.power_specs.read),
+            utils::DiskState::Write => Some(self.power_specs.write),
+            _ => None,
+        };
+
+        if let Some(power_consumption) = consumption {
+            let converted_to_microwatts = power_consumption * 10e6;
+            let record = Record {
+                timestamp: current_system_time_since_epoch(),
+                value: converted_to_microwatts.to_string(),
+                unit: units::Unit::MicroWatt,
+            };
+            return Some(record);
+        }
+        None
+    }
+
+    fn generate_energy_record(records: (Record, Record)) -> Option<Record> {
+        let parsed_values = (
+            records.0.value.parse::<u64>(),
+            records.1.value.parse::<u64>(),
+        );
+
+        if let (Ok(earlier_value), Ok(later_value)) = parsed_values {
+            let microwatts_sum =
+                earlier_value + later_value;
+            let time_diff = records.1.timestamp.as_secs_f64() - records.0.timestamp.as_secs_f64();
+
+            let energy_consumed = microwatts_sum as f64 * time_diff;
+
+            return Some(Record {
+                timestamp: current_system_time_since_epoch(),
+                value: energy_consumed.to_string(),
+                unit: units::Unit::MicroJoule,
+            });
+        }
+        None
     }
 }
 
@@ -1738,10 +1787,65 @@ mod tests {
         let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
         let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
 
-        let power_specs = Disk::identify_power_specs(FormFactor::NVME, 1099511627776, 1024, 1024, file_path);
+        let power_specs =
+            Disk::identify_power_specs(FormFactor::NVME, 1099511627776, 1024, 1024, file_path);
         assert_eq!(power_specs.idle, 0.5);
         assert_eq!(power_specs.read, 3.0);
         assert_eq!(power_specs.write, 5.0);
+    }
+
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    #[test]
+    fn it_should_generate_record_for_power_consumption_for_a_given_disk() {
+        let disks = sysinfo::Disks::new_with_refreshed_list();
+
+        disks.iter().for_each(|disk| {
+            let power_specs = DiskPowerSpecs {
+                capacity: disk.total_space(),
+                form_factor: FormFactor::NVME,
+                idle: 0.5,
+                read: 3.0,
+                write: 5.0,
+                read_bytes: 1024,
+                written_bytes: 2048,
+            };
+
+            let new_power_specs = DiskPowerSpecs {
+                capacity: disk.total_space(),
+                form_factor: FormFactor::NVME,
+                idle: 0.5,
+                read: 3.0,
+                write: 5.0,
+                read_bytes: 1024,
+                written_bytes: 2048,
+            };
+
+            let scaph_disk = Disk::new(disk, power_specs);
+            let scaph_disk_record = scaph_disk.generate_power_record(new_power_specs).unwrap();
+            assert_eq!(Some(scaph_disk_record.value), Some(String::from("5000000")));
+        });
+    }
+
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    #[test]
+    fn it_should_generate_record_for_energy_consumption_for_a_given_disk() {
+        let two_seconds = std::time::Duration::new(2, 0);
+        let four_seconds = std::time::Duration::new(4, 0);
+        let first_record = Record {
+            timestamp: two_seconds,
+            value: String::from("5000000"),
+            unit: units::Unit::MicroWatt,
+        };
+
+        let second_record = Record {
+            timestamp: four_seconds,
+            value: String::from("3000000"),
+            unit: units::Unit::MicroWatt,
+        };
+
+        let energy_record = Disk::generate_energy_record((first_record, second_record)).unwrap();
+
+        assert_eq!(Some(energy_record.value), Some(String::from("16000000")));
     }
 }
 
