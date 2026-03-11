@@ -11,8 +11,6 @@ use msr_rapl::get_msr_value;
 pub mod powercap_rapl;
 pub mod units;
 pub mod utils;
-#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-use csv;
 #[cfg(target_os = "linux")]
 use procfs::{CpuInfo, CpuTime, KernelStats};
 use std::path::PathBuf;
@@ -20,6 +18,9 @@ use std::{collections::HashMap, error::Error, fmt, fs, mem::size_of_val, str, ti
 #[allow(unused_imports)]
 use sysinfo::{DiskKind, Pid, System};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
+
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+use csv;
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 use utils::{DiskPowerSpecs, FormFactor};
 
@@ -1605,6 +1606,8 @@ struct Disk {
     capacity: u64,
     power_specs: DiskPowerSpecs,
     record_buffer: Vec<Record>,
+    max_buffer_size: u16,
+    power_model_path: String,
 }
 
 impl Disk {
@@ -1617,6 +1620,8 @@ impl Disk {
             form_factor: disk_form_factor,
             power_specs,
             record_buffer: vec![],
+            max_buffer_size: 1,
+            power_model_path: String::from("No power_model_path provided"),
         }
     }
 
@@ -1686,8 +1691,7 @@ impl Disk {
         );
 
         if let (Ok(earlier_value), Ok(later_value)) = parsed_values {
-            let microwatts_sum =
-                earlier_value + later_value;
+            let microwatts_sum = earlier_value + later_value;
             let time_diff = records.1.timestamp.as_secs_f64() - records.0.timestamp.as_secs_f64();
 
             let energy_consumed = microwatts_sum as f64 * time_diff;
@@ -1700,6 +1704,34 @@ impl Disk {
         }
         None
     }
+
+    fn add_record(&mut self, record: Record) {
+        self.record_buffer.push(record);
+    }
+}
+
+impl RecordGenerator for Disk {
+    fn clean_old_records(&mut self) {
+        let record_size = size_of_val(&self.record_buffer[0]) as u16;
+        let current_size: u16 = (record_size * (self.record_buffer.len() as u16)) as u16;
+        let max_size = self.max_buffer_size * 1024;
+        if current_size >= max_size {
+            let size_difference = current_size - max_size;
+            if size_difference > record_size {
+                let number_of_records_to_delete = size_difference / record_size;
+                for _ in 1..number_of_records_to_delete {
+                    if !self.record_buffer.is_empty() {
+                        self.record_buffer.remove(0);
+                    }
+                }
+            }
+        }
+    }
+    fn get_records_passive(&self) -> Vec<Record> {
+        let records_copy = self.record_buffer.to_vec();
+        records_copy
+    }
+    fn refresh_record(&mut self) {}
 }
 
 #[cfg(test)]
@@ -1846,6 +1878,119 @@ mod tests {
         let energy_record = Disk::generate_energy_record((first_record, second_record)).unwrap();
 
         assert_eq!(Some(energy_record.value), Some(String::from("16000000")));
+    }
+
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    #[test]
+    fn it_should_add_a_record_to_the_buffer_for_a_given_disk() {
+        let disks = sysinfo::Disks::new_with_refreshed_list();
+
+        disks.iter().for_each(|disk| {
+            let power_specs = DiskPowerSpecs {
+                capacity: disk.total_space(),
+                form_factor: FormFactor::NVME,
+                idle: 0.5,
+                read: 3.0,
+                write: 5.0,
+                read_bytes: 1024,
+                written_bytes: 2048,
+            };
+
+            let new_power_specs = DiskPowerSpecs {
+                capacity: disk.total_space(),
+                form_factor: FormFactor::NVME,
+                idle: 0.5,
+                read: 3.0,
+                write: 5.0,
+                read_bytes: 1024,
+                written_bytes: 2048,
+            };
+
+            let mut scaph_disk = Disk::new(disk, power_specs);
+            let scaph_disk_record = scaph_disk.generate_power_record(new_power_specs).unwrap();
+            scaph_disk.add_record(scaph_disk_record);
+
+            assert_eq!(scaph_disk.record_buffer.len(), 1);
+        });
+    }
+
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    #[test]
+    fn it_should_clean_old_records_from_the_buffer_for_a_given_disk() {
+        let disks = sysinfo::Disks::new_with_refreshed_list();
+
+        disks.iter().for_each(|disk| {
+            let power_specs = DiskPowerSpecs {
+                capacity: disk.total_space(),
+                form_factor: FormFactor::NVME,
+                idle: 0.5,
+                read: 3.0,
+                write: 5.0,
+                read_bytes: 1024,
+                written_bytes: 2048,
+            };
+
+            let new_power_specs = DiskPowerSpecs {
+                capacity: disk.total_space(),
+                form_factor: FormFactor::NVME,
+                idle: 0.5,
+                read: 3.0,
+                write: 5.0,
+                read_bytes: 1024,
+                written_bytes: 2048,
+            };
+
+            let mut scaph_disk = Disk::new(disk, power_specs);
+            let scaph_disk_record = scaph_disk.generate_power_record(new_power_specs).unwrap();
+            let max_size = 1024;
+            let size_of_record = size_of_val(&scaph_disk_record);
+            let max_number_of_records = max_size / size_of_record;
+
+            while scaph_disk.record_buffer.len() != max_number_of_records {
+                scaph_disk.add_record(scaph_disk_record.clone());
+            }
+
+            scaph_disk.clean_old_records();
+
+            assert_eq!(scaph_disk.record_buffer.len(), max_number_of_records);
+        });
+    }
+
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    #[test]
+    fn it_should_get_a_copy_of_a_disk_records() {
+        let disks = sysinfo::Disks::new_with_refreshed_list();
+
+        disks.iter().for_each(|disk| {
+            let power_specs = DiskPowerSpecs {
+                capacity: disk.total_space(),
+                form_factor: FormFactor::NVME,
+                idle: 0.5,
+                read: 3.0,
+                write: 5.0,
+                read_bytes: 1024,
+                written_bytes: 2048,
+            };
+
+            let new_power_specs = DiskPowerSpecs {
+                capacity: disk.total_space(),
+                form_factor: FormFactor::NVME,
+                idle: 0.5,
+                read: 3.0,
+                write: 5.0,
+                read_bytes: 1024,
+                written_bytes: 2048,
+            };
+
+            let mut scaph_disk = Disk::new(disk, power_specs);
+            let scaph_disk_record = scaph_disk.generate_power_record(new_power_specs).unwrap();
+            scaph_disk.add_record(scaph_disk_record.clone());
+            scaph_disk.add_record(scaph_disk_record.clone());
+            scaph_disk.add_record(scaph_disk_record);
+
+            let records_copy = scaph_disk.get_records_passive();
+            assert_eq!(records_copy.len(), 3);
+        });
     }
 }
 
