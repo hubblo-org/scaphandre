@@ -17,7 +17,7 @@ pub enum DiskState {
     Unknown,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize)]
 pub enum FormFactor {
     NVME,
     SATA,
@@ -58,25 +58,27 @@ pub struct DiskPowerConsumption {
     pub read: f32,
     pub write: f32,
 }
+
+#[derive(Clone, Debug)]
 struct Disk {
     name: String,
     form_factor: FormFactor,
     capacity: u64,
-    power_specs: DiskPowerSpecs,
+    power_specs: Option<DiskPowerSpecs>,
     record_buffer: Vec<Record>,
     max_buffer_size: u16,
     power_model_path: String,
 }
 
 impl Disk {
-    fn new(disk_data: &sysinfo::Disk, power_specs: DiskPowerSpecs) -> Self {
+    fn new(disk_data: &sysinfo::Disk) -> Self {
         let disk_name = String::from(disk_data.name().to_str().unwrap());
         let disk_form_factor = find_form_factor(&disk_name, "/");
         Disk {
             name: disk_name,
             capacity: disk_data.total_space(),
             form_factor: disk_form_factor,
-            power_specs,
+            power_specs: None,
             record_buffer: vec![],
             max_buffer_size: 1,
             power_model_path: String::from("No power_model_path provided"),
@@ -84,12 +86,11 @@ impl Disk {
     }
 
     fn identify_power_specs(
-        form_factor: FormFactor,
-        capacity: u64,
+        &mut self,
         read_bytes: u64,
         written_bytes: u64,
         file_path: PathBuf,
-    ) -> DiskPowerSpecs {
+    ) {
         let mut records = csv::Reader::from_path(file_path).unwrap();
 
         let mut disks_power: Vec<DiskPowerSpecs> = vec![];
@@ -99,8 +100,8 @@ impl Disk {
             let consumption: DiskPowerConsumption = result.unwrap();
 
             let power_specs = DiskPowerSpecs {
-                form_factor: form_factor.clone(),
-                capacity,
+                form_factor: self.form_factor,
+                capacity: self.capacity / 1073741824,
                 idle: consumption.idle,
                 read: consumption.read,
                 write: consumption.write,
@@ -113,20 +114,18 @@ impl Disk {
 
         let power_model = PowerModel { disks: disks_power };
 
-        let identified_specs_for_disk =
-            get_disk_power("/dev/x", form_factor, capacity, power_model);
+        let identified_specs_for_disk = self.get_disk_power(power_model);
 
-        identified_specs_for_disk
+        self.power_specs = Some(identified_specs_for_disk);
     }
 
     fn generate_power_record(&self, new_power_specs: DiskPowerSpecs) -> Option<Record> {
-        let disk_specs = (self.power_specs.clone(), new_power_specs);
-        let disk_state = evaluate_disk_state(disk_specs);
+        let disk_state = self.evaluate_disk_state(new_power_specs);
 
         let consumption = match disk_state {
-            DiskState::Idle => Some(self.power_specs.idle),
-            DiskState::Read => Some(self.power_specs.read),
-            DiskState::Write => Some(self.power_specs.write),
+            DiskState::Idle => Some(self.power_specs.clone().unwrap().idle),
+            DiskState::Read => Some(self.power_specs.clone().unwrap().read),
+            DiskState::Write => Some(self.power_specs.clone().unwrap().write),
             _ => None,
         };
 
@@ -165,6 +164,42 @@ impl Disk {
 
     fn add_record(&mut self, record: Record) {
         self.record_buffer.push(record);
+    }
+
+    /// Returns the idle, write and read power consumption for a given disk
+    pub fn get_disk_power(&self, power_model: PowerModel) -> DiskPowerSpecs {
+        let capacity_in_gigabytes = self.capacity / 1073741824;
+
+        let similar_disks_by_form_factor: Vec<DiskPowerSpecs> = power_model
+            .disks
+            .into_iter()
+            .filter(|disk_pm| disk_pm.form_factor == self.form_factor)
+            .collect();
+
+        let similar_disks_by_capacity: Vec<DiskPowerSpecs> = similar_disks_by_form_factor
+            .into_iter()
+            .filter(|disk_pm| disk_pm.capacity == capacity_in_gigabytes as u64)
+            .collect();
+
+        similar_disks_by_capacity[0].clone()
+    }
+
+    /// Returns the disk's current state : idle, reading and / or writing
+    fn evaluate_disk_state(&self, new_disk_specs: DiskPowerSpecs) -> DiskState {
+        let read_bytes_difference =
+            self.power_specs.clone().unwrap().read_bytes.overflowing_sub(new_disk_specs.read_bytes).0;
+
+        let written_bytes_difference =
+            self.power_specs.clone().unwrap().written_bytes.overflowing_sub(new_disk_specs.written_bytes).0;
+
+        let is_reading = !matches!(read_bytes_difference, 0);
+        let is_writing = !matches!(written_bytes_difference, 0);
+        match (is_reading, is_writing) {
+            (false, true) => DiskState::Write,
+            (true, false) => DiskState::Read,
+            (true, true) => DiskState::ReadWrite,
+            (false, false) => DiskState::Idle,
+        }
     }
 }
 
@@ -315,66 +350,17 @@ pub fn find_form_factor(disk_name: &str, path: &str) -> FormFactor {
     adapter
 }
 
-/// Returns the idle, write and read power consumption for a given disk
-pub fn get_disk_power(
-    disk_name: &str,
-    form_factor: FormFactor,
-    capacity: u64,
-    power_model: PowerModel,
-) -> DiskPowerSpecs {
-    let capacity_in_gigabytes = capacity / 1073741824;
-
-    let similar_disks_by_form_factor: Vec<DiskPowerSpecs> = power_model
-        .disks
-        .into_iter()
-        .filter(|disk_pm| disk_pm.form_factor == form_factor)
-        .collect();
-
-    let similar_disks_by_capacity: Vec<DiskPowerSpecs> = similar_disks_by_form_factor
-        .into_iter()
-        .filter(|disk_pm| disk_pm.capacity == capacity_in_gigabytes as u64)
-        .collect();
-
-    similar_disks_by_capacity[0].clone()
-}
-
-/// Returns the disk's current state : idle, reading and / or writing
-pub fn evaluate_disk_state(disk_specs: (DiskPowerSpecs, DiskPowerSpecs)) -> DiskState {
-    let read_bytes_difference = disk_specs.1.read_bytes - disk_specs.0.read_bytes;
-
-    let written_bytes_difference = disk_specs.1.written_bytes - disk_specs.0.written_bytes;
-
-    let is_reading = !matches!(read_bytes_difference, 0);
-    let is_writing = !matches!(written_bytes_difference, 0);
-    match (is_reading, is_writing) {
-        (false, true) => DiskState::Write,
-        (true, false) => DiskState::Read,
-        (true, true) => DiskState::ReadWrite,
-        (false, false) => DiskState::Idle,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn it_should_identify_disks_with_power_specs() {
+    fn it_should_create_a_new_disk_from_sysinfo() {
         let disks = sysinfo::Disks::new_with_refreshed_list();
 
         disks.iter().for_each(|disk| {
-            let power_specs = DiskPowerSpecs {
-                capacity: disk.total_space(),
-                form_factor: FormFactor::NVME,
-                idle: 0.5,
-                read: 3.0,
-                write: 5.0,
-                read_bytes: 1024,
-                written_bytes: 2048,
-            };
-            let scaph_disk = Disk::new(disk, power_specs.clone());
+            let scaph_disk = Disk::new(disk);
             assert_eq!(scaph_disk.name, String::from(disk.name().to_str().unwrap()));
             assert_eq!(scaph_disk.capacity, disk.total_space());
-            assert_eq!(scaph_disk.power_specs.idle, power_specs.clone().idle);
         });
     }
 
@@ -382,43 +368,65 @@ mod tests {
     fn it_should_generate_the_power_specs_for_a_disk() {
         let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
         let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
+        let ten_gigabytes_in_bytes = 1099511627776;
 
-        let power_specs =
-            Disk::identify_power_specs(FormFactor::NVME, 1099511627776, 1024, 1024, file_path);
-        assert_eq!(power_specs.idle, 0.5);
-        assert_eq!(power_specs.read, 3.0);
-        assert_eq!(power_specs.write, 5.0);
+        let mut disk = Disk {
+            name: String::from("/dev/nvme0"),
+            capacity: ten_gigabytes_in_bytes,
+            form_factor: FormFactor::NVME,
+            max_buffer_size: 1,
+            power_model_path: String::from("/"),
+            power_specs: None,
+            record_buffer: vec![],
+        };
+
+        disk.identify_power_specs(
+            1024,
+            1024,
+            file_path,
+        );
+
+        assert_eq!(disk.clone().power_specs.unwrap().capacity, 1024);
+        assert_eq!(disk.clone().power_specs.unwrap().idle, 0.5);
+        assert_eq!(disk.clone().power_specs.unwrap().read, 3.0);
+        assert_eq!(disk.clone().power_specs.unwrap().write, 5.0);
     }
 
     #[test]
     fn it_should_generate_record_for_power_consumption_for_a_given_disk() {
-        let disks = sysinfo::Disks::new_with_refreshed_list();
+        let ten_gigabytes_in_bytes = 1099511627776;
+        let power_specs = DiskPowerSpecs {
+            capacity: ten_gigabytes_in_bytes,
+            form_factor: FormFactor::NVME,
+            idle: 0.5,
+            read: 3.0,
+            write: 5.0,
+            read_bytes: 1024,
+            written_bytes: 2048,
+        };
 
-        disks.iter().for_each(|disk| {
-            let power_specs = DiskPowerSpecs {
-                capacity: disk.total_space(),
-                form_factor: FormFactor::NVME,
-                idle: 0.5,
-                read: 3.0,
-                write: 5.0,
-                read_bytes: 1024,
-                written_bytes: 2048,
-            };
+        let disk = Disk {
+            name: String::from("/dev/nvme0"),
+            capacity: ten_gigabytes_in_bytes,
+            form_factor: FormFactor::NVME,
+            max_buffer_size: 1,
+            power_model_path: String::from("/"),
+            power_specs: Some(power_specs),
+            record_buffer: vec![],
+        };
 
-            let new_power_specs = DiskPowerSpecs {
-                capacity: disk.total_space(),
-                form_factor: FormFactor::NVME,
-                idle: 0.5,
-                read: 3.0,
-                write: 5.0,
-                read_bytes: 1024,
-                written_bytes: 2048,
-            };
+        let new_power_specs = DiskPowerSpecs {
+            capacity: ten_gigabytes_in_bytes,
+            form_factor: FormFactor::NVME,
+            idle: 0.5,
+            read: 3.0,
+            write: 5.0,
+            read_bytes: 1024,
+            written_bytes: 2048,
+        };
 
-            let scaph_disk = Disk::new(disk, power_specs);
-            let scaph_disk_record = scaph_disk.generate_power_record(new_power_specs).unwrap();
-            assert_eq!(Some(scaph_disk_record.value), Some(String::from("5000000")));
-        });
+        let scaph_disk_record = disk.generate_power_record(new_power_specs).unwrap();
+        assert_eq!(Some(scaph_disk_record.value), Some(String::from("5000000")));
     }
 
     #[test]
@@ -444,112 +452,130 @@ mod tests {
 
     #[test]
     fn it_should_add_a_record_to_the_buffer_for_a_given_disk() {
-        let disks = sysinfo::Disks::new_with_refreshed_list();
+        let ten_gigabytes_in_bytes = 1099511627776;
 
-        disks.iter().for_each(|disk| {
-            let power_specs = DiskPowerSpecs {
-                capacity: disk.total_space(),
-                form_factor: FormFactor::NVME,
-                idle: 0.5,
-                read: 3.0,
-                write: 5.0,
-                read_bytes: 1024,
-                written_bytes: 2048,
-            };
+        let power_specs = DiskPowerSpecs {
+            capacity: ten_gigabytes_in_bytes,
+            form_factor: FormFactor::NVME,
+            idle: 0.5,
+            read: 3.0,
+            write: 5.0,
+            read_bytes: 1024,
+            written_bytes: 2048,
+        };
+        let mut disk = Disk {
+            name: String::from("/dev/nvme0"),
+            capacity: ten_gigabytes_in_bytes,
+            form_factor: FormFactor::NVME,
+            max_buffer_size: 1,
+            power_model_path: String::from("/"),
+            power_specs: Some(power_specs),
+            record_buffer: vec![],
+        };
 
-            let new_power_specs = DiskPowerSpecs {
-                capacity: disk.total_space(),
-                form_factor: FormFactor::NVME,
-                idle: 0.5,
-                read: 3.0,
-                write: 5.0,
-                read_bytes: 1024,
-                written_bytes: 2048,
-            };
+        let new_power_specs = DiskPowerSpecs {
+            capacity: ten_gigabytes_in_bytes,
+            form_factor: FormFactor::NVME,
+            idle: 0.5,
+            read: 3.0,
+            write: 5.0,
+            read_bytes: 1024,
+            written_bytes: 2048,
+        };
 
-            let mut scaph_disk = Disk::new(disk, power_specs);
-            let scaph_disk_record = scaph_disk.generate_power_record(new_power_specs).unwrap();
-            scaph_disk.add_record(scaph_disk_record);
+        let scaph_disk_record = disk.generate_power_record(new_power_specs).unwrap();
+        disk.add_record(scaph_disk_record);
 
-            assert_eq!(scaph_disk.record_buffer.len(), 1);
-        });
+        assert_eq!(disk.record_buffer.len(), 1);
     }
 
     #[test]
     fn it_should_clean_old_records_from_the_buffer_for_a_given_disk() {
-        let disks = sysinfo::Disks::new_with_refreshed_list();
+        let ten_gigabytes_in_bytes = 1099511627776;
 
-        disks.iter().for_each(|disk| {
-            let power_specs = DiskPowerSpecs {
-                capacity: disk.total_space(),
-                form_factor: FormFactor::NVME,
-                idle: 0.5,
-                read: 3.0,
-                write: 5.0,
-                read_bytes: 1024,
-                written_bytes: 2048,
-            };
+        let power_specs = DiskPowerSpecs {
+            capacity: ten_gigabytes_in_bytes,
+            form_factor: FormFactor::NVME,
+            idle: 0.5,
+            read: 3.0,
+            write: 5.0,
+            read_bytes: 1024,
+            written_bytes: 2048,
+        };
+        let mut disk = Disk {
+            name: String::from("/dev/nvme0"),
+            capacity: ten_gigabytes_in_bytes,
+            form_factor: FormFactor::NVME,
+            max_buffer_size: 1,
+            power_model_path: String::from("/"),
+            power_specs: Some(power_specs),
+            record_buffer: vec![],
+        };
 
-            let new_power_specs = DiskPowerSpecs {
-                capacity: disk.total_space(),
-                form_factor: FormFactor::NVME,
-                idle: 0.5,
-                read: 3.0,
-                write: 5.0,
-                read_bytes: 1024,
-                written_bytes: 2048,
-            };
+        let new_power_specs = DiskPowerSpecs {
+            capacity: ten_gigabytes_in_bytes,
+            form_factor: FormFactor::NVME,
+            idle: 0.5,
+            read: 3.0,
+            write: 5.0,
+            read_bytes: 1024,
+            written_bytes: 2048,
+        };
 
-            let mut scaph_disk = Disk::new(disk, power_specs);
-            let scaph_disk_record = scaph_disk.generate_power_record(new_power_specs).unwrap();
-            let max_size = 1024;
-            let size_of_record = size_of_val(&scaph_disk_record);
-            let max_number_of_records = max_size / size_of_record;
+        let scaph_disk_record = disk.generate_power_record(new_power_specs).unwrap();
+        let max_size = 1024;
+        let size_of_record = size_of_val(&scaph_disk_record);
+        let max_number_of_records = max_size / size_of_record;
 
-            while scaph_disk.record_buffer.len() != max_number_of_records {
-                scaph_disk.add_record(scaph_disk_record.clone());
-            }
+        while disk.record_buffer.len() != max_number_of_records {
+            disk.add_record(scaph_disk_record.clone());
+        }
 
-            scaph_disk.clean_old_records();
+        disk.clean_old_records();
 
-            assert_eq!(scaph_disk.record_buffer.len(), max_number_of_records);
-        });
+        assert_eq!(disk.record_buffer.len(), max_number_of_records);
     }
 
     #[test]
     fn it_should_get_a_copy_of_a_disk_records() {
-        let disks = sysinfo::Disks::new_with_refreshed_list();
+        let ten_gigabytes_in_bytes = 1099511627776;
 
-        disks.iter().for_each(|disk| {
-            let power_specs = DiskPowerSpecs {
-                capacity: 1024,
-                form_factor: FormFactor::NVME,
-                idle: 0.5,
-                read: 3.0,
-                write: 5.0,
-                read_bytes: 1024,
-                written_bytes: 2048,
-            };
+        let power_specs = DiskPowerSpecs {
+            capacity: ten_gigabytes_in_bytes,
+            form_factor: FormFactor::NVME,
+            idle: 0.5,
+            read: 3.0,
+            write: 5.0,
+            read_bytes: 1024,
+            written_bytes: 2048,
+        };
+        let mut disk = Disk {
+            name: String::from("/dev/nvme0"),
+            capacity: ten_gigabytes_in_bytes,
+            form_factor: FormFactor::NVME,
+            max_buffer_size: 1,
+            power_model_path: String::from("/"),
+            power_specs: Some(power_specs),
+            record_buffer: vec![],
+        };
 
-            let new_power_specs = DiskPowerSpecs {
-                capacity: 1024,
-                form_factor: FormFactor::NVME,
-                idle: 0.5,
-                read: 3.0,
-                write: 5.0,
-                read_bytes: 1024,
-                written_bytes: 2048,
-            };
+        let new_power_specs = DiskPowerSpecs {
+            capacity: 1024,
+            form_factor: FormFactor::NVME,
+            idle: 0.5,
+            read: 3.0,
+            write: 5.0,
+            read_bytes: 1024,
+            written_bytes: 2048,
+        };
 
-            let mut scaph_disk = Disk::new(disk, power_specs);
-            let scaph_disk_record = scaph_disk.generate_power_record(new_power_specs).unwrap();
-            scaph_disk.add_record(scaph_disk_record.clone());
-            scaph_disk.add_record(scaph_disk_record.clone());
-            scaph_disk.add_record(scaph_disk_record);
+        let scaph_disk_record = disk.generate_power_record(new_power_specs).unwrap();
+        disk.add_record(scaph_disk_record.clone());
+        disk.add_record(scaph_disk_record.clone());
+        disk.add_record(scaph_disk_record);
 
-            let records_copy = scaph_disk.get_records_passive();
-            assert_eq!(records_copy.len(), 3);
-        });
+        let records_copy = disk.get_records_passive();
+        assert_eq!(records_copy.len(), 3);
     }
 
     #[cfg(all(test, target_os = "linux"))]
@@ -611,11 +637,8 @@ mod tests {
         assert_eq!(driver, FormFactor::NVME);
     }
 
-    #[cfg(all(test, target_os = "linux"))]
-    #[cfg(feature = "disks_evaluation")]
     #[test]
     fn it_should_give_a_power_estimation_for_a_given_disk_specifications() {
-        use super::*;
 
         let disk_first_row = DiskPowerSpecs {
             capacity: 1024,
@@ -635,24 +658,28 @@ mod tests {
             read_bytes: 0,
             written_bytes: 0,
         };
+
+        let disk = Disk {
+            name: String::from("/dev/nvme0"),
+            capacity: 1099511627776,
+            form_factor: FormFactor::NVME,
+            max_buffer_size: 1,
+            power_model_path: String::from("/"),
+            power_specs: Some(disk_first_row.clone()),
+            record_buffer: vec![],
+        };
         let power_model = PowerModel {
             disks: vec![disk_first_row.clone(), disk_second_row],
         };
-        let disk_form_factor = FormFactor::NVME;
-        let disk_capacity: u64 = 1099511627776;
 
-        let disk_power_consumption =
-            get_disk_power("/dev/nvme0", disk_form_factor, disk_capacity, power_model);
+        let disk_power_consumption = disk.get_disk_power(power_model);
         assert_eq!(disk_power_consumption.idle, disk_first_row.idle);
         assert_eq!(disk_power_consumption.write, disk_first_row.write);
         assert_eq!(disk_power_consumption.read, disk_first_row.read);
     }
 
-    #[cfg(all(test, target_os = "linux", feature = "disks_evaluation"))]
     #[test]
     fn it_should_return_the_current_disk_state() {
-        use super::*;
-
         let first_disk_specs = DiskPowerSpecs {
             capacity: 1024,
             form_factor: FormFactor::NVME,
@@ -673,87 +700,62 @@ mod tests {
             written_bytes: 1024,
         };
 
-        let disk_specs = (first_disk_specs, refreshed_disk_specs);
+        let mut disk = Disk {
+            name: String::from("/dev/nvme0"),
+            capacity: 109951162776,
+            form_factor: FormFactor::NVME,
+            max_buffer_size: 1,
+            power_model_path: String::from("/"),
+            power_specs: Some(first_disk_specs.clone()),
+            record_buffer: vec![],
+        };
 
-        let disk_state = evaluate_disk_state(disk_specs);
+        let disk_state = disk.evaluate_disk_state(refreshed_disk_specs.clone());
 
         assert_eq!(disk_state, DiskState::Write);
 
-        let first_disk_specs = DiskPowerSpecs {
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            idle: 0.05,
-            write: 8.0,
-            read: 3.0,
-            read_bytes: 0,
-            written_bytes: 0,
-        };
-
+        disk.power_specs = Some(refreshed_disk_specs.clone()); 
         let refreshed_disk_specs = DiskPowerSpecs {
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
-            read_bytes: 1024,
-            written_bytes: 0,
-        };
-
-        let disk_specs = (first_disk_specs, refreshed_disk_specs);
-
-        let disk_state = evaluate_disk_state(disk_specs);
-
-        assert_eq!(disk_state, DiskState::Read);
-
-        let first_disk_specs = DiskPowerSpecs {
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            idle: 0.05,
-            write: 8.0,
-            read: 3.0,
-            read_bytes: 0,
-            written_bytes: 0,
-        };
-
-        let refreshed_disk_specs = DiskPowerSpecs {
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            idle: 0.05,
-            write: 8.0,
-            read: 3.0,
-            read_bytes: 1024,
+            read_bytes: 2048,
             written_bytes: 1024,
         };
 
-        let disk_specs = (first_disk_specs, refreshed_disk_specs);
+        let disk_state = disk.evaluate_disk_state(refreshed_disk_specs.clone());
 
-        let disk_state = evaluate_disk_state(disk_specs);
+        assert_eq!(disk_state, DiskState::Read);
 
-        assert_eq!(disk_state, DiskState::ReadWrite);
-
-        let first_disk_specs = DiskPowerSpecs {
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            idle: 0.05,
-            write: 8.0,
-            read: 3.0,
-            read_bytes: 0,
-            written_bytes: 0,
-        };
-
+        disk.power_specs = Some(refreshed_disk_specs.clone()); 
         let refreshed_disk_specs = DiskPowerSpecs {
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
-            read_bytes: 0,
-            written_bytes: 0,
+            read_bytes: 4096,
+            written_bytes: 2048,
         };
 
-        let disk_specs = (first_disk_specs, refreshed_disk_specs);
+        let disk_state = disk.evaluate_disk_state(refreshed_disk_specs.clone());
 
-        let disk_state = evaluate_disk_state(disk_specs);
+        assert_eq!(disk_state, DiskState::ReadWrite);
+
+        disk.power_specs = Some(refreshed_disk_specs.clone()); 
+        let refreshed_disk_specs = DiskPowerSpecs {
+            capacity: 1024,
+            form_factor: FormFactor::NVME,
+            idle: 0.05,
+            write: 8.0,
+            read: 3.0,
+            read_bytes: 4096,
+            written_bytes: 2048,
+        };
+
+        let disk_state = disk.evaluate_disk_state(refreshed_disk_specs);
 
         assert_eq!(disk_state, DiskState::Idle);
     }
