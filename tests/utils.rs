@@ -1,5 +1,5 @@
 #[cfg(feature = "disks_evaluation")]
-use scaphandre::sensors::utils::{find_form_factor, format_disk_name, FormFactor};
+use scaphandre::sensors::disk::{find_form_factor, format_disk_name, FormFactor};
 
 mod common;
 
