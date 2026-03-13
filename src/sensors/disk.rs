@@ -89,6 +89,24 @@ impl Disk {
         }
     }
 
+    /// Returns the idle, write and read power consumption for a given disk.
+    pub fn find_power_specs(&self, power_model: PowerModel) -> DiskPowerSpecs {
+        let capacity_in_gigabytes = self.capacity / 1073741824;
+
+        let similar_disks_by_form_factor: Vec<DiskPowerSpecs> = power_model
+            .disks
+            .into_iter()
+            .filter(|disk_pm| disk_pm.form_factor == self.form_factor)
+            .collect();
+
+        let similar_disks_by_capacity: Vec<DiskPowerSpecs> = similar_disks_by_form_factor
+            .into_iter()
+            .filter(|disk_pm| disk_pm.capacity == capacity_in_gigabytes as u64)
+            .collect();
+
+        similar_disks_by_capacity[0].clone()
+    }
+
     /// Attribute power specifications to the disk, by parsing a CSV file with the documented power
     /// model for various disk archetypes. The read and written bytes for a given Disk can be
     /// identified with sysinfo::Disk::usage.
@@ -154,10 +172,13 @@ impl Disk {
         self.state = new_state;
     }
 
-        let consumption = match disk_state {
-            DiskState::Idle => Some(self.power_specs.clone().unwrap().idle),
-            DiskState::Read => Some(self.power_specs.clone().unwrap().read),
-            DiskState::Write => Some(self.power_specs.clone().unwrap().write),
+    /// Creates a record with the disk's power consumption at a given moment.
+    fn generate_power_record(&self) -> Option<Record> {
+        let power_specs = self.power_specs.clone();
+        let consumption = match self.state {
+            DiskState::Idle => Some(power_specs.unwrap().idle),
+            DiskState::Read => Some(power_specs.unwrap().read),
+            DiskState::Write => Some(power_specs.unwrap().write),
             _ => None,
         };
 
@@ -424,17 +445,7 @@ mod tests {
             state: DiskState::Write,
         };
 
-        let new_power_specs = DiskPowerSpecs {
-            capacity: ten_gigabytes_in_bytes,
-            form_factor: FormFactor::NVME,
-            idle: 0.5,
-            read: 3.0,
-            write: 5.0,
-            read_bytes: 1024,
-            written_bytes: 2048,
-        };
-
-        let scaph_disk_record = disk.generate_power_record(new_power_specs).unwrap();
+        let scaph_disk_record = disk.generate_power_record().unwrap();
         assert_eq!(Some(scaph_disk_record.value), Some(String::from("5000000")));
     }
 
@@ -483,17 +494,7 @@ mod tests {
             state: DiskState::Write,
         };
 
-        let new_power_specs = DiskPowerSpecs {
-            capacity: ten_gigabytes_in_bytes,
-            form_factor: FormFactor::NVME,
-            idle: 0.5,
-            read: 3.0,
-            write: 5.0,
-            read_bytes: 1024,
-            written_bytes: 2048,
-        };
-
-        let scaph_disk_record = disk.generate_power_record(new_power_specs).unwrap();
+        let scaph_disk_record = disk.generate_power_record().unwrap();
         disk.add_record(scaph_disk_record);
 
         assert_eq!(disk.record_buffer.len(), 1);
@@ -523,17 +524,7 @@ mod tests {
             state: DiskState::Write,
         };
 
-        let new_power_specs = DiskPowerSpecs {
-            capacity: ten_gigabytes_in_bytes,
-            form_factor: FormFactor::NVME,
-            idle: 0.5,
-            read: 3.0,
-            write: 5.0,
-            read_bytes: 1024,
-            written_bytes: 2048,
-        };
-
-        let scaph_disk_record = disk.generate_power_record(new_power_specs).unwrap();
+        let scaph_disk_record = disk.generate_power_record().unwrap();
         let max_size = 1024;
         let size_of_record = size_of_val(&scaph_disk_record);
         let max_number_of_records = max_size / size_of_record;
@@ -571,17 +562,7 @@ mod tests {
             record_buffer: vec![],
         };
 
-        let new_power_specs = DiskPowerSpecs {
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            idle: 0.5,
-            read: 3.0,
-            write: 5.0,
-            read_bytes: 1024,
-            written_bytes: 2048,
-        };
-
-        let scaph_disk_record = disk.generate_power_record(new_power_specs).unwrap();
+        let scaph_disk_record = disk.generate_power_record().unwrap();
         disk.add_record(scaph_disk_record.clone());
         disk.add_record(scaph_disk_record.clone());
         disk.add_record(scaph_disk_record);
@@ -702,7 +683,7 @@ mod tests {
             written_bytes: 0,
         };
 
-        let refreshed_disk_specs = DiskPowerSpecs {
+        let second_disk_specs = DiskPowerSpecs {
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
@@ -720,14 +701,15 @@ mod tests {
             power_model_path: String::from("/"),
             power_specs: Some(first_disk_specs.clone()),
             record_buffer: vec![],
+            state: DiskState::Unknown,
         };
 
-        let disk_state = disk.evaluate_disk_state(refreshed_disk_specs.clone());
+        disk.power_specs = Some(second_disk_specs.clone());
+        let disk_state = disk.evaluate_disk_state(&first_disk_specs);
 
         assert_eq!(disk_state, DiskState::Write);
 
-        disk.power_specs = Some(refreshed_disk_specs.clone());
-        let refreshed_disk_specs = DiskPowerSpecs {
+        let third_disk_specs = DiskPowerSpecs {
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
@@ -737,12 +719,12 @@ mod tests {
             written_bytes: 1024,
         };
 
-        let disk_state = disk.evaluate_disk_state(refreshed_disk_specs.clone());
+        disk.power_specs = Some(third_disk_specs.clone());
+        let disk_state = disk.evaluate_disk_state(&second_disk_specs);
 
         assert_eq!(disk_state, DiskState::Read);
 
-        disk.power_specs = Some(refreshed_disk_specs.clone());
-        let refreshed_disk_specs = DiskPowerSpecs {
+        let fourth_disk_specs = DiskPowerSpecs {
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
@@ -752,12 +734,12 @@ mod tests {
             written_bytes: 2048,
         };
 
-        let disk_state = disk.evaluate_disk_state(refreshed_disk_specs.clone());
+        disk.power_specs = Some(fourth_disk_specs.clone());
+        let disk_state = disk.evaluate_disk_state(&third_disk_specs);
 
         assert_eq!(disk_state, DiskState::ReadWrite);
 
-        disk.power_specs = Some(refreshed_disk_specs.clone());
-        let refreshed_disk_specs = DiskPowerSpecs {
+        let fifth_disk_specs = DiskPowerSpecs {
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
