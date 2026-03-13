@@ -183,7 +183,7 @@ impl Disk {
         };
 
         if let Some(power_consumption) = consumption {
-            let converted_to_microwatts = power_consumption * 10e6;
+            let converted_to_microwatts = Unit::to(power_consumption as f64, &Unit::Watt, &Unit::MicroWatt).unwrap();
             let record = Record {
                 timestamp: current_system_time_since_epoch(),
                 value: converted_to_microwatts.to_string(),
