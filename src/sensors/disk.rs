@@ -71,6 +71,8 @@ struct Disk {
 }
 
 impl Disk {
+    /// Creates a new Disk, with an empty record buffer, to be updated through the execution of
+    /// Scaphandre.
     fn new(disk_data: &sysinfo::Disk) -> Self {
         let disk_name = String::from(disk_data.name().to_str().unwrap());
         let disk_form_factor = find_form_factor(&disk_name, "/");
@@ -85,7 +87,10 @@ impl Disk {
         }
     }
 
-    fn identify_power_specs(
+    /// Attribute power specifications to the disk, by parsing a CSV file with the documented power
+    /// model for various disk archetypes. The read and written bytes for a given Disk can be
+    /// identified with sysinfo::Disk::usage.
+    fn set_power_specs(
         &mut self,
         read_bytes: u64,
         written_bytes: u64,
@@ -114,11 +119,12 @@ impl Disk {
 
         let power_model = PowerModel { disks: disks_power };
 
-        let identified_specs_for_disk = self.get_disk_power(power_model);
+        let identified_specs_for_disk = self.find_power_specs(power_model);
 
         self.power_specs = Some(identified_specs_for_disk);
     }
 
+    /// Creates a record with the disk's power consumption at a given moment.
     fn generate_power_record(&self, new_power_specs: DiskPowerSpecs) -> Option<Record> {
         let disk_state = self.evaluate_disk_state(new_power_specs);
 
@@ -141,6 +147,8 @@ impl Disk {
         None
     }
 
+    /// Creates a record with the disk's energy consumption between two power records, during the
+    /// execution of Scaphandre.
     fn generate_energy_record(records: (Record, Record)) -> Option<Record> {
         let parsed_values = (
             records.0.value.parse::<u64>(),
@@ -162,12 +170,13 @@ impl Disk {
         None
     }
 
+    /// Utilitary method to add a Record to the Disk's record buffer.
     fn add_record(&mut self, record: Record) {
         self.record_buffer.push(record);
     }
 
-    /// Returns the idle, write and read power consumption for a given disk
-    pub fn get_disk_power(&self, power_model: PowerModel) -> DiskPowerSpecs {
+    /// Returns the idle, write and read power consumption for a given disk.
+    pub fn find_power_specs(&self, power_model: PowerModel) -> DiskPowerSpecs {
         let capacity_in_gigabytes = self.capacity / 1073741824;
 
         let similar_disks_by_form_factor: Vec<DiskPowerSpecs> = power_model
@@ -184,7 +193,7 @@ impl Disk {
         similar_disks_by_capacity[0].clone()
     }
 
-    /// Returns the disk's current state : idle, reading and / or writing
+    /// Returns the disk's current state : idle, reading and / or writing.
     fn evaluate_disk_state(&self, new_disk_specs: DiskPowerSpecs) -> DiskState {
         let read_bytes_difference =
             self.power_specs.clone().unwrap().read_bytes.overflowing_sub(new_disk_specs.read_bytes).0;
@@ -227,8 +236,8 @@ impl RecordGenerator for Disk {
     fn refresh_record(&mut self) {}
 }
 
-// Sysinfo on Linux can return up to the partition number as disk name. Only the device name is
-// needed to find the driver.
+/// The name for a disk identified through sysfs might include the partition number, the namespace
+/// number for NVME devices, and other information. Only the device name is needed to find the driver.
 pub fn format_disk_name(disk_path: &str) -> String {
     let disk_name = disk_path.split("/").last().unwrap();
 
@@ -258,7 +267,7 @@ pub fn format_disk_name(disk_path: &str) -> String {
     device_name
 }
 
-/// Return the form factor for a given stockage device, through driver identification
+/// Return the form factor for a given stockage device, through driver identification.
 pub fn find_form_factor(disk_name: &str, path: &str) -> FormFactor {
     let sys_block_path = PathBuf::from(path).join("sys/block");
     let disk_path = sys_block_path.join(disk_name);
@@ -380,7 +389,7 @@ mod tests {
             record_buffer: vec![],
         };
 
-        disk.identify_power_specs(
+        disk.set_power_specs(
             1024,
             1024,
             file_path,
@@ -672,7 +681,7 @@ mod tests {
             disks: vec![disk_first_row.clone(), disk_second_row],
         };
 
-        let disk_power_consumption = disk.get_disk_power(power_model);
+        let disk_power_consumption = disk.find_power_specs(power_model);
         assert_eq!(disk_power_consumption.idle, disk_first_row.idle);
         assert_eq!(disk_power_consumption.write, disk_first_row.write);
         assert_eq!(disk_power_consumption.read, disk_first_row.read);
