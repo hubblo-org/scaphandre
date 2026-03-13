@@ -68,6 +68,7 @@ struct Disk {
     record_buffer: Vec<Record>,
     max_buffer_size: u16,
     power_model_path: String,
+    state: DiskState,
 }
 
 impl Disk {
@@ -84,6 +85,7 @@ impl Disk {
             record_buffer: vec![],
             max_buffer_size: 1,
             power_model_path: String::from("No power_model_path provided"),
+            state: DiskState::Unknown,
         }
     }
 
@@ -119,9 +121,38 @@ impl Disk {
         self.power_specs = Some(identified_specs_for_disk);
     }
 
-    /// Creates a record with the disk's power consumption at a given moment.
-    fn generate_power_record(&self, new_power_specs: DiskPowerSpecs) -> Option<Record> {
-        let disk_state = self.evaluate_disk_state(new_power_specs);
+    /// Returns the disk's current state : idle, reading and / or writing.
+    fn evaluate_disk_state(&self, previous_disk_specs: &DiskPowerSpecs) -> DiskState {
+        let read_bytes_difference = self
+            .power_specs
+            .clone()
+            .unwrap()
+            .read_bytes
+            .overflowing_sub(previous_disk_specs.read_bytes)
+            .0;
+
+        let written_bytes_difference = self
+            .power_specs
+            .clone()
+            .unwrap()
+            .written_bytes
+            .overflowing_sub(previous_disk_specs.written_bytes)
+            .0;
+
+        let is_reading = !matches!(read_bytes_difference, 0);
+        let is_writing = !matches!(written_bytes_difference, 0);
+        match (is_reading, is_writing) {
+            (false, true) => DiskState::Write,
+            (true, false) => DiskState::Read,
+            (true, true) => DiskState::ReadWrite,
+            (false, false) => DiskState::Idle,
+        }
+    }
+
+    fn update_state(&mut self, new_disk_specs: &DiskPowerSpecs) {
+        let new_state = self.evaluate_disk_state(new_disk_specs);
+        self.state = new_state;
+    }
 
         let consumption = match disk_state {
             DiskState::Idle => Some(self.power_specs.clone().unwrap().idle),
@@ -173,50 +204,13 @@ impl Disk {
         self.record_buffer.push(record);
     }
 
-    /// Returns the idle, write and read power consumption for a given disk.
-    pub fn find_power_specs(&self, power_model: PowerModel) -> DiskPowerSpecs {
-        let capacity_in_gigabytes = self.capacity / 1073741824;
-
-        let similar_disks_by_form_factor: Vec<DiskPowerSpecs> = power_model
-            .disks
-            .into_iter()
-            .filter(|disk_pm| disk_pm.form_factor == self.form_factor)
-            .collect();
-
-        let similar_disks_by_capacity: Vec<DiskPowerSpecs> = similar_disks_by_form_factor
-            .into_iter()
-            .filter(|disk_pm| disk_pm.capacity == capacity_in_gigabytes as u64)
-            .collect();
-
-        similar_disks_by_capacity[0].clone()
-    }
-
-    /// Returns the disk's current state : idle, reading and / or writing.
-    fn evaluate_disk_state(&self, new_disk_specs: DiskPowerSpecs) -> DiskState {
-        let read_bytes_difference = self
-            .power_specs
-            .clone()
-            .unwrap()
-            .read_bytes
-            .overflowing_sub(new_disk_specs.read_bytes)
-            .0;
-
-        let written_bytes_difference = self
-            .power_specs
-            .clone()
-            .unwrap()
-            .written_bytes
-            .overflowing_sub(new_disk_specs.written_bytes)
-            .0;
-
-        let is_reading = !matches!(read_bytes_difference, 0);
-        let is_writing = !matches!(written_bytes_difference, 0);
-        match (is_reading, is_writing) {
-            (false, true) => DiskState::Write,
-            (true, false) => DiskState::Read,
-            (true, true) => DiskState::ReadWrite,
-            (false, false) => DiskState::Idle,
-        }
+    fn refresh(&mut self, read_bytes: u64, written_bytes: u64) {
+        let power_model_path = PathBuf::from_str(&self.power_model_path).unwrap();
+        let previous_disk_specs = self.power_specs.clone();
+        self.set_power_specs(read_bytes, written_bytes, power_model_path);
+        self.update_state(&previous_disk_specs.unwrap());
+        let new_record = self.generate_power_record();
+        self.add_record(new_record.unwrap());
     }
 }
 
@@ -395,6 +389,7 @@ mod tests {
             power_model_path: String::from("/"),
             power_specs: None,
             record_buffer: vec![],
+            state: DiskState::Unknown,
         };
 
         disk.set_power_specs(1024, 1024, file_path);
@@ -426,6 +421,7 @@ mod tests {
             power_model_path: String::from("/"),
             power_specs: Some(power_specs),
             record_buffer: vec![],
+            state: DiskState::Write,
         };
 
         let new_power_specs = DiskPowerSpecs {
@@ -484,6 +480,7 @@ mod tests {
             power_model_path: String::from("/"),
             power_specs: Some(power_specs),
             record_buffer: vec![],
+            state: DiskState::Write,
         };
 
         let new_power_specs = DiskPowerSpecs {
@@ -523,6 +520,7 @@ mod tests {
             power_model_path: String::from("/"),
             power_specs: Some(power_specs),
             record_buffer: vec![],
+            state: DiskState::Write,
         };
 
         let new_power_specs = DiskPowerSpecs {
@@ -569,6 +567,7 @@ mod tests {
             max_buffer_size: 1,
             power_model_path: String::from("/"),
             power_specs: Some(power_specs),
+            state: DiskState::Write,
             record_buffer: vec![],
         };
 
@@ -677,6 +676,7 @@ mod tests {
             form_factor: FormFactor::NVME,
             max_buffer_size: 1,
             power_model_path: String::from("/"),
+            state: DiskState::Unknown,
             power_specs: Some(disk_first_row.clone()),
             record_buffer: vec![],
         };
@@ -767,8 +767,84 @@ mod tests {
             written_bytes: 2048,
         };
 
-        let disk_state = disk.evaluate_disk_state(refreshed_disk_specs);
+        disk.power_specs = Some(fifth_disk_specs.clone());
+        let disk_state = disk.evaluate_disk_state(&fourth_disk_specs);
 
         assert_eq!(disk_state, DiskState::Idle);
+    }
+
+    #[test]
+    fn it_should_update_the_disk_state() {
+        let first_disk_specs = DiskPowerSpecs {
+            capacity: 1024,
+            form_factor: FormFactor::NVME,
+            idle: 0.05,
+            write: 8.0,
+            read: 3.0,
+            read_bytes: 1024,
+            written_bytes: 0,
+        };
+
+        let mut disk = Disk {
+            name: String::from("/dev/nvme0"),
+            capacity: 109951162776,
+            form_factor: FormFactor::NVME,
+            max_buffer_size: 1,
+            power_model_path: String::from("/"),
+            power_specs: Some(first_disk_specs.clone()),
+            record_buffer: vec![],
+            state: DiskState::Unknown,
+        };
+
+        let refreshed_disk_specs = DiskPowerSpecs {
+            capacity: 1024,
+            form_factor: FormFactor::NVME,
+            idle: 0.05,
+            write: 8.0,
+            read: 3.0,
+            read_bytes: 4096,
+            written_bytes: 2048,
+        };
+
+        disk.update_state(&refreshed_disk_specs);
+        assert_eq!(disk.state, DiskState::ReadWrite);
+    }
+
+    #[test]
+    fn it_updates_the_disk_for_all_the_necessary_fields() {
+        let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
+
+        let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
+        let first_disk_specs = DiskPowerSpecs {
+            capacity: 1024,
+            form_factor: FormFactor::NVME,
+            idle: 0.05,
+            write: 8.0,
+            read: 3.0,
+            read_bytes: 1024,
+            written_bytes: 0,
+        };
+
+        let mut disk = Disk {
+            name: String::from("/dev/nvme0"),
+            capacity: 109951162776,
+            form_factor: FormFactor::NVME,
+            max_buffer_size: 1,
+            power_model_path: String::from(file_path.to_str().unwrap()),
+            power_specs: Some(first_disk_specs.clone()),
+            record_buffer: vec![],
+            state: DiskState::Unknown,
+        };
+
+        let unmodified_read_bytes = 1024;
+        let grown_written_bytes = 2048;
+
+        disk.refresh(unmodified_read_bytes, grown_written_bytes);
+
+        let first_report = &disk.record_buffer[0];
+
+        assert_eq!(disk.record_buffer.len(), 1);
+        assert_eq!(disk.state, DiskState::Write);
+        assert_eq!(first_report.value, "5000000");
     }
 }
