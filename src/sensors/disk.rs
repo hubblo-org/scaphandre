@@ -90,12 +90,7 @@ impl Disk {
     /// Attribute power specifications to the disk, by parsing a CSV file with the documented power
     /// model for various disk archetypes. The read and written bytes for a given Disk can be
     /// identified with sysinfo::Disk::usage.
-    fn set_power_specs(
-        &mut self,
-        read_bytes: u64,
-        written_bytes: u64,
-        file_path: PathBuf,
-    ) {
+    fn set_power_specs(&mut self, read_bytes: u64, written_bytes: u64, file_path: PathBuf) {
         let mut records = csv::Reader::from_path(file_path).unwrap();
 
         let mut disks_power: Vec<DiskPowerSpecs> = vec![];
@@ -172,6 +167,9 @@ impl Disk {
 
     /// Utilitary method to add a Record to the Disk's record buffer.
     fn add_record(&mut self, record: Record) {
+        if !self.record_buffer.is_empty() {
+            self.clean_old_records();
+        }
         self.record_buffer.push(record);
     }
 
@@ -195,11 +193,21 @@ impl Disk {
 
     /// Returns the disk's current state : idle, reading and / or writing.
     fn evaluate_disk_state(&self, new_disk_specs: DiskPowerSpecs) -> DiskState {
-        let read_bytes_difference =
-            self.power_specs.clone().unwrap().read_bytes.overflowing_sub(new_disk_specs.read_bytes).0;
+        let read_bytes_difference = self
+            .power_specs
+            .clone()
+            .unwrap()
+            .read_bytes
+            .overflowing_sub(new_disk_specs.read_bytes)
+            .0;
 
-        let written_bytes_difference =
-            self.power_specs.clone().unwrap().written_bytes.overflowing_sub(new_disk_specs.written_bytes).0;
+        let written_bytes_difference = self
+            .power_specs
+            .clone()
+            .unwrap()
+            .written_bytes
+            .overflowing_sub(new_disk_specs.written_bytes)
+            .0;
 
         let is_reading = !matches!(read_bytes_difference, 0);
         let is_writing = !matches!(written_bytes_difference, 0);
@@ -389,11 +397,7 @@ mod tests {
             record_buffer: vec![],
         };
 
-        disk.set_power_specs(
-            1024,
-            1024,
-            file_path,
-        );
+        disk.set_power_specs(1024, 1024, file_path);
 
         assert_eq!(disk.clone().power_specs.unwrap().capacity, 1024);
         assert_eq!(disk.clone().power_specs.unwrap().idle, 0.5);
@@ -648,7 +652,6 @@ mod tests {
 
     #[test]
     fn it_should_give_a_power_estimation_for_a_given_disk_specifications() {
-
         let disk_first_row = DiskPowerSpecs {
             capacity: 1024,
             form_factor: FormFactor::NVME,
@@ -723,7 +726,7 @@ mod tests {
 
         assert_eq!(disk_state, DiskState::Write);
 
-        disk.power_specs = Some(refreshed_disk_specs.clone()); 
+        disk.power_specs = Some(refreshed_disk_specs.clone());
         let refreshed_disk_specs = DiskPowerSpecs {
             capacity: 1024,
             form_factor: FormFactor::NVME,
@@ -738,7 +741,7 @@ mod tests {
 
         assert_eq!(disk_state, DiskState::Read);
 
-        disk.power_specs = Some(refreshed_disk_specs.clone()); 
+        disk.power_specs = Some(refreshed_disk_specs.clone());
         let refreshed_disk_specs = DiskPowerSpecs {
             capacity: 1024,
             form_factor: FormFactor::NVME,
@@ -753,7 +756,7 @@ mod tests {
 
         assert_eq!(disk_state, DiskState::ReadWrite);
 
-        disk.power_specs = Some(refreshed_disk_specs.clone()); 
+        disk.power_specs = Some(refreshed_disk_specs.clone());
         let refreshed_disk_specs = DiskPowerSpecs {
             capacity: 1024,
             form_factor: FormFactor::NVME,
