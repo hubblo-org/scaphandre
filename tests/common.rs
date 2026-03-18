@@ -1,3 +1,7 @@
+use scaphandre::sensors::disk::{Disk, DiskPowerSpecs, DiskState, FormFactor};
+use scaphandre::sensors::utils::ProcessTracker;
+use scaphandre::sensors::Topology;
+use std::collections::HashMap;
 use std::{
     fs::{create_dir, create_dir_all, remove_dir_all},
     path::{Path, PathBuf},
@@ -59,8 +63,8 @@ pub fn setup_fs_scsi() {
     let sda_path = tmp_mock_block_path.join("sda");
     let _ = create_dir_all(sda_path.clone());
     let scsi_device_path = sda_path.join("device");
-    let mock_pci_bus_path =
-        tmp_dir.join("sys/devices/pci0000:00/0000:00:1f.2/ata2/host1/target1:0:0/1:0:0:0/block/sda");
+    let mock_pci_bus_path = tmp_dir
+        .join("sys/devices/pci0000:00/0000:00:1f.2/ata2/host1/target1:0:0/1:0:0:0/block/sda");
     let _ = create_dir_all(mock_pci_bus_path.clone());
     let _ = std::os::unix::fs::symlink(mock_pci_bus_path, scsi_device_path);
 
@@ -73,4 +77,68 @@ pub fn setup_fs_scsi() {
     let mock_devices_driver_path = mock_devices_path.join("driver");
 
     let _ = std::os::unix::fs::symlink(mock_driver_path, mock_devices_driver_path);
+}
+
+pub fn generate_mock_topology(disks: bool) -> Topology {
+    let mut mock_sensor_data = HashMap::new();
+    mock_sensor_data.insert(String::from("key"), String::from("value"));
+    let proc_tracker = ProcessTracker::new(5);
+
+    if !disks {
+        let mock_topology = Topology {
+            sockets: vec![],
+            stat_buffer: vec![],
+            record_buffer: vec![],
+            buffer_max_kbytes: 1,
+            domains_names: None,
+            _sensor_data: mock_sensor_data,
+            proc_tracker,
+            disks: vec![],
+        };
+
+        return mock_topology;
+    } else {
+        let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
+
+        let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
+        let power_specs = DiskPowerSpecs {
+            capacity: 109951162776,
+            form_factor: FormFactor::NVME,
+            idle: 0.5,
+            read: 3.0,
+            write: 5.0,
+            read_bytes: 0,
+            written_bytes: 0,
+        };
+
+        let disk = Disk {
+            name: String::from("/dev/nvme0"),
+            form_factor: FormFactor::NVME,
+            capacity: 109951162776,
+            max_buffer_size: 1,
+            record_buffer: vec![],
+            power_specs: Some(power_specs),
+            state: DiskState::Unknown,
+            power_model_path: String::from(file_path.to_str().unwrap()),
+        };
+
+        let mock_topology = Topology {
+            sockets: vec![],
+            stat_buffer: vec![],
+            record_buffer: vec![],
+            buffer_max_kbytes: 1,
+            domains_names: None,
+            _sensor_data: mock_sensor_data,
+            proc_tracker,
+            disks: vec![disk.clone(), disk.clone()],
+        };
+        return mock_topology;
+    }
+}
+
+pub fn mock_power_model_path() -> PathBuf {
+    let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
+
+    let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
+    file_path
 }

@@ -60,21 +60,21 @@ pub struct DiskPowerConsumption {
 }
 
 #[derive(Clone, Debug)]
-struct Disk {
-    name: String,
-    form_factor: FormFactor,
-    capacity: u64,
-    power_specs: Option<DiskPowerSpecs>,
-    record_buffer: Vec<Record>,
-    max_buffer_size: u16,
-    power_model_path: String,
-    state: DiskState,
+pub struct Disk {
+    pub name: String,
+    pub form_factor: FormFactor,
+    pub capacity: u64,
+    pub power_specs: Option<DiskPowerSpecs>,
+    pub record_buffer: Vec<Record>,
+    pub max_buffer_size: u16,
+    pub power_model_path: String,
+    pub state: DiskState,
 }
 
 impl Disk {
     /// Creates a new Disk, with an empty record buffer, to be updated through the execution of
     /// Scaphandre.
-    fn new(disk_data: &sysinfo::Disk) -> Self {
+    pub fn new(disk_data: &sysinfo::Disk) -> Self {
         let disk_name = String::from(disk_data.name().to_str().unwrap());
         let disk_form_factor = find_form_factor(&disk_name, "/");
         Disk {
@@ -179,11 +179,15 @@ impl Disk {
             DiskState::Idle => Some(power_specs.unwrap().idle),
             DiskState::Read => Some(power_specs.unwrap().read),
             DiskState::Write => Some(power_specs.unwrap().write),
+            // Associating ReadWrite state to writing operation consumption until finding a better
+            // solution.
+            DiskState::ReadWrite => Some(power_specs.unwrap().write),
             _ => None,
         };
 
         if let Some(power_consumption) = consumption {
-            let converted_to_microwatts = Unit::to(power_consumption as f64, &Unit::Watt, &Unit::MicroWatt).unwrap();
+            let converted_to_microwatts =
+                Unit::to(power_consumption as f64, &Unit::Watt, &Unit::MicroWatt).unwrap();
             let record = Record {
                 timestamp: current_system_time_since_epoch(),
                 value: converted_to_microwatts.to_string(),
@@ -225,13 +229,20 @@ impl Disk {
         self.record_buffer.push(record);
     }
 
-    fn refresh(&mut self, read_bytes: u64, written_bytes: u64) {
-        let power_model_path = PathBuf::from_str(&self.power_model_path).unwrap();
-        let previous_disk_specs = self.power_specs.clone();
-        self.set_power_specs(read_bytes, written_bytes, power_model_path);
-        self.update_state(&previous_disk_specs.unwrap());
-        let new_record = self.generate_power_record();
-        self.add_record(new_record.unwrap());
+    // Need to convert return type to Result to properly return a non-panicking error. It might be
+    // useful not to make scaphandre panic if no specifications are identified for a given disk, as
+    // the power model might be lacking until its development.
+    pub fn refresh(&mut self, read_bytes: u64, written_bytes: u64) {
+        if let Some(specs) = &self.power_specs {
+            let power_model_path = PathBuf::from_str(&self.power_model_path).unwrap();
+            let previous_specs = specs.clone();
+            self.set_power_specs(read_bytes, written_bytes, power_model_path);
+            self.update_state(&previous_specs);
+            let new_record = self.generate_power_record();
+            self.add_record(new_record.unwrap());
+        } else {
+            println!("No previous power specification, continuing execution until specifications are found!");
+        }
     }
 }
 

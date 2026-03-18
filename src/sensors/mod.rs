@@ -9,6 +9,8 @@ pub mod msr_rapl;
 use msr_rapl::get_msr_value;
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 pub mod disk;
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+use disk::Disk;
 #[cfg(target_os = "linux")]
 pub mod powercap_rapl;
 pub mod units;
@@ -60,6 +62,10 @@ pub struct Topology {
     pub domains_names: Option<Vec<String>>,
     /// Sensor-specific data needed in the topology
     pub _sensor_data: HashMap<String, String>,
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    /// Disks with their power consumption evaluated
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    pub disks: Vec<Disk>,
 }
 
 impl RecordGenerator for Topology {
@@ -150,6 +156,7 @@ impl Topology {
             buffer_max_kbytes: 1,
             domains_names: None,
             _sensor_data: sensor_data,
+            disks: vec![],
         }
     }
 
@@ -672,6 +679,27 @@ impl Topology {
             );
         }
         res
+    }
+
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    pub fn add_sensor_disk(&mut self, disk: &sysinfo::Disk) {
+        let sensor_disk = Disk::new(disk);
+        self.disks.push(sensor_disk);
+    }
+
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    pub fn refresh_disks(&mut self, sys_disks: &sysinfo::Disks) {
+        self.disks.iter_mut().for_each(|tdisk| {
+            let matching_sys_disk: Vec<&sysinfo::Disk> = sys_disks
+                .iter()
+                .filter(|disk| disk.name().to_str().unwrap() == tdisk.name)
+                .collect();
+
+            let usage = matching_sys_disk[0].usage();
+            let read_bytes = usage.read_bytes;
+            let written_bytes = usage.written_bytes;
+            tdisk.refresh(read_bytes, written_bytes);
+        });
     }
 
     pub fn get_total_memory_bytes(&self) -> Record {
