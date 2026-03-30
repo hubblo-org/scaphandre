@@ -10,7 +10,7 @@ use msr_rapl::get_msr_value;
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 pub mod disk;
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-use disk::Disk;
+use disk::{Disk, format_disk_name};
 #[cfg(target_os = "linux")]
 pub mod powercap_rapl;
 pub mod units;
@@ -682,9 +682,23 @@ impl Topology {
     }
 
     #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-    pub fn add_sensor_disk(&mut self, disk: &sysinfo::Disk) {
+    pub fn add_sensor_disk(&mut self, disk: &sysinfo::Disk) -> Result<(), ()> {
         let sensor_disk = Disk::new(disk);
-        self.disks.push(sensor_disk);
+        match sensor_disk {
+            Ok(sd) => {
+                let identified_disks: Vec<&Disk> = self
+                    .disks
+                    .iter()
+                    .filter(|tdisk| tdisk.name == sd.name)
+                    .collect();
+                if identified_disks.len() == 0 {
+                    Ok(self.disks.push(sd))
+                } else {
+                    Err(println!("Disk already present in topology!"))
+                }
+            }
+            Err(e) => Err(println!("No disk found: {e:?}")),
+        }
     }
 
     #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
@@ -692,7 +706,7 @@ impl Topology {
         self.disks.iter_mut().for_each(|tdisk| {
             let matching_sys_disk: Vec<&sysinfo::Disk> = sys_disks
                 .iter()
-                .filter(|disk| disk.name().to_str().unwrap() == tdisk.name)
+                .filter(|disk| format_disk_name(disk.name().to_str().unwrap()) == tdisk.name)
                 .collect();
 
             let usage = matching_sys_disk[0].usage();

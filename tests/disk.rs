@@ -1,5 +1,6 @@
 #[cfg(feature = "disks_evaluation")]
 use scaphandre::sensors::disk::{find_form_factor, format_disk_name, DiskState, FormFactor};
+use std::collections::HashSet;
 
 mod common;
 
@@ -64,18 +65,32 @@ fn it_should_add_an_evaluated_disk_to_the_topology() {
     let mut disks_names = vec![];
 
     disks.iter().for_each(|disk| {
-        mock_topology.add_sensor_disk(disk);
-        disks_names.push(disk.name().to_str().unwrap());
+        let attempt_to_add_disk = mock_topology.add_sensor_disk(disk);
+        match attempt_to_add_disk {
+            Ok(_) => {
+                let formatted_disk_name = format_disk_name(disk.name().to_str().unwrap());
+                disks_names.push(formatted_disk_name)
+            }
+            Err(_) => println!("No disk added"),
+        };
     });
+
+    let unique_disks_names: Vec<String> = disks_names
+        .clone()
+        .into_iter()
+        .map(|name| name)
+        .collect::<HashSet<String>>()
+        .into_iter()
+        .collect();
 
     let topology_disks = mock_topology.disks.iter().enumerate();
     topology_disks.for_each(|entry| {
         let index = entry.0;
         let tdisk = entry.1;
-        assert_eq!(tdisk.name, disks_names[index]);
+        assert_eq!(tdisk.name, unique_disks_names[index]);
     });
 
-    assert_eq!(mock_topology.disks.len(), disks.len());
+    assert_eq!(mock_topology.disks.len(), unique_disks_names.len());
 }
 
 #[test]
@@ -98,10 +113,27 @@ fn it_should_refresh_all_the_topology_disks_through_sysinfo() {
     let mock_power_model_path = common::mock_power_model_path();
     let mut mock_topology = common::generate_mock_topology(false);
     let mut sys_disks = sysinfo::Disks::new_with_refreshed_list();
+
+    let mut disks_names = vec![];
+
     sys_disks.iter().for_each(|sdisk| {
-        mock_topology.add_sensor_disk(sdisk);
+        let attempt_to_add_disk = mock_topology.add_sensor_disk(sdisk);
+        match attempt_to_add_disk {
+            Ok(_) => {
+                let formatted_disk_name = format_disk_name(sdisk.name().to_str().unwrap());
+                disks_names.push(formatted_disk_name)
+            }
+            Err(_) => println!("No disk added"),
+        };
     });
 
+    let unique_disks_names: Vec<String> = disks_names
+        .clone()
+        .into_iter()
+        .map(|name| name)
+        .collect::<HashSet<String>>()
+        .into_iter()
+        .collect();
     mock_topology.disks.iter_mut().for_each(|tdisk| {
         tdisk.power_model_path = String::from(mock_power_model_path.to_str().unwrap())
     });
@@ -110,5 +142,5 @@ fn it_should_refresh_all_the_topology_disks_through_sysinfo() {
 
     mock_topology.refresh_disks(&sys_disks);
 
-    assert_eq!(mock_topology.disks.len(), sys_disks.len());
+    assert_eq!(mock_topology.disks.len(), unique_disks_names.len());
 }
