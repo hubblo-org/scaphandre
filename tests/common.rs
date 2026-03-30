@@ -2,6 +2,7 @@ use scaphandre::sensors::disk::{Disk, DiskPowerSpecs, DiskState, FormFactor};
 use scaphandre::sensors::utils::ProcessTracker;
 use scaphandre::sensors::Topology;
 use std::collections::HashMap;
+use std::io::Write;
 use std::{
     fs::{create_dir, create_dir_all, remove_dir_all},
     path::{Path, PathBuf},
@@ -32,8 +33,15 @@ pub fn setup_fs_nvme() {
         let _ = create_dir(p);
     });
 
-    let nvme_dev_path = tmp_mock_block_path.join("nvme0n1").join("device/device");
+    let nvme_ns_path = tmp_mock_block_path.join("nvme0n1");
+    let size_file_path = nvme_ns_path.join("size");
+    let mut size_file = std::fs::File::create_new(size_file_path).unwrap();
+    size_file.write_all("1000215216".as_bytes()).unwrap();
+    let _ = create_dir_all(nvme_ns_path.clone());
+
+    let nvme_dev_path = nvme_ns_path.join("device/device");
     let _ = create_dir_all(nvme_dev_path.clone());
+
     let mock_driver_path = tmp_dir.join("sys/bus/pci/drivers/nvme");
     let _ = create_dir_all(mock_driver_path.clone());
 

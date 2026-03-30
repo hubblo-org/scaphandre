@@ -31,6 +31,32 @@ fn find_ahci_adapter() {
 
 #[test]
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+fn it_should_find_the_physical_disk_size_of_a_disk_with_nvme_form_factor() {
+    common::setup_fs_nvme();
+    let tmp_dir = common::tmp_tests_dir();
+    let disk_name = "nvme0n1";
+    let disk_size =
+        scaphandre::sensors::disk::Disk::find_physical_size(disk_name, tmp_dir.to_str().unwrap());
+
+    assert_eq!(disk_size.unwrap(), 476);
+}
+
+#[test]
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+fn it_should_not_panick_if_no_sys_block_is_associated_to_a_disk_name() {
+    use scaphandre::sensors::disk::NoBlockError;
+
+    common::setup_fs_nvme();
+    let tmp_dir = common::tmp_tests_dir();
+    let disk_name = "loop1";
+    let attempt_to_find_disk_size =
+        scaphandre::sensors::disk::Disk::find_physical_size(disk_name, tmp_dir.to_str().unwrap());
+
+    assert_eq!(attempt_to_find_disk_size.unwrap_err(), NoBlockError);
+}
+
+#[test]
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 fn it_should_add_an_evaluated_disk_to_the_topology() {
     let disks = sysinfo::Disks::new_with_refreshed_list();
     let mut mock_topology = common::generate_mock_topology(false);

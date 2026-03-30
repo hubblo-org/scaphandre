@@ -5,7 +5,9 @@ use csv;
 use regex::Regex;
 use serde::Deserialize;
 use std::fmt;
-use std::path::{Path, PathBuf};
+use std::fs::File;
+use std::io::Read;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -31,6 +33,18 @@ impl std::fmt::Display for FormFactor {
             FormFactor::SATA => write!(f, "SATA"),
             FormFactor::Unknown => write!(f, "Unknown form factor"),
         }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct NoBlockError;
+
+impl fmt::Display for NoBlockError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "No associated block directory has been found for this disk name!"
+        )
     }
 }
 
@@ -74,18 +88,46 @@ pub struct Disk {
 impl Disk {
     /// Creates a new Disk, with an empty record buffer, to be updated through the execution of
     /// Scaphandre.
-    pub fn new(disk_data: &sysinfo::Disk) -> Self {
-        let disk_name = String::from(disk_data.name().to_str().unwrap());
+    pub fn new(disk_data: &sysinfo::Disk) -> Result<Self, NoBlockError> {
+        let disk_name = format_disk_name(disk_data.name().to_str().unwrap());
         let disk_form_factor = find_form_factor(&disk_name, "/");
-        Disk {
-            name: disk_name,
-            capacity: disk_data.total_space(),
-            form_factor: disk_form_factor,
-            power_specs: None,
-            record_buffer: vec![],
-            max_buffer_size: 1,
-            power_model_path: String::from("No power_model_path provided"),
-            state: DiskState::Unknown,
+        let attempt_physical_size = Disk::find_physical_size(&disk_name, "/");
+        match attempt_physical_size {
+            Ok(size) => Ok(Disk {
+                name: disk_name,
+                capacity: size,
+                form_factor: disk_form_factor,
+                power_specs: None,
+                record_buffer: vec![],
+                max_buffer_size: 1,
+                power_model_path: String::from("No power_model_path provided"),
+                state: DiskState::Unknown,
+            }),
+            Err(_) => Err(NoBlockError),
+        }
+    }
+
+    pub fn find_physical_size(
+        disk_name: &str,
+        path: &str,
+    ) -> Result<u64, NoBlockError> {
+        let path = PathBuf::from_str(path).unwrap();
+        let formatted_disk_name = format_disk_name(disk_name);
+        let disk_path = path.join("sys/block").join(formatted_disk_name);
+        let attempt_size_file = File::open(disk_path.join("size").to_str().unwrap());
+        match attempt_size_file {
+            Ok(size) => {
+                let mut size_file = size;
+                let mut size_buffer = String::new();
+                size_file.read_to_string(&mut size_buffer).unwrap();
+
+                let number_of_sectors = size_buffer.trim_end().parse::<u64>().unwrap();
+
+                let physical_size = (number_of_sectors * 512) / 1073741824;
+
+                Ok(physical_size)
+            }
+            Err(_) => Err(NoBlockError),
         }
     }
 
@@ -396,14 +438,22 @@ pub fn find_form_factor(disk_name: &str, path: &str) -> FormFactor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
     #[test]
     fn it_should_create_a_new_disk_from_sysinfo() {
         let disks = sysinfo::Disks::new_with_refreshed_list();
 
         disks.iter().for_each(|disk| {
             let scaph_disk = Disk::new(disk);
-            assert_eq!(scaph_disk.name, String::from(disk.name().to_str().unwrap()));
-            assert_eq!(scaph_disk.capacity, disk.total_space());
+
+            match scaph_disk {
+                Ok(d) => {
+                    let formatted_name_from_sysinfo =
+                        format_disk_name(disk.name().to_str().unwrap());
+                    assert_eq!(d.name, formatted_name_from_sysinfo);
+                }
+                Err(e) => println!("Error : {e:?}"),
+            }
         });
     }
 
@@ -598,47 +648,6 @@ mod tests {
         let storage_device_name = format_disk_name(sysinfo_disk_name_scsi);
 
         assert_eq!(storage_device_name, "sda");
-    }
-
-    #[cfg(all(test, target_os = "linux"))]
-    #[cfg(feature = "disks_evaluation")]
-    #[test]
-    fn it_should_identify_the_driver_for_nvme() {
-        use super::*;
-        use std::{
-            fs::{create_dir, create_dir_all, remove_dir_all},
-            path::Path,
-        };
-
-        let manifest_dir = env!("CARGO_MANIFEST_DIR");
-        let tests_dir = Path::new(manifest_dir).join("tests");
-        let tmp_dir = tests_dir.join("tmp");
-
-        let _ = remove_dir_all(tmp_dir.clone());
-
-        create_dir(tmp_dir.clone()).unwrap();
-
-        let mock_sys_block_path = "sys/block";
-        let tmp_mock_block_path = tmp_dir.clone().join(mock_sys_block_path);
-        let _ = create_dir_all(tmp_mock_block_path.clone());
-
-        let block_paths = ["nvme0n1", "loop1", "loop2", "loop3"];
-        block_paths.iter().for_each(|bp| {
-            let p = tmp_mock_block_path.join(bp);
-            let _ = create_dir(p);
-        });
-
-        let nvme_dev_path = tmp_mock_block_path.join("nvme0n1").join("device/device");
-        let _ = create_dir_all(nvme_dev_path.clone());
-        let mock_driver_path = tmp_dir.join("sys/bus/drivers/nvme");
-        let _ = create_dir_all(mock_driver_path.clone());
-
-        let driver_sl_path = nvme_dev_path.join("driver");
-        let _ = std::os::unix::fs::symlink(mock_driver_path, driver_sl_path);
-
-        let driver = find_form_factor("nvme0n1", tmp_dir.to_str().unwrap());
-
-        assert_eq!(driver, FormFactor::NVME);
     }
 
     #[test]
