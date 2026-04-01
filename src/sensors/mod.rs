@@ -10,7 +10,7 @@ use msr_rapl::get_msr_value;
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 pub mod disk;
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-use disk::{Disk, format_disk_name};
+use disk::{format_disk_name, Disk};
 #[cfg(target_os = "linux")]
 pub mod powercap_rapl;
 pub mod units;
@@ -681,6 +681,9 @@ impl Topology {
         res
     }
 
+    /// Adds a representation of an identified physical disk. Sysinfo returns all identified file
+    /// systems ; this can be misleading, especially about their capacity, which is useful in identifying their power specifications.
+    /// Only physical disks and their consumption have to be evaluated.
     #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
     pub fn add_sensor_disk(&mut self, disk: &sysinfo::Disk) -> Result<(), ()> {
         let sensor_disk = Disk::new(disk);
@@ -702,17 +705,20 @@ impl Topology {
     }
 
     #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-    pub fn refresh_disks(&mut self, sys_disks: &sysinfo::Disks) {
-        self.disks.iter_mut().for_each(|tdisk| {
-            let matching_sys_disk: Vec<&sysinfo::Disk> = sys_disks
+    pub fn refresh_disks(&mut self, sysinfo_disks: &sysinfo::Disks) {
+        self.disks.iter_mut().for_each(|topology_disk| {
+            let matching_sysinfo_disk: Vec<&sysinfo::Disk> = sysinfo_disks
                 .iter()
-                .filter(|disk| format_disk_name(disk.name().to_str().unwrap()) == tdisk.name)
+                .filter(|sysinfo_disk| {
+                    let sysinfo_disk_name = format_disk_name(sysinfo_disk.name().to_str().unwrap());
+                    sysinfo_disk_name == topology_disk.name
+                })
                 .collect();
 
-            let usage = matching_sys_disk[0].usage();
+            let usage = matching_sysinfo_disk[0].usage();
             let read_bytes = usage.read_bytes;
             let written_bytes = usage.written_bytes;
-            tdisk.refresh(read_bytes, written_bytes);
+            topology_disk.refresh(read_bytes, written_bytes);
         });
     }
 
