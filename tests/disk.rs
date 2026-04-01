@@ -40,7 +40,7 @@ fn it_should_find_the_physical_disk_size_of_a_disk_with_nvme_form_factor() {
     let disk_name = "nvme0n1";
     let disk_size = find_physical_size(disk_name, tmp_dir.to_str().unwrap());
 
-    assert_eq!(disk_size.unwrap(), 476);
+    assert_eq!(disk_size.unwrap(), 512);
 }
 
 #[test]

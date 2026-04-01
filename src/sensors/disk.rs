@@ -109,8 +109,6 @@ impl Disk {
 
     /// Returns the idle, write and read power consumption for a given disk.
     pub fn find_power_specs(&self, power_model: PowerModel) -> DiskPowerSpecs {
-        let capacity_in_gigabytes = self.capacity / 1073741824;
-
         let similar_disks_by_form_factor: Vec<DiskPowerSpecs> = power_model
             .disks
             .into_iter()
@@ -119,7 +117,7 @@ impl Disk {
 
         let similar_disks_by_capacity: Vec<DiskPowerSpecs> = similar_disks_by_form_factor
             .into_iter()
-            .filter(|disk_pm| disk_pm.capacity == capacity_in_gigabytes as u64)
+            .filter(|disk_pm| disk_pm.capacity == self.capacity as u64)
             .collect();
 
         similar_disks_by_capacity[0].clone()
@@ -424,7 +422,9 @@ pub fn find_physical_size(disk_name: &str, path: &str) -> Result<u64, NoBlockErr
 
             let number_of_sectors = size_buffer.trim_end().parse::<u64>().unwrap();
 
-            let physical_size = (number_of_sectors * 512) / 1073741824;
+            let base: u64 = 10;
+
+            let physical_size = (number_of_sectors * 512) / base.pow(9);
 
             Ok(physical_size)
         }
@@ -458,11 +458,11 @@ mod tests {
     fn it_should_generate_the_power_specs_for_a_disk() {
         let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
         let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
-        let ten_gigabytes_in_bytes = 1099511627776;
+        let one_terabyte_in_gigabytes = 1024;
 
         let mut disk = Disk {
             name: String::from("/dev/nvme0"),
-            capacity: ten_gigabytes_in_bytes,
+            capacity: one_terabyte_in_gigabytes,
             form_factor: FormFactor::NVME,
             max_buffer_size: 1,
             power_model_path: String::from("/"),
@@ -670,7 +670,7 @@ mod tests {
 
         let disk = Disk {
             name: String::from("/dev/nvme0"),
-            capacity: 1099511627776,
+            capacity: 1024,
             form_factor: FormFactor::NVME,
             max_buffer_size: 1,
             power_model_path: String::from("/"),
