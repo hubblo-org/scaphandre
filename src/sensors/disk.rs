@@ -86,12 +86,12 @@ pub struct Disk {
 }
 
 impl Disk {
-    /// Creates a new Disk, with an empty record buffer, to be updated through the execution of
-    /// Scaphandre.
+    /// Creates a new Disk, a representation of a physical disk, with an empty record buffer. It
+    /// can be updated throughout the execution of Scaphandre.
     pub fn new(disk_data: &sysinfo::Disk) -> Result<Self, NoBlockError> {
         let disk_name = format_disk_name(disk_data.name().to_str().unwrap());
         let disk_form_factor = find_form_factor(&disk_name, "/");
-        let attempt_physical_size = Disk::find_physical_size(&disk_name, "/");
+        let attempt_physical_size = find_physical_size(&disk_name, "/");
         match attempt_physical_size {
             Ok(size) => Ok(Disk {
                 name: disk_name,
@@ -103,30 +103,6 @@ impl Disk {
                 power_model_path: String::from("No power_model_path provided"),
                 state: DiskState::Unknown,
             }),
-            Err(_) => Err(NoBlockError),
-        }
-    }
-
-    pub fn find_physical_size(
-        disk_name: &str,
-        path: &str,
-    ) -> Result<u64, NoBlockError> {
-        let path = PathBuf::from_str(path).unwrap();
-        let formatted_disk_name = format_disk_name(disk_name);
-        let disk_path = path.join("sys/block").join(formatted_disk_name);
-        let attempt_size_file = File::open(disk_path.join("size").to_str().unwrap());
-        match attempt_size_file {
-            Ok(size) => {
-                let mut size_file = size;
-                let mut size_buffer = String::new();
-                size_file.read_to_string(&mut size_buffer).unwrap();
-
-                let number_of_sectors = size_buffer.trim_end().parse::<u64>().unwrap();
-
-                let physical_size = (number_of_sectors * 512) / 1073741824;
-
-                Ok(physical_size)
-            }
             Err(_) => Err(NoBlockError),
         }
     }
@@ -433,6 +409,27 @@ pub fn find_form_factor(disk_name: &str, path: &str) -> FormFactor {
     };
 
     adapter
+}
+
+pub fn find_physical_size(disk_name: &str, path: &str) -> Result<u64, NoBlockError> {
+    let path = PathBuf::from_str(path).unwrap();
+    let formatted_disk_name = format_disk_name(disk_name);
+    let disk_path = path.join("sys/block").join(formatted_disk_name);
+    let attempt_size_file = File::open(disk_path.join("size").to_str().unwrap());
+    match attempt_size_file {
+        Ok(size) => {
+            let mut size_file = size;
+            let mut size_buffer = String::new();
+            size_file.read_to_string(&mut size_buffer).unwrap();
+
+            let number_of_sectors = size_buffer.trim_end().parse::<u64>().unwrap();
+
+            let physical_size = (number_of_sectors * 512) / 1073741824;
+
+            Ok(physical_size)
+        }
+        Err(_) => Err(NoBlockError),
+    }
 }
 
 #[cfg(test)]

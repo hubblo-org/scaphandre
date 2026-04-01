@@ -1,5 +1,7 @@
 #[cfg(feature = "disks_evaluation")]
-use scaphandre::sensors::disk::{find_form_factor, format_disk_name, DiskState, FormFactor};
+use scaphandre::sensors::disk::{
+    find_form_factor, find_physical_size, format_disk_name, DiskState, FormFactor,
+};
 use std::collections::HashSet;
 
 mod common;
@@ -36,8 +38,7 @@ fn it_should_find_the_physical_disk_size_of_a_disk_with_nvme_form_factor() {
     common::setup_fs_nvme();
     let tmp_dir = common::tmp_tests_dir();
     let disk_name = "nvme0n1";
-    let disk_size =
-        scaphandre::sensors::disk::Disk::find_physical_size(disk_name, tmp_dir.to_str().unwrap());
+    let disk_size = find_physical_size(disk_name, tmp_dir.to_str().unwrap());
 
     assert_eq!(disk_size.unwrap(), 476);
 }
@@ -50,8 +51,7 @@ fn it_should_not_panick_if_no_sys_block_is_associated_to_a_disk_name() {
     common::setup_fs_nvme();
     let tmp_dir = common::tmp_tests_dir();
     let disk_name = "loop1";
-    let attempt_to_find_disk_size =
-        scaphandre::sensors::disk::Disk::find_physical_size(disk_name, tmp_dir.to_str().unwrap());
+    let attempt_to_find_disk_size = find_physical_size(disk_name, tmp_dir.to_str().unwrap());
 
     assert_eq!(attempt_to_find_disk_size.unwrap_err(), NoBlockError);
 }
