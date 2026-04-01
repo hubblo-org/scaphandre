@@ -110,6 +110,8 @@ pub fn generate_mock_topology(disks: bool) -> Topology {
 
         let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
         let power_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
             capacity: 109951162776,
             form_factor: FormFactor::NVME,
             idle: 0.5,

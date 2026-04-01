@@ -55,6 +55,8 @@ pub struct PowerModel {
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct DiskPowerSpecs {
+    pub name: String,
+    pub manufacturer: String,
     pub capacity: u64,
     pub form_factor: FormFactor,
     pub idle: f32,
@@ -66,6 +68,8 @@ pub struct DiskPowerSpecs {
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct DiskPowerConsumption {
+    pub name: String,
+    pub manufacturer: String,
     pub form_factor: FormFactor,
     pub capacity: u64,
     pub idle: f32,
@@ -133,14 +137,16 @@ impl Disk {
         let mut iter = records.deserialize();
 
         if let Some(result) = iter.next() {
-            let consumption: DiskPowerConsumption = result.unwrap();
+            let disk_model: DiskPowerConsumption = result.unwrap();
 
             let power_specs = DiskPowerSpecs {
+                name: disk_model.name,
+                manufacturer: disk_model.manufacturer,
                 form_factor: self.form_factor,
-                capacity: self.capacity / 1073741824,
-                idle: consumption.idle,
-                read: consumption.read,
-                write: consumption.write,
+                capacity: self.capacity,
+                idle: disk_model.idle,
+                read: disk_model.read,
+                write: disk_model.write,
                 read_bytes,
                 written_bytes,
             };
@@ -483,6 +489,8 @@ mod tests {
     fn it_should_generate_record_for_power_consumption_for_a_given_disk() {
         let ten_gigabytes_in_bytes = 1099511627776;
         let power_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
             capacity: ten_gigabytes_in_bytes,
             form_factor: FormFactor::NVME,
             idle: 0.5,
@@ -533,6 +541,9 @@ mod tests {
         let ten_gigabytes_in_bytes = 1099511627776;
 
         let power_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
+
             capacity: ten_gigabytes_in_bytes,
             form_factor: FormFactor::NVME,
             idle: 0.5,
@@ -563,6 +574,8 @@ mod tests {
         let ten_gigabytes_in_bytes = 1099511627776;
 
         let power_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
             capacity: ten_gigabytes_in_bytes,
             form_factor: FormFactor::NVME,
             idle: 0.5,
@@ -601,6 +614,8 @@ mod tests {
         let ten_gigabytes_in_bytes = 1099511627776;
 
         let power_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
             capacity: ten_gigabytes_in_bytes,
             form_factor: FormFactor::NVME,
             idle: 0.5,
@@ -650,6 +665,8 @@ mod tests {
     #[test]
     fn it_should_give_a_power_estimation_for_a_given_disk_specifications() {
         let disk_first_row = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
@@ -659,6 +676,8 @@ mod tests {
             written_bytes: 0,
         };
         let disk_second_row = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
             capacity: 2048,
             form_factor: FormFactor::SATA,
             idle: 0.8,
@@ -691,6 +710,8 @@ mod tests {
     #[test]
     fn it_should_return_the_current_disk_state() {
         let first_disk_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
@@ -701,6 +722,8 @@ mod tests {
         };
 
         let second_disk_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
@@ -727,6 +750,8 @@ mod tests {
         assert_eq!(disk_state, DiskState::Write);
 
         let third_disk_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
@@ -742,6 +767,8 @@ mod tests {
         assert_eq!(disk_state, DiskState::Read);
 
         let fourth_disk_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
@@ -757,6 +784,8 @@ mod tests {
         assert_eq!(disk_state, DiskState::ReadWrite);
 
         let fifth_disk_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
@@ -775,6 +804,8 @@ mod tests {
     #[test]
     fn it_should_update_the_disk_state() {
         let first_disk_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
@@ -796,6 +827,8 @@ mod tests {
         };
 
         let refreshed_disk_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
@@ -815,6 +848,8 @@ mod tests {
 
         let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
         let first_disk_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
             idle: 0.05,
