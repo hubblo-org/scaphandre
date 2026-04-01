@@ -90,6 +90,7 @@ fn it_should_add_an_evaluated_disk_to_the_topology() {
         assert_eq!(tdisk.name, unique_disks_names[index]);
     });
 
+    assert!(mock_topology.disks.len() >= 1);
     assert_eq!(mock_topology.disks.len(), unique_disks_names.len());
 }
 
@@ -142,5 +143,6 @@ fn it_should_refresh_all_the_topology_disks_through_sysinfo() {
 
     mock_topology.refresh_disks(&sys_disks);
 
+    assert!(mock_topology.disks.len() >= 1);
     assert_eq!(mock_topology.disks.len(), unique_disks_names.len());
 }
