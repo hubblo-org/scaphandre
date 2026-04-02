@@ -368,6 +368,12 @@ impl Topology {
         self.refresh_procs();
         self.refresh_record();
         self.refresh_stats();
+
+        #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+        {
+            let disks = sysinfo::Disks::new_with_refreshed_list();
+            self.refresh_disks(&disks);
+        }
     }
 
     /// Gets currently running processes (as procfs::Process instances) and stores
@@ -627,7 +633,7 @@ impl Topology {
         ])
     }
 
-    pub fn get_disks(&self) -> HashMap<String, (String, HashMap<String, String>, Record)> {
+    pub fn get_disks(&mut self) -> HashMap<String, (String, HashMap<String, String>, Record)> {
         let timestamp = current_system_time_since_epoch();
         let mut res = HashMap::new();
         let disks = sysinfo::Disks::new_with_refreshed_list();
@@ -677,6 +683,11 @@ impl Topology {
                     ),
                 ),
             );
+            #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+            match self.add_sensor_disk(d) {
+                Ok(_) => info!("Disk with power consumption evaluation added to topology!"),
+                Err(e) => error!("{e}"),
+            };
         }
         res
     }
@@ -685,7 +696,7 @@ impl Topology {
     /// systems ; this can be misleading, especially about their capacity, which is useful in identifying their power specifications.
     /// Only physical disks and their consumption have to be evaluated.
     #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-    pub fn add_sensor_disk(&mut self, disk: &sysinfo::Disk) -> Result<(), ()> {
+    pub fn add_sensor_disk(&mut self, disk: &sysinfo::Disk) -> Result<(), disk::DiskError> {
         let sensor_disk = Disk::new(disk);
         match sensor_disk {
             Ok(sd) => {
@@ -697,10 +708,10 @@ impl Topology {
                 if identified_disks.len() == 0 {
                     Ok(self.disks.push(sd))
                 } else {
-                    Err(println!("Disk already present in topology!"))
+                    Err(disk::DiskError::DiskAlreadyPresent)
                 }
             }
-            Err(e) => Err(println!("No disk found: {e:?}")),
+            Err(_) => Err(disk::DiskError::NoBlockInSysfs),
         }
     }
 
