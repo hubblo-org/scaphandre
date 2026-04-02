@@ -62,6 +62,7 @@ pub struct DiskPowerSpecs {
     pub idle: f32,
     pub write: f32,
     pub read: f32,
+    pub read_write: Option<f32>,
     pub read_bytes: u64,
     pub written_bytes: u64,
 }
@@ -75,6 +76,7 @@ pub struct DiskPowerConsumption {
     pub idle: f32,
     pub read: f32,
     pub write: f32,
+    pub read_write: Option<f32>,
 }
 
 #[derive(Clone, Debug)]
@@ -147,6 +149,7 @@ impl Disk {
                 idle: disk_model.idle,
                 read: disk_model.read,
                 write: disk_model.write,
+                read_write: disk_model.read_write,
                 read_bytes,
                 written_bytes,
             };
@@ -201,9 +204,14 @@ impl Disk {
             DiskState::Idle => Some(power_specs.unwrap().idle),
             DiskState::Read => Some(power_specs.unwrap().read),
             DiskState::Write => Some(power_specs.unwrap().write),
-            // Associating ReadWrite state to writing operation consumption until finding a better
-            // solution.
-            DiskState::ReadWrite => Some(power_specs.unwrap().write),
+            DiskState::ReadWrite => {
+                let power_specs = power_specs.unwrap();
+                if let Some(rw_power_consumption) = power_specs.read_write {
+                    Some(rw_power_consumption)
+                } else {
+                    Some(power_specs.write)
+                }
+            }
             _ => None,
         };
 
@@ -479,10 +487,15 @@ mod tests {
 
         disk.set_power_specs(1024, 1024, file_path);
 
-        assert_eq!(disk.clone().power_specs.unwrap().capacity, 1024);
-        assert_eq!(disk.clone().power_specs.unwrap().idle, 0.5);
-        assert_eq!(disk.clone().power_specs.unwrap().read, 3.0);
-        assert_eq!(disk.clone().power_specs.unwrap().write, 5.0);
+        let disk_power_specs = disk.power_specs.unwrap();
+
+        assert_eq!(disk_power_specs.name, String::from("Disk name"));
+        assert_eq!(disk_power_specs.manufacturer, String::from("Disk manufacturer"));
+        assert_eq!(disk_power_specs.capacity, 1024);
+        assert_eq!(disk_power_specs.idle, 0.5);
+        assert_eq!(disk_power_specs.read, 3.0);
+        assert_eq!(disk_power_specs.write, 5.0);
+        assert_eq!(disk_power_specs.read_write, None);
     }
 
     #[test]
@@ -496,6 +509,7 @@ mod tests {
             idle: 0.5,
             read: 3.0,
             write: 5.0,
+            read_write: None,
             read_bytes: 1024,
             written_bytes: 2048,
         };
@@ -513,6 +527,37 @@ mod tests {
 
         let scaph_disk_record = disk.generate_power_record().unwrap();
         assert_eq!(Some(scaph_disk_record.value), Some(String::from("5000000")));
+    }
+
+    #[test]
+    fn it_should_generate_record_for_power_consumption_for_a_given_disk_in_read_write_state() {
+        let ten_gigabytes_in_bytes = 1099511627776;
+        let power_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
+            capacity: ten_gigabytes_in_bytes,
+            form_factor: FormFactor::NVME,
+            idle: 0.5,
+            read: 3.0,
+            write: 5.0,
+            read_write: Some(4.0),
+            read_bytes: 1024,
+            written_bytes: 2048,
+        };
+
+        let disk = Disk {
+            name: String::from("nvme0n1"),
+            capacity: ten_gigabytes_in_bytes,
+            form_factor: FormFactor::NVME,
+            max_buffer_size: 1,
+            power_model_path: String::from("/"),
+            power_specs: Some(power_specs),
+            record_buffer: vec![],
+            state: DiskState::ReadWrite,
+        };
+
+        let scaph_disk_record = disk.generate_power_record().unwrap();
+        assert_eq!(Some(scaph_disk_record.value), Some(String::from("4000000")));
     }
 
     #[test]
@@ -543,12 +588,12 @@ mod tests {
         let power_specs = DiskPowerSpecs {
             name: String::from("Disk name"),
             manufacturer: String::from("Disk manufacturer"),
-
             capacity: ten_gigabytes_in_bytes,
             form_factor: FormFactor::NVME,
             idle: 0.5,
             read: 3.0,
             write: 5.0,
+            read_write: None,
             read_bytes: 1024,
             written_bytes: 2048,
         };
@@ -581,6 +626,7 @@ mod tests {
             idle: 0.5,
             read: 3.0,
             write: 5.0,
+            read_write: None,
             read_bytes: 1024,
             written_bytes: 2048,
         };
@@ -621,6 +667,7 @@ mod tests {
             idle: 0.5,
             read: 3.0,
             write: 5.0,
+            read_write: None,
             read_bytes: 1024,
             written_bytes: 2048,
         };
@@ -672,6 +719,7 @@ mod tests {
             idle: 0.05,
             write: 8.0,
             read: 3.0,
+            read_write: None,
             read_bytes: 0,
             written_bytes: 0,
         };
@@ -683,12 +731,13 @@ mod tests {
             idle: 0.8,
             write: 5.0,
             read: 2.0,
+            read_write: None,
             read_bytes: 0,
             written_bytes: 0,
         };
 
         let disk = Disk {
-            name: String::from("/dev/nvme0"),
+            name: String::from("nvme0n1"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
             max_buffer_size: 1,
@@ -717,6 +766,7 @@ mod tests {
             idle: 0.05,
             write: 8.0,
             read: 3.0,
+            read_write: None,
             read_bytes: 1024,
             written_bytes: 0,
         };
@@ -729,6 +779,7 @@ mod tests {
             idle: 0.05,
             write: 8.0,
             read: 3.0,
+            read_write: None,
             read_bytes: 1024,
             written_bytes: 1024,
         };
@@ -757,6 +808,7 @@ mod tests {
             idle: 0.05,
             write: 8.0,
             read: 3.0,
+            read_write: None,
             read_bytes: 2048,
             written_bytes: 1024,
         };
@@ -774,6 +826,7 @@ mod tests {
             idle: 0.05,
             write: 8.0,
             read: 3.0,
+            read_write: None,
             read_bytes: 4096,
             written_bytes: 2048,
         };
@@ -791,6 +844,7 @@ mod tests {
             idle: 0.05,
             write: 8.0,
             read: 3.0,
+            read_write: None,
             read_bytes: 4096,
             written_bytes: 2048,
         };
@@ -811,6 +865,7 @@ mod tests {
             idle: 0.05,
             write: 8.0,
             read: 3.0,
+            read_write: None,
             read_bytes: 1024,
             written_bytes: 0,
         };
@@ -834,6 +889,7 @@ mod tests {
             idle: 0.05,
             write: 8.0,
             read: 3.0,
+            read_write: None,
             read_bytes: 4096,
             written_bytes: 2048,
         };
@@ -855,6 +911,7 @@ mod tests {
             idle: 0.05,
             write: 8.0,
             read: 3.0,
+            read_write: None,
             read_bytes: 1024,
             written_bytes: 0,
         };

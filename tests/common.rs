@@ -117,6 +117,7 @@ pub fn generate_mock_topology(disks: bool) -> Topology {
             idle: 0.5,
             read: 3.0,
             write: 5.0,
+            read_write: None,
             read_bytes: 0,
             written_bytes: 0,
         };
