@@ -37,14 +37,20 @@ impl std::fmt::Display for FormFactor {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct NoBlockError;
+pub enum DiskError {
+    NoBlockInSysfs,
+    DiskAlreadyPresent,
+}
 
-impl fmt::Display for NoBlockError {
+impl fmt::Display for DiskError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "No associated block directory has been found for this disk name!"
-        )
+        match *self {
+            DiskError::NoBlockInSysfs => write!(
+                f,
+                "No associated block directory has been found for this disk name in sysfs!"
+            ),
+            DiskError::DiskAlreadyPresent => write!(f, "Disk is already available in topology."),
+        }
     }
 }
 
@@ -94,7 +100,7 @@ pub struct Disk {
 impl Disk {
     /// Creates a new Disk, a representation of a physical disk, with an empty record buffer. It
     /// can be updated throughout the execution of Scaphandre.
-    pub fn new(disk_data: &sysinfo::Disk) -> Result<Self, NoBlockError> {
+    pub fn new(disk_data: &sysinfo::Disk) -> Result<Self, DiskError> {
         let disk_name = format_disk_name(disk_data.name().to_str().unwrap());
         let disk_form_factor = find_form_factor(&disk_name, "/");
         let attempt_physical_size = find_physical_size(&disk_name, "/");
@@ -109,7 +115,7 @@ impl Disk {
                 power_model_path: String::from("No power_model_path provided"),
                 state: DiskState::Unknown,
             }),
-            Err(_) => Err(NoBlockError),
+            Err(_) => Err(DiskError::NoBlockInSysfs),
         }
     }
 
@@ -271,7 +277,7 @@ impl Disk {
             let new_record = self.generate_power_record();
             self.add_record(new_record.unwrap());
         } else {
-            println!("No previous power specification, continuing execution until specifications are found!");
+            info!("No previous power specification, continuing execution until specifications are found!");
         }
     }
 }
@@ -423,7 +429,7 @@ pub fn find_form_factor(disk_name: &str, path: &str) -> FormFactor {
     adapter
 }
 
-pub fn find_physical_size(disk_name: &str, path: &str) -> Result<u64, NoBlockError> {
+pub fn find_physical_size(disk_name: &str, path: &str) -> Result<u64, DiskError> {
     let path = PathBuf::from_str(path).unwrap();
     let formatted_disk_name = format_disk_name(disk_name);
     let disk_path = path.join("sys/block").join(formatted_disk_name);
@@ -442,7 +448,7 @@ pub fn find_physical_size(disk_name: &str, path: &str) -> Result<u64, NoBlockErr
 
             Ok(physical_size)
         }
-        Err(_) => Err(NoBlockError),
+        Err(_) => Err(DiskError::NoBlockInSysfs),
     }
 }
 
@@ -490,7 +496,10 @@ mod tests {
         let disk_power_specs = disk.power_specs.unwrap();
 
         assert_eq!(disk_power_specs.name, String::from("Disk name"));
-        assert_eq!(disk_power_specs.manufacturer, String::from("Disk manufacturer"));
+        assert_eq!(
+            disk_power_specs.manufacturer,
+            String::from("Disk manufacturer")
+        );
         assert_eq!(disk_power_specs.capacity, 1024);
         assert_eq!(disk_power_specs.idle, 0.5);
         assert_eq!(disk_power_specs.read, 3.0);

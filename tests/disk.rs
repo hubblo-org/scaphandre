@@ -1,6 +1,6 @@
 #[cfg(feature = "disks_evaluation")]
 use scaphandre::sensors::disk::{
-    find_form_factor, find_physical_size, format_disk_name, DiskState, FormFactor,
+    find_form_factor, find_physical_size, format_disk_name, DiskError, DiskState, FormFactor,
 };
 use std::collections::HashSet;
 
@@ -46,14 +46,12 @@ fn it_should_find_the_physical_disk_size_of_a_disk_with_nvme_form_factor() {
 #[test]
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 fn it_should_not_panick_if_no_sys_block_is_associated_to_a_disk_name() {
-    use scaphandre::sensors::disk::NoBlockError;
-
     common::setup_fs_nvme();
     let tmp_dir = common::tmp_tests_dir();
     let disk_name = "loop1";
     let attempt_to_find_disk_size = find_physical_size(disk_name, tmp_dir.to_str().unwrap());
 
-    assert_eq!(attempt_to_find_disk_size.unwrap_err(), NoBlockError);
+    assert_eq!(attempt_to_find_disk_size.unwrap_err(), DiskError::NoBlockInSysfs);
 }
 
 #[test]
@@ -145,4 +143,32 @@ fn it_should_refresh_all_the_topology_disks_through_sysinfo() {
 
     assert!(mock_topology.disks.len() >= 1);
     assert_eq!(mock_topology.disks.len(), unique_disks_names.len());
+}
+
+#[test]
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+fn it_should_return_an_error_if_disk_is_already_present_in_topology_or_not_found() {
+    let mut mock_topology = common::generate_mock_topology(false);
+    let sys_disks = sysinfo::Disks::new_with_refreshed_list();
+    let mut disks_names: Vec<String> = vec![];
+
+    sys_disks.iter().for_each(|sdisk| {
+        let attempt_to_add_disk = mock_topology.add_sensor_disk(sdisk);
+        match attempt_to_add_disk {
+            Ok(_) => {
+                let formatted_disk_name = format_disk_name(sdisk.name().to_str().unwrap());
+                disks_names.push(formatted_disk_name);
+                println!("Disk added")
+            }
+            Err(e) => {
+                let formatted_disk_name = format_disk_name(sdisk.name().to_str().unwrap());
+                if disks_names.contains(&String::from(formatted_disk_name)) {
+                    assert_eq!(e, DiskError::DiskAlreadyPresent);
+                } else {
+                    assert_eq!(e, DiskError::NoBlockInSysfs)
+                }
+                println!("Error: {e}");
+            }
+        };
+    });
 }
