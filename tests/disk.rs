@@ -2,6 +2,7 @@
 use scaphandre::sensors::disk::{
     find_form_factor, find_physical_size, format_disk_name, DiskError, DiskState, FormFactor,
 };
+use scaphandre::sensors::units::Unit;
 use std::collections::HashSet;
 
 mod common;
@@ -51,7 +52,10 @@ fn it_should_not_panick_if_no_sys_block_is_associated_to_a_disk_name() {
     let disk_name = "loop1";
     let attempt_to_find_disk_size = find_physical_size(disk_name, tmp_dir.to_str().unwrap());
 
-    assert_eq!(attempt_to_find_disk_size.unwrap_err(), DiskError::NoBlockInSysfs);
+    assert_eq!(
+        attempt_to_find_disk_size.unwrap_err(),
+        DiskError::NoBlockInSysfs
+    );
 }
 
 #[test]
@@ -171,4 +175,36 @@ fn it_should_return_an_error_if_disk_is_already_present_in_topology_or_not_found
             }
         };
     });
+}
+
+#[test]
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+fn it_should_add_disk_energy_records_to_the_topology_record_buffer() {
+    use scaphandre::sensors::{Record, RecordReader};
+
+    let mut mock_topology = common::generate_mock_topology(true);
+    let two_seconds = std::time::Duration::new(2, 0);
+    let four_seconds = std::time::Duration::new(4, 0);
+
+    let first_power_record = Record {
+        timestamp: two_seconds,
+        unit: Unit::MicroWatt,
+        value: String::from("5000000"),
+    };
+    let second_power_record = Record {
+        timestamp: four_seconds,
+        unit: Unit::MicroWatt,
+        value: String::from("5000000"),
+    };
+
+    mock_topology.disks.iter_mut().for_each(|topology_disk| {
+        topology_disk.record_buffer.push(first_power_record.clone());
+        topology_disk
+            .record_buffer
+            .push(second_power_record.clone());
+    });
+
+    let topology_record = mock_topology.read_record().unwrap();
+    assert_eq!(topology_record.value, String::from("40000000"));
+    assert_eq!(topology_record.unit, Unit::MicroJoule);
 }

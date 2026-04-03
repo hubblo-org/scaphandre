@@ -107,6 +107,33 @@ impl RecordReader for Topology {
                     }
                 }
             }
+            #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+            {
+                self.disks.iter().for_each(|topology_disk| {
+                    let attempt_to_get_record = topology_disk.read_record();
+
+                    match attempt_to_get_record {
+                        Ok(record) => {
+                            let parsing_value = record.value.trim().parse::<i128>();
+                            match parsing_value {
+                                Ok(value) => {
+                                    total += value;
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Could not convert {} to i128: {}",
+                                        record.value.trim(),
+                                        e
+                                    );
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            error!("Error while getting disk energy record: {e}")
+                        }
+                    }
+                });
+            }
             Ok(Record::new(
                 current_system_time_since_epoch(),
                 total.to_string(),

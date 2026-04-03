@@ -1,9 +1,10 @@
 use crate::sensors::units::Unit;
 use crate::sensors::utils::current_system_time_since_epoch;
-use crate::sensors::{Record, RecordGenerator};
+use crate::sensors::{Record, RecordGenerator, RecordReader};
 use csv;
 use regex::Regex;
 use serde::Deserialize;
+use std::error::Error;
 use std::fmt;
 use std::fs::File;
 use std::io::Read;
@@ -236,7 +237,7 @@ impl Disk {
 
     /// Creates a record with the disk's energy consumption between two power records, during the
     /// execution of Scaphandre.
-    fn generate_energy_record(records: (Record, Record)) -> Option<Record> {
+    pub fn generate_energy_record(&self, records: (&Record, &Record)) -> Option<Record> {
         let parsed_values = (
             records.0.value.parse::<u64>(),
             records.1.value.parse::<u64>(),
@@ -304,6 +305,28 @@ impl RecordGenerator for Disk {
         records_copy
     }
     fn refresh_record(&mut self) {}
+}
+
+#[derive(Debug)]
+struct NoRecordError;
+
+impl fmt::Display for NoRecordError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "No energy record were generated!")
+    }
+}
+impl Error for NoRecordError {}
+
+impl RecordReader for Disk {
+    fn read_record(&self) -> Result<Record, Box<dyn Error>> {
+        let last_record = self.record_buffer.last().unwrap();
+        let penultimate_record = &self.record_buffer[self.record_buffer.len() - 2];
+
+        match self.generate_energy_record((penultimate_record, last_record)) {
+            Some(record) => Ok(record),
+            None => Err(Box::new(NoRecordError)),
+        }
+    }
 }
 
 /// The name for a disk identified through sysfs might include the partition number, the namespace
@@ -585,7 +608,32 @@ mod tests {
             unit: Unit::MicroWatt,
         };
 
-        let energy_record = Disk::generate_energy_record((first_record, second_record)).unwrap();
+        let power_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
+            capacity: 1024,
+            form_factor: FormFactor::NVME,
+            idle: 0.5,
+            read: 3.0,
+            write: 5.0,
+            read_write: None,
+            read_bytes: 1024,
+            written_bytes: 2048,
+        };
+        let disk = Disk {
+            name: String::from("/dev/nvme0"),
+            capacity: 1024,
+            form_factor: FormFactor::NVME,
+            max_buffer_size: 1,
+            power_model_path: String::from("/"),
+            power_specs: Some(power_specs),
+            record_buffer: vec![first_record.clone(), second_record.clone()],
+            state: DiskState::Write,
+        };
+
+        let energy_record = disk
+            .generate_energy_record((&first_record, &second_record))
+            .unwrap();
 
         assert_eq!(Some(energy_record.value), Some(String::from("16000000")));
     }
@@ -946,5 +994,54 @@ mod tests {
         assert_eq!(disk.record_buffer.len(), 1);
         assert_eq!(disk.state, DiskState::Write);
         assert_eq!(first_report.value, "5000000");
+    }
+
+    #[test]
+    fn it_reads_the_latest_generated_energy_record_for_a_given_disk() {
+        let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
+
+        let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
+        let first_disk_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
+            capacity: 1024,
+            form_factor: FormFactor::NVME,
+            idle: 0.05,
+            write: 8.0,
+            read: 3.0,
+            read_write: None,
+            read_bytes: 1024,
+            written_bytes: 0,
+        };
+
+        let two_seconds = std::time::Duration::new(2, 0);
+        let four_seconds = std::time::Duration::new(4, 0);
+
+        let first_record = Record {
+            timestamp: two_seconds,
+            unit: Unit::MicroWatt,
+            value: String::from("5000000"),
+        };
+
+        let second_record = Record {
+            timestamp: four_seconds,
+            unit: Unit::MicroWatt,
+            value: String::from("5000000"),
+        };
+
+        let disk = Disk {
+            name: String::from("/dev/nvme0"),
+            capacity: 109951162776,
+            form_factor: FormFactor::NVME,
+            max_buffer_size: 1,
+            power_model_path: String::from(file_path.to_str().unwrap()),
+            power_specs: Some(first_disk_specs.clone()),
+            record_buffer: vec![first_record, second_record],
+            state: DiskState::Unknown,
+        };
+
+        let energy_record = disk.read_record().unwrap();
+
+        assert_eq!(energy_record.value, String::from("20000000"));
     }
 }
