@@ -435,6 +435,30 @@ impl MetricGenerator {
                 });
             }
         }
+
+        #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+        {
+            self.topology.disks.iter().for_each(|topology_disk| {
+                let number_of_records = topology_disk.record_buffer.len() as u64;
+                let mut attributes = HashMap::new();
+                attributes.insert(String::from("disk_name"), topology_disk.name.clone());
+                let disk_metric = Metric {
+                    name: String::from("scaph_self_disk_records_nb"),
+                    metric_type: String::from("gauge"),
+                    ttl: 60.0,
+                    timestamp: default_timestamp,
+                    hostname: self.hostname.clone(),
+                    state: String::from("ok"),
+                    tags: vec![String::from("scaphandre")],
+                    attributes: attributes.clone(),
+                    description: String::from(
+                        "Number of power consumption records stored for each disk",
+                    ),
+                    metric_value: MetricValueType::IntUnsigned(number_of_records),
+                };
+                self.data.push(disk_metric)
+            });
+        }
     }
 
     /// Generate host metrics.
@@ -1024,6 +1048,132 @@ impl MetricGenerator {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sensors::{
+        disk::{Disk, DiskPowerSpecs, DiskState, FormFactor},
+        units::Unit,
+        utils::ProcessTracker,
+        Record, RecordReader,
+    };
+
+    use std::path::Path;
+
+    fn generate_mock_topology() -> Topology {
+        let mock_sensor_data = HashMap::new();
+
+        let proc_tracker = ProcessTracker::new(5);
+        let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
+
+        let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
+        let power_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
+            capacity: 109951162776,
+            form_factor: FormFactor::NVME,
+            idle: 0.5,
+            read: 3.0,
+            write: 5.0,
+            read_write: None,
+            read_bytes: 0,
+            written_bytes: 0,
+        };
+
+        let first_disk_power_record = Record {
+            timestamp: std::time::Duration::new(2, 0),
+            unit: Unit::MicroWatt,
+            value: String::from("5000000"),
+        };
+        let second_disk_power_record = Record {
+            timestamp: std::time::Duration::new(4, 0),
+            unit: Unit::MicroWatt,
+            value: String::from("5000000"),
+        };
+        let third_disk_power_record = Record {
+            timestamp: std::time::Duration::new(6, 0),
+            unit: Unit::MicroWatt,
+            value: String::from("8000000"),
+        };
+        let fourth_disk_power_record = Record {
+            timestamp: std::time::Duration::new(8, 0),
+            unit: Unit::MicroWatt,
+            value: String::from("8000000"),
+        };
+
+        let mut disk = Disk {
+            name: String::from("/dev/nvme0"),
+            form_factor: FormFactor::NVME,
+            capacity: 109951162776,
+            max_buffer_size: 1,
+            record_buffer: vec![
+                first_disk_power_record.clone(),
+                second_disk_power_record.clone(),
+            ],
+            power_specs: Some(power_specs),
+            state: DiskState::Unknown,
+            power_model_path: String::from(file_path.to_str().unwrap()),
+        };
+
+        let first_energy_record = disk.read_record().unwrap();
+
+        disk.record_buffer.push(third_disk_power_record);
+        disk.record_buffer.push(fourth_disk_power_record);
+
+        let second_energy_record = disk.read_record().unwrap();
+
+        let mock_topology = Topology {
+            sockets: vec![],
+            stat_buffer: vec![],
+            record_buffer: vec![first_energy_record.clone(), second_energy_record.clone()],
+            buffer_max_kbytes: 1,
+            domains_names: None,
+            _sensor_data: mock_sensor_data,
+            proc_tracker,
+            disks: vec![disk.clone(), disk.clone()],
+        };
+        mock_topology
+    }
+    #[test]
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    fn it_should_make_available_all_metrics_and_information_related_to_disks() {
+        let mock_topology = generate_mock_topology();
+        let mut mock_metric_generator = MetricGenerator::new(
+            mock_topology.clone(),
+            String::from("mock_host"),
+            false,
+            false,
+        );
+
+        mock_metric_generator.gen_self_metrics();
+        mock_metric_generator.gen_host_metrics();
+
+        let metrics_data = mock_metric_generator.data;
+        let disk_metrics_stats: Vec<&Metric> = metrics_data
+            .iter()
+            .filter(|metric| metric.name == "scaph_self_disk_records_nb")
+            .collect();
+
+        assert_eq!(disk_metrics_stats.len(), 2);
+
+        let host_power: Vec<&Metric> = metrics_data
+            .iter()
+            .filter(|metric| metric.name == "scaph_host_power_microwatts")
+            .collect();
+
+        let topo_record_buffer = mock_topology.clone().record_buffer;
+        let time_diff = topo_record_buffer[1].timestamp.as_secs_f64()
+            - topo_record_buffer[0].timestamp.as_secs_f64();
+        let energy_difference = topo_record_buffer[1].value.parse::<f64>().unwrap()
+            - topo_record_buffer[0].value.parse::<f64>().unwrap();
+        let expected_energy = (energy_difference / time_diff) as u64;
+
+        assert_eq!(
+            host_power[0].metric_value.to_string(),
+            expected_energy.to_string()
+        );
+    }
+}
 //  Copyright 2020 The scaphandre authors.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
