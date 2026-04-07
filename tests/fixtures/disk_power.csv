@@ -1,2 +1,3 @@
-name,manufacturer,form_factor,capacity,idle,read,write,read_write,source
-"Disk name","Disk manufacturer","NVME",1024,0.5,3.0,5.0,,"Test source"
+name,manufacturer,kind,form_factor,capacity,idle,read,write,read_write,source
+"Disk name","Disk manufacturer","SSD","NVME",512,0.5,3.0,5.0,,"Test source"
+"Disk name","Disk manufacturer","SSD","NVME",1024,0.5,3.0,5.0,,"Test source"

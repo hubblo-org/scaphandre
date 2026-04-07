@@ -1053,7 +1053,7 @@ mod tests {
 
         let mut disk = Disk {
             name: String::from("/dev/nvme0"),
-            capacity: 109951162776,
+            capacity: 1024,
             form_factor: FormFactor::NVME,
             kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
