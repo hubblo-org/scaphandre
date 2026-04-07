@@ -110,6 +110,7 @@ pub struct DiskPowerConsumption {
     pub name: String,
     pub manufacturer: String,
     pub form_factor: FormFactor,
+    pub kind: DiskKindWrapper,
     pub capacity: u64,
     pub idle: f32,
     pub read: f32,
@@ -183,21 +184,21 @@ impl Disk {
     /// Attribute power specifications to the disk, by parsing a CSV file with the documented power
     /// model for various disk archetypes. The read and written bytes for a given Disk can be
     /// identified with sysinfo::Disk::usage.
-    fn set_power_specs(&mut self, read_bytes: u64, written_bytes: u64, file_path: PathBuf) {
+    pub fn set_power_specs(&mut self, read_bytes: u64, written_bytes: u64, file_path: PathBuf) {
         let mut records = csv::Reader::from_path(file_path).unwrap();
 
         let mut disks_power: Vec<DiskPowerSpecs> = vec![];
-        let mut iter = records.deserialize();
+        let iter = records.deserialize();
 
-        if let Some(result) = iter.next() {
-            let disk_model: DiskPowerConsumption = result.unwrap();
+        iter.for_each(|record| {
+            let disk_model: DiskPowerConsumption = record.unwrap();
 
             let power_specs = DiskPowerSpecs {
                 name: disk_model.name,
                 manufacturer: disk_model.manufacturer,
-                form_factor: self.form_factor,
-                kind: self.kind,
-                capacity: self.capacity,
+                form_factor: disk_model.form_factor,
+                kind: disk_model.kind,
+                capacity: disk_model.capacity,
                 idle: disk_model.idle,
                 read: disk_model.read,
                 write: disk_model.write,
@@ -207,7 +208,7 @@ impl Disk {
             };
 
             disks_power.push(power_specs);
-        }
+        });
 
         let power_model = PowerModel { disks: disks_power };
 
