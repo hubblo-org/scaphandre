@@ -18,7 +18,7 @@ pub mod utils;
 pub mod warpten;
 use crate::sensors::{
     utils::{current_system_time_since_epoch, IProcess},
-    RecordGenerator, Topology,
+    RecordGenerator, RecordReader, Topology,
 };
 use chrono::Utc;
 use std::collections::HashMap;
@@ -1036,6 +1036,15 @@ impl MetricGenerator {
             Utc::now().format("%Y-%m-%dT%H:%M:%S")
         );
         self.gen_process_metrics();
+
+        #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+        {
+            info!(
+                "{}: Getting disk metrics",
+                Utc::now().format("%Y-%m-%dT%H:%M:%S")
+            );
+            self.generate_disk_metrics();
+        }
         trace!("self_metrics: {:#?}", self.data);
     }
 
@@ -1046,13 +1055,63 @@ impl MetricGenerator {
         }
         res
     }
+
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    fn generate_disk_metrics(&mut self) {
+        self.topology.disks.iter().for_each(|topology_disk| {
+            let records = topology_disk.get_records_passive();
+            let power_record = records.last().unwrap();
+
+            let mut attributes = HashMap::new();
+            let disk_name = &topology_disk.name;
+
+            attributes.insert(String::from("disk_name"), disk_name.to_string());
+
+            let disk_power_metric = Metric {
+                name: String::from("scaph_disk_power_microwatts"),
+                metric_type: String::from("counter"),
+                ttl: 60.0,
+                hostname: self.hostname.clone(),
+                timestamp: power_record.timestamp,
+                state: String::from("ok"),
+                tags: vec!["scaphandre".to_string()],
+                attributes: attributes.clone(),
+                description: String::from("Disk related power measurement in microwatts."),
+                metric_value: MetricValueType::Text(power_record.value.clone()),
+            };
+            self.data.push(disk_power_metric);
+
+            let last_energy_record = topology_disk.read_record();
+
+            match last_energy_record {
+                Ok(record) => {
+                    let disk_energy_metric = Metric {
+                        name: String::from("scaph_disk_energy_microjoules"),
+                        metric_type: String::from("counter"),
+                        ttl: 60.0,
+                        hostname: self.hostname.clone(),
+                        timestamp: record.timestamp,
+                        state: String::from("ok"),
+                        tags: vec!["scaphandre".to_string()],
+                        attributes: attributes.clone(),
+                        description: String::from(
+                            "Disk related energy measurement in microjoules.",
+                        ),
+                        metric_value: MetricValueType::Text(record.value.clone()),
+                    };
+                    self.data.push(disk_energy_metric);
+                }
+                Err(e) => println!("No energy record available for disk: {e}"),
+            };
+        });
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::sensors::{
-        disk::{Disk, DiskPowerSpecs, DiskState, FormFactor},
+        disk::{Disk, DiskKindWrapper, DiskPowerSpecs, DiskState, FormFactor},
         units::Unit,
         utils::ProcessTracker,
         Record, RecordReader,
@@ -1172,6 +1231,33 @@ mod tests {
             host_power[0].metric_value.to_string(),
             expected_energy.to_string()
         );
+    }
+
+    #[test]
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    fn it_should_generate_metrics_for_each_topology_disk() {
+        let mock_topology = generate_mock_topology();
+        let mut mock_metric_generator = MetricGenerator::new(
+            mock_topology.clone(),
+            String::from("mock_host"),
+            false,
+            false,
+        );
+
+        mock_metric_generator.generate_disk_metrics();
+        let metrics_data = mock_metric_generator.data;
+
+        let disk_metrics_power: Vec<&Metric> = metrics_data
+            .iter()
+            .filter(|metric| metric.name == "scaph_disk_power_microwatts")
+            .collect();
+        let disk_metrics_energy: Vec<&Metric> = metrics_data
+            .iter()
+            .filter(|metric| metric.name == "scaph_disk_energy_microjoules")
+            .collect();
+
+        assert_eq!(disk_metrics_power.len(), 2);
+        assert_eq!(disk_metrics_energy.len(), 2);
     }
 }
 //  Copyright 2020 The scaphandre authors.
