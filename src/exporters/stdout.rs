@@ -189,6 +189,21 @@ impl StdoutExporter {
             }
         }
 
+        #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+        {
+            let disks_metrics: Vec<&Metric> = metrics
+                .iter()
+                .filter(|metric| metric.name == "scaph_disk_power_microwatts")
+                .collect();
+
+            disks_metrics.iter().for_each(|metric| {
+                let power = metric.metric_value.to_string().parse::<f32>().unwrap() / 1000000.0;
+                let disk_name = metric.attributes.get("disk_name").unwrap();
+
+                println!("{} {} W", disk_name, power);
+            });
+        }
+
         let consumers: Vec<(IProcess, f64)>;
         if let Some(regex) = &self.args.regex_filter {
             println!("Processes filtered by '{regex}':");
