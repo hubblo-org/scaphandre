@@ -353,12 +353,18 @@ impl Error for NoRecordError {}
 
 impl RecordReader for Disk {
     fn read_record(&self) -> Result<Record, Box<dyn Error>> {
-        let last_record = self.record_buffer.last().unwrap();
-        let penultimate_record = &self.record_buffer[self.record_buffer.len() - 2];
+        // To generate and read a disk energy record, the record buffer needs to hold at least two
+        // power records.
+        if self.record_buffer.len() >= 2 {
+            let last_record = self.record_buffer.last().unwrap();
+            let penultimate_record = &self.record_buffer[self.record_buffer.len() - 2];
 
-        match self.generate_energy_record((penultimate_record, last_record)) {
-            Some(record) => Ok(record),
-            None => Err(Box::new(NoRecordError)),
+            match self.generate_energy_record((penultimate_record, last_record)) {
+                Some(record) => Ok(record),
+                None => Err(Box::new(NoRecordError)),
+            }
+        } else {
+            Err(Box::new(NoRecordError))
         }
     }
 }
@@ -1107,5 +1113,28 @@ mod tests {
         let energy_record = disk.read_record().unwrap();
 
         assert_eq!(energy_record.value, String::from("20000000"));
+    }
+
+    #[test]
+    fn it_returns_an_error_if_an_attempt_to_read_a_disk_energy_record_without_enough_power_records_is_made(
+    ) {
+        let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
+
+        let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
+        let disk = Disk {
+            name: String::from("/dev/nvme0"),
+            capacity: 109951162776,
+            form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
+            max_buffer_size: 1,
+            power_model_path: String::from(file_path.to_str().unwrap()),
+            power_specs: None,
+            record_buffer: vec![],
+            state: DiskState::Unknown,
+        };
+
+        let attempt_to_read_record = disk.read_record();
+
+        assert!(attempt_to_read_record.is_err());
     }
 }

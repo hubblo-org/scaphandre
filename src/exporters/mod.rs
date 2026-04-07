@@ -1060,49 +1060,51 @@ impl MetricGenerator {
     fn generate_disk_metrics(&mut self) {
         self.topology.disks.iter().for_each(|topology_disk| {
             let records = topology_disk.get_records_passive();
-            let power_record = records.last().unwrap();
+            let power_record = records.last();
 
-            let mut attributes = HashMap::new();
-            let disk_name = &topology_disk.name;
+            if let Some(record) = power_record {
+                let mut attributes = HashMap::new();
+                let disk_name = &topology_disk.name;
 
-            attributes.insert(String::from("disk_name"), disk_name.to_string());
+                attributes.insert(String::from("disk_name"), disk_name.to_string());
 
-            let disk_power_metric = Metric {
-                name: String::from("scaph_disk_power_microwatts"),
-                metric_type: String::from("counter"),
-                ttl: 60.0,
-                hostname: self.hostname.clone(),
-                timestamp: power_record.timestamp,
-                state: String::from("ok"),
-                tags: vec!["scaphandre".to_string()],
-                attributes: attributes.clone(),
-                description: String::from("Disk related power measurement in microwatts."),
-                metric_value: MetricValueType::Text(power_record.value.clone()),
-            };
-            self.data.push(disk_power_metric);
+                let disk_power_metric = Metric {
+                    name: String::from("scaph_disk_power_microwatts"),
+                    metric_type: String::from("counter"),
+                    ttl: 60.0,
+                    hostname: self.hostname.clone(),
+                    timestamp: record.timestamp,
+                    state: String::from("ok"),
+                    tags: vec!["scaphandre".to_string()],
+                    attributes: attributes.clone(),
+                    description: String::from("Disk related power measurement in microwatts."),
+                    metric_value: MetricValueType::Text(record.value.clone()),
+                };
+                self.data.push(disk_power_metric);
 
-            let last_energy_record = topology_disk.read_record();
+                let last_energy_record = topology_disk.read_record();
 
-            match last_energy_record {
-                Ok(record) => {
-                    let disk_energy_metric = Metric {
-                        name: String::from("scaph_disk_energy_microjoules"),
-                        metric_type: String::from("counter"),
-                        ttl: 60.0,
-                        hostname: self.hostname.clone(),
-                        timestamp: record.timestamp,
-                        state: String::from("ok"),
-                        tags: vec!["scaphandre".to_string()],
-                        attributes: attributes.clone(),
-                        description: String::from(
-                            "Disk related energy measurement in microjoules.",
-                        ),
-                        metric_value: MetricValueType::Text(record.value.clone()),
-                    };
-                    self.data.push(disk_energy_metric);
-                }
-                Err(e) => println!("No energy record available for disk: {e}"),
-            };
+                match last_energy_record {
+                    Ok(record) => {
+                        let disk_energy_metric = Metric {
+                            name: String::from("scaph_disk_energy_microjoules"),
+                            metric_type: String::from("counter"),
+                            ttl: 60.0,
+                            hostname: self.hostname.clone(),
+                            timestamp: record.timestamp,
+                            state: String::from("ok"),
+                            tags: vec!["scaphandre".to_string()],
+                            attributes: attributes.clone(),
+                            description: String::from(
+                                "Disk related energy measurement in microjoules.",
+                            ),
+                            metric_value: MetricValueType::Text(record.value.clone()),
+                        };
+                        self.data.push(disk_energy_metric);
+                    }
+                    Err(e) => warn!("No energy record available for disk: {e}"),
+                };
+            }
         });
     }
 }
