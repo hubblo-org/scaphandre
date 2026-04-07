@@ -688,7 +688,7 @@ impl Topology {
             #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
             match self.add_sensor_disk(d) {
                 Ok(_) => info!("Disk with power consumption evaluation added to topology!"),
-                Err(e) => error!("{e}"),
+                Err(e) => error!("{:?} {e}", d.name()),
             };
         }
         res

@@ -129,7 +129,7 @@ impl RecordReader for Topology {
                             }
                         }
                         Err(e) => {
-                            error!("Error while getting disk energy record: {e}")
+                            warn!("Error while getting disk energy record: {e}")
                         }
                     }
                 });
