@@ -1,4 +1,4 @@
-use scaphandre::sensors::disk::{Disk, DiskPowerSpecs, DiskState, FormFactor};
+use scaphandre::sensors::disk::{Disk, DiskKindWrapper, DiskPowerSpecs, DiskState, FormFactor};
 use scaphandre::sensors::utils::ProcessTracker;
 use scaphandre::sensors::Topology;
 use std::collections::HashMap;
@@ -112,6 +112,7 @@ pub fn generate_mock_topology(disks: bool) -> Topology {
         let power_specs = DiskPowerSpecs {
             name: String::from("Disk name"),
             manufacturer: String::from("Disk manufacturer"),
+            kind: DiskKindWrapper::SSD,
             capacity: 109951162776,
             form_factor: FormFactor::NVME,
             idle: 0.5,
@@ -125,6 +126,7 @@ pub fn generate_mock_topology(disks: bool) -> Topology {
         let disk = Disk {
             name: String::from("/dev/nvme0"),
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             capacity: 109951162776,
             max_buffer_size: 1,
             record_buffer: vec![],

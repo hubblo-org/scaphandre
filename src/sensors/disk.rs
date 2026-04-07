@@ -5,11 +5,12 @@ use csv;
 use regex::Regex;
 use serde::Deserialize;
 use std::error::Error;
-use std::fmt;
+use std::fmt::{self, Display};
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
 use std::str::FromStr;
+use sysinfo::DiskKind;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum DiskState {
@@ -55,6 +56,35 @@ impl fmt::Display for DiskError {
     }
 }
 
+/// sysinfo::Disk::DiskKind cannot be deserialized. Using this wrapper to allow parsing the disk power
+/// specifications file.
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+pub enum DiskKindWrapper {
+    HDD,
+    SSD,
+    Unknown,
+}
+
+impl From<DiskKind> for DiskKindWrapper {
+    fn from(disk_kind: DiskKind) -> Self {
+        match disk_kind {
+            DiskKind::HDD => DiskKindWrapper::HDD,
+            DiskKind::SSD => DiskKindWrapper::SSD,
+            DiskKind::Unknown(_) => DiskKindWrapper::Unknown,
+        }
+    }
+}
+
+impl Display for DiskKindWrapper {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            DiskKindWrapper::HDD => write!(f, "HDD"),
+            DiskKindWrapper::SSD => write!(f, "SSD"),
+            DiskKindWrapper::Unknown => write!(f, "Unknown"),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct PowerModel {
     pub disks: Vec<DiskPowerSpecs>,
@@ -65,6 +95,7 @@ pub struct DiskPowerSpecs {
     pub name: String,
     pub manufacturer: String,
     pub capacity: u64,
+    pub kind: DiskKindWrapper,
     pub form_factor: FormFactor,
     pub idle: f32,
     pub write: f32,
@@ -91,6 +122,7 @@ pub struct Disk {
     pub name: String,
     pub form_factor: FormFactor,
     pub capacity: u64,
+    pub kind: DiskKindWrapper,
     pub power_specs: Option<DiskPowerSpecs>,
     pub record_buffer: Vec<Record>,
     pub max_buffer_size: u16,
@@ -105,11 +137,13 @@ impl Disk {
         let disk_name = format_disk_name(disk_data.name().to_str().unwrap());
         let disk_form_factor = find_form_factor(&disk_name, "/");
         let attempt_physical_size = find_physical_size(&disk_name, "/");
+        let disk_kind = DiskKindWrapper::from(disk_data.kind());
         match attempt_physical_size {
             Ok(size) => Ok(Disk {
                 name: disk_name,
                 capacity: size,
                 form_factor: disk_form_factor,
+                kind: disk_kind,
                 power_specs: None,
                 record_buffer: vec![],
                 max_buffer_size: 1,
@@ -122,18 +156,17 @@ impl Disk {
 
     /// Returns the idle, write and read power consumption for a given disk.
     pub fn find_power_specs(&self, power_model: PowerModel) -> DiskPowerSpecs {
-        let similar_disks_by_form_factor: Vec<DiskPowerSpecs> = power_model
+        let similar_disks: Vec<DiskPowerSpecs> = power_model
             .disks
             .into_iter()
-            .filter(|disk_pm| disk_pm.form_factor == self.form_factor)
+            .filter(|disk_pm| {
+                disk_pm.form_factor == self.form_factor
+                    && disk_pm.kind == self.kind
+                    && disk_pm.capacity == self.capacity
+            })
             .collect();
 
-        let similar_disks_by_capacity: Vec<DiskPowerSpecs> = similar_disks_by_form_factor
-            .into_iter()
-            .filter(|disk_pm| disk_pm.capacity == self.capacity as u64)
-            .collect();
-
-        similar_disks_by_capacity[0].clone()
+        similar_disks[0].clone()
     }
 
     /// Attribute power specifications to the disk, by parsing a CSV file with the documented power
@@ -152,6 +185,7 @@ impl Disk {
                 name: disk_model.name,
                 manufacturer: disk_model.manufacturer,
                 form_factor: self.form_factor,
+                kind: self.kind,
                 capacity: self.capacity,
                 idle: disk_model.idle,
                 read: disk_model.read,
@@ -507,6 +541,7 @@ mod tests {
             name: String::from("/dev/nvme0"),
             capacity: one_terabyte_in_gigabytes,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
             power_model_path: String::from("/"),
             power_specs: None,
@@ -537,6 +572,7 @@ mod tests {
             name: String::from("Disk name"),
             manufacturer: String::from("Disk manufacturer"),
             capacity: ten_gigabytes_in_bytes,
+            kind: DiskKindWrapper::SSD,
             form_factor: FormFactor::NVME,
             idle: 0.5,
             read: 3.0,
@@ -550,6 +586,7 @@ mod tests {
             name: String::from("/dev/nvme0"),
             capacity: ten_gigabytes_in_bytes,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
             power_model_path: String::from("/"),
             power_specs: Some(power_specs),
@@ -569,6 +606,8 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: ten_gigabytes_in_bytes,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
+
             idle: 0.5,
             read: 3.0,
             write: 5.0,
@@ -581,6 +620,7 @@ mod tests {
             name: String::from("nvme0n1"),
             capacity: ten_gigabytes_in_bytes,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
             power_model_path: String::from("/"),
             power_specs: Some(power_specs),
@@ -613,6 +653,7 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             idle: 0.5,
             read: 3.0,
             write: 5.0,
@@ -624,6 +665,7 @@ mod tests {
             name: String::from("/dev/nvme0"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
             power_model_path: String::from("/"),
             power_specs: Some(power_specs),
@@ -646,6 +688,7 @@ mod tests {
             name: String::from("Disk name"),
             manufacturer: String::from("Disk manufacturer"),
             capacity: ten_gigabytes_in_bytes,
+            kind: DiskKindWrapper::SSD,
             form_factor: FormFactor::NVME,
             idle: 0.5,
             read: 3.0,
@@ -658,6 +701,7 @@ mod tests {
             name: String::from("/dev/nvme0"),
             capacity: ten_gigabytes_in_bytes,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
             power_model_path: String::from("/"),
             power_specs: Some(power_specs),
@@ -680,6 +724,7 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: ten_gigabytes_in_bytes,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             idle: 0.5,
             read: 3.0,
             write: 5.0,
@@ -691,6 +736,7 @@ mod tests {
             name: String::from("/dev/nvme0"),
             capacity: ten_gigabytes_in_bytes,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
             power_model_path: String::from("/"),
             power_specs: Some(power_specs),
@@ -721,6 +767,7 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: ten_gigabytes_in_bytes,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             idle: 0.5,
             read: 3.0,
             write: 5.0,
@@ -732,6 +779,7 @@ mod tests {
             name: String::from("/dev/nvme0"),
             capacity: ten_gigabytes_in_bytes,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
             power_model_path: String::from("/"),
             power_specs: Some(power_specs),
@@ -773,6 +821,7 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -785,6 +834,7 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: 2048,
             form_factor: FormFactor::SATA,
+            kind: DiskKindWrapper::SSD,
             idle: 0.8,
             write: 5.0,
             read: 2.0,
@@ -797,6 +847,7 @@ mod tests {
             name: String::from("nvme0n1"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
             power_model_path: String::from("/"),
             state: DiskState::Unknown,
@@ -820,6 +871,7 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -833,6 +885,7 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -845,6 +898,7 @@ mod tests {
             name: String::from("/dev/nvme0"),
             capacity: 109951162776,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
             power_model_path: String::from("/"),
             power_specs: Some(first_disk_specs.clone()),
@@ -861,6 +915,7 @@ mod tests {
             name: String::from("Disk name"),
             manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
+            kind: DiskKindWrapper::SSD,
             form_factor: FormFactor::NVME,
             idle: 0.05,
             write: 8.0,
@@ -880,6 +935,7 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -898,6 +954,7 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -919,6 +976,7 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -931,6 +989,7 @@ mod tests {
             name: String::from("/dev/nvme0"),
             capacity: 109951162776,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
             power_model_path: String::from("/"),
             power_specs: Some(first_disk_specs.clone()),
@@ -943,6 +1002,7 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -965,6 +1025,7 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -977,6 +1038,7 @@ mod tests {
             name: String::from("/dev/nvme0"),
             capacity: 109951162776,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
             power_model_path: String::from(file_path.to_str().unwrap()),
             power_specs: Some(first_disk_specs.clone()),
@@ -1006,6 +1068,7 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             idle: 0.05,
             write: 8.0,
             read: 3.0,
@@ -1033,6 +1096,7 @@ mod tests {
             name: String::from("/dev/nvme0"),
             capacity: 109951162776,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
             power_model_path: String::from(file_path.to_str().unwrap()),
             power_specs: Some(first_disk_specs.clone()),

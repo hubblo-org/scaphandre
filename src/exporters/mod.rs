@@ -1131,6 +1131,7 @@ mod tests {
             manufacturer: String::from("Disk manufacturer"),
             capacity: 109951162776,
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             idle: 0.5,
             read: 3.0,
             write: 5.0,
@@ -1163,6 +1164,7 @@ mod tests {
         let mut disk = Disk {
             name: String::from("/dev/nvme0"),
             form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
             capacity: 109951162776,
             max_buffer_size: 1,
             record_buffer: vec![
