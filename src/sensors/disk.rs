@@ -8,7 +8,7 @@ use std::error::Error;
 use std::fmt::{self, Display};
 use std::fs::File;
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use sysinfo::DiskKind;
 
@@ -130,6 +130,14 @@ pub struct Disk {
     pub state: DiskState,
 }
 
+pub fn get_default_power_model_path() -> String {
+    let cargo_path = env!("CARGO_MANIFEST_DIR");
+
+    let power_model_path = Path::new(cargo_path).join("data/disks/power_model.csv");
+
+    power_model_path.to_str().unwrap().to_string()
+}
+
 impl Disk {
     /// Creates a new Disk, a representation of a physical disk, with an empty record buffer. It
     /// can be updated throughout the execution of Scaphandre.
@@ -138,6 +146,9 @@ impl Disk {
         let disk_form_factor = find_form_factor(&disk_name, "/");
         let attempt_physical_size = find_physical_size(&disk_name, "/");
         let disk_kind = DiskKindWrapper::from(disk_data.kind());
+
+        let power_model_path = get_default_power_model_path();
+
         match attempt_physical_size {
             Ok(size) => Ok(Disk {
                 name: disk_name,
@@ -147,7 +158,7 @@ impl Disk {
                 power_specs: None,
                 record_buffer: vec![],
                 max_buffer_size: 1,
-                power_model_path: String::from("No power_model_path provided"),
+                power_model_path,
                 state: DiskState::Unknown,
             }),
             Err(_) => Err(DiskError::NoBlockInSysfs),

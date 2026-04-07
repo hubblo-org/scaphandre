@@ -11,6 +11,8 @@ use msr_rapl::get_msr_value;
 pub mod disk;
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 use disk::{format_disk_name, Disk};
+#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+use std::{path::PathBuf, str::FromStr};
 #[cfg(target_os = "linux")]
 pub mod powercap_rapl;
 pub mod units;
@@ -699,13 +701,20 @@ impl Topology {
     pub fn add_sensor_disk(&mut self, disk: &sysinfo::Disk) -> Result<(), disk::DiskError> {
         let sensor_disk = Disk::new(disk);
         match sensor_disk {
-            Ok(sd) => {
+            Ok(mut sd) => {
                 let identified_disks: Vec<&Disk> = self
                     .disks
                     .iter()
                     .filter(|tdisk| tdisk.name == sd.name)
                     .collect();
                 if identified_disks.len() == 0 {
+                    let disk_usage = disk.usage();
+                    let power_model_path = PathBuf::from_str(&sd.power_model_path).unwrap();
+                    sd.set_power_specs(
+                        disk_usage.read_bytes,
+                        disk_usage.written_bytes,
+                        power_model_path,
+                    );
                     Ok(self.disks.push(sd))
                 } else {
                     Err(disk::DiskError::DiskAlreadyPresent)

@@ -137,9 +137,6 @@ fn it_should_refresh_all_the_topology_disks_through_sysinfo() {
         .collect::<HashSet<String>>()
         .into_iter()
         .collect();
-    mock_topology.disks.iter_mut().for_each(|tdisk| {
-        tdisk.power_model_path = String::from(mock_power_model_path.to_str().unwrap())
-    });
 
     sys_disks.refresh(false);
 
