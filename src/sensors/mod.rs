@@ -708,7 +708,7 @@ impl Topology {
                     .iter()
                     .filter(|tdisk| tdisk.name == sd.name)
                     .collect();
-                if identified_disks.len() == 0 {
+                if identified_disks.is_empty() {
                     let disk_usage = disk.usage();
                     let power_model_path = PathBuf::from_str(&sd.power_model_path).unwrap();
                     sd.set_power_specs(
