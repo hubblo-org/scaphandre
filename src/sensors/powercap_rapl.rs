@@ -114,14 +114,14 @@ impl RecordReader for Topology {
 
                     match attempt_to_get_record {
                         Ok(record) => {
-                            let parsing_value = record.value.trim().parse::<i128>();
+                            let parsing_value = record.value.trim().parse::<f64>();
                             match parsing_value {
                                 Ok(value) => {
-                                    total += value;
+                                    total += value as i128;
                                 }
                                 Err(e) => {
                                     warn!(
-                                        "Could not convert {} to i128: {}",
+                                        "Could not convert {} to f64: {}",
                                         record.value.trim(),
                                         e
                                     );

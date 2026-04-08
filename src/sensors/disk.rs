@@ -285,14 +285,13 @@ impl Disk {
     /// execution of Scaphandre.
     pub fn generate_energy_record(&self, records: (&Record, &Record)) -> Option<Record> {
         let parsed_values = (
-            records.0.value.parse::<u64>(),
-            records.1.value.parse::<u64>(),
+            records.0.value.parse::<f64>(),
+            records.1.value.parse::<f64>(),
         );
 
         if let (Ok(earlier_value), Ok(later_value)) = parsed_values {
             let microwatts_sum = earlier_value + later_value;
             let time_diff = records.1.timestamp.as_secs_f64() - records.0.timestamp.as_secs_f64();
-
             let energy_consumed = microwatts_sum as f64 * time_diff;
 
             return Some(Record {
@@ -1101,18 +1100,18 @@ mod tests {
         let first_record = Record {
             timestamp: two_seconds,
             unit: Unit::MicroWatt,
-            value: String::from("5000000"),
+            value: String::from("5000000.0"),
         };
 
         let second_record = Record {
             timestamp: four_seconds,
             unit: Unit::MicroWatt,
-            value: String::from("5000000"),
+            value: String::from("5000000.0"),
         };
 
         let disk = Disk {
             name: String::from("/dev/nvme0"),
-            capacity: 109951162776,
+            capacity: 1024,
             form_factor: FormFactor::NVME,
             kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
