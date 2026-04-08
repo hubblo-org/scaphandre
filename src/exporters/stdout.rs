@@ -196,12 +196,18 @@ impl StdoutExporter {
                 .filter(|metric| metric.name == "scaph_disk_power_microwatts")
                 .collect();
 
-            disks_metrics.iter().for_each(|metric| {
-                let power = metric.metric_value.to_string().parse::<f32>().unwrap() / 1000000.0;
-                let disk_name = metric.attributes.get("disk_name").unwrap();
+            println!("Disks estimated power:");
+            if disks_metrics.is_empty() {
+                println!("No disk can be evaluated yet!\n");
+            } else {
+                disks_metrics.iter().for_each(|metric| {
+                    let power = metric.metric_value.to_string().parse::<f32>().unwrap() / 1000000.0;
+                    let disk_name = metric.attributes.get("disk_name").unwrap();
 
-                println!("{} {} W", disk_name, power);
-            });
+                    println!("{} {} W", disk_name, power);
+                });
+                println!("\n");
+            }
         }
 
         let consumers: Vec<(IProcess, f64)>;
