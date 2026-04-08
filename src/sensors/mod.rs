@@ -158,6 +158,7 @@ impl Topology {
             buffer_max_kbytes: 1,
             domains_names: None,
             _sensor_data: sensor_data,
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
             disks: vec![],
         }
     }
