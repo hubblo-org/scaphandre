@@ -529,7 +529,52 @@ pub fn find_physical_size(disk_name: &str, path: &str) -> Result<u64, DiskError>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::Path;
+    use std::{path::Path, time::Duration};
+
+    fn generate_mock_disk() -> Disk {
+        let one_terabyte_in_gigabytes = 1024;
+
+        let disk = Disk {
+            name: String::from("/dev/nvme0"),
+            capacity: one_terabyte_in_gigabytes,
+            form_factor: FormFactor::NVME,
+            kind: DiskKindWrapper::SSD,
+            max_buffer_size: 1,
+            power_model_path: String::from("/"),
+            power_specs: None,
+            record_buffer: vec![],
+            state: DiskState::Unknown,
+        };
+
+        disk
+    }
+
+    fn generate_mock_power_specs() -> DiskPowerSpecs {
+        let power_specs = DiskPowerSpecs {
+            name: String::from("Disk name"),
+            manufacturer: String::from("Disk manufacturer"),
+            capacity: 1024,
+            kind: DiskKindWrapper::SSD,
+            form_factor: FormFactor::NVME,
+            idle: 0.5,
+            read: 3.0,
+            write: 5.0,
+            read_write: Some(4.0),
+            read_bytes: 1024,
+            written_bytes: 2048,
+        };
+        power_specs
+    }
+
+    fn generate_mock_power_record(duration: Duration, value: String) -> Record {
+        let record = Record {
+            timestamp: duration,
+            value: value,
+            unit: Unit::MicroWatt,
+        };
+        record
+    }
+
     #[test]
     fn it_should_create_a_new_disk_from_sysinfo() {
         let disks = sysinfo::Disks::new_with_refreshed_list();
@@ -552,19 +597,7 @@ mod tests {
     fn it_should_generate_the_power_specs_for_a_disk() {
         let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
         let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
-        let one_terabyte_in_gigabytes = 1024;
-
-        let mut disk = Disk {
-            name: String::from("/dev/nvme0"),
-            capacity: one_terabyte_in_gigabytes,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            max_buffer_size: 1,
-            power_model_path: String::from("/"),
-            power_specs: None,
-            record_buffer: vec![],
-            state: DiskState::Unknown,
-        };
+        let mut disk = generate_mock_disk();
 
         disk.set_power_specs(1024, 1024, file_path);
 
@@ -584,32 +617,10 @@ mod tests {
 
     #[test]
     fn it_should_generate_record_for_power_consumption_for_a_given_disk() {
-        let ten_gigabytes_in_bytes = 1099511627776;
-        let power_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: ten_gigabytes_in_bytes,
-            kind: DiskKindWrapper::SSD,
-            form_factor: FormFactor::NVME,
-            idle: 0.5,
-            read: 3.0,
-            write: 5.0,
-            read_write: None,
-            read_bytes: 1024,
-            written_bytes: 2048,
-        };
-
-        let disk = Disk {
-            name: String::from("/dev/nvme0"),
-            capacity: ten_gigabytes_in_bytes,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            max_buffer_size: 1,
-            power_model_path: String::from("/"),
-            power_specs: Some(power_specs),
-            record_buffer: vec![],
-            state: DiskState::Write,
-        };
+        let power_specs = generate_mock_power_specs();
+        let mut disk = generate_mock_disk();
+        disk.power_specs = Some(power_specs);
+        disk.state = DiskState::Write;
 
         let scaph_disk_record = disk.generate_power_record().unwrap();
         assert_eq!(Some(scaph_disk_record.value), Some(String::from("5000000")));
@@ -617,33 +628,10 @@ mod tests {
 
     #[test]
     fn it_should_generate_record_for_power_consumption_for_a_given_disk_in_read_write_state() {
-        let ten_gigabytes_in_bytes = 1099511627776;
-        let power_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: ten_gigabytes_in_bytes,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-
-            idle: 0.5,
-            read: 3.0,
-            write: 5.0,
-            read_write: Some(4.0),
-            read_bytes: 1024,
-            written_bytes: 2048,
-        };
-
-        let disk = Disk {
-            name: String::from("nvme0n1"),
-            capacity: ten_gigabytes_in_bytes,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            max_buffer_size: 1,
-            power_model_path: String::from("/"),
-            power_specs: Some(power_specs),
-            record_buffer: vec![],
-            state: DiskState::ReadWrite,
-        };
+        let power_specs = generate_mock_power_specs();
+        let mut disk = generate_mock_disk();
+        disk.power_specs = Some(power_specs);
+        disk.state = DiskState::ReadWrite;
 
         let scaph_disk_record = disk.generate_power_record().unwrap();
         assert_eq!(Some(scaph_disk_record.value), Some(String::from("4000000")));
@@ -653,42 +641,14 @@ mod tests {
     fn it_should_generate_record_for_energy_consumption_for_a_given_disk() {
         let two_seconds = std::time::Duration::new(2, 0);
         let four_seconds = std::time::Duration::new(4, 0);
-        let first_record = Record {
-            timestamp: two_seconds,
-            value: String::from("5000000"),
-            unit: Unit::MicroWatt,
-        };
-
-        let second_record = Record {
-            timestamp: four_seconds,
-            value: String::from("3000000"),
-            unit: Unit::MicroWatt,
-        };
-
-        let power_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            idle: 0.5,
-            read: 3.0,
-            write: 5.0,
-            read_write: None,
-            read_bytes: 1024,
-            written_bytes: 2048,
-        };
-        let disk = Disk {
-            name: String::from("/dev/nvme0"),
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            max_buffer_size: 1,
-            power_model_path: String::from("/"),
-            power_specs: Some(power_specs),
-            record_buffer: vec![first_record.clone(), second_record.clone()],
-            state: DiskState::Write,
-        };
+        let first_record = generate_mock_power_record(two_seconds, String::from("5000000"));
+        let second_record = generate_mock_power_record(four_seconds, String::from("3000000"));
+        let power_specs = generate_mock_power_specs();
+        let mut disk = generate_mock_disk();
+        disk.power_specs = Some(power_specs);
+        disk.record_buffer.push(first_record.clone());
+        disk.record_buffer.push(second_record.clone());
+        disk.state = DiskState::Write;
 
         let energy_record = disk
             .generate_energy_record((&first_record, &second_record))
@@ -699,32 +659,10 @@ mod tests {
 
     #[test]
     fn it_should_add_a_record_to_the_buffer_for_a_given_disk() {
-        let ten_gigabytes_in_bytes = 1099511627776;
-
-        let power_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: ten_gigabytes_in_bytes,
-            kind: DiskKindWrapper::SSD,
-            form_factor: FormFactor::NVME,
-            idle: 0.5,
-            read: 3.0,
-            write: 5.0,
-            read_write: None,
-            read_bytes: 1024,
-            written_bytes: 2048,
-        };
-        let mut disk = Disk {
-            name: String::from("/dev/nvme0"),
-            capacity: ten_gigabytes_in_bytes,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            max_buffer_size: 1,
-            power_model_path: String::from("/"),
-            power_specs: Some(power_specs),
-            record_buffer: vec![],
-            state: DiskState::Write,
-        };
+        let power_specs = generate_mock_power_specs();
+        let mut disk = generate_mock_disk();
+        disk.power_specs = Some(power_specs);
+        disk.state = DiskState::Write;
 
         let scaph_disk_record = disk.generate_power_record().unwrap();
         disk.add_record(scaph_disk_record);
@@ -734,32 +672,10 @@ mod tests {
 
     #[test]
     fn it_should_clean_old_records_from_the_buffer_for_a_given_disk() {
-        let ten_gigabytes_in_bytes = 1099511627776;
-
-        let power_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: ten_gigabytes_in_bytes,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            idle: 0.5,
-            read: 3.0,
-            write: 5.0,
-            read_write: None,
-            read_bytes: 1024,
-            written_bytes: 2048,
-        };
-        let mut disk = Disk {
-            name: String::from("/dev/nvme0"),
-            capacity: ten_gigabytes_in_bytes,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            max_buffer_size: 1,
-            power_model_path: String::from("/"),
-            power_specs: Some(power_specs),
-            record_buffer: vec![],
-            state: DiskState::Write,
-        };
+        let power_specs = generate_mock_power_specs();
+        let mut disk = generate_mock_disk();
+        disk.power_specs = Some(power_specs);
+        disk.state = DiskState::Write;
 
         let scaph_disk_record = disk.generate_power_record().unwrap();
         let max_size = 1024;
@@ -777,32 +693,10 @@ mod tests {
 
     #[test]
     fn it_should_get_a_copy_of_a_disk_records() {
-        let ten_gigabytes_in_bytes = 1099511627776;
-
-        let power_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: ten_gigabytes_in_bytes,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            idle: 0.5,
-            read: 3.0,
-            write: 5.0,
-            read_write: None,
-            read_bytes: 1024,
-            written_bytes: 2048,
-        };
-        let mut disk = Disk {
-            name: String::from("/dev/nvme0"),
-            capacity: ten_gigabytes_in_bytes,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            max_buffer_size: 1,
-            power_model_path: String::from("/"),
-            power_specs: Some(power_specs),
-            state: DiskState::Write,
-            record_buffer: vec![],
-        };
+        let power_specs = generate_mock_power_specs();
+        let mut disk = generate_mock_disk();
+        disk.power_specs = Some(power_specs);
+        disk.state = DiskState::Write;
 
         let scaph_disk_record = disk.generate_power_record().unwrap();
         disk.add_record(scaph_disk_record.clone());
@@ -813,11 +707,8 @@ mod tests {
         assert_eq!(records_copy.len(), 3);
     }
 
-    #[cfg(all(test, target_os = "linux"))]
-    #[cfg(feature = "disks_evaluation")]
     #[test]
     fn it_should_format_the_storage_device_name() {
-        use super::*;
         let sysinfo_disk_name_nvme = "/dev/nvme0n1p3";
 
         let storage_device_name = format_disk_name(sysinfo_disk_name_nvme);
@@ -833,202 +724,75 @@ mod tests {
 
     #[test]
     fn it_should_give_a_power_estimation_for_a_given_disk_specifications() {
-        let disk_first_row = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            idle: 0.05,
-            write: 8.0,
-            read: 3.0,
-            read_write: None,
-            read_bytes: 0,
-            written_bytes: 0,
-        };
-        let disk_second_row = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: 2048,
-            form_factor: FormFactor::SATA,
-            kind: DiskKindWrapper::SSD,
-            idle: 0.8,
-            write: 5.0,
-            read: 2.0,
-            read_write: None,
-            read_bytes: 0,
-            written_bytes: 0,
-        };
+        let first_power_specs = generate_mock_power_specs();
+        let mut second_power_specs = generate_mock_power_specs();
+        second_power_specs.capacity = 2048;
+        let mut disk = generate_mock_disk();
+        disk.power_specs = Some(first_power_specs.clone());
 
-        let disk = Disk {
-            name: String::from("nvme0n1"),
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            max_buffer_size: 1,
-            power_model_path: String::from("/"),
-            state: DiskState::Unknown,
-            power_specs: Some(disk_first_row.clone()),
-            record_buffer: vec![],
-        };
         let power_model = PowerModel {
-            disks: vec![disk_first_row.clone(), disk_second_row],
+            disks: vec![first_power_specs.clone(), second_power_specs],
         };
 
         let disk_power_consumption = disk.find_power_specs(power_model);
-        assert_eq!(disk_power_consumption.idle, disk_first_row.idle);
-        assert_eq!(disk_power_consumption.write, disk_first_row.write);
-        assert_eq!(disk_power_consumption.read, disk_first_row.read);
+        assert_eq!(&disk_power_consumption.idle, &first_power_specs.idle);
+        assert_eq!(&disk_power_consumption.write, &first_power_specs.write);
+        assert_eq!(&disk_power_consumption.read, &first_power_specs.read);
     }
 
     #[test]
     fn it_should_return_the_current_disk_state() {
-        let first_disk_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            idle: 0.05,
-            write: 8.0,
-            read: 3.0,
-            read_write: None,
-            read_bytes: 1024,
-            written_bytes: 0,
-        };
+        let first_power_specs = generate_mock_power_specs();
+        let mut second_power_specs = generate_mock_power_specs();
+        second_power_specs.written_bytes = 1024;
+        let mut disk = generate_mock_disk();
+        disk.power_specs = Some(first_power_specs.clone());
 
-        let second_disk_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            idle: 0.05,
-            write: 8.0,
-            read: 3.0,
-            read_write: None,
-            read_bytes: 1024,
-            written_bytes: 1024,
-        };
-
-        let mut disk = Disk {
-            name: String::from("/dev/nvme0"),
-            capacity: 109951162776,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            max_buffer_size: 1,
-            power_model_path: String::from("/"),
-            power_specs: Some(first_disk_specs.clone()),
-            record_buffer: vec![],
-            state: DiskState::Unknown,
-        };
-
-        disk.power_specs = Some(second_disk_specs.clone());
-        let disk_state = disk.evaluate_disk_state(&first_disk_specs);
+        disk.power_specs = Some(second_power_specs.clone());
+        let disk_state = disk.evaluate_disk_state(&first_power_specs);
 
         assert_eq!(disk_state, DiskState::Write);
 
-        let third_disk_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: 1024,
-            kind: DiskKindWrapper::SSD,
-            form_factor: FormFactor::NVME,
-            idle: 0.05,
-            write: 8.0,
-            read: 3.0,
-            read_write: None,
-            read_bytes: 2048,
-            written_bytes: 1024,
-        };
+        let mut third_power_specs = generate_mock_power_specs();
+        third_power_specs.read_bytes = 2048;
+        third_power_specs.written_bytes = 1024;
 
-        disk.power_specs = Some(third_disk_specs.clone());
-        let disk_state = disk.evaluate_disk_state(&second_disk_specs);
+        disk.power_specs = Some(third_power_specs.clone());
+        let disk_state = disk.evaluate_disk_state(&second_power_specs);
 
         assert_eq!(disk_state, DiskState::Read);
 
-        let fourth_disk_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            idle: 0.05,
-            write: 8.0,
-            read: 3.0,
-            read_write: None,
-            read_bytes: 4096,
-            written_bytes: 2048,
-        };
+        let mut fourth_power_specs = generate_mock_power_specs();
+        fourth_power_specs.read_bytes = 4096;
+        fourth_power_specs.written_bytes = 2048;
 
-        disk.power_specs = Some(fourth_disk_specs.clone());
-        let disk_state = disk.evaluate_disk_state(&third_disk_specs);
+
+        disk.power_specs = Some(fourth_power_specs.clone());
+        let disk_state = disk.evaluate_disk_state(&third_power_specs);
 
         assert_eq!(disk_state, DiskState::ReadWrite);
 
-        let fifth_disk_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            idle: 0.05,
-            write: 8.0,
-            read: 3.0,
-            read_write: None,
-            read_bytes: 4096,
-            written_bytes: 2048,
-        };
+        let mut fifth_power_specs = generate_mock_power_specs();
+        fifth_power_specs.read_bytes = 4096;
+        fifth_power_specs.written_bytes = 2048;
 
-        disk.power_specs = Some(fifth_disk_specs.clone());
-        let disk_state = disk.evaluate_disk_state(&fourth_disk_specs);
+        disk.power_specs = Some(fifth_power_specs.clone());
+        let disk_state = disk.evaluate_disk_state(&fourth_power_specs);
 
         assert_eq!(disk_state, DiskState::Idle);
     }
 
     #[test]
     fn it_should_update_the_disk_state() {
-        let first_disk_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            idle: 0.05,
-            write: 8.0,
-            read: 3.0,
-            read_write: None,
-            read_bytes: 1024,
-            written_bytes: 0,
-        };
+        let mut first_power_specs = generate_mock_power_specs();
+        first_power_specs.written_bytes = 0;
+        let mut disk = generate_mock_disk();
+        disk.power_specs = Some(first_power_specs);
+        let mut refreshed_power_specs = generate_mock_power_specs();
+        refreshed_power_specs.read_bytes = 4096;
+        refreshed_power_specs.written_bytes = 2048;
 
-        let mut disk = Disk {
-            name: String::from("/dev/nvme0"),
-            capacity: 109951162776,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            max_buffer_size: 1,
-            power_model_path: String::from("/"),
-            power_specs: Some(first_disk_specs.clone()),
-            record_buffer: vec![],
-            state: DiskState::Unknown,
-        };
-
-        let refreshed_disk_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            idle: 0.05,
-            write: 8.0,
-            read: 3.0,
-            read_write: None,
-            read_bytes: 4096,
-            written_bytes: 2048,
-        };
-
-        disk.update_state(&refreshed_disk_specs);
+        disk.update_state(&refreshed_power_specs);
         assert_eq!(disk.state, DiskState::ReadWrite);
     }
 
@@ -1037,31 +801,11 @@ mod tests {
         let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
 
         let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
-        let first_disk_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            idle: 0.05,
-            write: 8.0,
-            read: 3.0,
-            read_write: None,
-            read_bytes: 1024,
-            written_bytes: 0,
-        };
-
-        let mut disk = Disk {
-            name: String::from("/dev/nvme0"),
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            max_buffer_size: 1,
-            power_model_path: String::from(file_path.to_str().unwrap()),
-            power_specs: Some(first_disk_specs.clone()),
-            record_buffer: vec![],
-            state: DiskState::Unknown,
-        };
+        let mut first_power_specs = generate_mock_power_specs();
+        first_power_specs.written_bytes = 0;
+        let mut disk = generate_mock_disk();
+        disk.power_specs = Some(first_power_specs);
+        disk.power_model_path = String::from(file_path.to_str().unwrap());
 
         let unmodified_read_bytes = 1024;
         let grown_written_bytes = 2048;
@@ -1080,46 +824,19 @@ mod tests {
         let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
 
         let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
-        let first_disk_specs = DiskPowerSpecs {
-            name: String::from("Disk name"),
-            manufacturer: String::from("Disk manufacturer"),
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            idle: 0.05,
-            write: 8.0,
-            read: 3.0,
-            read_write: None,
-            read_bytes: 1024,
-            written_bytes: 0,
-        };
+        let mut first_power_specs = generate_mock_power_specs();
+        first_power_specs.written_bytes = 0;
 
         let two_seconds = std::time::Duration::new(2, 0);
         let four_seconds = std::time::Duration::new(4, 0);
+        let first_record = generate_mock_power_record(two_seconds, String::from("5000000.0"));
+        let second_record = generate_mock_power_record(four_seconds, String::from("5000000.0"));
 
-        let first_record = Record {
-            timestamp: two_seconds,
-            unit: Unit::MicroWatt,
-            value: String::from("5000000.0"),
-        };
-
-        let second_record = Record {
-            timestamp: four_seconds,
-            unit: Unit::MicroWatt,
-            value: String::from("5000000.0"),
-        };
-
-        let disk = Disk {
-            name: String::from("/dev/nvme0"),
-            capacity: 1024,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            max_buffer_size: 1,
-            power_model_path: String::from(file_path.to_str().unwrap()),
-            power_specs: Some(first_disk_specs.clone()),
-            record_buffer: vec![first_record, second_record],
-            state: DiskState::Unknown,
-        };
+        let mut disk = generate_mock_disk();
+        disk.power_specs = Some(first_power_specs);
+        disk.power_model_path = String::from(file_path.to_str().unwrap());
+        disk.record_buffer.push(first_record);
+        disk.record_buffer.push(second_record);
 
         let energy_record = disk.read_record().unwrap();
 
@@ -1132,18 +849,9 @@ mod tests {
         let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
 
         let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
-        let disk = Disk {
-            name: String::from("/dev/nvme0"),
-            capacity: 109951162776,
-            form_factor: FormFactor::NVME,
-            kind: DiskKindWrapper::SSD,
-            max_buffer_size: 1,
-            power_model_path: String::from(file_path.to_str().unwrap()),
-            power_specs: None,
-            record_buffer: vec![],
-            state: DiskState::Unknown,
-        };
-
+        let mut disk = generate_mock_disk();
+        disk.power_model_path = String::from(file_path.to_str().unwrap());
+        
         let attempt_to_read_record = disk.read_record();
 
         assert!(attempt_to_read_record.is_err());
