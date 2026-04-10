@@ -139,7 +139,7 @@ struct Disk {
 }
 
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 struct EvaluatedDisk {
     disk_name: String,
     timestamp: f64,
@@ -160,6 +160,8 @@ struct Report {
     host: Host,
     consumers: Vec<Consumer>,
     sockets: Vec<Socket>,
+    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+    evaluated_disks: Vec<EvaluatedDisk>,
 }
 
 impl Exporter for JsonExporter {
@@ -301,13 +303,10 @@ impl JsonExporter {
     }
 
     #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-    fn generate_evaluated_disks_report(&mut self) -> Vec<EvaluatedDisk> {
-        use std::collections::HashSet;
-
-        let metrics = self.metric_generator.pop_metrics();
+    fn generate_evaluated_disks_report(&mut self, metrics: &Vec<Metric>) -> Vec<EvaluatedDisk> {
         let disks_metrics: Vec<&Metric> = metrics
             .iter()
-            .filter(|metric| metric.name.starts_with("scaph_disk_power_microwatts"))
+            .filter(|metric| metric.name == "scaph_disk_power_microwatts")
             .collect();
 
         let mut evaluated_disk_metrics: Vec<EvaluatedDisk> = disks_metrics
@@ -541,10 +540,14 @@ impl JsonExporter {
 
         match host_report {
             Some(host) => {
+                #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+                let evaluated_disks = self.generate_evaluated_disks_report(&metrics);
                 let report = Report {
                     host,
                     consumers: top_consumers,
                     sockets: all_sockets,
+                    #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
+                    evaluated_disks,
                 };
 
                 // Serialize the report to json
@@ -585,9 +588,6 @@ mod tests {
         mock_sensor_data.insert(String::from("key"), String::from("value"));
         let proc_tracker = ProcessTracker::new(5);
 
-        let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
-
-        let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
         let power_specs = DiskPowerSpecs {
             name: String::from("Disk name"),
             manufacturer: String::from("Disk manufacturer"),
@@ -626,7 +626,7 @@ mod tests {
             record_buffer: vec![first_record.clone(), second_record.clone()],
             power_specs: Some(power_specs.clone()),
             state: DiskState::Unknown,
-            power_model_path: String::from(file_path.to_str().unwrap()),
+            power_model: None,
         };
 
         let second_disk = Disk {
@@ -638,7 +638,7 @@ mod tests {
             record_buffer: vec![first_record, second_record],
             power_specs: Some(power_specs),
             state: DiskState::Unknown,
-            power_model_path: String::from(file_path.to_str().unwrap()),
+            power_model: None,
         };
         let mock_topology = Topology {
             sockets: vec![],
@@ -674,8 +674,9 @@ mod tests {
     fn it_should_export_all_evaluated_disks() {
         let mut mock_json_exporter = generate_mock_exporter();
         mock_json_exporter.metric_generator.generate_disk_metrics();
+        let metrics = mock_json_exporter.metric_generator.pop_metrics();
 
-        let evaluated_disks_report = mock_json_exporter.generate_evaluated_disks_report();
+        let evaluated_disks_report = mock_json_exporter.generate_evaluated_disks_report(&metrics);
 
         assert_eq!(evaluated_disks_report.len(), 2);
         assert_eq!(evaluated_disks_report[0].disk_name, String::from("nvme0n1"));
