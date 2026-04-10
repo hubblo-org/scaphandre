@@ -11,6 +11,9 @@ homepage = "https://scaphandre.hubblo.org"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[build-dependencies]
+csv = { version = "1.4.0", optional = true }
+
 [dependencies]
 loggerv = "0.7"
 log = "0.4"

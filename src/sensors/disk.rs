@@ -1,7 +1,7 @@
 use crate::sensors::units::Unit;
 use crate::sensors::utils::current_system_time_since_epoch;
 use crate::sensors::{Record, RecordGenerator, RecordReader};
-use csv;
+use csv::Reader;
 use regex::Regex;
 use serde::Deserialize;
 use std::error::Error;
@@ -11,6 +11,10 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use sysinfo::DiskKind;
+
+// Parsing the CSV file in data/disks at build-time, which will make the records available in the
+// built binary.
+include!(concat!(env!("OUT_DIR"), "/csv_records.rs"));
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum DiskState {
@@ -87,7 +91,7 @@ impl Display for DiskKindWrapper {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PowerModel {
-    pub disks: Vec<DiskPowerSpecs>,
+    pub disks: Vec<DiskRecord>,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
@@ -106,7 +110,7 @@ pub struct DiskPowerSpecs {
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
-pub struct DiskPowerConsumption {
+pub struct DiskRecord {
     pub name: String,
     pub manufacturer: String,
     pub form_factor: FormFactor,
@@ -127,16 +131,8 @@ pub struct Disk {
     pub power_specs: Option<DiskPowerSpecs>,
     pub record_buffer: Vec<Record>,
     pub max_buffer_size: u16,
-    pub power_model_path: String,
     pub state: DiskState,
-}
-
-pub fn get_default_power_model_path() -> String {
-    let cargo_path = env!("CARGO_MANIFEST_DIR");
-
-    let power_model_path = Path::new(cargo_path).join("data/disks/power_model.csv");
-
-    power_model_path.to_str().unwrap().to_string()
+    pub power_model: Option<PowerModel>,
 }
 
 impl Disk {
@@ -148,8 +144,6 @@ impl Disk {
         let attempt_physical_size = find_physical_size(&disk_name, "/");
         let disk_kind = DiskKindWrapper::from(disk_data.kind());
 
-        let power_model_path = get_default_power_model_path();
-
         match attempt_physical_size {
             Ok(size) => Ok(Disk {
                 name: disk_name,
@@ -159,18 +153,18 @@ impl Disk {
                 power_specs: None,
                 record_buffer: vec![],
                 max_buffer_size: 1,
-                power_model_path,
                 state: DiskState::Unknown,
+                power_model: None,
             }),
             Err(_) => Err(DiskError::NoBlockInSysfs),
         }
     }
 
     /// Returns the idle, write and read power consumption for a given disk.
-    pub fn find_power_specs(&self, power_model: PowerModel) -> DiskPowerSpecs {
-        let similar_disks: Vec<DiskPowerSpecs> = power_model
+    pub fn find_power_specs(&self, power_model: &PowerModel) -> DiskRecord {
+        let similar_disks: Vec<&DiskRecord> = power_model
             .disks
-            .into_iter()
+            .iter()
             .filter(|disk_pm| {
                 disk_pm.form_factor == self.form_factor
                     && disk_pm.kind == self.kind
@@ -181,40 +175,34 @@ impl Disk {
         similar_disks[0].clone()
     }
 
-    /// Attribute power specifications to the disk, by parsing a CSV file with the documented power
-    /// model for various disk archetypes. The read and written bytes for a given Disk can be
-    /// identified with sysinfo::Disk::usage.
-    pub fn set_power_specs(&mut self, read_bytes: u64, written_bytes: u64, file_path: PathBuf) {
-        let mut records = csv::Reader::from_path(file_path).unwrap();
-
-        let mut disks_power: Vec<DiskPowerSpecs> = vec![];
-        let iter = records.deserialize();
-
-        iter.for_each(|record| {
-            let disk_model: DiskPowerConsumption = record.unwrap();
+    /// Allocate power specifications to the disk, through the disk power model. 
+    /// The read and written bytes for a given Disk can be identified with sysinfo::Disk::usage.
+    pub fn set_power_specs(
+        &mut self,
+        read_bytes: u64,
+        written_bytes: u64,
+    ) {
+        if let Some(model) = &self.power_model {
+            let identified_record_for_disk = self.find_power_specs(&model);
 
             let power_specs = DiskPowerSpecs {
-                name: disk_model.name,
-                manufacturer: disk_model.manufacturer,
-                form_factor: disk_model.form_factor,
-                kind: disk_model.kind,
-                capacity: disk_model.capacity,
-                idle: disk_model.idle,
-                read: disk_model.read,
-                write: disk_model.write,
-                read_write: disk_model.read_write,
+                name: identified_record_for_disk.name,
+                manufacturer: identified_record_for_disk.manufacturer,
+                form_factor: identified_record_for_disk.form_factor,
+                kind: identified_record_for_disk.kind,
+                capacity: identified_record_for_disk.capacity,
+                idle: identified_record_for_disk.idle,
+                read: identified_record_for_disk.read,
+                write: identified_record_for_disk.write,
+                read_write: identified_record_for_disk.read_write,
                 read_bytes,
                 written_bytes,
             };
 
-            disks_power.push(power_specs);
-        });
-
-        let power_model = PowerModel { disks: disks_power };
-
-        let identified_specs_for_disk = self.find_power_specs(power_model);
-
-        self.power_specs = Some(identified_specs_for_disk);
+            self.power_specs = Some(power_specs);
+        } else {
+            info!("No power model yet set!")
+        }
     }
 
     /// Returns the disk's current state : idle, reading and / or writing.
@@ -316,9 +304,8 @@ impl Disk {
     // the power model might be lacking until its development.
     pub fn refresh(&mut self, read_bytes: u64, written_bytes: u64) {
         if let Some(specs) = &self.power_specs {
-            let power_model_path = PathBuf::from_str(&self.power_model_path).unwrap();
             let previous_specs = specs.clone();
-            self.set_power_specs(read_bytes, written_bytes, power_model_path);
+            self.set_power_specs(read_bytes, written_bytes);
             self.update_state(&previous_specs);
             let new_record = self.generate_power_record();
             self.add_record(new_record.unwrap());
@@ -526,13 +513,28 @@ pub fn find_physical_size(disk_name: &str, path: &str) -> Result<u64, DiskError>
     }
 }
 
+pub fn generate_power_model() -> PowerModel {
+    let mut records = parse_csv();
+    let mut disks_power: Vec<DiskRecord> = vec![];
+    let iter = records.deserialize();
+
+    iter.for_each(|record| {
+        let disk_model: DiskRecord = record.unwrap();
+        disks_power.push(disk_model);
+    });
+
+    let power_model = PowerModel { disks: disks_power };
+    power_model
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{path::Path, time::Duration};
+    use std::time::Duration;
 
     fn generate_mock_disk() -> Disk {
         let one_terabyte_in_gigabytes = 1024;
+        let test_power_model = generate_power_model();
 
         let disk = Disk {
             name: String::from("/dev/nvme0"),
@@ -540,17 +542,17 @@ mod tests {
             form_factor: FormFactor::NVME,
             kind: DiskKindWrapper::SSD,
             max_buffer_size: 1,
-            power_model_path: String::from("/"),
             power_specs: None,
             record_buffer: vec![],
             state: DiskState::Unknown,
+            power_model: Some(test_power_model),
         };
 
         disk
     }
 
-    fn generate_mock_power_specs() -> DiskPowerSpecs {
-        let power_specs = DiskPowerSpecs {
+    fn generate_mock_disk_record() -> DiskRecord {
+        let record = DiskRecord {
             name: String::from("Disk name"),
             manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
@@ -560,8 +562,23 @@ mod tests {
             read: 3.0,
             write: 5.0,
             read_write: Some(4.0),
+        };
+        record
+    }
+
+    fn generate_mock_power_specs(record: &DiskRecord) -> DiskPowerSpecs {
+        let power_specs = DiskPowerSpecs {
+            name: record.name.to_owned(),
+            manufacturer: record.manufacturer.to_owned(),
+            capacity: record.capacity,
+            kind: record.kind,
+            form_factor: record.form_factor,
+            idle: record.idle,
+            read: record.read,
+            write: record.write,
+            read_write: Some(record.read_write.unwrap()),
             read_bytes: 1024,
-            written_bytes: 2048,
+            written_bytes: 0,
         };
         power_specs
     }
@@ -595,11 +612,9 @@ mod tests {
 
     #[test]
     fn it_should_generate_the_power_specs_for_a_disk() {
-        let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
-        let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
         let mut disk = generate_mock_disk();
 
-        disk.set_power_specs(1024, 1024, file_path);
+        disk.set_power_specs(1024, 1024 /* file_path */);
 
         let disk_power_specs = disk.power_specs.unwrap();
 
@@ -617,7 +632,8 @@ mod tests {
 
     #[test]
     fn it_should_generate_record_for_power_consumption_for_a_given_disk() {
-        let power_specs = generate_mock_power_specs();
+        let disk_record = generate_mock_disk_record();
+        let power_specs = generate_mock_power_specs(&disk_record);
         let mut disk = generate_mock_disk();
         disk.power_specs = Some(power_specs);
         disk.state = DiskState::Write;
@@ -628,7 +644,8 @@ mod tests {
 
     #[test]
     fn it_should_generate_record_for_power_consumption_for_a_given_disk_in_read_write_state() {
-        let power_specs = generate_mock_power_specs();
+        let disk_record = generate_mock_disk_record();
+        let power_specs = generate_mock_power_specs(&disk_record);
         let mut disk = generate_mock_disk();
         disk.power_specs = Some(power_specs);
         disk.state = DiskState::ReadWrite;
@@ -643,7 +660,8 @@ mod tests {
         let four_seconds = std::time::Duration::new(4, 0);
         let first_record = generate_mock_power_record(two_seconds, String::from("5000000"));
         let second_record = generate_mock_power_record(four_seconds, String::from("3000000"));
-        let power_specs = generate_mock_power_specs();
+        let disk_record = generate_mock_disk_record();
+        let power_specs = generate_mock_power_specs(&disk_record);
         let mut disk = generate_mock_disk();
         disk.power_specs = Some(power_specs);
         disk.record_buffer.push(first_record.clone());
@@ -659,7 +677,8 @@ mod tests {
 
     #[test]
     fn it_should_add_a_record_to_the_buffer_for_a_given_disk() {
-        let power_specs = generate_mock_power_specs();
+        let disk_record = generate_mock_disk_record();
+        let power_specs = generate_mock_power_specs(&disk_record);
         let mut disk = generate_mock_disk();
         disk.power_specs = Some(power_specs);
         disk.state = DiskState::Write;
@@ -672,7 +691,8 @@ mod tests {
 
     #[test]
     fn it_should_clean_old_records_from_the_buffer_for_a_given_disk() {
-        let power_specs = generate_mock_power_specs();
+        let disk_record = generate_mock_disk_record();
+        let power_specs = generate_mock_power_specs(&disk_record);
         let mut disk = generate_mock_disk();
         disk.power_specs = Some(power_specs);
         disk.state = DiskState::Write;
@@ -693,7 +713,8 @@ mod tests {
 
     #[test]
     fn it_should_get_a_copy_of_a_disk_records() {
-        let power_specs = generate_mock_power_specs();
+        let disk_record = generate_mock_disk_record();
+        let power_specs = generate_mock_power_specs(&disk_record);
         let mut disk = generate_mock_disk();
         disk.power_specs = Some(power_specs);
         disk.state = DiskState::Write;
@@ -724,17 +745,18 @@ mod tests {
 
     #[test]
     fn it_should_give_a_power_estimation_for_a_given_disk_specifications() {
-        let first_power_specs = generate_mock_power_specs();
-        let mut second_power_specs = generate_mock_power_specs();
-        second_power_specs.capacity = 2048;
+        let first_disk_record = generate_mock_disk_record();
+        let first_power_specs = generate_mock_power_specs(&first_disk_record);
+        let mut second_disk_record = generate_mock_disk_record();
+        second_disk_record.capacity = 2048;
         let mut disk = generate_mock_disk();
         disk.power_specs = Some(first_power_specs.clone());
 
         let power_model = PowerModel {
-            disks: vec![first_power_specs.clone(), second_power_specs],
+            disks: vec![first_disk_record.clone(), second_disk_record.clone()],
         };
 
-        let disk_power_consumption = disk.find_power_specs(power_model);
+        let disk_power_consumption = disk.find_power_specs(&power_model);
         assert_eq!(&disk_power_consumption.idle, &first_power_specs.idle);
         assert_eq!(&disk_power_consumption.write, &first_power_specs.write);
         assert_eq!(&disk_power_consumption.read, &first_power_specs.read);
@@ -742,8 +764,9 @@ mod tests {
 
     #[test]
     fn it_should_return_the_current_disk_state() {
-        let first_power_specs = generate_mock_power_specs();
-        let mut second_power_specs = generate_mock_power_specs();
+        let disk_record = generate_mock_disk_record();
+        let first_power_specs = generate_mock_power_specs(&disk_record);
+        let mut second_power_specs = generate_mock_power_specs(&disk_record);
         second_power_specs.written_bytes = 1024;
         let mut disk = generate_mock_disk();
         disk.power_specs = Some(first_power_specs.clone());
@@ -753,7 +776,7 @@ mod tests {
 
         assert_eq!(disk_state, DiskState::Write);
 
-        let mut third_power_specs = generate_mock_power_specs();
+        let mut third_power_specs = generate_mock_power_specs(&disk_record);
         third_power_specs.read_bytes = 2048;
         third_power_specs.written_bytes = 1024;
 
@@ -762,17 +785,16 @@ mod tests {
 
         assert_eq!(disk_state, DiskState::Read);
 
-        let mut fourth_power_specs = generate_mock_power_specs();
+        let mut fourth_power_specs = generate_mock_power_specs(&disk_record);
         fourth_power_specs.read_bytes = 4096;
         fourth_power_specs.written_bytes = 2048;
-
 
         disk.power_specs = Some(fourth_power_specs.clone());
         let disk_state = disk.evaluate_disk_state(&third_power_specs);
 
         assert_eq!(disk_state, DiskState::ReadWrite);
 
-        let mut fifth_power_specs = generate_mock_power_specs();
+        let mut fifth_power_specs = generate_mock_power_specs(&disk_record);
         fifth_power_specs.read_bytes = 4096;
         fifth_power_specs.written_bytes = 2048;
 
@@ -784,11 +806,12 @@ mod tests {
 
     #[test]
     fn it_should_update_the_disk_state() {
-        let mut first_power_specs = generate_mock_power_specs();
+        let disk_record = generate_mock_disk_record();
+        let mut first_power_specs = generate_mock_power_specs(&disk_record);
         first_power_specs.written_bytes = 0;
         let mut disk = generate_mock_disk();
         disk.power_specs = Some(first_power_specs);
-        let mut refreshed_power_specs = generate_mock_power_specs();
+        let mut refreshed_power_specs = generate_mock_power_specs(&disk_record);
         refreshed_power_specs.read_bytes = 4096;
         refreshed_power_specs.written_bytes = 2048;
 
@@ -798,14 +821,11 @@ mod tests {
 
     #[test]
     fn it_updates_the_disk_for_all_the_necessary_fields() {
-        let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
-
-        let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
-        let mut first_power_specs = generate_mock_power_specs();
+        let disk_record = generate_mock_disk_record();
+        let mut first_power_specs = generate_mock_power_specs(&disk_record);
         first_power_specs.written_bytes = 0;
         let mut disk = generate_mock_disk();
         disk.power_specs = Some(first_power_specs);
-        disk.power_model_path = String::from(file_path.to_str().unwrap());
 
         let unmodified_read_bytes = 1024;
         let grown_written_bytes = 2048;
@@ -821,10 +841,8 @@ mod tests {
 
     #[test]
     fn it_reads_the_latest_generated_energy_record_for_a_given_disk() {
-        let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
-
-        let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
-        let mut first_power_specs = generate_mock_power_specs();
+        let disk_record = generate_mock_disk_record();
+        let mut first_power_specs = generate_mock_power_specs(&disk_record);
         first_power_specs.written_bytes = 0;
 
         let two_seconds = std::time::Duration::new(2, 0);
@@ -834,7 +852,6 @@ mod tests {
 
         let mut disk = generate_mock_disk();
         disk.power_specs = Some(first_power_specs);
-        disk.power_model_path = String::from(file_path.to_str().unwrap());
         disk.record_buffer.push(first_record);
         disk.record_buffer.push(second_record);
 
@@ -846,14 +863,18 @@ mod tests {
     #[test]
     fn it_returns_an_error_if_an_attempt_to_read_a_disk_energy_record_without_enough_power_records_is_made(
     ) {
-        let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
+        let disk = generate_mock_disk();
 
-        let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
-        let mut disk = generate_mock_disk();
-        disk.power_model_path = String::from(file_path.to_str().unwrap());
-        
         let attempt_to_read_record = disk.read_record();
 
         assert!(attempt_to_read_record.is_err());
+    }
+    #[test]
+    fn it_generates_a_power_model_from_csv_records() {
+        let power_model = generate_power_model();
+
+        assert_eq!(power_model.disks.len(), 2);
+        assert_eq!(power_model.disks[0].capacity, 512);
+        assert_eq!(power_model.disks[1].capacity, 1024);
     }
 }

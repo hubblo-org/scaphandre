@@ -1127,7 +1127,6 @@ mod tests {
         let proc_tracker = ProcessTracker::new(5);
         let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
 
-        let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
         let power_specs = DiskPowerSpecs {
             name: String::from("Disk name"),
             manufacturer: String::from("Disk manufacturer"),
@@ -1175,7 +1174,7 @@ mod tests {
             ],
             power_specs: Some(power_specs),
             state: DiskState::Unknown,
-            power_model_path: String::from(file_path.to_str().unwrap()),
+            power_model: None,
         };
 
         let first_energy_record = disk.read_record().unwrap();

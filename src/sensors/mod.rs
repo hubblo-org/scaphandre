@@ -10,9 +10,7 @@ use msr_rapl::get_msr_value;
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 pub mod disk;
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-use disk::{format_disk_name, Disk};
-#[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-use std::{path::PathBuf, str::FromStr};
+use disk::{format_disk_name, Disk, generate_power_model};
 #[cfg(target_os = "linux")]
 pub mod powercap_rapl;
 pub mod units;
@@ -710,11 +708,11 @@ impl Topology {
                     .collect();
                 if identified_disks.is_empty() {
                     let disk_usage = disk.usage();
-                    let power_model_path = PathBuf::from_str(&sd.power_model_path).unwrap();
+                    let power_model = generate_power_model();
+                    sd.power_model = Some(power_model);
                     sd.set_power_specs(
                         disk_usage.read_bytes,
                         disk_usage.written_bytes,
-                        power_model_path,
                     );
                     Ok(self.disks.push(sd))
                 } else {
@@ -1663,7 +1661,6 @@ impl Clone for CPUStat {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::Path;
     #[test]
     fn get_proc_cpuinfo() {
         let cores = Topology::generate_cpu_cores().unwrap();

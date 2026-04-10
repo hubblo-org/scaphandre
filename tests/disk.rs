@@ -113,7 +113,6 @@ fn it_should_refresh_the_topology_disks_with_power_specs() {
 #[test]
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 fn it_should_refresh_all_the_topology_disks_through_sysinfo() {
-    let mock_power_model_path = common::mock_power_model_path();
     let mut mock_topology = common::generate_mock_topology(false);
     let mut sys_disks = sysinfo::Disks::new_with_refreshed_list();
 

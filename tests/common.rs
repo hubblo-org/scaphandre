@@ -1,4 +1,6 @@
-use scaphandre::sensors::disk::{Disk, DiskKindWrapper, DiskPowerSpecs, DiskState, FormFactor};
+use scaphandre::sensors::disk::{
+    Disk, DiskKindWrapper, DiskPowerSpecs, DiskRecord, DiskState, FormFactor, PowerModel,
+};
 use scaphandre::sensors::utils::ProcessTracker;
 use scaphandre::sensors::Topology;
 use std::collections::HashMap;
@@ -106,9 +108,6 @@ pub fn generate_mock_topology(disks: bool) -> Topology {
 
         return mock_topology;
     } else {
-        let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
-
-        let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
         let power_specs = DiskPowerSpecs {
             name: String::from("Disk name"),
             manufacturer: String::from("Disk manufacturer"),
@@ -123,6 +122,8 @@ pub fn generate_mock_topology(disks: bool) -> Topology {
             written_bytes: 0,
         };
 
+        let power_model = generate_mock_power_model();
+
         let disk = Disk {
             name: String::from("/dev/nvme0"),
             form_factor: FormFactor::NVME,
@@ -132,7 +133,7 @@ pub fn generate_mock_topology(disks: bool) -> Topology {
             record_buffer: vec![],
             power_specs: Some(power_specs),
             state: DiskState::Unknown,
-            power_model_path: String::from(file_path.to_str().unwrap()),
+            power_model: Some(power_model),
         };
 
         let mock_topology = Topology {
@@ -149,9 +150,33 @@ pub fn generate_mock_topology(disks: bool) -> Topology {
     }
 }
 
-pub fn mock_power_model_path() -> PathBuf {
-    let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
-
-    let file_path = Path::new(cargo_manifest_dir).join("tests/fixtures/disk_power.csv");
-    file_path
+// build.rs will create the disk records from the fixture available in tests/fixtures, but
+// integration tests are built with source code, not test code. Using this method therefore to
+// allocate a mocked power model to not rely on real disks available in the test environment.
+pub fn generate_mock_power_model() -> PowerModel {
+    let first_disk_record = DiskRecord {
+        name: String::from("Disk name"),
+        manufacturer: String::from("Disk manufacturer"),
+        kind: DiskKindWrapper::SSD,
+        capacity: 1024,
+        form_factor: FormFactor::NVME,
+        idle: 0.5,
+        read: 3.0,
+        write: 5.0,
+        read_write: None,
+    };
+    let second_disk_record = DiskRecord {
+        name: String::from("Disk name"),
+        manufacturer: String::from("Disk manufacturer"),
+        kind: DiskKindWrapper::SSD,
+        capacity: 512,
+        form_factor: FormFactor::NVME,
+        idle: 0.5,
+        read: 3.0,
+        write: 5.0,
+        read_write: None,
+    };
+    PowerModel {
+        disks: vec![first_disk_record, second_disk_record],
+    }
 }
