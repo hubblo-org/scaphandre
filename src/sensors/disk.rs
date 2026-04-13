@@ -162,28 +162,79 @@ impl Disk {
 
     /// Returns the idle, write and read power consumption for a given disk.
     pub fn find_power_specs(&self, power_model: &PowerModel) -> DiskRecord {
-        let similar_disks: Vec<&DiskRecord> = power_model
+        let mut similar_disks: Vec<&DiskRecord> = power_model
             .disks
             .iter()
-            .filter(|disk_pm| {
-                disk_pm.form_factor == self.form_factor
-                    && disk_pm.kind == self.kind
-                    && disk_pm.capacity == self.capacity
-            })
+            .filter(|disk_pm| disk_pm.form_factor == self.form_factor && disk_pm.kind == self.kind)
             .collect();
 
-        similar_disks[0].clone()
+        let similar_disks_by_capacity: Vec<&&DiskRecord> = similar_disks
+            .iter()
+            .filter(|disk_pm| disk_pm.capacity == self.capacity)
+            .collect();
+
+        match similar_disks_by_capacity.is_empty() {
+            false => {
+                let record = similar_disks_by_capacity[0];
+                DiskRecord {
+                    name: record.name.to_owned(),
+                    manufacturer: record.manufacturer.to_owned(),
+                    form_factor: record.form_factor,
+                    kind: record.kind,
+                    capacity: record.capacity,
+                    idle: record.idle,
+                    read: record.read,
+                    write: record.write,
+                    read_write: record.read_write,
+                }
+            }
+            true => {
+                info!("No similar disk by capacity identified, falling back on closest disk by capacity!");
+                similar_disks.sort_by(|a, b| a.capacity.cmp(&b.capacity));
+                let length = similar_disks.len();
+                let smallest_disk = similar_disks[0];
+                let largest_disk = similar_disks[length - 1];
+                if self.capacity < smallest_disk.capacity {
+                    smallest_disk.clone()
+                } else {
+                    largest_disk.clone()
+                }
+            }
+        }
+
+        /*
+        if similar_disks_by_capacity.is_empty() {
+            similar_disks.sort_by(|a, b| a.capacity.cmp(&b.capacity));
+            let length = similar_disks.len();
+            let smallest_disk = similar_disks[0];
+            let largest_disk = similar_disks[length - 1];
+
+            if self.capacity < smallest_disk.capacity {
+                smallest_disk.clone()
+            } else {
+                largest_disk.clone()
+            }
+        } else {
+            let result = similar_disks_by_capacity[0];
+            DiskRecord {
+                name: result.name.to_owned(),
+                manufacturer: result.manufacturer.to_owned(),
+                form_factor: result.form_factor,
+                kind: result.kind,
+                capacity: result.capacity,
+                idle: result.idle,
+                read: result.read,
+                write: result.write,
+                read_write: result.read_write,
+            }
+        } */
     }
 
-    /// Allocate power specifications to the disk, through the disk power model. 
+    /// Allocate power specifications to the disk, through the disk power model.
     /// The read and written bytes for a given Disk can be identified with sysinfo::Disk::usage.
-    pub fn set_power_specs(
-        &mut self,
-        read_bytes: u64,
-        written_bytes: u64,
-    ) {
+    pub fn set_power_specs(&mut self, read_bytes: u64, written_bytes: u64) {
         if let Some(model) = &self.power_model {
-            let identified_record_for_disk = self.find_power_specs(&model);
+            let identified_record_for_disk = self.find_power_specs(model);
 
             let power_specs = DiskPowerSpecs {
                 name: identified_record_for_disk.name,
@@ -280,7 +331,7 @@ impl Disk {
         if let (Ok(earlier_value), Ok(later_value)) = parsed_values {
             let microwatts_sum = earlier_value + later_value;
             let time_diff = records.1.timestamp.as_secs_f64() - records.0.timestamp.as_secs_f64();
-            let energy_consumed = microwatts_sum as f64 * time_diff;
+            let energy_consumed = microwatts_sum * time_diff;
 
             return Some(Record {
                 timestamp: current_system_time_since_epoch(),
@@ -333,8 +384,7 @@ impl RecordGenerator for Disk {
         }
     }
     fn get_records_passive(&self) -> Vec<Record> {
-        let records_copy = self.record_buffer.to_vec();
-        records_copy
+        self.record_buffer.to_vec()
     }
     fn refresh_record(&mut self) {}
 }
@@ -523,8 +573,7 @@ pub fn generate_power_model() -> PowerModel {
         disks_power.push(disk_model);
     });
 
-    let power_model = PowerModel { disks: disks_power };
-    power_model
+    PowerModel { disks: disks_power }
 }
 
 #[cfg(test)]
@@ -536,7 +585,7 @@ mod tests {
         let one_terabyte_in_gigabytes = 1024;
         let test_power_model = generate_power_model();
 
-        let disk = Disk {
+        Disk {
             name: String::from("/dev/nvme0"),
             capacity: one_terabyte_in_gigabytes,
             form_factor: FormFactor::NVME,
@@ -546,13 +595,11 @@ mod tests {
             record_buffer: vec![],
             state: DiskState::Unknown,
             power_model: Some(test_power_model),
-        };
-
-        disk
+        }
     }
 
     fn generate_mock_disk_record() -> DiskRecord {
-        let record = DiskRecord {
+        DiskRecord {
             name: String::from("Disk name"),
             manufacturer: String::from("Disk manufacturer"),
             capacity: 1024,
@@ -562,12 +609,11 @@ mod tests {
             read: 3.0,
             write: 5.0,
             read_write: Some(4.0),
-        };
-        record
+        }
     }
 
     fn generate_mock_power_specs(record: &DiskRecord) -> DiskPowerSpecs {
-        let power_specs = DiskPowerSpecs {
+        DiskPowerSpecs {
             name: record.name.to_owned(),
             manufacturer: record.manufacturer.to_owned(),
             capacity: record.capacity,
@@ -579,17 +625,15 @@ mod tests {
             read_write: Some(record.read_write.unwrap()),
             read_bytes: 1024,
             written_bytes: 0,
-        };
-        power_specs
+        }
     }
 
     fn generate_mock_power_record(duration: Duration, value: String) -> Record {
-        let record = Record {
+        Record {
             timestamp: duration,
-            value: value,
+            value,
             unit: Unit::MicroWatt,
-        };
-        record
+        }
     }
 
     #[test]
@@ -614,7 +658,7 @@ mod tests {
     fn it_should_generate_the_power_specs_for_a_disk() {
         let mut disk = generate_mock_disk();
 
-        disk.set_power_specs(1024, 1024 /* file_path */);
+        disk.set_power_specs(1024, 1024);
 
         let disk_power_specs = disk.power_specs.unwrap();
 
@@ -876,5 +920,27 @@ mod tests {
         assert_eq!(power_model.disks.len(), 2);
         assert_eq!(power_model.disks[0].capacity, 512);
         assert_eq!(power_model.disks[1].capacity, 1024);
+    }
+
+    #[test]
+    fn it_should_find_the_closest_power_specs_for_a_disk_if_no_similar_capacity_was_identified_in_the_power_model(
+    ) {
+        let mut disk = generate_mock_disk();
+        disk.capacity = 2048;
+        let power_model = generate_power_model();
+
+        let power_specs = disk.find_power_specs(&power_model);
+
+        assert_eq!(power_specs.capacity, 1024);
+        assert_eq!(power_specs.read, 3.0);
+        assert_eq!(power_specs.write, 5.0);
+
+        let mut smaller_disk = generate_mock_disk();
+        smaller_disk.capacity = 256;
+
+        let power_specs = smaller_disk.find_power_specs(&power_model);
+        assert_eq!(power_specs.capacity, 512);
+        assert_eq!(power_specs.read, 3.0);
+        assert_eq!(power_specs.write, 5.0);
     }
 }
