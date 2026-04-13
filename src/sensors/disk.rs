@@ -16,6 +16,62 @@ use sysinfo::DiskKind;
 // built binary.
 include!(concat!(env!("OUT_DIR"), "/csv_records.rs"));
 
+pub struct DiskAttributes {
+    pub name: String,
+    pub kind: String,
+    pub file_system: String,
+    pub mount_point: String,
+    pub removable: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct Metric {
+    pub name: String,
+    pub description: String,
+    pub record: Record,
+}
+
+#[derive(Debug)]
+pub struct Metrics {
+    pub total_bytes: Metric,
+    pub available_bytes: Metric,
+}
+
+pub struct DiskMetrics {
+    pub attributes: DiskAttributes,
+    pub metrics: Metrics,
+}
+
+impl IntoIterator for Metrics {
+    type Item = Metric;
+    type IntoIter = MetricsIntoIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        MetricsIntoIterator {
+            metrics: self,
+            index: 0,
+        }
+    }
+}
+
+pub struct MetricsIntoIterator {
+    metrics: Metrics,
+    index: usize,
+}
+
+impl Iterator for MetricsIntoIterator {
+    type Item = Metric;
+    fn next(&mut self) -> Option<Self::Item> {
+        let result = match self.index {
+            0 => self.metrics.total_bytes.clone(),
+            1 => self.metrics.available_bytes.clone(),
+            _ => return None,
+        };
+        self.index += 1;
+        Some(result)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum DiskState {
     Idle,
