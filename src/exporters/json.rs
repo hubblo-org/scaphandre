@@ -303,7 +303,7 @@ impl JsonExporter {
     }
 
     #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-    fn generate_evaluated_disks_report(&mut self, metrics: &Vec<Metric>) -> Vec<EvaluatedDisk> {
+    fn generate_evaluated_disks_report(&mut self, metrics: &[Metric]) -> Vec<EvaluatedDisk> {
         let disks_metrics: Vec<&Metric> = metrics
             .iter()
             .filter(|metric| metric.name == "scaph_disk_power_microwatts")
@@ -640,7 +640,8 @@ mod tests {
             state: DiskState::Unknown,
             power_model: None,
         };
-        let mock_topology = Topology {
+
+        Topology {
             sockets: vec![],
             stat_buffer: vec![],
             record_buffer: vec![],
@@ -649,8 +650,7 @@ mod tests {
             _sensor_data: mock_sensor_data,
             proc_tracker,
             disks: vec![first_disk, second_disk],
-        };
-        mock_topology
+        }
     }
 
     fn generate_mock_exporter() -> JsonExporter {
@@ -666,8 +666,8 @@ mod tests {
             container_regex: None,
             resources: false,
         };
-        let mock_json_exporter = JsonExporter::new(&mock_sensor, args);
-        mock_json_exporter
+
+        JsonExporter::new(&mock_sensor, args)
     }
 
     #[test]
