@@ -1,5 +1,5 @@
 use scaphandre::sensors::disk::{
-    Disk, DiskKindWrapper, DiskPowerSpecs, DiskRecord, DiskState, FormFactor, PowerModel,
+    EvaluatedDisk, DiskKindWrapper, DiskPowerSpecs, DiskRecord, DiskState, FormFactor, PowerModel,
 };
 use scaphandre::sensors::utils::ProcessTracker;
 use scaphandre::sensors::Topology;
@@ -124,7 +124,7 @@ pub fn generate_mock_topology(disks: bool) -> Topology {
 
         let power_model = generate_mock_power_model();
 
-        let disk = Disk {
+        let disk = EvaluatedDisk {
             name: String::from("/dev/nvme0"),
             form_factor: FormFactor::NVME,
             kind: DiskKindWrapper::SSD,
@@ -136,7 +136,7 @@ pub fn generate_mock_topology(disks: bool) -> Topology {
             power_model: Some(power_model),
         };
 
-        let mock_topology = Topology {
+        Topology {
             sockets: vec![],
             stat_buffer: vec![],
             record_buffer: vec![],
@@ -145,8 +145,7 @@ pub fn generate_mock_topology(disks: bool) -> Topology {
             _sensor_data: mock_sensor_data,
             proc_tracker,
             disks: vec![disk.clone(), disk.clone()],
-        };
-        return mock_topology;
+        }
     }
 }
 

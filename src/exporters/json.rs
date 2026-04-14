@@ -565,7 +565,7 @@ impl JsonExporter {
 mod tests {
     use super::*;
     use crate::sensors::{
-        disk::{Disk, DiskKindWrapper, DiskPowerSpecs, DiskState, FormFactor},
+        disk::{EvaluatedDisk, DiskKindWrapper, DiskPowerSpecs, DiskState, FormFactor},
         units::Unit,
         utils::ProcessTracker,
         Record, Sensor, Topology,
@@ -617,7 +617,7 @@ mod tests {
             unit: Unit::MicroWatt,
         };
 
-        let first_disk = Disk {
+        let first_disk = EvaluatedDisk {
             name: String::from("nvme0n1"),
             form_factor: FormFactor::NVME,
             kind: DiskKindWrapper::SSD,
@@ -629,7 +629,7 @@ mod tests {
             power_model: None,
         };
 
-        let second_disk = Disk {
+        let second_disk = EvaluatedDisk {
             name: String::from("nvme0n2"),
             form_factor: FormFactor::NVME,
             kind: DiskKindWrapper::SSD,

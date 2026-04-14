@@ -1120,19 +1120,16 @@ impl MetricGenerator {
 mod tests {
     use super::*;
     use crate::sensors::{
-        disk::{Disk, DiskKindWrapper, DiskPowerSpecs, DiskState, FormFactor},
+        disk::{EvaluatedDisk, DiskKindWrapper, DiskPowerSpecs, DiskState, FormFactor},
         units::Unit,
         utils::ProcessTracker,
         Record, RecordReader,
     };
 
-    use std::path::Path;
-
     fn generate_mock_topology() -> Topology {
         let mock_sensor_data = HashMap::new();
 
         let proc_tracker = ProcessTracker::new(5);
-        let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");
 
         let power_specs = DiskPowerSpecs {
             name: String::from("Disk name"),
@@ -1169,7 +1166,7 @@ mod tests {
             value: String::from("8000000"),
         };
 
-        let mut disk = Disk {
+        let mut disk = EvaluatedDisk {
             name: String::from("/dev/nvme0"),
             form_factor: FormFactor::NVME,
             kind: DiskKindWrapper::SSD,
@@ -1191,7 +1188,7 @@ mod tests {
 
         let second_energy_record = disk.read_record().unwrap();
 
-        let mock_topology = Topology {
+        Topology {
             sockets: vec![],
             stat_buffer: vec![],
             record_buffer: vec![first_energy_record.clone(), second_energy_record.clone()],
@@ -1200,9 +1197,9 @@ mod tests {
             _sensor_data: mock_sensor_data,
             proc_tracker,
             disks: vec![disk.clone(), disk.clone()],
-        };
-        mock_topology
+        }
     }
+
     #[test]
     #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
     fn it_should_make_available_all_metrics_and_information_related_to_disks() {

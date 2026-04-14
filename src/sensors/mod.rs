@@ -10,7 +10,7 @@ use msr_rapl::get_msr_value;
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
 pub mod disk;
 #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-use disk::{format_disk_name, generate_power_model, Disk};
+use disk::{format_disk_name, generate_power_model, EvaluatedDisk};
 #[cfg(target_os = "linux")]
 pub mod powercap_rapl;
 pub mod units;
@@ -67,7 +67,7 @@ pub struct Topology {
     #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
     /// Disks with their power consumption evaluated
     #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-    pub disks: Vec<Disk>,
+    pub disks: Vec<EvaluatedDisk>,
 }
 
 impl RecordGenerator for Topology {
@@ -765,10 +765,10 @@ impl Topology {
     /// Only physical disks and their consumption have to be evaluated.
     #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
     pub fn add_sensor_disk(&mut self, disk: &sysinfo::Disk) -> Result<(), disk::DiskError> {
-        let sensor_disk = Disk::new(disk);
+        let sensor_disk = EvaluatedDisk::new(disk);
         match sensor_disk {
             Ok(mut sd) => {
-                let identified_disks: Vec<&Disk> = self
+                let identified_disks: Vec<&EvaluatedDisk> = self
                     .disks
                     .iter()
                     .filter(|tdisk| tdisk.name == sd.name)
@@ -778,7 +778,8 @@ impl Topology {
                     let power_model = generate_power_model();
                     sd.power_model = Some(power_model);
                     sd.set_power_specs(disk_usage.read_bytes, disk_usage.written_bytes);
-                    Ok(self.disks.push(sd))
+                    self.disks.push(sd);
+                    Ok(())
                 } else {
                     Err(disk::DiskError::DiskAlreadyPresent)
                 }
