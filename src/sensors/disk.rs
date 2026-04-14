@@ -4,19 +4,21 @@ use crate::sensors::{Record, RecordGenerator, RecordReader};
 use csv::Reader;
 use regex::Regex;
 use serde::Deserialize;
-use std::error::Error;
-use std::fmt::{self, Display};
-use std::fs::File;
-use std::io::Read;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::{
+    error::Error,
+    fmt::{self, Display},
+    fs::File,
+    io::Read,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 use sysinfo::DiskKind;
 
 // Parsing the CSV file in data/disks at build-time, which will make the records available in the
 // built binary.
 include!(concat!(env!("OUT_DIR"), "/csv_records.rs"));
 
-pub struct DiskAttributes {
+pub struct Attributes {
     pub name: String,
     pub kind: String,
     pub file_system: String,
@@ -38,7 +40,7 @@ pub struct Metrics {
 }
 
 pub struct DiskMetrics {
-    pub attributes: DiskAttributes,
+    pub attributes: Attributes,
     pub metrics: Metrics,
 }
 

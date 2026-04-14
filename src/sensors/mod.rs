@@ -22,7 +22,7 @@ use std::{collections::HashMap, error::Error, fmt, fs, mem::size_of_val, str, ti
 use sysinfo::{DiskKind, Pid, System};
 use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
 
-use crate::sensors::disk::{DiskAttributes, DiskMetrics, Metric, Metrics};
+use crate::sensors::disk::{Attributes, DiskMetrics, Metric, Metrics};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
 /// Sensor trait, the Sensor API.
@@ -636,9 +636,9 @@ impl Topology {
         ])
     }
 
-    pub fn get_disks_temp(&mut self) -> Vec<DiskMetrics> {
+    pub fn get_disks(&mut self) -> Vec<DiskMetrics> {
         let timestamp = current_system_time_since_epoch();
-        let mut disks_vector: Vec<DiskMetrics> = vec![];
+        let mut disks: Vec<DiskMetrics> = vec![];
 
         let sysinfo_disks = sysinfo::Disks::new_with_refreshed_list();
 
@@ -646,10 +646,13 @@ impl Topology {
             let file_system = sysinfo_disk.file_system().to_str().unwrap().to_string();
             let mount_point = sysinfo_disk.mount_point().to_str().unwrap().to_string();
             let name = sysinfo_disk.name().to_str().unwrap().to_string();
-            let kind = sysinfo_disk.kind().to_string();
+            let kind = match sysinfo_disk.kind() {
+                DiskKind::HDD => String::from("HDD"),
+                DiskKind::SSD => String::from("SSD"),
+                DiskKind::Unknown(_) => String::from("Unknown"),
+            };
             let removable = sysinfo_disk.is_removable().to_string();
-
-            let attributes = DiskAttributes {
+            let attributes = Attributes {
                 name,
                 file_system,
                 mount_point,
@@ -657,22 +660,20 @@ impl Topology {
                 removable,
             };
 
-            let total_bytes_record = Record {
+            let total_space = sysinfo_disk.total_space().to_string();
+            let total_bytes_record = Record::new(
                 timestamp,
-                value: sysinfo_disk.total_space().to_string(),
-                unit: units::Unit::Bytes,
-            };
+                total_space,
+                units::Unit::Bytes,
+            );
             let total_bytes = Metric {
                 name: String::from("scaph_host_disk_total_bytes"),
                 description: String::from("Total disk size, in bytes."),
                 record: total_bytes_record,
             };
-            let available_bytes_record = Record {
-                timestamp,
-                value: sysinfo_disk.available_space().to_string(),
-                unit: units::Unit::Bytes,
-            };
 
+            let available_space = sysinfo_disk.available_space().to_string();
+            let available_bytes_record = Record::new(timestamp, available_space, units::Unit::Bytes);
             let available_bytes = Metric {
                 name: String::from("scaph_host_disk_available_bytes"),
                 description: String::from("Available disk space, in bytes."),
@@ -688,7 +689,7 @@ impl Topology {
                 metrics,
                 attributes,
             };
-            disks_vector.push(disk_metrics);
+            disks.push(disk_metrics);
 
             #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
             match self.add_sensor_disk(sysinfo_disk) {
@@ -697,67 +698,7 @@ impl Topology {
             };
         });
 
-        disks_vector
-
-    }
-
-    pub fn get_disks(&mut self) -> HashMap<String, (String, HashMap<String, String>, Record)> {
-        let timestamp = current_system_time_since_epoch();
-        let mut res = HashMap::new();
-        let disks = sysinfo::Disks::new_with_refreshed_list();
-        for d in &disks {
-            let mut attributes = HashMap::new();
-            if let Some(file_system) = d.file_system().to_str() {
-                attributes.insert(String::from("disk_file_system"), String::from(file_system));
-            }
-            if let Some(mount_point) = d.mount_point().to_str() {
-                attributes.insert(String::from("disk_mount_point"), String::from(mount_point));
-            }
-            match d.kind() {
-                DiskKind::SSD => {
-                    attributes.insert(String::from("disk_type"), String::from("SSD"));
-                }
-                DiskKind::HDD => {
-                    attributes.insert(String::from("disk_type"), String::from("HDD"));
-                }
-                DiskKind::Unknown(_) => {
-                    attributes.insert(String::from("disk_type"), String::from("Unknown"));
-                }
-            }
-            attributes.insert(
-                String::from("disk_is_removable"),
-                d.is_removable().to_string(),
-            );
-            if let Some(disk_name) = d.name().to_str() {
-                attributes.insert(String::from("disk_name"), String::from(disk_name));
-            }
-            res.insert(
-                String::from("scaph_host_disk_total_bytes"),
-                (
-                    String::from("Total disk size, in bytes."),
-                    attributes.clone(),
-                    Record::new(timestamp, d.total_space().to_string(), units::Unit::Bytes),
-                ),
-            );
-            res.insert(
-                String::from("scaph_host_disk_available_bytes"),
-                (
-                    String::from("Available disk space, in bytes."),
-                    attributes.clone(),
-                    Record::new(
-                        timestamp,
-                        d.available_space().to_string(),
-                        units::Unit::Bytes,
-                    ),
-                ),
-            );
-            #[cfg(all(target_os = "linux", feature = "disks_evaluation"))]
-            match self.add_sensor_disk(d) {
-                Ok(_) => info!("Disk with power consumption evaluation added to topology!"),
-                Err(e) => info!("{:?} {e}", d.name()),
-            };
-        }
-        res
+        disks
     }
 
     /// Adds a representation of an identified physical disk. Sysinfo returns all identified file

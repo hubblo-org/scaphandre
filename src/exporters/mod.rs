@@ -568,15 +568,28 @@ impl MetricGenerator {
             description: format!("Global frequency of all the cpus. In {}", freq.unit),
             metric_value: MetricValueType::Text(freq.value),
         });
-        for disk in self.topology.get_disks_temp() {
-            //info!("pushing disk metric to data : {}", disk.metrics);
+        for disk in self.topology.get_disks() {
             disk.metrics.into_iter().for_each(|metric| {
                 let mut attributes = HashMap::new();
                 attributes.insert(String::from("disk_name"), disk.attributes.name.clone());
-                attributes.insert(String::from("disk_file_system"), disk.attributes.file_system.clone());
-                attributes.insert(String::from("disk_mount_point"), disk.attributes.mount_point.clone());
-                attributes.insert(String::from("disk_is_removable"), disk.attributes.removable.clone());
-                self.data.push(Metric {
+                attributes.insert(
+                    String::from("disk_file_system"),
+                    disk.attributes.file_system.clone(),
+                );
+                attributes.insert(
+                    String::from("disk_mount_point"),
+                    disk.attributes.mount_point.clone(),
+                );
+                attributes.insert(
+                    String::from("disk_is_removable"),
+                    disk.attributes.removable.clone(),
+                );
+                attributes.insert(
+                    String::from("disk_type"),
+                    disk.attributes.kind.clone(),
+                );
+
+                let metric = Metric {
                     name: metric.name,
                     metric_type: String::from("gauge"),
                     ttl: 60.0,
@@ -587,7 +600,10 @@ impl MetricGenerator {
                     attributes,
                     description: metric.description,
                     metric_value: MetricValueType::Text(metric.record.value),
-                });
+                };
+
+                info!("pushing disk metric to data : {:?}", metric);
+                self.data.push(metric);
             })
         }
 
