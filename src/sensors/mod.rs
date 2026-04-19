@@ -72,7 +72,7 @@ impl RecordGenerator for Topology {
             }
             Err(e) => {
                 warn!(
-                    "Could'nt read record from {}, error was : {:?}",
+                    "Couldn't read record from {}, error was : {:?}",
                     self._sensor_data
                         .get("source_file")
                         .unwrap_or(&String::from("SRCFILENOTKNOWN")),
@@ -468,7 +468,7 @@ impl Topology {
                     }
                     Err(e) => {
                         warn!(
-                            "Could'nt get previous_microjoules - value : '{}' - error : {:?}",
+                            "Couldn't get previous_microjoules - value : '{}' - error : {:?}",
                             previous_record.value, e
                         );
                     }
@@ -992,7 +992,7 @@ impl RecordGenerator for CPUSocket {
             }
             Err(e) => {
                 warn!(
-                    "Could'nt read record from {}, error was: {:?}",
+                    "Couldn't read record from {}, error was: {:?}",
                     self.sensor_data
                         .get("source_file")
                         .unwrap_or(&String::from("SRCFILENOTKNOWN")),
@@ -1365,7 +1365,7 @@ impl RecordGenerator for Domain {
             }
             Err(e) => {
                 warn!(
-                    "Could'nt read record from {}. Error was : {:?}.",
+                    "Couldn't read record from {}. Error was : {:?}.",
                     self.sensor_data
                         .get("source_file")
                         .unwrap_or(&String::from("SRCFILENOTKNOWN")),

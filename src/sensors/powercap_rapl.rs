@@ -88,7 +88,7 @@ impl RecordReader for Topology {
                             total += val;
                         }
                         Err(e) => {
-                            warn!("could'nt convert {} to i128: {}", r.value.trim(), e);
+                            warn!("Couldn't convert {} to i128: {}", r.value.trim(), e);
                         }
                     }
                 }
@@ -100,7 +100,7 @@ impl RecordReader for Topology {
                                     total += val;
                                 }
                                 Err(e) => {
-                                    warn!("could'nt convert {} to i128: {}", dr.value.trim(), e);
+                                    warn!("Couldn't convert {} to i128: {}", dr.value.trim(), e);
                                 }
                             }
                         }
@@ -265,7 +265,7 @@ impl Sensor for PowercapRAPLSensor {
                 }
             }
             if !found {
-                warn!("Could'nt find any RAPL PKG domain (nor psys).");
+                warn!("Couldn't find any RAPL PKG domain (nor psys).");
             }
         }
         for folder in fs::read_dir(&self.base_path).unwrap() {

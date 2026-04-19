@@ -598,7 +598,7 @@ impl ProcessTracker {
                     }
                 }
             } else {
-                debug!("Could'nt find {} in procfs.", pid.to_string());
+                debug!("Couldn't find {} in procfs.", pid.to_string());
             }
         }
         description

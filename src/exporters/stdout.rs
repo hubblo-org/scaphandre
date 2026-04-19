@@ -185,7 +185,7 @@ impl StdoutExporter {
                 }
                 println!("{to_print}\n");
             } else {
-                println!("{to_print} Could'nt get per-domain metrics.\n");
+                println!("{to_print} Couldn't get per-domain metrics.\n");
             }
         }
 

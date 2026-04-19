@@ -87,7 +87,7 @@ impl QemuExporter {
                             }
                             Err(err) => {
                                 error!(
-                                    "Could'nt edit {}. Please check file permissions : {}",
+                                    "Couldn't edit {}. Please check file permissions : {}",
                                     complete_path, err
                                 );
                             }

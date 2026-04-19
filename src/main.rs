@@ -192,7 +192,7 @@ fn my_service_main(_arguments: Vec<OsString>) {
                                     }
                                     Err(e) => {
                                         panic!(
-                                            "Could'nt set Stop status on scaphandre service: {:?}",
+                                            "Couldn't set Stop status on scaphandre service: {:?}",
                                             e
                                         );
                                     }

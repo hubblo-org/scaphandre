@@ -296,7 +296,7 @@ impl RecordReader for CPUSocket {
                         }),
                         Err(e) => {
                             error!(
-                                "Could'nt get MSR value for {}: {}",
+                                "Couldn't get MSR value for {}: {}",
                                 MSR_PKG_ENERGY_STATUS, e
                             );
                             Ok(Record {
@@ -338,7 +338,7 @@ impl RecordReader for Domain {
                             value: rec.value,
                         }),
                         Err(e) => {
-                            error!("Could'nt get MSR value for {}: {}", msr_addr, e);
+                            error!("Couldn't get MSR value for {}: {}", msr_addr, e);
                             Ok(Record {
                                 timestamp: current_system_time_since_epoch(),
                                 value: String::from("0"),
@@ -388,7 +388,7 @@ impl Sensor for MsrRAPLSensor {
                         }
                     }
                     None => {
-                        panic!("Could'nt get cpuid data.");
+                        panic!("Couldn't get cpuid data.");
                     }
                 }
                 let mut i: u16 = 0;
@@ -531,7 +531,7 @@ impl Sensor for MsrRAPLSensor {
                                 }
                             }
                             None => {
-                                panic!("Could'nt get core ids from core_affinity.");
+                                panic!("Couldn't get core ids from core_affinity.");
                             }
                         }
                         if let Some(info) = CpuId::new().get_extended_topology_info() {
@@ -542,7 +542,7 @@ impl Sensor for MsrRAPLSensor {
                             }
                         }
                     } else {
-                        error!("Could'nt set thread affinity !");
+                        error!("Couldn't set thread affinity !");
                         let last_error = GetLastError();
                         panic!("Error was : {:?}", last_error);
                     }
@@ -637,7 +637,7 @@ impl Sensor for MsrRAPLSensor {
                         ))
                     }
                     Err(e) => {
-                        warn!("Could'nt add Dram domain: {}", e);
+                        warn!("Couldn't add Dram domain: {}", e);
                     }
                 }
                 match get_msr_value(core_id as usize, MSR_PP0_ENERGY_STATUS as u64, &sensor_data) {
@@ -657,7 +657,7 @@ impl Sensor for MsrRAPLSensor {
                         ))
                     }
                     Err(e) => {
-                        warn!("Could'nt add Core domain: {}", e);
+                        warn!("Couldn't add Core domain: {}", e);
                     }
                 }
                 match get_msr_value(core_id as usize, MSR_PP1_ENERGY_STATUS as u64, &sensor_data) {
@@ -677,14 +677,14 @@ impl Sensor for MsrRAPLSensor {
                         ))
                     }
                     Err(e) => {
-                        warn!("Could'nt add Uncore domain: {}", e);
+                        warn!("Couldn't add Uncore domain: {}", e);
                     }
                 }
                 //match get_msr_value(core_id as usize, MSR_PLATFORM_ENERGY_STATUS as u64, &sensor_data) {
                 //    Ok(rec) => {
                 //    },
                 //    Err(e) => {
-                //        error!("Could'nt find Platform/PSYS domain.");
+                //        error!("Couldn't find Platform/PSYS domain.");
                 //    }
                 //}
             }
@@ -699,7 +699,7 @@ impl Sensor for MsrRAPLSensor {
                         .insert(String::from("psys"), String::from(""));
                 }
                 Err(e) => {
-                    warn!("Could'nt add Uncore domain: {}", e);
+                    warn!("Couldn't add Uncore domain: {}", e);
                 }
             }
         }
@@ -740,7 +740,7 @@ pub unsafe fn get_msr_value(
     if thread_affinity_res.as_bool() {
         debug!("Thread affinity found : {:?}", thread_group_affinity);
     } else {
-        error!("Could'nt get thread group affinity");
+        error!("Couldn't get thread group affinity");
     }
     let mut process_group_array: [u16; 8] = [0, 0, 0, 0, 0, 0, 0, 0];
     let mut process_group_array_len = 8;
@@ -752,7 +752,7 @@ pub unsafe fn get_msr_value(
     if process_affinity_res.as_bool() {
         debug!("Process affinity found: {:?}", process_group_array);
     } else {
-        error!("Could'nt get process group affinity");
+        error!("Couldn't get process group affinity");
         error!("Error was : {:?}", GetLastError());
     }
     debug!("Core ID requested to the driver : {}", core_id);
