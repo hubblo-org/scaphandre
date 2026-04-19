@@ -165,7 +165,6 @@ pub struct MetricGenerator {
 /// to use the following methods to avoid discrepancies between exporters.
 impl MetricGenerator {
     /// Returns a MetricGenerator instance that will host metrics.
-
     pub fn new(
         topology: Topology,
         hostname: String,

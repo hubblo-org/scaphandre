@@ -1,6 +1,6 @@
 //! Generic sensor and transmission agent for energy consumption related metrics.
 
-use clap::{command, ArgAction, Parser, Subcommand};
+use clap::{ArgAction, Parser, Subcommand};
 use colored::Colorize;
 use scaphandre::{exporters, sensors::Sensor};
 

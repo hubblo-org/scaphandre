@@ -56,7 +56,6 @@ x86 = { version = "0.52.0" }
 [features]
 default = [
     "prometheus",
-    "riemann",
     "warpten",
     "json",
     "containers",

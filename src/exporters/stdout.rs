@@ -122,8 +122,8 @@ impl StdoutExporter {
         };
 
         let domain_names = self.metric_generator.topology.domains_names.as_ref();
-        if domain_names.is_some() {
-            info!("domain_names: {:?}", domain_names.unwrap());
+        if let Some(names) = domain_names {
+            info!("domain_names: {:?}", names);
         }
 
         println!(
@@ -132,8 +132,8 @@ impl StdoutExporter {
             host_power_source
         );
 
-        if domain_names.is_some() {
-            println!("\tpackage \t{}", domain_names.unwrap().join("\t\t"));
+        if let Some(names) = domain_names {
+            println!("\tpackage \t{}", names.join("\t\t"));
         }
 
         for s in metrics
