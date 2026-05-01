@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" id="oranda" class="light">
+  <head>
+    <title>scaphandre</title>
+    
+      <meta property="og:url" content="https://scaphandre.hubblo.org" />
+    
+    
+      <link rel="icon" href="/scaphandre/favicon.ico" />
+    
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+      <meta name="description" content="Electric power/energy consumption monitoring agent." />
+      <meta property="og:description" content="Electric power/energy consumption monitoring agent." />
+    
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="scaphandre" />
+    
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta property="og:image" content="https://raw.githubusercontent.com/hubblo-org/scaphandre/dev/docs_src/scaphandre.cleaned.png" />
+    
+    
+      <meta property="og:image:alt" content="Hubblo's twitter/x account" />
+    
+    
+      <meta name="twitter:creator" content="@HubbloOrg" />
+      <meta name="twitter:site" content="@HubbloOrg" />
+    
+    <meta http-equiv="Permissions-Policy" content="interest-cohort=()" />
+    <link rel="stylesheet" href="/scaphandre/oranda-v0.6.1.css" />
+    
+    
+  </head>
+  <body>
+    <div class="container">
+      <div class="page-body">
+        
+          <div class="repo_banner">
+            <a href="https://github.com/hubblo-org/scaphandre">
+              <div class="github-icon" aria-hidden="true"></div>
+              Check out our GitHub!
+            </a>
+          </div>
+        
+
+        <main>
+          <header>
+            
+            <h1 class="title">scaphandre</h1>
+            
+  <nav class="nav">
+    <ul>
+      <li><a href="/scaphandre/">Home</a></li>
+
+      
+
+      
+        <li><a href="/scaphandre/artifacts/">Install</a></li>
+      
+
+      
+        <li><a href="/scaphandre/book/">Docs</a></li>
+      
+
+      
+        <li><a href="/scaphandre/funding/">Funding</a></li>
+      
+
+      
+        <li><a href="/scaphandre/changelog/">Changelog</a></li>
+      
+    </ul>
+  </nav>
+
+          </header>
+
+          
+  <div>
+    <h1>Scaphandre v0.3.0</h1>
+    <div class="releases-body">
+      
+      
+      <section class="release ">
+  
+  <div class="release-info">
+    <span class="flex items-center gap-2">
+      <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor' class='w-6 h-6'>
+    <path stroke-linecap='round' stroke-linejoin='round' d='M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z' />
+    <path stroke-linecap='round' stroke-linejoin='round' d='M6 6h.008v.008H6V6z' /></svg>
+      v0.3.0
+    </span>
+    <span class="flex items-center gap-2">
+      
+        <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor' class='w-6 h-6'><path stroke-linecap='round' stroke-linejoin='round' d='M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5' /></svg>
+        Apr 13 2021 at 08:23 UTC
+      
+    </span>
+  </div>
+  <div class="release-body">
+    <h3>Added</h3>
+<ul>
+<li>New MetricGenerator and Metric structs and helper functions to make writing exporters easier. Riemann and Prometheus exporters now share the same code pattern: <a href="https://github.com/hubblo-org/scaphandre/pull/79" rel="noopener noreferrer">#79</a> thanks @uggla !</li>
+<li>New <a href="https://warp10.io/" rel="noopener noreferrer">Warp10</a> exporter ! <a href="https://github.com/hubblo-org/scaphandre/pull/76" rel="noopener noreferrer">#76</a></li>
+<li>Updated riemann_client and protobuf crates dependencies <a href="https://github.com/hubblo-org/scaphandre/pull/70/files" rel="noopener noreferrer">#70</a> thanks @uggla !</li>
+<li>Successfully tested on AMD CPUs (AMD Ryzen 5 2600X): <a href="https://github.com/hubblo-org/scaphandre/issues/55" rel="noopener noreferrer">#55</a> (requires a kernel 5.11 or later) thanks @barnumbirr and @kamaradclimber !</li>
+<li>Scaphandre can now be tested locally thanks to a docker-compose stack ! <a href="https://github.com/hubblo-org/scaphandre/pull/61" rel="noopener noreferrer">#61</a> thanks @PierreRust !</li>
+<li>Added a CITATION file for references: <a href="https://github.com/hubblo-org/scaphandre/issues/95" rel="noopener noreferrer">#95</a> thanks @tstrempel !</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Allowing scaphandre to run even if intel_rapl modules are not found: <a href="https://github.com/hubblo-org/scaphandre/pull/65" rel="noopener noreferrer">#65</a> (needed to run scaphandre on AMD CPUs)</li>
+<li>Fixed typos and lacks in the documentation: <a href="https://github.com/hubblo-org/scaphandre/pull/81" rel="noopener noreferrer">#81</a>, <a href="https://github.com/hubblo-org/scaphandre/pull/77" rel="noopener noreferrer">#77</a>, <a href="https://github.com/hubblo-org/scaphandre/issues/80" rel="noopener noreferrer">#80</a> thanks @pierreozoux, @LudovicRousseau, @maethor, @wallet77</li>
+<li>Moved documentation output to another <a href="https://github.com/hubblo-org/scaphandre-documentation" rel="noopener noreferrer">repository</a>: <a href="https://github.com/hubblo-org/scaphandre/pull/94" rel="noopener noreferrer">#94</a> (documentation is now available here: <a href="https://hubblo-org.github.io/scaphandre-documentation" rel="noopener noreferrer">https://hubblo-org.github.io/scaphandre-documentation</a>)</li>
+<li>Json exporter has been refactored: <a href="https://github.com/hubblo-org/scaphandre/pull/87" rel="noopener noreferrer">#87</a> thanks @jdrouet !</li>
+</ul>
+
+  </div>
+</section>
+    </div>
+  </div>
+
+        </main>
+      </div>
+
+      <footer>
+        
+          <a href="https://github.com/hubblo-org/scaphandre"><div class="github-icon" aria-hidden="true"></div></a>
+        
+        <span>
+          scaphandre, Apache-2.0
+        </span>
+      </footer>
+    </div>
+
+    
+    
+
+    
+  </body>
+</html>
