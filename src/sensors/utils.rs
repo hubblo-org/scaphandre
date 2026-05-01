@@ -8,8 +8,8 @@ use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use sysinfo::{
-    get_current_pid, CpuExt, CpuRefreshKind, Pid, Process, ProcessExt, ProcessStatus, System,
-    SystemExt,
+    CpuExt, CpuRefreshKind, Pid, Process, ProcessExt, ProcessStatus, System, SystemExt,
+    get_current_pid,
 };
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
@@ -599,8 +599,8 @@ impl ProcessTracker {
                             }
                             found = true;
                         } //else {
-                          //    debug!("Cgroup not identified as related to a container technology : {}", &cg.pathname);
-                          //}
+                        //    debug!("Cgroup not identified as related to a container technology : {}", &cg.pathname);
+                        //}
                     }
                 }
             } else {

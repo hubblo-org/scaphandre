@@ -2,7 +2,7 @@
 name = "scaphandre"
 version = "1.0.2"
 authors = ["Benoit Petit <bpetit@hubblo.org>"]
-edition = "2021"
+edition = "2024"
 license = "Apache-2.0"
 description = "Electric power/energy consumption monitoring agent."
 repository = "https://github.com/hubblo-org/scaphandre"

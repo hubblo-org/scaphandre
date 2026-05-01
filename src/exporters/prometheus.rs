@@ -230,7 +230,10 @@ async fn show_metrics(
             }
         }
     } else {
-        let _ = write!(body, "<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{suffix}\">/{suffix}</a>");
+        let _ = write!(
+            body,
+            "<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{suffix}\">/{suffix}</a>"
+        );
     }
     Ok(Response::new(body.into()))
 }

@@ -1,7 +1,7 @@
 use crate::sensors::units::Unit::MicroJoule;
 use crate::sensors::utils::current_system_time_since_epoch;
 use crate::sensors::{CPUSocket, Domain, Record, RecordReader, Sensor, Topology};
-use procfs::{modules, KernelModule};
+use procfs::{KernelModule, modules};
 use regex::Regex;
 use std::collections::HashMap;
 use std::error::Error;

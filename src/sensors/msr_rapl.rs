@@ -10,13 +10,13 @@ use windows::Win32::Storage::FileSystem::{
     CreateFileW, FILE_FLAG_OVERLAPPED, FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_READ_DATA,
     FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_WRITE_DATA, OPEN_EXISTING,
 };
+use windows::Win32::System::IO::DeviceIoControl;
 use windows::Win32::System::Ioctl::{FILE_DEVICE_UNKNOWN, METHOD_BUFFERED};
 use windows::Win32::System::SystemInformation::GROUP_AFFINITY;
 use windows::Win32::System::Threading::{
     GetActiveProcessorGroupCount, GetCurrentProcess, GetCurrentThread, GetProcessGroupAffinity,
     GetThreadGroupAffinity, SetThreadGroupAffinity,
 };
-use windows::Win32::System::IO::DeviceIoControl;
 
 use core_affinity::{self, CoreId};
 

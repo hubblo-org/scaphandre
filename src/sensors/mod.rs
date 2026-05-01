@@ -17,7 +17,7 @@ use std::{collections::HashMap, error::Error, fmt, fs, mem::size_of_val, str, ti
 #[allow(unused_imports)]
 use sysinfo::{CpuExt, Pid, System, SystemExt};
 use sysinfo::{DiskExt, DiskType};
-use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
+use utils::{IProcess, ProcessTracker, current_system_time_since_epoch};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
 /// Sensor trait, the Sensor API.
@@ -101,8 +101,7 @@ impl RecordGenerator for Topology {
             let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
             trace!(
                 "topology: size_diff: {} record size: {}",
-                size_diff,
-                record_size
+                size_diff, record_size
             );
             if size_diff > record_size {
                 let nb_records_to_delete = size_diff as f32 / record_size as f32;
@@ -132,9 +131,7 @@ impl RecordGenerator for Topology {
 
 impl Default for Topology {
     fn default() -> Self {
-        {
-            Self::new(HashMap::new())
-        }
+        Self::new(HashMap::new())
     }
 }
 
@@ -307,7 +304,9 @@ impl Topology {
                     socket.add_cpu_core(c);
                 } else {
                     socket.add_cpu_core(c);
-                    warn!("coud't not match core to socket - mapping to first socket instead - if you are not using --vm there is something wrong")
+                    warn!(
+                        "coud't not match core to socket - mapping to first socket instead - if you are not using --vm there is something wrong"
+                    )
                 }
             }
 
@@ -410,9 +409,7 @@ impl Topology {
                 let nb_stats_to_delete = size_diff as f32 / size_of_stat as f32;
                 trace!(
                     "nb_stats_to_delete: {} size_diff: {} size of: {}",
-                    nb_stats_to_delete,
-                    size_diff,
-                    size_of_stat
+                    nb_stats_to_delete, size_diff, size_of_stat
                 );
                 for _ in 1..nb_stats_to_delete as u32 {
                     if !self.stat_buffer.is_empty() {
@@ -946,7 +943,7 @@ impl Topology {
                     current_system_time_since_epoch(),
                     res.value.to_string(),
                     units::Unit::MicroJoule,
-                ))
+                ));
             }
             Err(e) => {
                 debug!("get_msr_value returned error : {}", e);
@@ -1136,18 +1133,13 @@ impl CPUSocket {
             let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
             trace!(
                 "socket {} size_diff: {} size of: {}",
-                self.id,
-                size_diff,
-                size_of_stat
+                self.id, size_diff, size_of_stat
             );
             if size_diff > size_of_stat {
                 let nb_stats_to_delete = size_diff as f32 / size_of_stat as f32;
                 trace!(
                     "socket {} nb_stats_to_delete: {} size_diff: {} size of: {}",
-                    self.id,
-                    nb_stats_to_delete,
-                    size_diff,
-                    size_of_stat
+                    self.id, nb_stats_to_delete, size_diff, size_of_stat
                 );
                 trace!("nb stats to delete: {}", nb_stats_to_delete as u32);
                 for _ in 1..nb_stats_to_delete as u32 {

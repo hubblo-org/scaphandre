@@ -232,7 +232,12 @@ fn parse_cli_and_run_exporter() {
     let cli = Cli::parse();
     loggerv::init_with_verbosity(cli.verbose.into()).expect("unable to initialize the logger");
 
-    let sensor = build_sensor(&cli);
+    let sensor = build_sensor(
+        cli.sensor_buffer_per_socket_max_kb,
+        cli.sensor_buffer_per_domain_max_kb,
+        cli.vm,
+        cli.sensor,
+    );
     let mut exporter = build_exporter(cli.exporter, &sensor);
     if !cli.no_header {
         print_scaphandre_header(exporter.kind());
@@ -278,20 +283,25 @@ fn build_exporter(choice: ExporterChoice, sensor: &dyn Sensor) -> Box<dyn export
 /// Returns the sensor to use, given the command-line arguments.
 /// Unless sensor-specific options are provided, this should return
 /// the same thing as [`scaphandre::get_default_sensor`].
-fn build_sensor(cli: &Cli) -> impl Sensor {
+fn build_sensor(
+    sensor_buffer_per_socket_max_kb: u16,
+    sensor_buffer_per_domain_max_kb: u16,
+    vm: bool,
+    sensor: Option<String>,
+) -> impl Sensor {
     #[cfg(target_os = "linux")]
     let rapl_sensor = || {
         powercap_rapl::PowercapRAPLSensor::new(
-            cli.sensor_buffer_per_socket_max_kb,
-            cli.sensor_buffer_per_domain_max_kb,
-            cli.vm,
+            sensor_buffer_per_socket_max_kb,
+            sensor_buffer_per_domain_max_kb,
+            vm,
         )
     };
 
     #[cfg(target_os = "windows")]
     let msr_sensor_win = msr_rapl::MsrRAPLSensor::new;
 
-    match cli.sensor.as_deref() {
+    match sensor.as_deref() {
         Some("powercap_rapl") => {
             #[cfg(target_os = "linux")]
             {

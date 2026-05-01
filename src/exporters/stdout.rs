@@ -1,5 +1,5 @@
 use crate::exporters::*;
-use crate::sensors::{utils::current_system_time_since_epoch, utils::IProcess, Sensor};
+use crate::sensors::{Sensor, utils::IProcess, utils::current_system_time_since_epoch};
 use regex::Regex;
 use std::fmt::Write;
 use std::thread;
@@ -162,10 +162,10 @@ impl StdoutExporter {
                     if let Some(current_domain) = domains.clone().find(|x| {
                         info!("looking for domain metrics for d == {}", d);
                         info!("current metric analyzed : {:?}", x);
-                        if let Some(domain_name_result) = x.attributes.get("domain_name") {
-                            if domain_name_result == d {
-                                return true;
-                            }
+                        if let Some(domain_name_result) = x.attributes.get("domain_name")
+                            && domain_name_result == d
+                        {
+                            return true;
                         }
                         false
                     }) {

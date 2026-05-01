@@ -1,6 +1,6 @@
 use crate::exporters::Exporter;
 use crate::sensors::Topology;
-use crate::sensors::{utils::ProcessRecord, Sensor};
+use crate::sensors::{Sensor, utils::ProcessRecord};
 use std::{fs, io, thread, time};
 
 /// An Exporter that extracts power consumption data of running
@@ -136,21 +136,21 @@ impl QemuExporter {
         let mut qemu_processes: Vec<Vec<ProcessRecord>> = vec![];
         trace!("Got {} processes to filter.", processes.len());
         for vecp in processes.iter() {
-            if !vecp.is_empty() {
-                if let Some(pr) = vecp.first() {
-                    if let Some(res) = pr
-                        .process
-                        .cmdline
-                        .iter()
-                        .find(|x| x.contains("qemu-system"))
-                    {
-                        debug!("Found a process with {}", res);
-                        let mut tmp: Vec<ProcessRecord> = vec![];
-                        for p in vecp.iter() {
-                            tmp.push(p.clone());
-                        }
-                        qemu_processes.push(tmp);
+            if !vecp.is_empty()
+                && let Some(pr) = vecp.first()
+            {
+                if let Some(res) = pr
+                    .process
+                    .cmdline
+                    .iter()
+                    .find(|x| x.contains("qemu-system"))
+                {
+                    debug!("Found a process with {}", res);
+                    let mut tmp: Vec<ProcessRecord> = vec![];
+                    for p in vecp.iter() {
+                        tmp.push(p.clone());
                     }
+                    qemu_processes.push(tmp);
                 }
             }
         }

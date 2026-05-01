@@ -127,10 +127,7 @@ mod tests {
 
 #[cfg(feature = "containers")]
 pub fn get_docker_client() -> Result<Docker, std::io::Error> {
-    let docker = match Docker::connect() {
-        Ok(docker) => docker,
-        Err(err) => return Err(err),
-    };
+    let docker = Docker::connect()?;
     Ok(docker)
 }
 

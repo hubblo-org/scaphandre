@@ -17,8 +17,8 @@ pub mod utils;
 #[cfg(feature = "warpten")]
 pub mod warpten;
 use crate::sensors::{
-    utils::{current_system_time_since_epoch, IProcess},
     RecordGenerator, Topology,
+    utils::{IProcess, current_system_time_since_epoch},
 };
 use chrono::Utc;
 use std::collections::HashMap;
@@ -27,9 +27,9 @@ use std::time::Duration;
 use utils::get_scaphandre_version;
 #[cfg(feature = "containers")]
 use {
-    docker_sync::{container::Container, Docker},
-    k8s_sync::kubernetes::Kubernetes,
+    docker_sync::{Docker, container::Container},
     k8s_sync::Pod,
+    k8s_sync::kubernetes::Kubernetes,
     ordered_float::*,
     regex::Regex,
     utils::{get_docker_client, get_kubernetes_client},
@@ -197,7 +197,9 @@ impl MetricGenerator {
                     info!("Couldn't connect to kubernetes API.");
                 }
                 if !container_runtime {
-                    warn!("--containers was used but scaphandre couldn't connect to any container runtime.");
+                    warn!(
+                        "--containers was used but scaphandre couldn't connect to any container runtime."
+                    );
                 }
             }
             MetricGenerator {
@@ -251,11 +253,11 @@ impl MetricGenerator {
                         self.docker_version.clone(),
                         &self.pods,
                     );
-                if let Some(name) = container_description.get("container_names") {
-                    if container_regex.is_match(name) {
-                        consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
-                        consumers.sort_by(|x, y| y.1.cmp(&x.1));
-                    }
+                if let Some(name) = container_description.get("container_names")
+                    && container_regex.is_match(name)
+                {
+                    consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
+                    consumers.sort_by(|x, y| y.1.cmp(&x.1));
                 }
                 //if container_regex.is_match(process_exe.to_str().unwrap_or_default()) {
                 //    consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
