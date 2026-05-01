@@ -494,8 +494,10 @@ impl Topology {
             let mut steal = None;
             let mut guest = None;
             let mut guest_nice = None;
-            if last.iowait.is_some() && previous.iowait.is_some() {
-                iowait = Some(last.iowait.unwrap() - previous.iowait.unwrap());
+            if let Some(last_iowait) = last.iowait
+                && let Some(prev_iowait) = previous.iowait
+            {
+                iowait = Some(last_iowait - prev_iowait);
             }
             if last.irq.is_some() && previous.irq.is_some() {
                 irq = Some(last.irq.unwrap() - previous.irq.unwrap());

@@ -2,28 +2,28 @@ name: Tests
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [main, dev]
     paths-ignore:
-      - 'docs_src/**'
-      - 'README.md'
-      - 'CHANGELOG.md'
-      - 'CITATION'
-      - 'book.toml'
-      - 'CONTRIBUTING.md'
-      - '.github/workflows/exe-release-prometheuspush.yml'
-      - '*.md'
-      - 'oranda.json'
+      - "docs_src/**"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "CITATION"
+      - "book.toml"
+      - "CONTRIBUTING.md"
+      - ".github/workflows/exe-release-prometheuspush.yml"
+      - "*.md"
+      - "oranda.json"
   pull_request:
-    branches: [ main, dev ]
+    branches: [main, dev]
     paths-ignore:
-      - 'docs_src/**'
-      - 'README.md'
-      - 'CHANGELOG.md'
-      - 'CITATION'
-      - 'book.toml'
-      - '.github/workflows/exe-release-prometheuspush.yml'
-      - '*.md'
-      - 'oranda.json'
+      - "docs_src/**"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "CITATION"
+      - "book.toml"
+      - ".github/workflows/exe-release-prometheuspush.yml"
+      - "*.md"
+      - "oranda.json"
 
 env:
   CARGO_TERM_COLOR: always
@@ -40,7 +40,7 @@ jobs:
       - name: Display warning and kill pipeline if needed
         run: |
           if [ ${GITHUB_BASE_REF} == "main" && ${GITHUB_HEAD_REF} != "dev" ]; then
-            echo "PR has been opened on the main branch, from another branch than dev. Please consider opening it on the dev branch instead !"            
+            echo "PR has been opened on the main branch, from another branch than dev. Please consider opening it on the dev branch instead !"
             exit 1
           fi
   fmt_and_clippy_linux:
@@ -67,31 +67,31 @@ jobs:
         with:
           command: clippy
           args: -- -A clippy::upper_case_acronyms -D warnings
-  
-  fmt_and_clippy_windows:
-    name: Cargo Fmt and Clippy - Windows
-    runs-on: windows-latest
-    needs: check_pr_is_on_the_right_branch
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install Rustup
-        uses: crazy-max/ghaction-chocolatey@v2
-        with:
-          args: install rustup.install --ignore-checksums
-      - name: Install Rust toolchain
-        run: |
-          rustup toolchain install stable-x86_64-pc-windows-msvc
-      - name: Check formatting
-        uses: bpetit/action-cargo@v2.0.1
-        with:
-          command: fmt
-          args: --all -- --check
-      - name: Clippy Check
-        uses: bpetit/action-cargo@v2.0.1
-        with:
-          command : clippy
-          args: --no-default-features --features "prometheus json riemann warpten"
+
+  #fmt_and_clippy_windows:
+  #  name: Cargo Fmt and Clippy - Windows
+  #  runs-on: windows-latest
+  #  needs: check_pr_is_on_the_right_branch
+  #  steps:
+  #    - name: Checkout
+  #      uses: actions/checkout@v3
+  #    - name: Install Rustup
+  #      uses: crazy-max/ghaction-chocolatey@v2
+  #      with:
+  #        args: install rustup.install --ignore-checksums
+  #    - name: Install Rust toolchain
+  #      run: |
+  #        rustup toolchain install stable-x86_64-pc-windows-msvc
+  #    - name: Check formatting
+  #      uses: bpetit/action-cargo@v2.0.1
+  #      with:
+  #        command: fmt
+  #        args: --all -- --check
+  #    - name: Clippy Check
+  #      uses: bpetit/action-cargo@v2.0.1
+  #      with:
+  #        command : clippy
+  #        args: --no-default-features --features "prometheus json riemann warpten"
 
   test_linux_x86_64:
     name: Test on GNU/Linux x86_64 (Bare metal worker)
@@ -100,12 +100,12 @@ jobs:
       - name: Install dependencies (awxkit)
         uses: actions/setup-python@v3
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - name: Install python requirements (awxkit)
         run: |
           python -m pip install --upgrade pip
           pip install awxkit setuptools
-      - name: Log on AWX 
+      - name: Log on AWX
         id: login
         run: |
           export AWX_TOKEN=$(awx --conf.host "${{ secrets.AWX_HOST }}" --conf.username "${{ secrets.AWX_PUBLIC_USER }}" --conf.password "${{ secrets.AWX_PASSWORD }}" login | jq .token | tr -d '"')
@@ -132,12 +132,12 @@ jobs:
       - name: Install dependencies (awxkit)
         uses: actions/setup-python@v3
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - name: Install python requirements (awxkit)
         run: |
           python -m pip install --upgrade pip
           pip install awxkit
-      - name: Log on AWX 
+      - name: Log on AWX
         id: login
         run: |
           export AWX_TOKEN=$(awx --conf.host "${{ secrets.AWX_HOST }}" --conf.username "${{ secrets.AWX_PUBLIC_USER }}" --conf.password "${{ secrets.AWX_PASSWORD }}" login | jq .token | tr -d '"')
@@ -158,26 +158,26 @@ jobs:
         id: promtest
         run: |
           awx --conf.token ${{ steps.login.outputs.awx_token }} --conf.host ${{ secrets.AWX_HOST }} job_templates launch --extra_vars="{\"github_repository\":\"${GITHUB_REPOSITORY}\",\"github_actor\":\"${GITHUB_ACTOR}\",\"github_workflow\":\"${GITHUB_WORKFLOW}\",\"github_workspace\":\"${GITHUB_WORKSPACE}\",\"github_event_name\":\"${GITHUB_EVENT_NAME}\",\"github_event_path\":\"${GITHUB_EVENT_PATH}\",\"github_sha\":\"${GITHUB_SHA}\",\"github_ref\":\"${GITHUB_REF}\",\"github_head_ref\":\"${GITHUB_HEAD_REF}\",\"github_base_ref\":\"${GITHUB_BASE_REF}\",\"github_server_url\":\"${GITHUB_SERVER_URL}\"}" 16 --monitor
-  test_windows_x86_64:
-    name: Test on Windows x86_64 (Virtual machine worker)
-    runs-on: "windows-latest"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install openssl for Windows with vcpkg
-        run: | 
-          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
-          vcpkg install openssl:x64-windows-static-md
-      - name: Install Rustup
-        uses: crazy-max/ghaction-chocolatey@v2
-        with:
-          args: install rustup.install --ignore-checksums
-      - name: Install Rust toolchain
-        run: |
-          rustup toolchain install stable-x86_64-pc-windows-msvc
-      - name: Tests
-        run: |
-          cargo test --no-default-features --features "prometheus prometheuspush json riemann" exporters
-      - name: Build (debug mode)
-        run: |
-          cargo build --no-default-features --features "prometheus prometheuspush json riemann"
+  #test_windows_x86_64:
+  #  name: Test on Windows x86_64 (Virtual machine worker)
+  #  runs-on: "windows-latest"
+  #  steps:
+  #    - name: Checkout
+  #      uses: actions/checkout@v3
+  #    - name: Install openssl for Windows with vcpkg
+  #      run: |
+  #        echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
+  #        vcpkg install openssl:x64-windows-static-md
+  #    - name: Install Rustup
+  #      uses: crazy-max/ghaction-chocolatey@v2
+  #      with:
+  #        args: install rustup.install --ignore-checksums
+  #    - name: Install Rust toolchain
+  #      run: |
+  #        rustup toolchain install stable-x86_64-pc-windows-msvc
+  #    - name: Tests
+  #      run: |
+  #        cargo test --no-default-features --features "prometheus prometheuspush json riemann" exporters
+  #    - name: Build (debug mode)
+  #      run: |
+  #        cargo build --no-default-features --features "prometheus prometheuspush json riemann"

@@ -745,32 +745,32 @@ impl ProcessTracker {
     pub fn clean_terminated_process_records_vectors(&mut self) {
         //TODO get stats from processes to know what is hapening !
         for v in &mut self.procs {
-            if !v.is_empty() {
-                if let Some(first) = v.first() {
-                    if let Some(p) = self.sysinfo.process(first.process.pid) {
-                        match p.status() {
-                            ProcessStatus::Idle => {}
-                            ProcessStatus::Dead => {}
-                            ProcessStatus::Stop => {
-                                while !v.is_empty() {
-                                    v.pop();
-                                }
+            if !v.is_empty()
+                && let Some(first) = v.first()
+            {
+                if let Some(p) = self.sysinfo.process(first.process.pid) {
+                    match p.status() {
+                        ProcessStatus::Idle => {}
+                        ProcessStatus::Dead => {}
+                        ProcessStatus::Stop => {
+                            while !v.is_empty() {
+                                v.pop();
                             }
-                            ProcessStatus::Run => {}
-                            ProcessStatus::LockBlocked => {}
-                            ProcessStatus::Waking => {}
-                            ProcessStatus::Wakekill => {}
-                            ProcessStatus::Tracing => {}
-                            ProcessStatus::Zombie => {}
-                            ProcessStatus::Sleep => {}
-                            ProcessStatus::Parked => {}
-                            ProcessStatus::UninterruptibleDiskSleep => {}
-                            ProcessStatus::Unknown(_code) => {}
                         }
-                    } else {
-                        while !v.is_empty() {
-                            v.pop();
-                        }
+                        ProcessStatus::Run => {}
+                        ProcessStatus::LockBlocked => {}
+                        ProcessStatus::Waking => {}
+                        ProcessStatus::Wakekill => {}
+                        ProcessStatus::Tracing => {}
+                        ProcessStatus::Zombie => {}
+                        ProcessStatus::Sleep => {}
+                        ProcessStatus::Parked => {}
+                        ProcessStatus::UninterruptibleDiskSleep => {}
+                        ProcessStatus::Unknown(_code) => {}
+                    }
+                } else {
+                    while !v.is_empty() {
+                        v.pop();
                     }
                 }
             }
@@ -783,10 +783,10 @@ impl ProcessTracker {
         let procs = &mut self.procs;
         if !procs.is_empty() {
             for i in 0..(procs.len() - 1) {
-                if let Some(v) = procs.get(i) {
-                    if v.is_empty() {
-                        procs.remove(i);
-                    }
+                if let Some(v) = procs.get(i)
+                    && v.is_empty()
+                {
+                    procs.remove(i);
                 }
             }
         }
