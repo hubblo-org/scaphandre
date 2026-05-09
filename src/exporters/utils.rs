@@ -133,8 +133,9 @@ pub fn get_docker_client() -> Result<Docker, std::io::Error> {
 
 #[cfg(feature = "containers")]
 pub fn get_kubernetes_client() -> Result<Kubernetes, KubernetesError> {
+    let kube_config_path = std::env::var("KUBECONFIG").ok();
     match Kubernetes::connect(
-        Some(String::from("/root/.kube/config")),
+        kube_config_path,
         None,
         None,
         None,
