@@ -25,11 +25,11 @@ For each virtual machine you want to give access to its metrics, create a [tmpfs
 
      mount -t tmpfs tmpfs_DOMAIN_NAME /var/lib/libvirt/scaphandre/DOMAIN_NAME -o size=5m
 
-In the definition of the virtual machine (ehre we are using libvirt), ensure you have a filesystem configuration to give access to the mountpoint:
+In the definition of the virtual machine (here we are using libvirt), ensure you have a filesystem configuration to give access to the mountpoint:
 
     virsh edit DOMAIN_NAME
 
-Then add:
+Then add this filesystem configuration block inside the `<devices></devices>` block:
 
     <filesystem type='mount' accessmode='passthrough'>
         <driver type='virtiofs'/>
@@ -40,6 +40,13 @@ Then add:
 
 Save and (re)start the virtual machine.
 
+If you get this error: "error: unsupported configuration: 'virtiofs' requires shared memory", you might add this configuration section to the `<domain>` section.
+
+    <memoryBacking>
+      <source type='memfd'/>
+      <access mode='shared'/>
+    </memoryBacking>
+
 Then connect to the virtual machine and mount the filesystem:
 
      mount -t 9p -o trans=virtio scaphandre /var/scaphandre
@@ -48,6 +55,6 @@ You can now run scaphandre to export the metrics with the exporter of your choic
 
      scaphandre --vm prometheus
 
-Please refer to the [qemu exporter](docs/exporters/qemu.md) reference for more details.
+Please refer to the [qemu exporter](../references/exporter-qemu.md) reference for more details.
 
 **Note:** This how to is only suitable for a "manual" use case. For all automated systems like openstack or proxmox, some more work needs to be done to make the integration of those steps easier.

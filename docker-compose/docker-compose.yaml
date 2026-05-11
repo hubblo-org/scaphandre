@@ -20,6 +20,7 @@ services:
         target: "/var/lib/grafana/dashboards/sample/sample-dashboard.json"
   scaphandre:
     image: hubblo/scaphandre
+    privileged: true
     ports: 
       - "8080:8080"
     volumes:

@@ -1,0 +1,32 @@
+- hosts: targets
+  vars:
+    rhel_version: 9
+    scaphandre_version: "dev0.5.10"
+    pushgateway_host: localhost
+    pushgateway_scheme: http
+    pushgateway_port: 9092
+    scaphandre_config_path: /etc/scaphandre/prometheuspush
+    service_name: scaphandre-prometheuspush
+  tasks:
+    #- name: Ensure scaphandre package is purged
+    #  shell: "dnf remove -y {{  }}"
+    - name: Install RPM package
+      shell: "dnf install -y https://scaphandre.s3.fr-par.scw.cloud/x86_64/scaphandre-prometheuspush-{{ scaphandre_version }}-1.el{{ rhel_version }}.x86_64.rpm" 
+    - name: Refresh systemd config
+      shell: systemctl daemon-reload
+    - name: Configure prometheus-push exporter to target push gateway
+      lineinfile:
+        path: "{{ scaphandre_config_path }}"
+        regexp: '^SCAPHANDRE_ARGS=.*'
+        backrefs: true
+        line: "SCAPHANDRE_ARGS=\"prometheus-push -H {{ pushgateway_host }} -S {{ pushgateway_scheme }} -p {{ pushgateway_port }} -s 30\""
+        state: present
+    - name: Start & enable service
+      shell: "systemctl restart {{ service_name }} && systemctl enable {{ service_name }}"
+    - name: Check service state
+      shell: "systemctl status {{ service_name }}"
+      register: result
+    - name: Display error if failed
+      fail:
+        msg: "STDOUT: {{ result.stdout }} STDERR: {{ result.stderr }}"
+      when: result.rc != 0

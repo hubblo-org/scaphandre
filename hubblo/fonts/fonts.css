@@ -1,0 +1,19 @@
+@font-face {
+  font-family: 'Lexend';
+  src: url('{{ resource "fonts/Lexend-VariableFont_wght.ttf" }}') format('truetype-variations');
+  font-weight: 100 900;
+}
+
+@font-face {
+  font-family: 'RobotoMono';
+  font-style: normal;
+  font-weight: normal;
+  src: url('{{ resource "fonts/RobotoMono-Medium.ttf" }}') format('woff2');
+}
+
+@font-face {
+  font-family: 'RobotoMono';
+  font-style: italic;
+  font-weight: normal;
+  src: url('{{ resource "fonts/RobotoMono-MediumItalic.ttf" }}') format('woff2');
+}

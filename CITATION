@@ -1,7 +1,7 @@
 @software{scaphandre,
   author       = {Benoit Petit},
   title        = {scaphandre},
-  year         = 2021,
-  version      = {v0.3},
+  year         = 2023,
+  version      = {v1.0},
   url          = {https://github.com/hubblo-org/scaphandre}
 }

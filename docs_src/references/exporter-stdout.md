@@ -30,26 +30,22 @@ Here is how to display power data for the 'scaphandre' process:
 
     scaphandre stdout -r 'scaphandre'
 
-Note
+Metrics provided Scaphandre are documented [here](references/metrics.md). 
+
+Since 1.0.0 the flag `--raw-metrics` displays all metrics available for the host, as a parseable list. This might be useful to list metrics that you would like to fetch afterwards in your monitoring dashboard. Without this flag enabled, Stdout exporter has it's own format and might not show you all available metrics.
 
 As always exporter's options can be displayed with `-h`:
 
-	$ scaphandre stdout -h
-    scaphandre-stdout
-    Stdout exporter allows you to output the power consumption data in the terminal
+	Write the metrics to the terminal
 
-    USAGE:
-        scaphandre stdout [OPTIONS]
+    Usage: scaphandre stdout [OPTIONS]
 
-    FLAGS:
-        -h, --help       Prints help information
-        -V, --version    Prints version information
-
-    OPTIONS:
-        -p, --process <process_number>    Number of processes to display. [default: 5]
-        -r, --regex <regex_filter>        Filter processes based on regular expressions (e.g: 'scaph\w\wd.e'). This option
-                                          disable '-p' or '--process' one.
-        -s, --step <step_duration>        Set measurement step duration in seconds. [default: 2]
-        -t, --timeout <timeout>           Maximum time spent measuring, in seconds. 0 means continuous measurement.
-                                          [default: 10]
-
+    Options:
+      -t, --timeout <TIMEOUT>            Maximum time spent measuring, in seconds. If negative, runs forever [default: 10]
+      -s, --step <SECONDS>               Interval between two measurements, in seconds [default: 2]
+      -p, --processes <PROCESSES>        Maximum number of processes to display [default: 5]
+      -r, --regex-filter <REGEX_FILTER>  Filter processes based on regular expressions (example: 'scaph\\w\\w.e')
+          --containers                   Monitor and apply labels for processes running as containers
+      -q, --qemu                         Apply labels to metrics of processes looking like a Qemu/KVM virtual machine
+          --raw-metrics                  Display metrics with their names
+      -h, --help                         Print help

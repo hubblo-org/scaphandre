@@ -9,11 +9,15 @@ src = "docs_src"
 build-dir = "../scaphandre-documentation/docs"
 
 [rust]
-edition = "2018"
+edition = "2024"
 
 [output.html]
 mathjax-support = false
 site-url = "/docs/"
+theme = "hubblo"
+default-theme = "hubblo"
+preferred-dark-theme = "hubblo"
+git-repository-icon = "fas-code-fork"
 
 [output.html.playground]
 editable = true

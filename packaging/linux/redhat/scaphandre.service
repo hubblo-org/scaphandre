@@ -1,0 +1,55 @@
+[Unit]
+Description=Scaphandre
+Wants=network.target
+After=network.target
+
+[Service]
+# systemctl edit and add these if you want to further limit access
+#IPAddressAllow=localhost
+#IPAddressDeny=any
+
+ExecStartPre=-+/usr/sbin/modprobe intel_rapl_common
+ExecStartPre=+/usr/bin/find /sys/devices/virtual/powercap -name energy_uj -exec chmod g+r -R {} + -exec chown root:powercap {} +
+ExecStart=/usr/bin/scaphandre $SCAPHANDRE_ARGS
+EnvironmentFile=/etc/scaphandre/default
+
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+DevicePolicy=closed
+DynamicUser=yes
+Group=powercap
+IPAccounting=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+MemoryMax=100M
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateTmp=yes
+PrivateUsers=yes
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectSystem=strict
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+SyslogIdentifier=scaphandre
+SystemCallFilter=~@cpu-emulation
+SystemCallFilter=~@debug
+SystemCallFilter=~@keyring
+SystemCallFilter=~@module
+SystemCallFilter=~@mount
+SystemCallFilter=~@obsolete
+SystemCallFilter=~@privileged
+SystemCallFilter=~@raw-io
+SystemCallFilter=~@reboot
+SystemCallFilter=~@resources
+SystemCallFilter=~@swap
+UMask=0777
+
+[Install]
+WantedBy=multi-user.target

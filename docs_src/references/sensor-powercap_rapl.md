@@ -18,7 +18,7 @@ and [5.11 for family 19h](https://www.phoronix.com/scan.php?page=news_item&px=AM
 
 Energy consumption data can be directly collected on a **physical machine** only.
 
-To collect energy consumption on a virtual machine, you may first collect power consumption data from the hypervisor thanks to the [qemu exporter](../exporters/qemu.md) and then collect those metrics in the virtual machine thanks to this sensor, with `--vm` flag enabled.
+To collect energy consumption on a virtual machine, you may first collect power consumption data from the hypervisor thanks to the [qemu exporter](exporter-qemu.md) and then collect those metrics in the virtual machine thanks to this sensor, with `--vm` flag enabled.
 
 ## Usage
 

@@ -1,4 +1,12 @@
-# Quickstart
+# Getting started
+
+To install Scaphandre, depending on your platform, see:
++ [Installation on GNU/Linux](installation-linux.md) section.
++ [Installation on Windows](installation-windows.md) section.
+
+If you want to contribute or just play with the code and need to compile Scaphandre, see :
++ [Compilation on GNU/Linux](compilation-linux.md).
++ [Compilation on Windows](compilation-windows.md).
 
 Depending on your kernel version, you could need to modprobe the module intel_rapl or intel_rapl_common first:
 
@@ -11,6 +19,18 @@ To quickly run scaphandre in your terminal you may use [docker](https://www.dock
 Or if you downloaded or built a binary, you'd run:
 
     scaphandre stdout -t 15
+
+## Running scaphandre on Fedora / CentOS Stream / RHEL (or any distribution using SELinux) with podman
+
+Running scaphandre with podman on a distribution using SELinux may fail because of access denied to `/proc` files.
+
+To make it work you should run scaphandre in privileged mode :
+
+    podman run --privileged ...
+
+You'll find explanation of this requirement here : [#106](https://github.com/hubblo-org/scaphandre/issues/106).
+
+## Output
 
 Here we are using the stdout [exporter](../explanations/internal-structure.md) to print current power consumption usage in the terminal during 15 seconds.
 
@@ -34,9 +54,11 @@ Then you have the 5 processes consuming the most power during the last two measu
 
 If you don't get this output and get an error, jump to the [Troubleshooting](../troubleshooting.md) section of the documentation.
 
+## Going further
+
 At that point, you're ready to use scaphandre. The Stdout exporter is very basic and other exporters should allow you to use and send those metrics the way you like.
 
-The [prometheus exporter](references/exporter-prometheus.md), for example, allows you to expose power consumption metrics as an HTTP endpoint that can be scrapped by a [prometheus](https://prometheus.io) instance:
+The [prometheus exporter](../references/exporter-prometheus.md), for example, allows you to expose power consumption metrics as an HTTP endpoint that can be scrapped by a [prometheus](https://prometheus.io) instance:
 
     docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -p 8080:8080 -ti hubblo/scaphandre prometheus
 

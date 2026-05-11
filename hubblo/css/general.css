@@ -1,0 +1,766 @@
+/* Base styles and content styles */
+
+:root {
+    /* Browser default font-size is 16px, this way 1 rem = 10px */
+    font-size: 62.5%;
+    color-scheme: var(--color-scheme);
+}
+:root.hubblo {
+    font-size: 100%;
+}
+
+html {
+    font-family: var(--normal-font);
+    color: var(--fg);
+    background-color: var(--bg);
+    font-weight: 400;
+    text-size-adjust: none;
+    -webkit-text-size-adjust: none;
+}
+
+::selection{
+    background-color: var(--selection-bg);
+}
+
+::-moz-selection {
+    background-color: var(--selection-bg);
+}
+
+::-webkit-selection {
+    background-color: var(--selection-bg);
+}
+
+body {
+    margin: 0;
+    font-size: 1.6rem;
+    overflow-x: hidden;
+}
+
+.hubblo body {
+    font-size: var(--text-md);
+}
+
+#mdbook-content {
+    container-type: inline-size;   
+    container-name: content;                                                 
+}      
+
+.hubblo .content figure,
+.hubblo .content p
+{
+    margin: 0;
+}
+
+.hubblo .content main > *,
+.hubblo .content .layout-full-width > *:not(:first-child),
+.hubblo .content figure > *:not(:first-child),
+.hubblo .content blockquote > *:not(:first-child),
+.hubblo .content .footnote-definition > *:not(:first-child),
+.hubblo .content .footnote-definition > li > *:not(:first-child){
+    margin-top: var(--flow-space);
+}
+
+
+code {
+    font-family: var(--mono-font) !important;
+    font-size: var(--code-font-size);
+    direction: ltr !important;
+}
+
+/* make long words/inline code not x overflow */
+main {
+    overflow-wrap: break-word;
+}
+
+/* make wide tables scroll if they overflow */
+.table-wrapper {
+    overflow-x: auto;
+    padding: 2px; /* prevents border-collapse borders from being clipped by overflow context */
+}
+
+/* Don't change font size in headers. */
+h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
+    font-size: unset;
+}
+
+.left { float: left; }
+.right { float: right; }
+.boring { opacity: 0.6; }
+.hide-boring .boring { display: none; }
+.hidden { display: none !important; }
+
+h2, h3 { margin-block-start: 2.5em; }
+h4, h5 { margin-block-start: 2em; }
+
+.header + .header h3,
+.header + .header h4,
+.header + .header h5 {
+    margin-block-start: 1em;
+}
+
+h1:target::before,
+h2:target::before,
+h3:target::before,
+h4:target::before,
+h5:target::before,
+h6:target::before,
+dt:target::before {
+    display: inline-block;
+    content: "»";
+    margin-inline-start: -30px;
+    width: 30px;
+}
+
+/* This is broken on Safari as of version 14, but is fixed
+   in Safari Technology Preview 117 which I think will be Safari 14.2.
+   https://bugs.webkit.org/show_bug.cgi?id=218076
+*/
+:target {
+    /* Safari does not support logical properties */
+    scroll-margin-top: calc(var(--menu-bar-height) + 0.5em);
+}
+
+.page {
+    outline: 0;
+    padding: 0 var(--page-padding);
+    margin-block-start: calc(0px - var(--menu-bar-height)); /* Compensate for the #mdbook-menu-bar-hover-placeholder */
+    border-left: var(--border);
+}
+.hubblo .page{
+    min-height: calc(100vh + var(--space-16));
+}
+.page-wrapper {
+    box-sizing: border-box;
+    background-color: var(--bg);
+}
+html:not(.js) .page-wrapper,
+.js:not(.sidebar-resizing) .page-wrapper {
+    transition: margin-left 0.3s ease, transform 0.3s ease; /* Animation: slide away */
+}
+[dir=rtl]:not(.js) .page-wrapper,
+[dir=rtl].js:not(.sidebar-resizing) .page-wrapper {
+    transition: margin-right 0.3s ease, transform 0.3s ease; /* Animation: slide away */
+}
+
+.content {
+    overflow-y: auto;
+    padding: 0 5px 50px 5px;
+}
+.hubblo .content {
+    padding: 50px 0;
+}
+.content main {
+    margin-inline-start: auto;
+    margin-inline-end: auto;
+    max-width: var(--content-max-width);
+}
+.content p { line-height: 1.45em; }
+.content ol { line-height: 1.45em; }
+.content ul { line-height: 1.45em; }
+.content a { text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content img, .content video { max-width: 100%; }
+.content .header:link,
+.content .header:visited {
+    color: var(--fg);
+}
+
+
+.hubblo .content * + :is(h1, h2, h3, h4, h5, h6){
+  font-weight: 600;
+  text-wrap: balance;
+  position: relative;
+  color: var(--color-headings);
+  margin-top: 2.5em;
+}
+.hubblo .content * + :is( h1, h2, h3, h4, h5, h6){
+  margin-top: 2.5em;
+}
+.hubblo .content h1{
+    font-size: var(--text-2xl);
+    line-height: 1.25;
+}
+.hubblo .content h2{
+    font-size: var(--text-xl);
+    line-height: 1.333;
+}
+.hubblo .content h3{
+    font-size: var(--text-lg);
+    line-height: 1.5;
+}
+.hubblo .content h4{
+    font-size: var(--text-md);
+    line-height: 1.5;
+}
+.hubblo .content h5{
+    font-size: var(--text-sm);
+    line-height: 1.5;
+}
+.hubblo .content h6{ /*for now same as h5 beacose donc exist in the website of hubblo*/
+    font-size: var(--text-sm);
+    line-height: 1.5;
+}
+
+.hubblo .content p,
+.hubblo .content ol,
+.hubblo .content ul,
+.hubblo .content table,
+.hubblo .content figcaption{
+    font-size: var(--body-font-size);
+    line-height: 1.5;
+}
+.hubblo .content ol, .hubblo .content ul {
+  padding-left: 1em;
+}
+.hubblo .content ul {
+  list-style: disc;
+}
+.hubblo .content ::marker {
+  color: var(--color-gray-500);
+}
+
+.hubblo .content .content a {
+    text-decoration: underline;
+    font-weight: 500;
+}
+.hubblo .content a:not([href^="#"], .mobile-nav-chapters)::after {
+  content: '↗︎'/'Nouvelle fenêtre';
+}
+.hubblo .content a { text-decoration: underline; }
+.hubblo .content a:hover { text-decoration: none; }
+.hubblo .content img, .hubblo .content video { max-width: 100%; }
+.hubblo .content .header:link,
+.hubblo .content .header:visited {
+    color: var(--fg);
+}
+
+.content .header:link,
+.content .header:visited:hover {
+    text-decoration: none;
+}
+
+.hubblo .content hr {
+    border: none;
+    border-top: var(--border);
+}
+
+table {
+    margin: 0 auto;
+    border-collapse: collapse;
+}
+
+.hubblo table {
+    width: 100%;
+}
+
+
+
+
+
+@container content (max-width: 50rem) {
+    .hubblo .table-wrapper {    
+        display: block;                                                    
+        overflow-x: auto;
+    }  
+
+    @media only screen and (min-width: 620px) {
+        .sidebar-visible.hubblo .table-wrapper{
+            width: calc(100vw - var(--margin-inline-start) - var(--page-padding) * 2);
+        }
+    }
+}
+
+
+
+table td {
+    padding: 3px 20px;
+    border: 1px var(--table-border-color) solid;
+}
+.hubblo .content td, .hubblo .content th {
+  border: var(--border);
+  text-align: start;
+  padding: .5rem;
+}
+.hubblo .content thead tr th{
+    font-weight: 600;
+}
+table thead {
+    background: var(--table-header-bg);
+}
+table thead td {
+    font-weight: 700;
+    border: none;
+}
+table thead th {
+    padding: 3px 20px;
+}
+table thead tr {
+    border: 1px var(--table-header-bg) solid;
+}
+/* Alternate background colors for rows */
+table tbody tr:nth-child(2n) {
+    background: var(--table-alternate-bg);
+}
+
+
+blockquote {
+    margin: 20px 0;
+    padding: 0 20px;
+    color: var(--fg);
+    background-color: var(--quote-bg);
+    border-block-start: .1em solid var(--quote-border);
+    border-block-end: .1em solid var(--quote-border);
+}
+blockquote {
+    padding: 0 1em;
+    border-inline-start-style: solid;
+    border-inline-start-color: var(--border-color);
+    border-inline-start-width: var(--blockquote-border-width);
+}
+
+/* TODO: Remove .warning in a future version of mdbook, it is replaced by
+blockquote tags. */
+.warning {
+    margin: 20px;
+    padding: 0 20px;
+    border-inline-start: 2px solid var(--warning-border);
+}
+
+.warning:before {
+    position: absolute;
+    width: 3rem;
+    height: 3rem;
+    margin-inline-start: calc(-1.5rem - 21px);
+    content: "ⓘ";
+    text-align: center;
+    background-color: var(--bg);
+    color: var(--warning-border);
+    font-weight: bold;
+    font-size: 2rem;
+}
+
+blockquote .warning:before {
+    background-color: var(--quote-bg);
+}
+
+kbd {
+    background-color: var(--table-border-color);
+    border-radius: 4px;
+    border: solid 1px var(--theme-popup-border);
+    box-shadow: inset 0 -1px 0 var(--theme-hover);
+    display: inline-block;
+    font-size: var(--code-font-size);
+    font-family: var(--mono-font);
+    line-height: 10px;
+    padding: 4px 5px;
+    vertical-align: middle;
+}
+
+sup {
+    /* Set the line-height for superscript and footnote references so that there
+       isn't an awkward space appearing above lines that contain the footnote.
+
+       See https://github.com/rust-lang/mdBook/pull/2443#discussion_r1813773583
+       for an explanation.
+    */
+    line-height: 0;
+}
+
+.footnote-definition {
+    font-size: 0.9em;
+}
+/* The default spacing for a list is a little too large. */
+.footnote-definition ul,
+.footnote-definition ol {
+    padding-left: 20px;
+}
+.footnote-definition > li {
+    /* Required to position the ::before target */
+    position: relative;
+}
+.footnote-definition > li:target {
+    scroll-margin-top: 50vh;
+}
+.footnote-reference:target {
+    scroll-margin-top: 50vh;
+}
+/* Draws a border around the footnote (including the marker) when it is selected.
+   TODO: If there are multiple linkbacks, highlight which one you just came
+   from so you know which one to click.
+*/
+.footnote-definition > li:target::before {
+    border: 2px solid var(--footnote-highlight);
+    border-radius: 6px;
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    bottom: -8px;
+    left: -32px;
+    pointer-events: none;
+    content: "";
+}
+
+.hubblo .footnote-definition > li:target::before {
+    content: none;
+}
+.hubblo .content :target {
+  animation: 1s ease-out .1s 1 both target;
+}
+@keyframes target {
+  0% {
+    outline-color:transparent
+  }
+  20% {
+    outline:var(--focus)
+  }
+  80% {
+    outline:var(--focus)
+  }
+  100% {
+    outline-color:transparent
+  }
+}
+
+/* Pulses the footnote reference so you can quickly see where you left off reading.
+   This could use some improvement.
+*/
+@media not (prefers-reduced-motion) {
+    .footnote-reference:target  {
+        animation: fn-highlight 0.8s;
+        border-radius: 2px;
+    }
+
+    @keyframes fn-highlight {
+        from {
+            background-color: var(--footnote-highlight);
+        }
+    }
+}
+
+.tooltiptext {
+    position: absolute;
+    visibility: hidden;
+    color: #fff;
+    background-color: #333;
+    transform: translateX(-50%); /* Center by moving tooltip 50% of its width left */
+    left: -8px; /* Half of the width of the icon */
+    top: -35px;
+    font-size: 0.8em;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 8px;
+    margin: 5px;
+    z-index: 1000;
+}
+.tooltipped .tooltiptext {
+    visibility: visible;
+}
+
+.chapter li.part-title {
+    color: var(--sidebar-fg);
+    margin: 5px 0px;
+    font-weight: 600;
+}
+.hubblo .chapter li.part-title{
+    margin-top: 1rem;
+    color: var(--fg);
+    line-height: 1.5em;
+}
+
+
+.result-no-output {
+    font-style: italic;
+}
+
+.fa-svg svg {
+    width: 1em;
+    height: 1em;
+    fill: currentColor;
+    margin-bottom: -0.1em;
+}
+
+dt {
+    font-weight: bold;
+    margin-top: 0.5em;
+    margin-bottom: 0.1em;
+}
+
+/* This uses a CSS counter to add numbers to definitions, but only if there is
+ more than one definition. */
+dl, dt {
+    counter-reset: dd-counter;
+}
+
+/* When there is more than one definition, increment the counter. The first
+selector selects the first definition, and the second one selects definitions
+2 and beyond.*/
+dd:has(+ dd), dd + dd {
+    counter-increment: dd-counter;
+    /* Use flex display to help with positioning the numbers when there is a p
+    tag inside the definition. */
+    display: flex;
+    align-items: flex-start;
+}
+
+/* Shows the counter for definitions. The first selector selects the first
+definition, and the second one selections definitions 2 and beyond.*/
+dd:has(+ dd)::before, dd + dd::before  {
+    content: counter(dd-counter) ". ";
+    font-weight: 600;
+    display: inline-block;
+    margin-right: 0.5em;
+}
+
+dd > p {
+    /* For loose definitions that have a p tag inside, don't add a bunch of
+    space before the definition. */
+    margin-top: 0;
+}
+
+/* Remove some excess space from the bottom. */
+.blockquote-tag p:last-child {
+    margin-bottom: 2px;
+}
+
+.blockquote-tag {
+    /* Add some padding to make the vertical bar a little taller than the text.*/
+    padding: 2px 0px 2px 20px;
+    /* Add a solid color bar on the left side. */
+    border-inline-start-style: solid;
+    border-inline-start-width: 4px;
+    /* Disable the background color from normal blockquotes . */
+    background-color: inherit;
+    /* Disable border blocks from blockquotes. */
+    border-block-start: none;
+    border-block-end: none;
+}
+
+.hubblo .blockquote-tag {
+    padding: 2px 0px 2px 22px;
+}
+
+.blockquote-tag-title svg {
+    fill: currentColor;
+    /* Add space between the icon and the title. */
+    margin-right: 8px;
+}
+
+.blockquote-tag-note {
+    border-inline-start-color: var(--blockquote-note-color);
+}
+
+.blockquote-tag-tip {
+    border-inline-start-color: var(--blockquote-tip-color);
+}
+
+.blockquote-tag-important {
+    border-inline-start-color: var(--blockquote-important-color);
+}
+
+.blockquote-tag-warning {
+    border-inline-start-color: var(--blockquote-warning-color);
+}
+
+.blockquote-tag-caution {
+    border-inline-start-color: var(--blockquote-caution-color);
+}
+
+.blockquote-tag-note .blockquote-tag-title {
+    color: var(--blockquote-note-color);
+}
+
+.blockquote-tag-tip .blockquote-tag-title {
+    color: var(--blockquote-tip-color);
+}
+
+.blockquote-tag-important .blockquote-tag-title {
+    color: var(--blockquote-important-color);
+}
+
+.blockquote-tag-warning .blockquote-tag-title {
+    color: var(--blockquote-warning-color);
+}
+
+.blockquote-tag-caution .blockquote-tag-title {
+    color: var(--blockquote-caution-color);
+}
+
+.blockquote-tag-title {
+    /* Slightly increase the weight for more emphasis. */
+    font-weight: 600;
+    /* Vertically center the icon with the text. */
+    display: flex;
+    align-items: center;
+    /* Remove default large margins for a more compact display. */
+    margin: 2px 0 8px 0;
+}
+
+.blockquote-tag-title .fa-svg {
+    fill: currentColor;
+    /* Add some space between the icon and the text. */
+    margin-right: 8px;
+}
+
+  /* Cacher les SVG générés par mdbook */                                           
+.hubblo .blockquote-tag-title svg {
+    display: none;
+}
+  /* Remplacer par des caractères/émojis */
+.hubblo .blockquote-tag .blockquote-tag-title::before    {
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+}  
+.hubblo .blockquote-tag-note .blockquote-tag-title::before    {
+    content: url('data:image/svg+xml,<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 7H13V9H11V7ZM11 11H13V17H11V11Z"></path></svg>');
+    filter: var(--blockquote-note-filter);
+}                                                              
+.hubblo .blockquote-tag-tip .blockquote-tag-title::before     {
+    content: url('data:image/svg+xml,<svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.97308 18H11V13H13V18H14.0269C14.1589 16.7984 14.7721 15.8065 15.7676 14.7226C15.8797 14.6006 16.5988 13.8564 16.6841 13.7501C17.5318 12.6931 18 11.385 18 10C18 6.68629 15.3137 4 12 4C8.68629 4 6 6.68629 6 10C6 11.3843 6.46774 12.6917 7.31462 13.7484C7.40004 13.855 8.12081 14.6012 8.23154 14.7218C9.22766 15.8064 9.84103 16.7984 9.97308 18ZM10 20V21H14V20H10ZM5.75395 14.9992C4.65645 13.6297 4 11.8915 4 10C4 5.58172 7.58172 2 12 2C16.4183 2 20 5.58172 20 10C20 11.8925 19.3428 13.6315 18.2443 15.0014C17.624 15.7748 16 17 16 18.5V21C16 22.1046 15.1046 23 14 23H10C8.89543 23 8 22.1046 8 21V18.5C8 17 6.37458 15.7736 5.75395 14.9992Z"></path></svg>');
+    filter: var(--blockquote-tip-filter);
+}                                                          
+.hubblo .blockquote-tag-warning .blockquote-tag-title::before {
+    content: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"></path></svg>');
+    filter: var(--blockquote-warning-filter);
+}
+.hubblo .blockquote-tag-important .blockquote-tag-title::before {
+    content: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><path d="M6.45455 19L2 22.5V4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V18C22 18.5523 21.5523 19 21 19H6.45455ZM4 18.3851L5.76282 17H20V5H4V18.3851ZM11 13H13V15H11V13ZM11 7H13V12H11V7Z"></path></svg>');
+    filter: var(--blockquote-important-filter);
+}                                                               
+.hubblo .blockquote-tag-caution .blockquote-tag-title::before {
+    content: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><path d="M4.00001 20V14C4.00001 9.58172 7.58173 6 12 6C16.4183 6 20 9.58172 20 14V20H21V22H3.00001V20H4.00001ZM6.00001 20H18V14C18 10.6863 15.3137 8 12 8C8.6863 8 6.00001 10.6863 6.00001 14V20ZM11 2H13V5H11V2ZM19.7782 4.80761L21.1924 6.22183L19.0711 8.34315L17.6569 6.92893L19.7782 4.80761ZM2.80762 6.22183L4.22183 4.80761L6.34315 6.92893L4.92894 8.34315L2.80762 6.22183ZM7.00001 14C7.00001 11.2386 9.23858 9 12 9V11C10.3432 11 9.00001 12.3431 9.00001 14H7.00001Z"></path></svg>');
+    filter: var(--blockquote-caution-filter);
+}                                                              
+
+
+.hubblo .content * {
+    scroll-margin-top: calc(var(--header-height) + 1rem);
+}
+
+.content .layout-grid{
+    display: grid;
+    grid-template-columns: repeat(var(--col, 2), 1fr);
+    gap: var(--grid-gap);
+}   
+
+.content .layout-auto-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(var(--min, 200px), 1fr));
+    grid-auto-flow: dense;
+    gap: var(--grid-gap);
+    align-items: center;
+    justify-items: center;
+}
+
+                        
+@container content (max-width: 500px) {
+    .content .layout-grid[style*="--col=2"],
+    .content .layout-grid[style*="--col= 2"]{
+        grid-template-columns: repeat(1, 1fr);
+    }
+    .content .layout-grid[style*="--col=3"],
+    .content .layout-grid[style*="--col= 3"]{
+        grid-template-columns: repeat(1, 1fr);
+    }
+    .content .layout-grid[style*="--col=4"],
+    .content .layout-grid[style*="--col= 4"]{
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .content .layout-grid[style*="--col=5"],
+    .content .layout-grid[style*="--col= 5"]{
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .content .layout-grid[style*="--col=6"],
+    .content .layout-grid[style*="--col= 6"]{
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+                  
+.content .layout-full-width {
+    position: relative;
+    width: calc(100vw - var(--page-padding) * 2);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-sizing: border-box;
+    padding-inline: 1px;
+}
+
+.content .layout-full-width .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.content .layout-logos {    
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--grid-gap);
+}
+
+.content .layout-logos > * {
+    max-width: 200px !important;
+    min-width: 120px;
+    max-height: 100px;
+}     
+
+
+@media only screen and (min-width: 620px) {
+    .sidebar-visible .content .layout-full-width{
+        width: calc(100vw - var(--margin-inline-start) - var(--page-padding) * 2);
+    }
+}
+
+figcaption{
+    text-align: center;
+    color: var(--color-gray-600);
+}
+
+#mdbook-theme-toggle{
+    display: none;
+}
+
+.text-xs{
+    --body-font-size: var(--text-xs);
+}
+.text-sm{
+    --body-font-size: var(--text-sm);
+}
+.text-md{
+    --body-font-size: var(--text-md);
+}
+.text-lg{
+    --body-font-size: var(--text-lg);
+}
+.text-xl{
+    --body-font-size: var(--text-xl);
+}
+.text-2xl{
+    --body-font-size: var(--text-2xl);
+}
+
+
+.hubblo .content ul:has(input[type="checkbox"]){
+    padding-left: 0;
+}
+.hubblo .content li input[type="checkbox"]{
+    display: none;
+}
+.hubblo .content li:has(input[type="checkbox"]){
+    list-style: none;
+}
+.hubblo .content li:has(input[type="checkbox"])::before {
+    content: '';
+    position: relative;
+    vertical-align: middle;  
+    display: inline-block;
+    width: var(--space-24);
+    height: var(--space-24);
+    background-image: var(--icon-list-not-checked);
+}
+.hubblo .content li:has(input[type="checkbox"]:checked)::before {
+    background-image: var(--icon-list-checked);
+}

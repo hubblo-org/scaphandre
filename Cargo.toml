@@ -1,42 +1,72 @@
 [package]
 name = "scaphandre"
-version = "0.4.1"
+version = "1.0.2"
 authors = ["Benoit Petit <bpetit@hubblo.org>"]
-edition = "2018"
+edition = "2024"
 license = "Apache-2.0"
-description = "Electrical power consumption measurement agent."
+description = "Electric power/energy consumption monitoring agent."
 repository = "https://github.com/hubblo-org/scaphandre"
 readme = "README.md"
-homepage = "https://hubblo-org.github.io/scaphandre-documentation"
+homepage = "https://scaphandre.hubblo.org"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-loggerv = "0.7.2"
+loggerv = "0.7"
 log = "0.4"
-clap = "2.33.3"
-regex = "1"
-procfs = "0.12.0"
+clap = { version = "4.2", features = ["cargo", "derive"] }
+regex = "1.7"
 riemann_client = { version = "0.9.0", optional = true }
 hostname = "0.3.1"
-protobuf = "2.20.0"
+protobuf = "2.28.0"
 serde = { version = "1.0", features = ["derive"], optional = true }
 serde_json = { version = "1.0", optional = true }
-warp10 = { version = "1.0.0", optional = true }
-time = "0.2.25"
-colored = "2.0.0"
-chrono = "0.4.19"
+ordered-float = "2.0"
+warp10 = { version = "2.0.0", optional = true }
+time = "0.3"
+colored = "2.0"
+chrono = "0.4"
 docker-sync = { version = "0.1.2", optional = true }
-#docker-sync = { path = "../rs-docker-sync", optional = true }
 k8s-openapi = { version = "0.13.0", features = ["v1_21"] }
-#k8s-sync = { version = "0.2.3", optional = true }
-k8s-sync = { git = "https://github.com/rossf7/rs-k8s-sync", branch = "fix/list-pods-options", optional = true }
+k8s-sync = { version = "0.2.3", optional = true }
 hyper = { version = "0.14", features = ["full"], optional = true }
-tokio = { version = "1", features = ["full"], optional = true}
+tokio = { version = "1.26.0", features = ["full"], optional = true }
+sysinfo = { version = "0.28.3" }
+isahc = { version = "1.7.2", optional = true }
+ctrlc = { version = "3.4", features = ["termination"] }
+
+[target.'cfg(target_os="linux")'.dependencies]
+procfs = { version = "0.15.0" }
+
+[target.'cfg(target_os="windows")'.dependencies]
+windows = { version = "0.27.0", features = [
+    "alloc",
+    "Win32_Storage_FileSystem",
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_IO",
+    "Win32_System_Ioctl",
+    "Win32_System_Threading",
+    "Win32_System_SystemInformation",
+] }
+windows-service = { version = "0.6.0" }
+raw-cpuid = { version = "10.5.0" }
+core_affinity = { version = "0.8.1" }
+x86 = { version = "0.52.0" }
 
 [features]
-default = ["prometheus", "riemann", "warp10", "containers", "json"]
+default = [
+    "prometheus",
+    "warpten",
+    "json",
+    "containers",
+    "prometheuspush",
+    "qemu",
+]
 prometheus = ["hyper", "tokio"]
 riemann = ["riemann_client"]
 json = ["serde", "serde_json"]
 containers = ["docker-sync", "k8s-sync"]
+warpten = ["warp10"]
+prometheuspush = ["isahc"]
+qemu = []
