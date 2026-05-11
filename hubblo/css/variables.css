@@ -1,0 +1,195 @@
+
+/*original variable for Hubblo website*/
+:root {
+  --font-sans: "Lexend", -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-mono: "Roboto Mono", monospace;
+  --color-white-100: hsla(0, 0%, 100%, 1);
+  --color-white: var(--color-white-100);
+  --color-gray-100: hsla(240, 6%, 98%, 1);
+  --color-gray-200: hsla(240, 6%, 87%, 1);
+  --color-gray-300: hsla(240, 6%, 76%, 1);
+  --color-gray-400: hsla(240, 6%, 65%, 1);
+  --color-gray-500: hsla(240, 6%, 54%, 1);
+  --color-gray-600: hsla(240, 8%, 43%, 1);
+  --color-gray-700: hsla(240, 8%, 32%, 1);
+  --color-gray-800: hsla(240, 8%, 21%, 1);
+  --color-gray-900: hsla(240, 8%, 10%, 1);
+  --color-black: hsla(240, 8%, 5%, 1);
+  --color-primary-h: 210;
+  --color-primary-s: 100%;
+  --color-primary-l: 40%;
+  --color-primary-10: hsla(var(--color-primary-h), var(--color-primary-s), var(--color-primary-l), .1);
+  --color-primary-20: hsla(var(--color-primary-h), var(--color-primary-s), var(--color-primary-l), .2);
+  --color-primary-40: hsla(var(--color-primary-h), var(--color-primary-s), var(--color-primary-l), .4);
+  --color-primary-50: hsla(var(--color-primary-h), var(--color-primary-s), var(--color-primary-l), .5);
+  --color-primary-100: hsla(var(--color-primary-h), var(--color-primary-s), var(--color-primary-l), 1);
+  --color-primary: var(--color-primary-100);
+  --color-secondary-h: 50;
+  --color-secondary-s: 100%;
+  --color-secondary-l: 60%;
+  --color-secondary-30: hsla(var(--color-secondary-h), var(--color-secondary-s), var(--color-secondary-l), .3);
+  --color-secondary-50: hsla(var(--color-secondary-h), var(--color-secondary-s), var(--color-secondary-l), .5);
+  --color-secondary-60: hsla(var(--color-secondary-h), var(--color-secondary-s), var(--color-secondary-l), .6);
+  --color-secondary-100: hsla(var(--color-secondary-h), var(--color-secondary-s), var(--color-secondary-l), 1);
+  --color-secondary: var(--color-secondary-100);
+  --color-background: var(--color-white);
+  --color-text: var(--color-gray-800);
+  --color-headings: var(--color-black);
+  --color-disabled: var(--color-gray-400);
+  --space-1: .275em;
+  --space-4: .25rem;
+  --space-8: .5rem;
+  --space-12: .75rem;
+  --space-16: 1rem;
+  --space-20: 1.25rem;
+  --space-24: 1.5rem;
+  --space-32: 2rem;
+  --space-40: 2.5rem;
+  --space-48: 3rem;
+  --text-xs: .75rem;
+  --text-sm: .875rem;
+  --text-md: 1rem;
+  --text-lg: clamp(1.125rem, 1.063rem + .278vw, 1.25rem);
+  --text-xl: clamp(1.25rem, 1.125rem + .556vw, 1.5rem);
+  --text-2xl: clamp(1.5rem, 1.25rem + 1.111vw, 2rem);
+  --leading-none: 1;
+  --leading-sm: 1.25;
+  --leading-md: 1.333;
+  --leading-lg: 1.5;
+  --wrapper-max-width: 80rem;
+  --gutter: clamp(24px, 20px + 1.111vw, 32px);
+  --header-height: 4rem;
+  --flow-space: 1rem;
+  --auto-grid-placement: auto-fill;
+  --gap: var(--border-width);
+  --focus-width: 2px;
+  --focus-color: var(--color-primary-50);
+  --focus: var(--focus-width) solid var(--focus-color);
+  --focus-offset: 2px;
+  --border-width: 1px;
+  --border-color: var(--color-gray-200);
+  --border: var(--border-width) solid var(--border-color);
+  --blockquote-border-width: 4px;
+  --rounded-sm: 4px;
+  --rounded-md: var(--text-md);
+  --rounded-lg: var(--text-lg);
+  --rounded-xl: var(--text-xl);
+  --rounded-full: 50%;
+  --max-width: 64ch;
+  --icon-list-not-checked: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAACe0lEQVRIS72VS0hUcRTGf+NrNKfxsbAHoT0WvcAgi1pE5CJoGxT02gTRokVF6aatFAhtrHZtWrYVKqIItEgrCyKloLDCXlCWjsGgjjP1nf4z48w4rwtOBy7cuXPP//vOd853ru+PghKGr1QA0TjtkgEkRFl0gJiYl/nmNc8KEIvppbLiG2NqRJVj3awsT89LA4jopTfjMKJrdR1MzbhEe/5b9xam7eS0u28KQGMN+EWmbTkE/GDkUwogCWCl9X2C3rfuwGoxWVLpDipXRn21u/freaAKwnMwHhZjHW6SrGuAfWvmcxb04JdYXRyEIxsdg61ilC9MlrEQhGZhdAImlH9wAywVeGokKwhJgstP4XgrrK0vTn+r2irpH5O0P+HkFghKpqwAU2Jy9Tkc3ez0LyYMYE5yvvoB9z/C6Taojcu6QKJwBHoEcHgTtAggtVG5wOzwCvVgWAC97+Dc9jw9mFGp3ZLomCooRiKbJptkn5g8+QqPNCBntkFVrjE1NldewIH10BzUTCvZ5jrVNIlKbHRnddVUuCdD32DwiyQSQGYkm2yHXRqAU9KxIT6S/9agGGbKFYmmG+qZAAY+w1lJlBPA/jj/ADp2wAoZyEtYBX2apE7l5gW40A+H5IPWJi/HO/3vfYCu3QUAuh7DrlXQ3pIdwCSzpmbGnffqgSQqCNAz5Bq8X432ErdH4aEk6m4vUMH1l47hCTnSS9xVBbcEcm1vAYCbr8EmYk8zfNcis21q/piMb1VbJxYRSTUtYybCPLFzpYakUJNH5Mgbw1CnfWKbNKjFZbvF7O/XzDfaOpa77HeiFeYT88OyWufqvFPkRZZi3130T+Z/r+AvqK4WxNM5p6EAAAAASUVORK5CYII=");
+  --icon-list-checked: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAIAAABvFaqvAAAB7ElEQVR4Ac2UA68mVhRF+69qm0Hdjo3g2bZt27Zt27ZtrfnOWE/jnR3frMN73uMV6RWAFjZxq3tpUNc8l9MJbX05UGY/v8VSPvoSpW3tEtLCn4nUTz7To/0DhpaoGadyTEKl9ZLYrXgtDmzGsVpcPnb/pW8jP0TTNP1Ys32bmFkHWNxCs5Cb2agXoFssNijBoUbsXk9wq7hzXiiGpfwcTc/8k1PzauD/ZPIG2T3gWK1vY13J91E0zzwz/oMDSkb4MRrTMla3OVySi00VX4RTPHL4Hs1tcCmd86n0LHCYLMr5KIT4ruMWcmkL3SJpYe0ET2l3H78mPgmVZikqmFplcOlwEEhpiuS/Ciejj8ckHfwwmKuZQgTS+ghpPRzUOsP2HjKUEj4PI6IdEHXM8lmYrMzEKnAf5FZ3OEgtX34NCMu6UgqJ7WRpk/+S+TaSqnHgEcix5nCQSt6jmGvbktenoVxK44NgglqAx0HSgUNB2kU0P9pUKfNaplBMy4GnQXrFh4NMyigY4nFNrRHQLPWeDuRUQ8IhO/IsSKPgcJBPI75NJ70et3MOB0W2o5xHco/g7KtljxVhVfO4ki4+n8bfiff9RwJ2VUfukWq+dMquWrKL6iC1l5xB6iaon5JL2C2md4GxFdnMV3Wz333QHQDqV41+I6CLAAAAAElFTkSuQmCC");
+  --timing: 100ms;
+  --easing: ease-out;
+}
+
+
+/* Globals */
+
+:root {
+    --sidebar-target-width: 300px;
+    --sidebar-width: min(var(--sidebar-target-width), 80vw);
+    --sidebar-resize-indicator-width: 8px;
+    --sidebar-resize-indicator-space: 2px;
+    --page-padding: 15px;
+    --content-max-width: 750px;
+    --menu-bar-height: 50px;
+    --normal-font: "Lexend", sans-serif;
+    --mono-font: "RobotoMono", monospace;
+    --code-font-size: 875em; /* please adjust the ace font size accordingly in editor.js */
+    --searchbar-margin-block-start: 5px;
+    --margin-inline-start : calc(var(--sidebar-width) + var(--sidebar-resize-indicator-width));
+}
+
+/* Themes */
+
+.hubblo, html:not(.js) {
+    --code-font-size: 0.95em;
+
+    --bg: var(--color-white);
+    --fg: var(--color-black);
+
+    --page-padding: var(--gutter,2rem);
+
+    --sidebar-bg: var(--color-white);
+    --sidebar-fg: var(--color-gray-600);
+    --sidebar-non-existant: #505254;
+    --sidebar-active: var(--color-primary-100);
+    --sidebar-spacer: #45373a;
+
+    --scrollbar: var(--sidebar-fg);
+
+    --menu-fg: var(--color-gray-700);
+    --menu-hover-fg: var(--color-gray-900);
+
+    --icons: var(--menu-fg:);
+    --icons-hover: var(--menu-hover-fg);
+
+    --nav-chapters-arrow-color: var(--color-gray-600);
+    --nav-chapters-arrow-hover-color: var(--color-black);
+
+    --links: var(--color-primary);
+
+    --inline-code-color: var(--color-gray-600);
+
+    --theme-popup-bg: var(--color-white);
+    --theme-popup-border: var(--border-color);
+    --theme-hover: #ffffff00;
+
+    --warning-border: #ff8e00;
+
+    --table-border-color: var(--border-color);
+    --table-header-bg: #ffffff00;
+    --table-alternate-bg: var(--color-gray-100);
+
+    --search-highlight: var(--color-secondary-30);
+
+    --searchbar-border-color: var(--border-color);
+    --searchbar-bg: var(--color-white);
+    --searchbar-fg: #000;
+    --searchbar-shadow-color: #ffffff00;
+    --searchresults-header-fg: var(--color-gray-600);
+    --searchresults-border-color: var(--border-color);
+    --searchresults-li-bg: var(--search-highlight);
+    --search-mark-bg: var(--search-highlight);
+
+    /* Same as `--color-gray-600` */
+    --copy-button-filter: brightness(0) saturate(100%) invert(41%) sepia(17%) saturate(371%) hue-rotate(201deg) brightness(88%) contrast(88%);
+    /* Same as `--color-black` */
+    --copy-button-filter-hover: brightness(0) saturate(100%);
+
+    --footnote-highlight: #d3a17a;
+
+    --overlay-bg: rgba(150, 150, 150, 0.25);
+
+    --blockquote-note-color: var(--color-primary);
+    --blockquote-tip-color: rgb(0, 166, 30);
+    --blockquote-important-color: #8250df;
+    --blockquote-warning-color: #603700;
+    --blockquote-caution-color: #aa1721;
+
+    --blockquote-note-filter: brightness(0) saturate(100%) invert(27%) sepia(94%) saturate(1563%) hue-rotate(193deg) brightness(90%) contrast(107%);;
+    --blockquote-tip-filter: brightness(0) saturate(100%) invert(32%) sepia(96%) saturate(1282%) hue-rotate(109deg) brightness(102%) contrast(103%);
+    --blockquote-important-filter: brightness(0) saturate(100%) invert(28%) sepia(70%) saturate(1373%) hue-rotate(236deg) brightness(111%) contrast(90%);
+    --blockquote-warning-filter: brightness(0) saturate(100%) invert(18%) sepia(89%) saturate(1202%) hue-rotate(19deg) brightness(96%) contrast(101%);
+    --blockquote-caution-filter: brightness(0) saturate(100%) invert(10%) sepia(99%) saturate(3589%) hue-rotate(347deg) brightness(104%) contrast(93%);
+
+
+    --sidebar-header-border-color: var(--color-primary-20);
+
+    --selection-bg: var(--color-secondary-30);
+
+    --menu-bar-height: 1em /*var(--header-height)*/;
+    --icon-menu-bar-height: 1.5rem;
+
+    --content-max-width: 40rem;
+
+    --sidebar-resize-indicator-width: 0px;
+
+    --toc-space: var(--space-8);
+
+    --copy-button-bg: var(--color-primary-10) ;
+
+    --body-font-size: var(var(--text-md));
+
+    --grid-gap: var(--space-16);
+}

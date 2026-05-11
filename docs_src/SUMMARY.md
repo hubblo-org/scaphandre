@@ -42,7 +42,6 @@
 
 - [MSR_RAPL sensor](references/sensor-msr_rapl.md)
 - [PowercapRAPL sensor](references/sensor-powercap_rapl.md)
-- [MSRRAPL sensor](references/sensor-msr_rapl.md)
 
 [Why this project ?](why.md)
 [Compatibility](compatibility.md)
