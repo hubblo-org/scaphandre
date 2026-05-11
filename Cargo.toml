@@ -27,6 +27,7 @@ time = "0.3"
 colored = "2.0"
 chrono = "0.4"
 docker-sync = { version = "0.1.2", optional = true }
+k8s-openapi = { version = "0.13.0", features = ["v1_21"] }
 k8s-sync = { version = "0.2.3", optional = true }
 hyper = { version = "0.14", features = ["full"], optional = true }
 tokio = { version = "1.26.0", features = ["full"], optional = true }
