@@ -93,15 +93,15 @@ impl RecordReader for Topology {
                     }
                 }
                 for d in &s.domains {
-                    if d.name == "dram" {
-                        if let Ok(dr) = d.read_record() {
-                            match dr.value.trim().parse::<i128>() {
-                                Ok(val) => {
-                                    total += val;
-                                }
-                                Err(e) => {
-                                    warn!("Couldn't convert {} to i128: {}", dr.value.trim(), e);
-                                }
+                    if d.name == "dram"
+                        && let Ok(dr) = d.read_record()
+                    {
+                        match dr.value.trim().parse::<i128>() {
+                            Ok(val) => {
+                                total += val;
+                            }
+                            Err(e) => {
+                                warn!("Couldn't convert {} to i128: {}", dr.value.trim(), e);
                             }
                         }
                     }

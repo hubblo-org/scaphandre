@@ -257,7 +257,7 @@ impl MetricGenerator {
                     && container_regex.is_match(name)
                 {
                     consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
-                    consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                    consumers.sort_by_key(|y| std::cmp::Reverse(y.1));
                 }
                 //if container_regex.is_match(process_exe.to_str().unwrap_or_default()) {
                 //    consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
@@ -960,10 +960,10 @@ impl MetricGenerator {
                 attributes.insert("cmdline".to_string(), utils::filter_cmdline(&cmdline_str));
 
                 #[cfg(target_os = "linux")]
-                if self.qemu {
-                    if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
-                        attributes.insert("vmname".to_string(), vmname);
-                    }
+                if self.qemu
+                    && let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str)
+                {
+                    attributes.insert("vmname".to_string(), vmname);
                 }
             }
 

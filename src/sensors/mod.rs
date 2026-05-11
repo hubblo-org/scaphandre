@@ -499,20 +499,30 @@ impl Topology {
             {
                 iowait = Some(last_iowait - prev_iowait);
             }
-            if last.irq.is_some() && previous.irq.is_some() {
-                irq = Some(last.irq.unwrap() - previous.irq.unwrap());
+            if let Some(last_irq) = last.irq
+                && let Some(previous_irq) = previous.irq
+            {
+                irq = Some(last_irq - previous_irq);
             }
-            if last.softirq.is_some() && previous.softirq.is_some() {
-                softirq = Some(last.softirq.unwrap() - previous.softirq.unwrap());
+            if let Some(last_softirq) = last.softirq
+                && let Some(previous_softirq) = previous.softirq
+            {
+                softirq = Some(last_softirq - previous_softirq);
             }
-            if last.steal.is_some() && previous.steal.is_some() {
-                steal = Some(last.steal.unwrap() - previous.steal.unwrap());
+            if let Some(last_steal) = last.steal
+                && let Some(previous_steal) = previous.steal
+            {
+                steal = Some(last_steal - previous_steal);
             }
-            if last.guest.is_some() && previous.guest.is_some() {
-                guest = Some(last.guest.unwrap() - previous.guest.unwrap());
+            if let Some(last_guest) = last.guest
+                && let Some(previous_guest) = previous.guest
+            {
+                guest = Some(last_guest - previous_guest);
             }
-            if last.guest_nice.is_some() && previous.guest_nice.is_some() {
-                guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
+            if let Some(last_guest_nice) = last.guest_nice
+                && let Some(previous_guest_nice) = previous.guest_nice
+            {
+                guest_nice = Some(last_guest_nice - previous_guest_nice);
             }
             return Some(CPUStat {
                 user: last.user - previous.user,
@@ -568,10 +578,10 @@ impl Topology {
     pub fn read_nb_process_running_current(&self) -> Option<u32> {
         #[cfg(target_os = "linux")]
         {
-            if let Ok(result) = KernelStats::new() {
-                if let Some(procs_running) = result.procs_running {
-                    return Some(procs_running);
-                }
+            if let Ok(result) = KernelStats::new()
+                && let Some(procs_running) = result.procs_running
+            {
+                return Some(procs_running);
             }
         }
         None
@@ -580,10 +590,10 @@ impl Topology {
     pub fn read_nb_process_blocked_current(&self) -> Option<u32> {
         #[cfg(target_os = "linux")]
         {
-            if let Ok(result) = KernelStats::new() {
-                if let Some(procs_blocked) = result.procs_blocked {
-                    return Some(procs_blocked);
-                }
+            if let Ok(result) = KernelStats::new()
+                && let Some(procs_blocked) = result.procs_blocked
+            {
+                return Some(procs_blocked);
             }
         }
         None
@@ -1201,23 +1211,35 @@ impl CPUSocket {
             let mut steal = None;
             let mut guest = None;
             let mut guest_nice = None;
-            if last.iowait.is_some() && previous.iowait.is_some() {
-                iowait = Some(last.iowait.unwrap() - previous.iowait.unwrap());
+            if let Some(last_iowait) = last.iowait
+                && let Some(previous_iowait) = previous.iowait
+            {
+                iowait = Some(last_iowait - previous_iowait);
             }
-            if last.irq.is_some() && previous.irq.is_some() {
-                irq = Some(last.irq.unwrap() - previous.irq.unwrap());
+            if let Some(last_irq) = last.irq
+                && let Some(previous_irq) = previous.irq
+            {
+                irq = Some(last_irq - previous_irq);
             }
-            if last.softirq.is_some() && previous.softirq.is_some() {
-                softirq = Some(last.softirq.unwrap() - previous.softirq.unwrap());
+            if let Some(last_softirq) = last.softirq
+                && let Some(previous_softirq) = previous.softirq
+            {
+                softirq = Some(last_softirq - previous_softirq);
             }
-            if last.steal.is_some() && previous.steal.is_some() {
-                steal = Some(last.steal.unwrap() - previous.steal.unwrap());
+            if let Some(last_steal) = last.steal
+                && let Some(previous_steal) = previous.steal
+            {
+                steal = Some(last_steal - previous_steal);
             }
-            if last.guest.is_some() && previous.guest.is_some() {
-                guest = Some(last.guest.unwrap() - previous.guest.unwrap());
+            if let Some(last_guest) = last.guest
+                && let Some(previous_guest) = previous.guest
+            {
+                guest = Some(last_guest - previous_guest);
             }
-            if last.guest_nice.is_some() && previous.guest_nice.is_some() {
-                guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
+            if let Some(last_guest_nice) = last.guest_nice
+                && let Some(previous_guest_nice) = previous.guest_nice
+            {
+                guest_nice = Some(last_guest_nice - previous_guest_nice);
             }
             return Some(CPUStat {
                 user: last.user - previous.user,
