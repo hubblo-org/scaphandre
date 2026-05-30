@@ -6,12 +6,9 @@ Scaphandre, Prometheus and Grafana.
 ## Install Scaphandre
 
 First we install Scaphandre which runs as a daemon set which creates a pod on
-each node for collecting the metrics. The helm chart is not in a repo, it needs
-to be installed from the source code.
+each node for collecting the metrics.
 
-    git clone https://github.com/hubblo-org/scaphandre
-    cd scaphandre
-    helm install scaphandre helm/scaphandre
+    helm upgrade --install scaphandre oci://registry-1.docker.io/hubblo/scaphandre
 ### Parameters
 #### Service monitor parameters
 
@@ -52,6 +49,8 @@ You can access the Prometheus web UI by creating a port forwarding connection.
 
 Create a configmap to store the Grafana dashboard.
 
+    git clone https://github.com/hubblo-org/scaphandre
+    cd scaphandre
     kubectl create configmap scaphandre-dashboard \
         --from-file=scaphandre-dashboard.json=docs_src/tutorials/grafana-kubernetes-dashboard.json
 

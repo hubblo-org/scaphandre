@@ -1,0 +1,36 @@
+name: helm_release
+
+on:
+  push:
+    paths-ignore:
+      - 'docs_src/**'
+      - 'README.md'
+      - 'CITATION'
+      - 'book.toml'
+      - 'CONTRIBUTING.md'
+      - '*.md'
+      - 'oranda.json'
+    tags: [ 'v*.*.*' ]
+
+jobs:
+  package_and_push:
+    name: package_and_push_helm_chart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+      - name: Login to DockerHub
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | helm registry login registry-1.docker.io --username ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin 
+      - name: Extract version from Git tag
+        id: get_version
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      - name: Package Helm Chart
+        run: |
+          helm package helm/scaphandre --version ${{ steps.get_version.outputs.VERSION }}
+      - name: Push Helm Chart as OCI Artifact
+        run: |
+          helm push ./scaphandre-${{ steps.get_version.outputs.VERSION }}.tgz oci://registry-1.docker.io/${{ secrets.DOCKERHUB_USERNAME }}
