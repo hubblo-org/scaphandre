@@ -17,8 +17,8 @@ pub mod utils;
 #[cfg(feature = "warpten")]
 pub mod warpten;
 use crate::sensors::{
-    utils::{current_system_time_since_epoch, IProcess},
     RecordGenerator, Topology,
+    utils::{IProcess, current_system_time_since_epoch},
 };
 use chrono::Utc;
 use std::collections::HashMap;
@@ -27,9 +27,9 @@ use std::time::Duration;
 use utils::get_scaphandre_version;
 #[cfg(feature = "containers")]
 use {
-    docker_sync::{container::Container, Docker},
-    k8s_sync::kubernetes::Kubernetes,
+    docker_sync::{Docker, container::Container},
     k8s_sync::Pod,
+    k8s_sync::kubernetes::Kubernetes,
     ordered_float::*,
     regex::Regex,
     utils::{get_docker_client, get_kubernetes_client},
@@ -131,7 +131,7 @@ pub struct MetricGenerator {
     /// Tells MetricGenerator if it has to watch for containers.
     #[cfg(feature = "containers")]
     watch_containers: bool,
-    ///
+    /// Last time, containers state has been checked.
     #[cfg(feature = "containers")]
     containers_last_check: String,
     /// `containers` contains the containers descriptions when --containers is true
@@ -155,7 +155,7 @@ pub struct MetricGenerator {
     /// Kubernetes pods
     #[cfg(feature = "containers")]
     pods: Vec<Pod>,
-    ///
+    /// Last time pods state has been checked.
     #[cfg(feature = "containers")]
     pods_last_check: String,
 }
@@ -165,7 +165,6 @@ pub struct MetricGenerator {
 /// to use the following methods to avoid discrepancies between exporters.
 impl MetricGenerator {
     /// Returns a MetricGenerator instance that will host metrics.
-
     pub fn new(
         topology: Topology,
         hostname: String,
@@ -198,7 +197,9 @@ impl MetricGenerator {
                     info!("Couldn't connect to kubernetes API.");
                 }
                 if !container_runtime {
-                    warn!("--containers was used but scaphandre couldn't connect to any container runtime.");
+                    warn!(
+                        "--containers was used but scaphandre couldn't connect to any container runtime."
+                    );
                 }
             }
             MetricGenerator {
@@ -252,11 +253,11 @@ impl MetricGenerator {
                         self.docker_version.clone(),
                         &self.pods,
                     );
-                if let Some(name) = container_description.get("container_names") {
-                    if container_regex.is_match(name) {
-                        consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
-                        consumers.sort_by(|x, y| y.1.cmp(&x.1));
-                    }
+                if let Some(name) = container_description.get("container_names")
+                    && container_regex.is_match(name)
+                {
+                    consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
+                    consumers.sort_by_key(|y| std::cmp::Reverse(y.1));
                 }
                 //if container_regex.is_match(process_exe.to_str().unwrap_or_default()) {
                 //    consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
@@ -959,10 +960,10 @@ impl MetricGenerator {
                 attributes.insert("cmdline".to_string(), utils::filter_cmdline(&cmdline_str));
 
                 #[cfg(target_os = "linux")]
-                if self.qemu {
-                    if let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str) {
-                        attributes.insert("vmname".to_string(), vmname);
-                    }
+                if self.qemu
+                    && let Some(vmname) = utils::filter_qemu_cmdline(&cmdline_str)
+                {
+                    attributes.insert("vmname".to_string(), vmname);
                 }
             }
 

@@ -2,7 +2,7 @@
 
 Scaphandre is a tool that makes it possible to see the power being used by a single process on a computer.
 
-This sounds like a simple thing thing to be able to do, but in practice a number of details can make this more complex.
+This sounds like a simple thing to be able to do, but in practice a number of details can make this more complex.
 
 So having a good mental model of how it works will make it easier to understand when and how to use Scaphandre. Let's start with a simplified mental model below, before moving on to multiple processors or virtual machines - but once you understand the key ideas outlined below, it's easier to see how they can be applied to thinking about tracking power on virtual machines, or when multiple processors are available.
 
@@ -29,7 +29,7 @@ It's possible without Scaphandre to understand how large a share of a machines' 
 
 This is useful, by itself, but if we want to understand how much _power_ is used per process, not just the share of the machine's resources, we need to know how much power is being used by the machine in absolute terms.
 
-To do this, we need a sensor of some kind to track power usage by the machine itself. Some servers have these, like with Intel's RAPL sensors, which we cover this in more detail later on. This makes it possible to understand how much power is being used by CPUs, GPUs and so on, in terms of watts, or, if we are looking at just a single process, various fractions of a watt.
+To do this, we need a sensor of some kind to track power usage by the machine itself. Some servers have these, like with Intel's RAPL sensors, which we cover in more detail later on. This makes it possible to understand how much power is being used by CPUs, GPUs and so on, in terms of watts, or, if we are looking at just a single process, various fractions of a watt.
 
 ![Sensors provide power over time](../img/power-over-time.png)
 

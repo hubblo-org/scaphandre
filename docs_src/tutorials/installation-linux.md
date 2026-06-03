@@ -4,11 +4,27 @@ Depending on your kernel version, you could need to modprobe the module intel_ra
 
     modprobe intel_rapl_common # or intel_rapl for kernels < 5
 
+## Docker
 To quickly run scaphandre in your terminal you may use [docker](https://www.docker.com/):
 
     docker run -v /sys/class/powercap:/sys/class/powercap -v /proc:/proc -ti hubblo/scaphandre stdout -t 15
 
-Or if you downloaded or built a binary, you'd run:
+## Debian/Ubuntu
+
+Since Debian Sid, Scaphandre is available as an official package, try:
+
+    sudo apt install scaphandre
+
+If not (yet) in your official packages repositories, on Debian or Ubuntu, you can directly use the available `.deb` [package for Debian Bullseye](https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre_v1.0.0-deb11_amd64.deb) or the [package for Debian Bookworm](https://github.com/hubblo-org/scaphandre/releases/download/v1.0.0/scaphandre_v1.0.0-deb12_amd64.deb).
+
+    # For Debian Bookworm
+    VERSION="1.0.1" ARCH="amd64" DIST="deb12" && \
+    wget https://github.com/hubblo-org/scaphandre/releases/download/v${VERSION}/scaphandre_v${VERSION}-${DIST}_${ARCH}.deb && \
+    dpkg -i scaphandre_v${VERSION}\-${DIST}\_${ARCH}.deb && \
+    rm scaphandre_v${VERSION}\-${DIST}\_${ARCH}.deb
+
+## Run the binary
+Once you downloaded or built a binary, you'd run:
 
     scaphandre stdout -t 15
 
