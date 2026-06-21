@@ -34,8 +34,8 @@ hyper-util = { version = "0.1.20", features = [
   "service",
 ], optional = true }
 http-body-util = { version = "0.1", optional = true }
-tokio = { version = "1.26.0", features = ["full"], optional = true}
-sysinfo = { version = "0.28.3"}
+tokio = { version = "1.26.0", features = ["full"], optional = true }
+sysinfo = { version = "0.28.3" }
 isahc = { version = "1.7.2", optional = true }
 ctrlc = { version = "3.4", features = ["termination"] }
 
@@ -59,7 +59,14 @@ core_affinity = { version = "0.8.1" }
 x86 = { version = "0.52.0" }
 
 [features]
-default = ["prometheus", "riemann", "warpten", "json", "containers", "prometheuspush"]
+default = [
+  "prometheus",
+  "riemann",
+  "warpten",
+  "json",
+  "containers",
+  "prometheuspush",
+]
 prometheus = ["hyper", "hyper-util", "http-body-util", "tokio"]
 riemann = ["riemann_client"]
 json = ["serde", "serde_json"]
