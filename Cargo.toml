@@ -27,9 +27,15 @@ colored = "2.0"
 chrono = "0.4"
 docker-sync = { version = "0.1.2", optional = true }
 k8s-sync = { version = "0.2.3", optional = true }
-hyper = { version = "0.14", features = ["full"], optional = true }
-tokio = { version = "1.26.0", features = ["full"], optional = true }
-sysinfo = { version = "0.28.3" }
+hyper = { version = "1.10.1", features = ["full"], optional = true }
+hyper-util = { version = "0.1.20", features = [
+  "server-auto",
+  "server-graceful",
+  "service",
+], optional = true }
+http-body-util = { version = "0.1", optional = true }
+tokio = { version = "1.26.0", features = ["full"], optional = true}
+sysinfo = { version = "0.28.3"}
 isahc = { version = "1.7.2", optional = true }
 ctrlc = { version = "3.4", features = ["termination"] }
 
@@ -53,15 +59,8 @@ core_affinity = { version = "0.8.1" }
 x86 = { version = "0.52.0" }
 
 [features]
-default = [
-    "prometheus",
-    "warpten",
-    "json",
-    "containers",
-    "prometheuspush",
-    "qemu",
-]
-prometheus = ["hyper", "tokio"]
+default = ["prometheus", "riemann", "warpten", "json", "containers", "prometheuspush"]
+prometheus = ["hyper", "hyper-util", "http-body-util", "tokio"]
 riemann = ["riemann_client"]
 json = ["serde", "serde_json"]
 containers = ["docker-sync", "k8s-sync"]

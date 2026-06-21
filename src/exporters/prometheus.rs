@@ -8,17 +8,21 @@ use super::utils;
 use crate::exporters::{Exporter, MetricGenerator, MetricValueType};
 use crate::sensors::utils::current_system_time_since_epoch;
 use crate::sensors::{Sensor, Topology};
+
 use chrono::Utc;
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response, Server};
-use std::convert::Infallible;
+use http_body_util::Full;
+use hyper::{body::Bytes, server::conn::http1, service::service_fn, Request, Response};
+use hyper_util::rt::TokioIo;
+
 use std::{
     collections::HashMap,
+    convert::Infallible,
     fmt::Write,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::{Arc, Mutex},
     time::Duration,
 };
+use tokio::net::TcpListener;
 
 /// Default ipv4/ipv6 address to expose the service is any
 const DEFAULT_IP_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
@@ -111,26 +115,32 @@ async fn run_server(
         metric_generator: Mutex::new(metric_generator),
     };
     let context = Arc::new(power_metrics);
-    let make_svc = make_service_fn(move |_| {
+    let listener = TcpListener::bind(socket_addr)
+        .await
+        .expect("Failed to bind to TcpListener");
+
+    loop {
+        let (tcp, _) = listener
+            .accept()
+            .await
+            .expect("Failed to accept an incoming connection");
+        let io = TokioIo::new(tcp);
+
         let ctx = context.clone();
         let sfx = endpoint_suffix.to_string();
-        async {
-            Ok::<_, Infallible>(service_fn(move |req| {
-                show_metrics(req, ctx.clone(), sfx.clone())
-            }))
-        }
-    });
-    let server = Server::bind(&socket_addr);
-    let res = server.serve(make_svc);
-    let (tx, rx) = tokio::sync::oneshot::channel::<()>();
-    let graceful = res.with_graceful_shutdown(async {
-        rx.await.ok();
-    });
 
-    if let Err(e) = graceful.await {
-        error!("server error: {}", e);
+        tokio::task::spawn(async move {
+            if let Err(err) = http1::Builder::new()
+                .serve_connection(
+                    io,
+                    service_fn(move |req| show_metrics(req, ctx.clone(), sfx.clone())),
+                )
+                .await
+            {
+                eprintln!("Error serving connection: {:?}", err);
+            }
+        });
     }
-    let _ = tx.send(());
 }
 
 /// Adds lines related to a metric in the body (String) of response.
@@ -152,10 +162,10 @@ fn push_metric(
 
 /// Handles requests and returns data formated for Prometheus.
 async fn show_metrics(
-    req: Request<Body>,
+    req: Request<hyper::body::Incoming>,
     context: Arc<PowerMetrics>,
     suffix: String,
-) -> Result<Response<Body>, Infallible> {
+) -> Result<Response<Full<Bytes>>, Infallible> {
     trace!("{}", req.uri());
     let mut body = String::new();
     if req.uri().path() == format!("/{}", suffix) {
