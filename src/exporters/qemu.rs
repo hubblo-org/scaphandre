@@ -10,7 +10,7 @@ use std::{fs, io, thread, time};
 /// to collect and deal with their power consumption metrics, the same way
 /// they would do it if they managed bare metal machines.
 pub struct QemuExporter {
-    // We don't need a MetricGenerator for this exporter, because it "justs"
+    // We don't need a MetricGenerator for this exporter, because it "just"
     // puts the metrics in files in the same way as the powercap kernel module.
     topology: Topology,
 }

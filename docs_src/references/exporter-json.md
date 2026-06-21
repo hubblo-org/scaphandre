@@ -22,7 +22,7 @@ By default, JSON is printed in the terminal, to write result in a file you can p
 
     scaphandre json -t 10 -s 0 -n 100000000 -f report.json
 
-To get informations about processes that are running in containers, add `--containers`:
+To get information about processes that are running in containers, add `--containers`:
 
     scaphandre --no-header json --containers --max-top-consumers=15 | jq
 
@@ -52,7 +52,7 @@ As always exporter's options can be displayed with `-h`:
           --container-regex <CONTAINER_REGEX>
               Filter containers based on regular expressions
           --resources
-              Monitor and incude CPU, RAM and Disk usage per process
+              Monitor and include CPU, RAM and Disk usage per process
       -h, --help
               Print help
 

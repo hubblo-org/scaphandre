@@ -122,7 +122,7 @@ Please check dev branch.
 ### Changed
 
 - Manipulating flags as a Vec of clap::Arg instead of a HashMap of ExporterOption in exporters: [#100](https://github.com/hubblo-org/scaphandre/pull/100), thanks @uggla !
-- Json and Stdout exporters are now using MetricGenerator as an inteface to get metrics properly : [#113](https://github.com/hubblo-org/scaphandre/pull/113)
+- Json and Stdout exporters are now using MetricGenerator as an interface to get metrics properly : [#113](https://github.com/hubblo-org/scaphandre/pull/113)
 
 ## [0.3.0](https://github.com/hubblo-org/scaphandre/releases/tag/v0.3.0)
 

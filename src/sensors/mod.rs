@@ -53,7 +53,7 @@ pub struct Topology {
     pub stat_buffer: Vec<CPUStat>,
     /// Measurements of energy usage, stored as Record instances
     pub record_buffer: Vec<Record>,
-    /// Maximum size in memory for the recor_buffer
+    /// Maximum size in memory for the record_buffer
     pub buffer_max_kbytes: u16,
     /// Sorted list of all domains names
     pub domains_names: Option<Vec<String>>,
@@ -136,7 +136,7 @@ impl Default for Topology {
 }
 
 impl Topology {
-    /// Instanciates Topology and returns the instance
+    /// Instantiates Topology and returns the instance
     pub fn new(sensor_data: HashMap<String, String>) -> Topology {
         Topology {
             sockets: vec![],
@@ -294,7 +294,7 @@ impl Topology {
                     .unwrap();
                 let socket_match = self.sockets.iter_mut().find(|x| &x.id == socket_id);
 
-                //In VMs there might be a missmatch betwen Sockets and Cores - see Issue#133 as a first fix we just map all cores that can't be mapped to the first
+                //In VMs there might be a mismatch between Sockets and Cores - see Issue#133 as a first fix we just map all cores that can't be mapped to the first
                 let socket = match socket_match {
                     Some(x) => x,
                     None =>self.sockets.first_mut().expect("Trick: if you are running on a vm, do not forget to use --vm parameter invoking scaphandre at the command line")
@@ -305,7 +305,7 @@ impl Topology {
                 } else {
                     socket.add_cpu_core(c);
                     warn!(
-                        "coud't not match core to socket - mapping to first socket instead - if you are not using --vm there is something wrong"
+                        "could't not match core to socket - mapping to first socket instead - if you are not using --vm there is something wrong"
                     )
                 }
             }
@@ -338,7 +338,7 @@ impl Topology {
     }
 
     /// Triggers ProcessTracker refresh on process stats
-    /// and power consumption, CPU stats and cores power comsumption,
+    /// and power consumption, CPU stats and cores power consumption,
     /// CPU sockets stats and power consumption.
     pub fn refresh(&mut self) {
         let sockets = &mut self.sockets;
@@ -978,7 +978,7 @@ pub struct CPUSocket {
     pub attributes: Vec<Vec<HashMap<String, String>>>,
     /// Path to the file that provides the counter for energy consumed by the socket, in microjoules.
     pub counter_uj_path: String,
-    /// Comsumption records measured and stored by scaphandre for this socket.
+    /// Consumption records measured and stored by scaphandre for this socket.
     pub record_buffer: Vec<Record>,
     /// Maximum size of the record_buffer in kilobytes.
     pub buffer_max_kbytes: u16,
@@ -1241,6 +1241,7 @@ impl CPUSocket {
             {
                 guest_nice = Some(last_guest_nice - previous_guest_nice);
             }
+
             return Some(CPUStat {
                 user: last.user - previous.user,
                 nice: last.nice - previous.nice,
@@ -1322,10 +1323,10 @@ impl CPUSocket {
 }
 
 // !!!!!!!!!!!!!!!!! CPUCore !!!!!!!!!!!!!!!!!!!!!!!
-/// CPUCore reprensents each CPU core on the host,
-/// owned by a CPUSocket. CPUCores are instanciated regardless if
+/// CPUCore represents each CPU core on the host,
+/// owned by a CPUSocket. CPUCores are instantiated regardless if
 /// HyperThreading is activated on the host.
-/// Reprensents the processor field in /proc/cpuinfo.
+/// Represents the processor field in /proc/cpuinfo.
 #[derive(Debug, Clone)]
 pub struct CPUCore {
     pub id: u16,
@@ -1372,7 +1373,7 @@ pub struct Domain {
     sensor_data: HashMap<String, String>,
 }
 impl RecordGenerator for Domain {
-    /// Computes a measurement of energy comsumption for this CPU domain,
+    /// Computes a measurement of energy consumption for this CPU domain,
     /// stores a copy in self.record_buffer and returns it.
     fn refresh_record(&mut self) {
         match self.read_record() {
@@ -1428,7 +1429,7 @@ impl RecordGenerator for Domain {
     }
 }
 impl Domain {
-    /// Instanciates Domain and returns the instance
+    /// Instantiates Domain and returns the instance
     fn new(
         id: u16,
         name: String,

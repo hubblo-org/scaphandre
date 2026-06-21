@@ -1,6 +1,6 @@
 # Compile scaphandre from source (GNU/Linux)
 
-We recommand using this version of the rust toolchain or later:
+We recommend using this version of the rust toolchain or later:
 
     cargo --version
     cargo 1.48.0 (65cbdd2dc 2020-10-14)
