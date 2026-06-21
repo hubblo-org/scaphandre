@@ -11,6 +11,7 @@ use crate::sensors::{Sensor, Topology};
 
 use chrono::Utc;
 use http_body_util::Full;
+use hyper::header::CONTENT_TYPE;
 use hyper::{body::Bytes, service::service_fn, Request, Response};
 use hyper_util::{
     rt::{TokioExecutor, TokioIo},
@@ -272,7 +273,11 @@ async fn show_metrics(
             "<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{suffix}\">/{suffix}</a>"
         );
     }
-    Ok(Response::new(body.into()))
+
+    Ok(Response::builder()
+        .header(CONTENT_TYPE, "text/plain; version=0.0.4")
+        .body(Full::new(Bytes::from(body)))
+        .expect("Failed to build Response"))
 }
 
 //  Copyright 2020 The scaphandre authors.
