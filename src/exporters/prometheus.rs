@@ -11,8 +11,11 @@ use crate::sensors::{Sensor, Topology};
 
 use chrono::Utc;
 use http_body_util::Full;
-use hyper::{body::Bytes, server::conn::http1, service::service_fn, Request, Response};
-use hyper_util::rt::TokioIo;
+use hyper::{body::Bytes, service::service_fn, Request, Response};
+use hyper_util::{
+    rt::{TokioExecutor, TokioIo},
+    server::conn::auto::Builder,
+};
 
 use std::{
     collections::HashMap,
@@ -126,7 +129,6 @@ async fn run_server(
         .await
         .expect("Failed to bind to TcpListener");
 
-    let http = http1::Builder::new();
     let graceful = hyper_util::server::graceful::GracefulShutdown::new();
     let mut signal = std::pin::pin!(shutdown_signal());
 
@@ -135,13 +137,15 @@ async fn run_server(
             Ok((stream, _addr)) = listener.accept() => {
                 let ctx = context.clone();
                 let sfx = endpoint_suffix.to_string();
+                let watcher = graceful.watcher();
 
                 let io = TokioIo::new(stream);
-                let conn = http.serve_connection(io, service_fn(move |req| show_metrics(req, ctx.clone(), sfx.clone())));
 
-                let fut = graceful.watch(conn);
                 tokio::spawn(async move {
-                    if let Err(e) = fut.await {
+                    let http = Builder::new(TokioExecutor::new());
+                    let conn = http.serve_connection(io, service_fn(move |req| show_metrics(req, ctx.clone(), sfx.clone())));
+
+                    if let Err(e) = watcher.watch(conn).await {
                         warn!("Error serving connection: {:?}", e);
                     }
                 });
