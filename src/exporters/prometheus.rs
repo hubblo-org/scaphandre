@@ -104,6 +104,13 @@ struct PowerMetrics {
     metric_generator: Mutex<MetricGenerator>,
 }
 
+async fn shutdown_signal() {
+    // Wait for the CTRL+C signal
+    tokio::signal::ctrl_c()
+        .await
+        .expect("failed to install CTRL+C signal handler");
+}
+
 #[tokio::main]
 async fn run_server(
     socket_addr: SocketAddr,
@@ -119,27 +126,43 @@ async fn run_server(
         .await
         .expect("Failed to bind to TcpListener");
 
+    let http = http1::Builder::new();
+    let graceful = hyper_util::server::graceful::GracefulShutdown::new();
+    let mut signal = std::pin::pin!(shutdown_signal());
+
     loop {
-        let (tcp, _) = listener
-            .accept()
-            .await
-            .expect("Failed to accept an incoming connection");
-        let io = TokioIo::new(tcp);
+        tokio::select! {
+            Ok((stream, _addr)) = listener.accept() => {
+                let ctx = context.clone();
+                let sfx = endpoint_suffix.to_string();
 
-        let ctx = context.clone();
-        let sfx = endpoint_suffix.to_string();
+                let io = TokioIo::new(stream);
+                let conn = http.serve_connection(io, service_fn(move |req| show_metrics(req, ctx.clone(), sfx.clone())));
 
-        tokio::task::spawn(async move {
-            if let Err(err) = http1::Builder::new()
-                .serve_connection(
-                    io,
-                    service_fn(move |req| show_metrics(req, ctx.clone(), sfx.clone())),
-                )
-                .await
-            {
-                eprintln!("Error serving connection: {:?}", err);
+                let fut = graceful.watch(conn);
+                tokio::spawn(async move {
+                    if let Err(e) = fut.await {
+                        warn!("Error serving connection: {:?}", e);
+                    }
+                });
+
+            },
+
+            _ = &mut signal => {
+                drop(listener);
+                warn!("graceful shutdown signal received");
+                break;
             }
-        });
+        }
+    }
+
+    tokio::select! {
+        _ = graceful.shutdown() => {
+            warn!("all connections gracefully closed");
+        },
+        _ = tokio::time::sleep(std::time::Duration::from_secs(10)) => {
+            warn!("timed out wait for all connections to close");
+        }
     }
 }
 
