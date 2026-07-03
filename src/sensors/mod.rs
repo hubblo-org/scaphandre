@@ -428,7 +428,7 @@ impl Topology {
     /// between the last (in time) record from self.record_buffer and the previous one
     pub fn get_records_diff(&self) -> Option<Record> {
         let len = self.record_buffer.len();
-        if len > 2 {
+        if len > 1 {
             let last = self.record_buffer.last().unwrap();
             let previous = self.record_buffer.get(len - 2).unwrap();
             let last_value = last.value.parse::<u64>().unwrap();
