@@ -1,12 +1,12 @@
 # How To Start Implementing A New Sensor
 
-This page gives a brief overview on how to start implementing a new sensor.
+This page gives a brief overview on the internal structure of sensors and on how to start implementing a new sensor.
 
 ## Important Structs and Traits
 
-The following are the structs and traits defined in sensors/mod.rs.
+The following are the structs and traits defined in sensors/mod.rs. 
 
-```rust
+```rust,noplayground
 pub struct Record {
     pub timestamp: Duration,
     pub value: String,
@@ -15,7 +15,7 @@ pub struct Record {
 ```
 The record struct is used to represent an electricity consumption measurement. Exporters expect the records passed to them to be monotonically increasing.
 
-```rust
+```rust,noplayground
 /// Sensor trait, the Sensor API.
 pub trait Sensor {
     fn get_topology(&self) -> Box<Option<Topology>>;
@@ -24,7 +24,7 @@ pub trait Sensor {
 ```
 The sensor trait is used by exporters to get an instance of a topology struct.
 
-```rust
+```rust,noplayground
 /// Defines methods for Record instances creation
 /// and storage.
 pub trait RecordGenerator {
@@ -35,13 +35,13 @@ pub trait RecordGenerator {
 ```
 The RecordGenerator is queried by exporters to obtain new records. RecordGenerator implementation is not specific to a sensor type, its purpose is to manage record buffers (structs implement it within sensors/mod.rs). It uses the RecordReader trait to generate new records itself.
 
-```rust
+```rust,noplayground
 pub trait RecordReader {
     fn read_record(&self) -> Result<Record, Box<dyn Error>>;
 }
 ```
 The RecordGenerator functions call the RecordReader trait's functions to read and create new records. The RecordReader trait is implemented within the specific sensor's .rs file and accounts for the differing behavior between sensors.
-```rust
+```rust,noplayground
 /// Topology struct represents the whole CPUSocket architecture,
 /// from the electricity consumption point of view,
 /// including the potentially multiple CPUSocket sockets.
@@ -66,7 +66,7 @@ pub struct Topology {
 ```
 The topology struct implements RecordReader and RecordGenerator. Exporters use it to query records and access the ProcessTracker field, which attributes energy consumption to individual processes. The Topology struct is the main point of contact between sensors and exporters.
 
-```rust
+```rust,noplayground
 /// CPUSocket struct represents a CPU socket (matches physical_id attribute in /proc/cpuinfo),
 /// owning CPU cores (processor in /proc/cpuinfo).
 #[derive(Debug, Clone)]
@@ -94,7 +94,7 @@ pub struct CPUSocket {
 ```
 This struct represents a CPUSocket. It implements both RecordGenerator and RecordReader. It can be accessed by exporters via the topology struct to get CPUSocket specific records.
 
-```rust
+```rust,noplayground
 /// Domain struct represents a part of a CPUSocket from the
 /// electricity consumption point of view.
 #[derive(Debug, Clone)]
