@@ -1,10 +1,10 @@
 # How To Start Implementing A New Sensor
 
-This page gives a brief overview on the internal structure of sensors and on how to start implementing a new sensor.
+This guide provides an overview of the internal architecture of sensors and the steps to implement a new sensor without touching exporter code.
 
 ## Important Structs and Traits
 
-The following are the structs and traits defined in sensors/mod.rs. 
+First an overview of the the structs and traits defined in sensors/mod.rs. 
 
 ```rust,noplayground
 pub struct Record {
@@ -13,7 +13,7 @@ pub struct Record {
     pub unit: units::Unit,
 }
 ```
-The record struct is used to represent an electricity consumption measurement. Exporters expect the records passed to them to be monotonically increasing.
+`Record` is used to represent an electricity consumption measurement. Exporters expect the records passed to them to be monotonically increasing.
 
 ```rust,noplayground
 /// Sensor trait, the Sensor API.
@@ -22,7 +22,7 @@ pub trait Sensor {
     fn generate_topology(&self) -> Result<Topology, Box<dyn Error>>;
 }
 ```
-The sensor trait is used by exporters to get an instance of a topology struct.
+The `Sensor` trait is used by exporters to get an instance of a topology struct.
 
 ```rust,noplayground
 /// Defines methods for Record instances creation
@@ -33,14 +33,14 @@ pub trait RecordGenerator {
     fn clean_old_records(&mut self);
 }
 ```
-The RecordGenerator is queried by exporters to obtain new records. RecordGenerator implementation is not specific to a sensor type, its purpose is to manage record buffers (structs implement it within sensors/mod.rs). It uses the RecordReader trait to generate new records itself.
+`RecordGenerator` is queried by exporters to obtain new records. RecordGenerator implementations are not specific to a sensor type, its purpose is to manage the record buffers of the `Topology`, `CPUSocket` and `Domain` structs (structs implement `RecordGenerator` within sensors/mod.rs). It uses the `RecordReader` trait to generate new records itself.
 
 ```rust,noplayground
 pub trait RecordReader {
     fn read_record(&self) -> Result<Record, Box<dyn Error>>;
 }
 ```
-The RecordGenerator functions call the RecordReader trait's functions to read and create new records. The RecordReader trait is implemented within the specific sensor's .rs file and accounts for the differing behavior between sensors.
+`RecordReader` is responsible for obtaining measurements from the underlying sensor. The `RecordReader` trait is implemented within the specific sensor's .rs file and accounts for the differing behavior between sensors.
 ```rust,noplayground
 /// Topology struct represents the whole CPUSocket architecture,
 /// from the electricity consumption point of view,
@@ -64,7 +64,10 @@ pub struct Topology {
     pub _sensor_data: HashMap<String, String>,
 }
 ```
-The topology struct implements RecordReader and RecordGenerator. Exporters use it to query records and access the ProcessTracker field, which attributes energy consumption to individual processes. The Topology struct is the main point of contact between sensors and exporters.
+The `Topology` struct implements `RecordReader` and `RecordGenerator`.
+Exporters use it to query for records and can access its fields for more specific information. 
+The `ProcessTracker` field is particularly of note since it attributes energy consumption to individual processes. 
+The `Topology` struct is the main point of contact between sensors and exporters.
 
 ```rust,noplayground
 /// CPUSocket struct represents a CPU socket (matches physical_id attribute in /proc/cpuinfo),
@@ -92,7 +95,7 @@ pub struct CPUSocket {
     pub sensor_data: HashMap<String, String>,
 }
 ```
-This struct represents a CPUSocket. It implements both RecordGenerator and RecordReader. It can be accessed by exporters via the topology struct to get CPUSocket specific records.
+This struct represents a CPUSocket. It implements both `RecordGenerator` and `RecordReader`. It can be accessed by exporters via the `Topology` struct to get CPUSocket specific records.
 
 ```rust,noplayground
 /// Domain struct represents a part of a CPUSocket from the
@@ -114,9 +117,9 @@ pub struct Domain {
     sensor_data: HashMap<String, String>,
 }
 ```
-The Domain struct represents a part of the CPUSocket from the electricity consumption point of view, such as the core, uncore and DRAM. It implements RecordReader and RecordGenerator.
+The `Domain` struct represents a part of the CPUSocket from the electricity consumption point of view, such as the core, uncore and DRAM. It implements `RecordReader` and `RecordGenerator`.
 
-## How It Fits Together
+## How everything fits together
 
 ![](../img/sensor_internal_structure.png)
 
@@ -124,19 +127,19 @@ The above diagram shows how exporters access records and information from the se
 1. First the exporter uses the Sensor trait to get a topology struct.
 2. The sensor used (powercap_rapl, msr_rapl or another) is determined by a conditional compilation (`#[cfg(..)]`). Only one sensor module can be included in the binary, otherwise there would be multiple RecordReader implementations.
 3. The exporter calls the RecordGenerator trait on the Topology struct instance to retrieve records.
-4. For the RAPL-based sensors, the Topology struct queries records from its list of CPUSockets, which in turn query their own Vector of Domains for records.
+4. For the RAPL-based sensors, the Topology struct queries records from its list of CPUSockets, which in turn query `Vec<Domain>` for records.
 
 ## Implementing A New Sensor
 
 In essence, implementing a new sensor requires:
 
-- Creating a new .rs file in the sensors directory that:
+- Adding a feature flag for the new sensor.
+- Creating a new module under src/sensors/ that:
 
   - Defines a struct implementing the Sensor trait.
   - Provides RecordReader implementations for Topology, CPUSocket, and Domain.
   - Declare it as a module in sensors/mod.rs, gated behind conditional compilation.
+  
 
-
-- Modifying the build_sensor function in main.rs to return the new sensor.
-- Add a feature flag for the new sensor.
+- Modifying the `build_sensor` function in main.rs and `get_default_sensor` function in lib.rs to return the new sensor.
 - Modifying the `#[cfg()]` conditions to guard against conflicting trait implementations and fixing any resulting definition errors.
