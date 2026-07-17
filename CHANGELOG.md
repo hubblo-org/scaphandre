@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Please check dev branch.
 
+## [1.0.2](https://github.com/hubblo-org/scaphandre/releases/tag/v1.0.1)
+
+### Fixed
+
+- Upgraded Docker image to rust:1.84
+
+## [1.0.1](https://github.com/hubblo-org/scaphandre/releases/tag/v1.0.1)
+
+### Added
+
+- Added installation instructions for Debian and Ubuntu, see [#379](https://github.com/hubblo-org/scaphandre/pull/379), thanks @LarsSven
+
+### Changed
+
+- Qemu has been added back to the default list of features, see [#381](https://github.com/hubblo-org/scaphandre/pull/381), thanks @LarsSven
+
+### Fixed
+
+- Improved documentation on [RAPL Domains and metric]s(https://hubblo-org.github.io/scaphandre-documentation/explanations/rapl-domains.html), see [#116](https://github.com/hubblo-org/scaphandre/issues/116), [#177](https://github.com/hubblo-org/scaphandre/issues/177), [#241](https://github.com/hubblo-org/scaphandre/issues/241)
+- Fixed faulty output from JSON exporter, see [#369](https://github.com/hubblo-org/scaphandre/issues/369)
+- Fixed truncated JSON output dur to buffer size, see [#359](https://github.com/hubblo-org/scaphandre/issues/359)
+
 ## [1.0.0](https://github.com/hubblo-org/scaphandre/releases/tag/v1.0.0)
 
 ### Added

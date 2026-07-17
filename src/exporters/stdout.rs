@@ -1,5 +1,5 @@
 use crate::exporters::*;
-use crate::sensors::{utils::current_system_time_since_epoch, utils::IProcess, Sensor};
+use crate::sensors::{Sensor, utils::IProcess, utils::current_system_time_since_epoch};
 use regex::Regex;
 use std::fmt::Write;
 use std::thread;
@@ -122,8 +122,8 @@ impl StdoutExporter {
         };
 
         let domain_names = self.metric_generator.topology.domains_names.as_ref();
-        if domain_names.is_some() {
-            info!("domain_names: {:?}", domain_names.unwrap());
+        if let Some(names) = domain_names {
+            info!("domain_names: {:?}", names);
         }
 
         println!(
@@ -132,8 +132,8 @@ impl StdoutExporter {
             host_power_source
         );
 
-        if domain_names.is_some() {
-            println!("\tpackage \t{}", domain_names.unwrap().join("\t\t"));
+        if let Some(names) = domain_names {
+            println!("\tpackage \t{}", names.join("\t\t"));
         }
 
         for s in metrics
@@ -162,10 +162,10 @@ impl StdoutExporter {
                     if let Some(current_domain) = domains.clone().find(|x| {
                         info!("looking for domain metrics for d == {}", d);
                         info!("current metric analyzed : {:?}", x);
-                        if let Some(domain_name_result) = x.attributes.get("domain_name") {
-                            if domain_name_result == d {
-                                return true;
-                            }
+                        if let Some(domain_name_result) = x.attributes.get("domain_name")
+                            && domain_name_result == d
+                        {
+                            return true;
                         }
                         false
                     }) {
@@ -185,7 +185,7 @@ impl StdoutExporter {
                 }
                 println!("{to_print}\n");
             } else {
-                println!("{to_print} Could'nt get per-domain metrics.\n");
+                println!("{to_print} Couldn't get per-domain metrics.\n");
             }
         }
 

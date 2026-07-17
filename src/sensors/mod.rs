@@ -17,7 +17,7 @@ use std::{collections::HashMap, error::Error, fmt, fs, mem::size_of_val, str, ti
 #[allow(unused_imports)]
 use sysinfo::{CpuExt, Pid, System, SystemExt};
 use sysinfo::{DiskExt, DiskType};
-use utils::{current_system_time_since_epoch, IProcess, ProcessTracker};
+use utils::{IProcess, ProcessTracker, current_system_time_since_epoch};
 
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
 /// Sensor trait, the Sensor API.
@@ -72,7 +72,7 @@ impl RecordGenerator for Topology {
             }
             Err(e) => {
                 warn!(
-                    "Could'nt read record from {}, error was : {:?}",
+                    "Couldn't read record from {}, error was : {:?}",
                     self._sensor_data
                         .get("source_file")
                         .unwrap_or(&String::from("SRCFILENOTKNOWN")),
@@ -101,8 +101,7 @@ impl RecordGenerator for Topology {
             let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
             trace!(
                 "topology: size_diff: {} record size: {}",
-                size_diff,
-                record_size
+                size_diff, record_size
             );
             if size_diff > record_size {
                 let nb_records_to_delete = size_diff as f32 / record_size as f32;
@@ -132,9 +131,7 @@ impl RecordGenerator for Topology {
 
 impl Default for Topology {
     fn default() -> Self {
-        {
-            Self::new(HashMap::new())
-        }
+        Self::new(HashMap::new())
     }
 }
 
@@ -171,7 +168,7 @@ impl Topology {
 
         let sysinfo_system = System::new_all();
         let sysinfo_cores = sysinfo_system.cpus();
-        warn!("Sysinfo sees {}", sysinfo_cores.len());
+        debug!("Sysinfo sees {}", sysinfo_cores.len());
         #[cfg(target_os = "linux")]
         let cpuinfo = CpuInfo::new().unwrap();
         for (id, c) in (0_u16..).zip(sysinfo_cores.iter()) {
@@ -307,7 +304,9 @@ impl Topology {
                     socket.add_cpu_core(c);
                 } else {
                     socket.add_cpu_core(c);
-                    warn!("coud't not match core to socket - mapping to first socket instead - if you are not using --vm there is something wrong")
+                    warn!(
+                        "coud't not match core to socket - mapping to first socket instead - if you are not using --vm there is something wrong"
+                    )
                 }
             }
 
@@ -410,9 +409,7 @@ impl Topology {
                 let nb_stats_to_delete = size_diff as f32 / size_of_stat as f32;
                 trace!(
                     "nb_stats_to_delete: {} size_diff: {} size of: {}",
-                    nb_stats_to_delete,
-                    size_diff,
-                    size_of_stat
+                    nb_stats_to_delete, size_diff, size_of_stat
                 );
                 for _ in 1..nb_stats_to_delete as u32 {
                     if !self.stat_buffer.is_empty() {
@@ -468,7 +465,7 @@ impl Topology {
                     }
                     Err(e) => {
                         warn!(
-                            "Could'nt get previous_microjoules - value : '{}' - error : {:?}",
+                            "Couldn't get previous_microjoules - value : '{}' - error : {:?}",
                             previous_record.value, e
                         );
                     }
@@ -497,23 +494,35 @@ impl Topology {
             let mut steal = None;
             let mut guest = None;
             let mut guest_nice = None;
-            if last.iowait.is_some() && previous.iowait.is_some() {
-                iowait = Some(last.iowait.unwrap() - previous.iowait.unwrap());
+            if let Some(last_iowait) = last.iowait
+                && let Some(prev_iowait) = previous.iowait
+            {
+                iowait = Some(last_iowait - prev_iowait);
             }
-            if last.irq.is_some() && previous.irq.is_some() {
-                irq = Some(last.irq.unwrap() - previous.irq.unwrap());
+            if let Some(last_irq) = last.irq
+                && let Some(previous_irq) = previous.irq
+            {
+                irq = Some(last_irq - previous_irq);
             }
-            if last.softirq.is_some() && previous.softirq.is_some() {
-                softirq = Some(last.softirq.unwrap() - previous.softirq.unwrap());
+            if let Some(last_softirq) = last.softirq
+                && let Some(previous_softirq) = previous.softirq
+            {
+                softirq = Some(last_softirq - previous_softirq);
             }
-            if last.steal.is_some() && previous.steal.is_some() {
-                steal = Some(last.steal.unwrap() - previous.steal.unwrap());
+            if let Some(last_steal) = last.steal
+                && let Some(previous_steal) = previous.steal
+            {
+                steal = Some(last_steal - previous_steal);
             }
-            if last.guest.is_some() && previous.guest.is_some() {
-                guest = Some(last.guest.unwrap() - previous.guest.unwrap());
+            if let Some(last_guest) = last.guest
+                && let Some(previous_guest) = previous.guest
+            {
+                guest = Some(last_guest - previous_guest);
             }
-            if last.guest_nice.is_some() && previous.guest_nice.is_some() {
-                guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
+            if let Some(last_guest_nice) = last.guest_nice
+                && let Some(previous_guest_nice) = previous.guest_nice
+            {
+                guest_nice = Some(last_guest_nice - previous_guest_nice);
             }
             return Some(CPUStat {
                 user: last.user - previous.user,
@@ -569,10 +578,10 @@ impl Topology {
     pub fn read_nb_process_running_current(&self) -> Option<u32> {
         #[cfg(target_os = "linux")]
         {
-            if let Ok(result) = KernelStats::new() {
-                if let Some(procs_running) = result.procs_running {
-                    return Some(procs_running);
-                }
+            if let Ok(result) = KernelStats::new()
+                && let Some(procs_running) = result.procs_running
+            {
+                return Some(procs_running);
             }
         }
         None
@@ -581,10 +590,10 @@ impl Topology {
     pub fn read_nb_process_blocked_current(&self) -> Option<u32> {
         #[cfg(target_os = "linux")]
         {
-            if let Ok(result) = KernelStats::new() {
-                if let Some(procs_blocked) = result.procs_blocked {
-                    return Some(procs_blocked);
-                }
+            if let Ok(result) = KernelStats::new()
+                && let Some(procs_blocked) = result.procs_blocked
+            {
+                return Some(procs_blocked);
             }
         }
         None
@@ -946,7 +955,7 @@ impl Topology {
                     current_system_time_since_epoch(),
                     res.value.to_string(),
                     units::Unit::MicroJoule,
-                ))
+                ));
             }
             Err(e) => {
                 debug!("get_msr_value returned error : {}", e);
@@ -977,7 +986,7 @@ pub struct CPUSocket {
     pub cpu_cores: Vec<CPUCore>,
     /// Usage statistics records stored for this socket.
     pub stat_buffer: Vec<CPUStat>,
-    ///
+    /// Sensor-specific data that has been stored at the topology generation step.
     #[allow(dead_code)]
     pub sensor_data: HashMap<String, String>,
 }
@@ -992,7 +1001,7 @@ impl RecordGenerator for CPUSocket {
             }
             Err(e) => {
                 warn!(
-                    "Could'nt read record from {}, error was: {:?}",
+                    "Couldn't read record from {}, error was: {:?}",
                     self.sensor_data
                         .get("source_file")
                         .unwrap_or(&String::from("SRCFILENOTKNOWN")),
@@ -1136,18 +1145,13 @@ impl CPUSocket {
             let size_diff = curr_size - (self.buffer_max_kbytes * 1000) as usize;
             trace!(
                 "socket {} size_diff: {} size of: {}",
-                self.id,
-                size_diff,
-                size_of_stat
+                self.id, size_diff, size_of_stat
             );
             if size_diff > size_of_stat {
                 let nb_stats_to_delete = size_diff as f32 / size_of_stat as f32;
                 trace!(
                     "socket {} nb_stats_to_delete: {} size_diff: {} size of: {}",
-                    self.id,
-                    nb_stats_to_delete,
-                    size_diff,
-                    size_of_stat
+                    self.id, nb_stats_to_delete, size_diff, size_of_stat
                 );
                 trace!("nb stats to delete: {}", nb_stats_to_delete as u32);
                 for _ in 1..nb_stats_to_delete as u32 {
@@ -1207,23 +1211,35 @@ impl CPUSocket {
             let mut steal = None;
             let mut guest = None;
             let mut guest_nice = None;
-            if last.iowait.is_some() && previous.iowait.is_some() {
-                iowait = Some(last.iowait.unwrap() - previous.iowait.unwrap());
+            if let Some(last_iowait) = last.iowait
+                && let Some(previous_iowait) = previous.iowait
+            {
+                iowait = Some(last_iowait - previous_iowait);
             }
-            if last.irq.is_some() && previous.irq.is_some() {
-                irq = Some(last.irq.unwrap() - previous.irq.unwrap());
+            if let Some(last_irq) = last.irq
+                && let Some(previous_irq) = previous.irq
+            {
+                irq = Some(last_irq - previous_irq);
             }
-            if last.softirq.is_some() && previous.softirq.is_some() {
-                softirq = Some(last.softirq.unwrap() - previous.softirq.unwrap());
+            if let Some(last_softirq) = last.softirq
+                && let Some(previous_softirq) = previous.softirq
+            {
+                softirq = Some(last_softirq - previous_softirq);
             }
-            if last.steal.is_some() && previous.steal.is_some() {
-                steal = Some(last.steal.unwrap() - previous.steal.unwrap());
+            if let Some(last_steal) = last.steal
+                && let Some(previous_steal) = previous.steal
+            {
+                steal = Some(last_steal - previous_steal);
             }
-            if last.guest.is_some() && previous.guest.is_some() {
-                guest = Some(last.guest.unwrap() - previous.guest.unwrap());
+            if let Some(last_guest) = last.guest
+                && let Some(previous_guest) = previous.guest
+            {
+                guest = Some(last_guest - previous_guest);
             }
-            if last.guest_nice.is_some() && previous.guest_nice.is_some() {
-                guest_nice = Some(last.guest_nice.unwrap() - previous.guest_nice.unwrap());
+            if let Some(last_guest_nice) = last.guest_nice
+                && let Some(previous_guest_nice) = previous.guest_nice
+            {
+                guest_nice = Some(last_guest_nice - previous_guest_nice);
             }
             return Some(CPUStat {
                 user: last.user - previous.user,
@@ -1281,7 +1297,7 @@ impl CPUSocket {
                 ));
             }
         } else {
-            warn!("Not enough records for socket");
+            info!("Not enough records for socket");
         }
         None
     }
@@ -1351,7 +1367,7 @@ pub struct Domain {
     pub record_buffer: Vec<Record>,
     /// Maximum size of record_buffer, in kilobytes
     pub buffer_max_kbytes: u16,
-    ///
+    /// Sensor-specific data that has been stored at the topology generation step.
     #[allow(dead_code)]
     sensor_data: HashMap<String, String>,
 }
@@ -1365,7 +1381,7 @@ impl RecordGenerator for Domain {
             }
             Err(e) => {
                 warn!(
-                    "Could'nt read record from {}. Error was : {:?}.",
+                    "Couldn't read record from {}. Error was : {:?}.",
                     self.sensor_data
                         .get("source_file")
                         .unwrap_or(&String::from("SRCFILENOTKNOWN")),

@@ -4,12 +4,12 @@ use procfs;
 use regex::Regex;
 #[allow(unused_imports)]
 use std::collections::HashMap;
-use std::io::{Error, ErrorKind};
+use std::io::Error;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use sysinfo::{
-    get_current_pid, CpuExt, CpuRefreshKind, Pid, Process, ProcessExt, ProcessStatus, System,
-    SystemExt,
+    CpuExt, CpuRefreshKind, Pid, Process, ProcessExt, ProcessStatus, System, SystemExt,
+    get_current_pid,
 };
 #[cfg(all(target_os = "linux", feature = "containers"))]
 use {docker_sync::container::Container, k8s_sync::Pod};
@@ -100,11 +100,10 @@ impl IProcess {
             let mut utime = 0;
             if let Ok(procfs_process) =
                 procfs::process::Process::new(process.pid().to_string().parse::<i32>().unwrap())
+                && let Ok(stat) = procfs_process.stat()
             {
-                if let Ok(stat) = procfs_process.stat() {
-                    stime += stat.stime;
-                    utime += stat.utime;
-                }
+                stime += stat.stime;
+                utime += stat.utime;
             }
             IProcess {
                 pid: process.pid(),
@@ -145,10 +144,7 @@ impl IProcess {
         if let Some(p) = proc_tracker.sysinfo.process(self.pid) {
             Ok(p.cmd().to_vec())
         } else {
-            Err(Error::new(
-                ErrorKind::Other,
-                "Failed to get original process.",
-            ))
+            Err(Error::other("Failed to get original process."))
         }
     }
 
@@ -246,7 +242,7 @@ impl ProcessTracker {
         #[cfg(feature = "containers")]
         let regex_cgroup_docker = Regex::new(r"^.*/docker.*$").unwrap();
         #[cfg(feature = "containers")]
-        let regex_cgroup_kubernetes = Regex::new(r"^/kubepods.*$").unwrap();
+        let regex_cgroup_kubernetes = Regex::new(r"/kubepods.*$").unwrap();
         #[cfg(feature = "containers")]
         let regex_cgroup_containerd = Regex::new("/system.slice/containerd.service/.*$").unwrap();
 
@@ -340,10 +336,10 @@ impl ProcessTracker {
     }
 
     pub fn get_process_last_record(&self, pid: Pid) -> Option<&ProcessRecord> {
-        if let Some(records) = self.find_records(pid) {
-            if let Some(last) = records.first() {
-                return Some(last);
-            }
+        if let Some(records) = self.find_records(pid)
+            && let Some(last) = records.first()
+        {
+            return Some(last);
         }
         None
     }
@@ -354,7 +350,7 @@ impl ProcessTracker {
         if records.len() > max_records_per_process as usize {
             let diff = records.len() - max_records_per_process as usize;
             for _ in 0..diff {
-                records.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+                records.sort_by_key(|b| std::cmp::Reverse(b.timestamp));
                 let res = records.pop().unwrap().timestamp;
                 trace!(
                     "Cleaning old ProcessRecords in vector for PID {}",
@@ -419,7 +415,7 @@ impl ProcessTracker {
     /// Extracts the container_id from a cgroup path containing it.
     #[cfg(feature = "containers")]
     fn extract_pod_id_from_cgroup_path(&self, pathname: String) -> Result<String, std::io::Error> {
-        let mut container_id = String::from(pathname.split('/').last().unwrap());
+        let mut container_id = String::from(pathname.split('/').next_back().unwrap());
         if container_id.starts_with("docker-") {
             container_id = container_id.strip_prefix("docker-").unwrap().to_string();
         }
@@ -427,7 +423,13 @@ impl ProcessTracker {
             container_id = container_id.strip_suffix(".scope").unwrap().to_string();
         }
         if container_id.contains("cri-containerd") {
-            container_id = container_id.split(':').last().unwrap().to_string();
+            container_id = container_id.split(':').next_back().unwrap().to_string();
+        }
+        if container_id.starts_with("cri-containerd-") {
+            container_id = container_id
+                .strip_prefix("cri-containerd-")
+                .unwrap()
+                .to_string();
         }
         Ok(container_id)
     }
@@ -582,23 +584,23 @@ impl ProcessTracker {
                                         pod_namespace.clone(),
                                     );
                                 }
-                                if let Some(pod_spec) = &pod.spec {
-                                    if let Some(node_name) = &pod_spec.node_name {
-                                        description.insert(
-                                            String::from("kubernetes_node_name"),
-                                            node_name.clone(),
-                                        );
-                                    }
+                                if let Some(pod_spec) = &pod.spec
+                                    && let Some(node_name) = &pod_spec.node_name
+                                {
+                                    description.insert(
+                                        String::from("kubernetes_node_name"),
+                                        node_name.clone(),
+                                    );
                                 }
                             }
                             found = true;
                         } //else {
-                          //    debug!("Cgroup not identified as related to a container technology : {}", &cg.pathname);
-                          //}
+                        //    debug!("Cgroup not identified as related to a container technology : {}", &cg.pathname);
+                        //}
                     }
                 }
             } else {
-                debug!("Could'nt find {} in procfs.", pid.to_string());
+                debug!("Couldn't find {} in procfs.", pid.to_string());
             }
         }
         description
@@ -690,7 +692,7 @@ impl ProcessTracker {
                     if let Some(sysinfo_process) = self.sysinfo.process(pid as _) {
                         let new_consumer = IProcess::new(sysinfo_process);
                         consumers.push((new_consumer, OrderedFloat(diff as f64)));
-                        consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                        consumers.sort_by_key(|y| std::cmp::Reverse(y.1));
                         if consumers.len() > top as usize {
                             consumers.pop();
                         }
@@ -719,10 +721,10 @@ impl ProcessTracker {
                 let process_cmdline = p_record.process.cmdline(self).unwrap_or_default();
                 if regex_filter.is_match(process_exe.to_str().unwrap_or_default()) {
                     consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
-                    consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                    consumers.sort_by_key(|y| std::cmp::Reverse(y.1));
                 } else if regex_filter.is_match(&process_cmdline.concat()) {
                     consumers.push((p_record.process.clone(), OrderedFloat(diff as f64)));
-                    consumers.sort_by(|x, y| y.1.cmp(&x.1));
+                    consumers.sort_by_key(|y| std::cmp::Reverse(y.1));
                 }
             }
         }
@@ -739,32 +741,32 @@ impl ProcessTracker {
     pub fn clean_terminated_process_records_vectors(&mut self) {
         //TODO get stats from processes to know what is hapening !
         for v in &mut self.procs {
-            if !v.is_empty() {
-                if let Some(first) = v.first() {
-                    if let Some(p) = self.sysinfo.process(first.process.pid) {
-                        match p.status() {
-                            ProcessStatus::Idle => {}
-                            ProcessStatus::Dead => {}
-                            ProcessStatus::Stop => {
-                                while !v.is_empty() {
-                                    v.pop();
-                                }
+            if !v.is_empty()
+                && let Some(first) = v.first()
+            {
+                if let Some(p) = self.sysinfo.process(first.process.pid) {
+                    match p.status() {
+                        ProcessStatus::Idle => {}
+                        ProcessStatus::Dead => {}
+                        ProcessStatus::Stop => {
+                            while !v.is_empty() {
+                                v.pop();
                             }
-                            ProcessStatus::Run => {}
-                            ProcessStatus::LockBlocked => {}
-                            ProcessStatus::Waking => {}
-                            ProcessStatus::Wakekill => {}
-                            ProcessStatus::Tracing => {}
-                            ProcessStatus::Zombie => {}
-                            ProcessStatus::Sleep => {}
-                            ProcessStatus::Parked => {}
-                            ProcessStatus::UninterruptibleDiskSleep => {}
-                            ProcessStatus::Unknown(_code) => {}
                         }
-                    } else {
-                        while !v.is_empty() {
-                            v.pop();
-                        }
+                        ProcessStatus::Run => {}
+                        ProcessStatus::LockBlocked => {}
+                        ProcessStatus::Waking => {}
+                        ProcessStatus::Wakekill => {}
+                        ProcessStatus::Tracing => {}
+                        ProcessStatus::Zombie => {}
+                        ProcessStatus::Sleep => {}
+                        ProcessStatus::Parked => {}
+                        ProcessStatus::UninterruptibleDiskSleep => {}
+                        ProcessStatus::Unknown(_code) => {}
+                    }
+                } else {
+                    while !v.is_empty() {
+                        v.pop();
                     }
                 }
             }
@@ -777,10 +779,10 @@ impl ProcessTracker {
         let procs = &mut self.procs;
         if !procs.is_empty() {
             for i in 0..(procs.len() - 1) {
-                if let Some(v) = procs.get(i) {
-                    if v.is_empty() {
-                        procs.remove(i);
-                    }
+                if let Some(v) = procs.get(i)
+                    && v.is_empty()
+                {
+                    procs.remove(i);
                 }
             }
         }

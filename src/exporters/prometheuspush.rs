@@ -9,7 +9,7 @@ use crate::exporters::{Exporter, MetricGenerator};
 use crate::sensors::{Sensor, Topology};
 use chrono::Utc;
 use isahc::config::SslOption;
-use isahc::{prelude::*, Request};
+use isahc::{Request, prelude::*};
 use std::fmt::Write;
 use std::thread;
 use std::time::Duration;

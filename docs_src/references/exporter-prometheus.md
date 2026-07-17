@@ -34,4 +34,4 @@ With default options values, the metrics are exposed on http://localhost:8080/me
 Use -q or --qemu option if you are running scaphandre on a hypervisor. In that case a label with the vm name will be added to all `qemu-system*` processes.
 This will allow to easily create charts consumption for each vm and defined which one is the top contributor.
 
-Metrics provided Scaphandre are documented [here](references/metrics.md).
+Metrics provided Scaphandre are documented [here](metrics.md).

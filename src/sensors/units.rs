@@ -41,7 +41,9 @@ impl Unit {
         } else if let (Some(pos_source), Some(pos_dest)) = (pos_source_power, pos_dest_power) {
             Ok(measure * Unit::get_mult(pos_source, pos_dest))
         } else {
-            panic!("Unimplemented or impossible conversion (if asked from energy value to power value without time dimension).");
+            panic!(
+                "Unimplemented or impossible conversion (if asked from energy value to power value without time dimension)."
+            );
         }
     }
 

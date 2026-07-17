@@ -1,7 +1,7 @@
 use crate::sensors::units::Unit::MicroJoule;
 use crate::sensors::utils::current_system_time_since_epoch;
 use crate::sensors::{CPUSocket, Domain, Record, RecordReader, Sensor, Topology};
-use procfs::{modules, KernelModule};
+use procfs::{KernelModule, modules};
 use regex::Regex;
 use std::collections::HashMap;
 use std::error::Error;
@@ -88,20 +88,20 @@ impl RecordReader for Topology {
                             total += val;
                         }
                         Err(e) => {
-                            warn!("could'nt convert {} to i128: {}", r.value.trim(), e);
+                            warn!("Couldn't convert {} to i128: {}", r.value.trim(), e);
                         }
                     }
                 }
                 for d in &s.domains {
-                    if d.name == "dram" {
-                        if let Ok(dr) = d.read_record() {
-                            match dr.value.trim().parse::<i128>() {
-                                Ok(val) => {
-                                    total += val;
-                                }
-                                Err(e) => {
-                                    warn!("could'nt convert {} to i128: {}", dr.value.trim(), e);
-                                }
+                    if d.name == "dram"
+                        && let Ok(dr) = d.read_record()
+                    {
+                        match dr.value.trim().parse::<i128>() {
+                            Ok(val) => {
+                                total += val;
+                            }
+                            Err(e) => {
+                                warn!("Couldn't convert {} to i128: {}", dr.value.trim(), e);
                             }
                         }
                     }
@@ -265,7 +265,7 @@ impl Sensor for PowercapRAPLSensor {
                 }
             }
             if !found {
-                warn!("Could'nt find any RAPL PKG domain (nor psys).");
+                warn!("Couldn't find any RAPL PKG domain (nor psys).");
             }
         }
         for folder in fs::read_dir(&self.base_path).unwrap() {
