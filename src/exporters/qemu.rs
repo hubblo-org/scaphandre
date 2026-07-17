@@ -69,7 +69,7 @@ impl QemuExporter {
                     if fs::read_dir(&first_domain_path).is_err() {
                         match fs::create_dir_all(&first_domain_path) {
                             Ok(_) => info!("Created {} folder.", &path),
-                            Err(error) => panic!("Couldn't create {}. Got: {}", &path, error),
+                            Err(error) => panic!("Couldn't create {}. Got: {}", path, error),
                         }
                     }
                     if let Some(ratio) = self
