@@ -8,17 +8,25 @@ use super::utils;
 use crate::exporters::{Exporter, MetricGenerator, MetricValueType};
 use crate::sensors::utils::current_system_time_since_epoch;
 use crate::sensors::{Sensor, Topology};
+
 use chrono::Utc;
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response, Server};
-use std::convert::Infallible;
+use http_body_util::Full;
+use hyper::header::CONTENT_TYPE;
+use hyper::{body::Bytes, service::service_fn, Request, Response};
+use hyper_util::{
+    rt::{TokioExecutor, TokioIo},
+    server::conn::auto::Builder,
+};
+
 use std::{
     collections::HashMap,
+    convert::Infallible,
     fmt::Write,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::{Arc, Mutex},
     time::Duration,
 };
+use tokio::net::TcpListener;
 
 /// Default ipv4/ipv6 address to expose the service is any
 const DEFAULT_IP_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
@@ -100,6 +108,13 @@ struct PowerMetrics {
     metric_generator: Mutex<MetricGenerator>,
 }
 
+async fn shutdown_signal() {
+    // Wait for the CTRL+C signal
+    tokio::signal::ctrl_c()
+        .await
+        .expect("failed to install CTRL+C signal handler");
+}
+
 #[tokio::main]
 async fn run_server(
     socket_addr: SocketAddr,
@@ -111,26 +126,49 @@ async fn run_server(
         metric_generator: Mutex::new(metric_generator),
     };
     let context = Arc::new(power_metrics);
-    let make_svc = make_service_fn(move |_| {
-        let ctx = context.clone();
-        let sfx = endpoint_suffix.to_string();
-        async {
-            Ok::<_, Infallible>(service_fn(move |req| {
-                show_metrics(req, ctx.clone(), sfx.clone())
-            }))
-        }
-    });
-    let server = Server::bind(&socket_addr);
-    let res = server.serve(make_svc);
-    let (tx, rx) = tokio::sync::oneshot::channel::<()>();
-    let graceful = res.with_graceful_shutdown(async {
-        rx.await.ok();
-    });
+    let listener = TcpListener::bind(socket_addr)
+        .await
+        .expect("Failed to bind to TcpListener");
 
-    if let Err(e) = graceful.await {
-        error!("server error: {}", e);
+    let graceful = hyper_util::server::graceful::GracefulShutdown::new();
+    let mut signal = std::pin::pin!(shutdown_signal());
+
+    loop {
+        tokio::select! {
+            Ok((stream, _addr)) = listener.accept() => {
+                let ctx = context.clone();
+                let sfx = endpoint_suffix.to_string();
+                let watcher = graceful.watcher();
+
+                let io = TokioIo::new(stream);
+
+                tokio::spawn(async move {
+                    let http = Builder::new(TokioExecutor::new());
+                    let conn = http.serve_connection(io, service_fn(move |req| show_metrics(req, ctx.clone(), sfx.clone())));
+
+                    if let Err(e) = watcher.watch(conn).await {
+                        warn!("Error serving connection: {:?}", e);
+                    }
+                });
+
+            },
+
+            _ = &mut signal => {
+                drop(listener);
+                warn!("graceful shutdown signal received");
+                break;
+            }
+        }
     }
-    let _ = tx.send(());
+
+    tokio::select! {
+        _ = graceful.shutdown() => {
+            warn!("all connections gracefully closed");
+        },
+        _ = tokio::time::sleep(std::time::Duration::from_secs(10)) => {
+            warn!("timed out wait for all connections to close");
+        }
+    }
 }
 
 /// Adds lines related to a metric in the body (String) of response.
@@ -152,10 +190,10 @@ fn push_metric(
 
 /// Handles requests and returns data formated for Prometheus.
 async fn show_metrics(
-    req: Request<Body>,
+    req: Request<hyper::body::Incoming>,
     context: Arc<PowerMetrics>,
     suffix: String,
-) -> Result<Response<Body>, Infallible> {
+) -> Result<Response<Full<Bytes>>, Infallible> {
     trace!("{}", req.uri());
     let mut body = String::new();
     if req.uri().path() == format!("/{}", suffix) {
@@ -235,7 +273,11 @@ async fn show_metrics(
             "<a href=\"https://github.com/hubblo-org/scaphandre/\">Scaphandre's</a> prometheus exporter here. Metrics available on <a href=\"/{suffix}\">/{suffix}</a>"
         );
     }
-    Ok(Response::new(body.into()))
+
+    Ok(Response::builder()
+        .header(CONTENT_TYPE, "text/plain; version=0.0.4")
+        .body(Full::new(Bytes::from(body)))
+        .expect("Failed to build Response"))
 }
 
 //  Copyright 2020 The scaphandre authors.
