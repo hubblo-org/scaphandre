@@ -243,7 +243,8 @@ impl ProcessTracker {
         let regex_cgroup_docker = Regex::new(r"^(?:\d+::)?.*?/docker.*$").unwrap();
         #[cfg(feature = "containers")]
         let regex_cgroup_kubernetes = Regex::new(r"(?:\d+::)?/?kubepods.*$").unwrap();
-        let regex_cgroup_containerd = Regex::new(r"^(?:\d+::)?.*?/system\.slice/containerd\.service/.*$").unwrap();
+        let regex_cgroup_containerd =
+            Regex::new(r"^(?:\d+::)?.*?/system\.slice/containerd\.service/.*$").unwrap();
 
         let mut system = System::new_all();
         system.refresh_cpu_specifics(CpuRefreshKind::everything());
