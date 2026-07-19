@@ -64,3 +64,7 @@ We verified that scaphandre (and especially the powercap_rapl sensor) works on A
 You need compiling tooling. On Ubuntu/Debian, run:
 
      sudo apt install build-essential
+
+### Building or running clippy fails complaining about OpenSSL not being found
+
+Ensure you have `libssl-dev` and `pkg-config` packages installed on Debian/Ubuntu.
