@@ -287,7 +287,7 @@ impl Sensor for PowercapRAPLSensor {
         Ok(topo)
     }
 
-    /// Instanciates Topology object if not existing and returns it
+    /// Instantiates Topology object if not existing and returns it
     fn get_topology(&self) -> Box<Option<Topology>> {
         let topology = self.generate_topology().ok();
         if topology.is_none() {

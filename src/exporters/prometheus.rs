@@ -150,7 +150,7 @@ fn push_metric(
     body
 }
 
-/// Handles requests and returns data formated for Prometheus.
+/// Handles requests and returns data formatted for Prometheus.
 async fn show_metrics(
     req: Request<Body>,
     context: Arc<PowerMetrics>,

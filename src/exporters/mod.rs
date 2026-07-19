@@ -100,7 +100,7 @@ impl fmt::Debug for MetricValueType {
 
 /// An Exporter is what tells scaphandre when to collect metrics and how to export
 /// or expose them.
-/// Its basic role is to instanciate a Sensor, get the data the sensor has to offer
+/// Its basic role is to instantiate a Sensor, get the data the sensor has to offer
 /// and expose the data in the desired way. An exporter could either push the metrics
 /// over the network to a remote destination, store those metrics on the filesystem
 /// or expose them to be collected by another software. It decides at what pace
@@ -777,7 +777,7 @@ impl MetricGenerator {
                 state: String::from("ok"),
                 tags: vec!["scaphandre".to_string()],
                 attributes: HashMap::new(),
-                description: String::from("Number of forks that have occured since boot (number of processes to have existed so far)."),
+                description: String::from("Number of forks that have occurred since boot (number of processes to have existed so far)."),
                 metric_value: MetricValueType::IntUnsigned(metric_value),
             });
         }
@@ -851,7 +851,7 @@ impl MetricGenerator {
     /// If *self.watch_kubernetes* is true,
     /// queries the local kubernetes API (if this is a kubernetes cluster node)
     /// and retrieves the list of pods running on this node, thanks to *self.kubernetes_client*.
-    /// Stores the result as *self.pods* and updates *self.pods_last_check* if the operation is successfull.
+    /// Stores the result as *self.pods* and updates *self.pods_last_check* if the operation is successful.
     #[cfg(feature = "containers")]
     fn gen_kubernetes_pods_basic_metadata(&mut self) {
         if self.watch_kubernetes {

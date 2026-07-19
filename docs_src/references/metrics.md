@@ -1,11 +1,11 @@
 # Metrics exposed by Scaphandre
 
 With [Stdout](exporter-stdout.md) exporter, you can see all metrics available on your machine with flag `--raw-metrics`.
-With [prometheus](exporter-prometheus.md) exporter, all metrics have a HELP section provided on /metrics (or whatever suffix you choosed to expose them).
+With [prometheus](exporter-prometheus.md) exporter, all metrics have a HELP section provided on /metrics (or whatever suffix you have chosen to expose them).
 
 Here are some key metrics that you will most probably be interested in:
 
-- `scaph_host_power_microwatts`: Aggregation of several measurements to give a try on the power usage of the the whole host, in microwatts (GAUGE). It might be the same as RAPL PSYS (see [RAPL domains](../explanations/rapl-domains.md)) measurement if available, or a combination of RAPL PKG and DRAM domains + an estimation of other hardware componentes power usage.
+- `scaph_host_power_microwatts`: Aggregation of several measurements to give a try on the power usage of the the whole host, in microwatts (GAUGE). It might be the same as RAPL PSYS (see [RAPL domains](../explanations/rapl-domains.md)) measurement if available, or a combination of RAPL PKG and DRAM domains + an estimation of other hardware components power usage.
 - `scaph_process_power_consumption_microwatts{exe="$PROCESS_EXE",pid="$PROCESS_PID",cmdline="path/to/exe --and-maybe-options"}`: Power consumption due to the process, measured on at the topology level, in microwatts. PROCESS_EXE being the name of the executable and PROCESS_PID being the pid of the process. (GAUGE)
 
 For more details on that metric labels, see [this section](#getting-per-process-data-with-scaph_process_-metrics).
@@ -17,7 +17,7 @@ And some more deep metrics that you may want if you need to make more complex ca
 
 If your machine provides RAPL PSYS domain (see [RAPL domains](../explanations/rapl-domains.md)), you can get the raw energy counter for PSYS/platform with `scaph_host_rapl_psys_microjoules`. Note that `scaph_host_power_microwatts` is based on this PSYS counter if it is available.
 
-Since 1.0.0 the following host metrics are availalable as well ;
+Since 1.0.0 the following host metrics are available as well ;
 
 - `scaph_host_swap_total_bytes`: Total swap space on the host, in bytes.
 - `scaph_host_swap_free_bytes`: Swap space free to be used on the host, in bytes.
@@ -59,7 +59,7 @@ Here are available labels for the `scaph_process_power_consumption_microwatts` m
 
 - `exe`: is the name of the executable that is the origin of that process. This is good to be used when your application is running one or only a few processes.
 - `cmdline`: this contains the whole command line with the executable path and its parameters (concatenated). You can filter on this label by using prometheus `=~` operator to match a regular expression pattern. This is very practical in many situations.
-- `instance`: this is a prometheus generated label to enable you to filter the metrics by the originating host. This is very useful when you monitor distributed services, so that you can not only sum the metrics for the same service on the different hosts but also see what instance of that service is consuming the most, or notice differences beteween hosts that may not have the same hardware, and so on...
+- `instance`: this is a prometheus generated label to enable you to filter the metrics by the originating host. This is very useful when you monitor distributed services, so that you can not only sum the metrics for the same service on the different hosts but also see what instance of that service is consuming the most, or notice differences between hosts that may not have the same hardware, and so on...
 - `pid`: is the process id, which is useful if you want to track a specific process and have your eyes on what's happening on the host, but not so practical to use in a more general use case
 
 Since 1.0.0 the following per-process metrics are available as well :

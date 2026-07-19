@@ -73,7 +73,7 @@ pub struct ExporterArgs {
     #[arg(long)]
     pub container_regex: Option<Regex>,
 
-    /// Monitor and incude CPU, RAM and Disk usage per process
+    /// Monitor and include CPU, RAM and Disk usage per process
     #[arg(long)]
     pub resources: bool,
     // TODO uncomment this option once we display something interesting about it

@@ -1,6 +1,6 @@
 # Powercap_rapl sensor
 
-## Pre-requesites
+## Pre-requisites
 
 At the time those lines are written, this sensor works only on:
 
@@ -22,7 +22,7 @@ To collect energy consumption on a virtual machine, you may first collect power 
 
 ## Usage
 
-To explicitely call the powercap_rapl sensor from the command line use:
+To explicitly call the powercap_rapl sensor from the command line use:
 
     scaphandre -s powercap_rapl EXPORTER # EXPORTER being the exporter name you want to use
 

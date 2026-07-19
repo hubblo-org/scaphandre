@@ -739,7 +739,7 @@ impl ProcessTracker {
     /// if the last ProcessRecord from the vector is of state Terminated
     /// (if the process is not running anymore)
     pub fn clean_terminated_process_records_vectors(&mut self) {
-        //TODO get stats from processes to know what is hapening !
+        //TODO get stats from processes to know what is happening !
         for v in &mut self.procs {
             if !v.is_empty()
                 && let Some(first) = v.first()
@@ -798,7 +798,7 @@ pub struct ProcessRecord {
 }
 
 impl ProcessRecord {
-    /// Instanciates ProcessRecord and returns the instance, with timestamp set to the current
+    /// Instantiates ProcessRecord and returns the instance, with timestamp set to the current
     /// system time since epoch
     pub fn new(process: IProcess) -> ProcessRecord {
         ProcessRecord {

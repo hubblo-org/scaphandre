@@ -1,6 +1,6 @@
 # MSR_RAPL sensor
 
-## Pre-requesites
+## Pre-requisites
 
 At the time those lines are written, this sensor works only on:
 
@@ -11,7 +11,7 @@ This sensor needs the [RAPL MSR-based driver](https://github.com/hubblo-org/wind
 
 ## Usage
 
-To explicitely call the powercap_rapl sensor from the command line use:
+To explicitly call the powercap_rapl sensor from the command line use:
 
     scaphandre -s msr_rapl EXPORTER # EXPORTER being the exporter name you want to use
 
