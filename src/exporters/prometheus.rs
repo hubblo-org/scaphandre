@@ -175,9 +175,9 @@ async fn show_metrics(
                                     .proc_tracker
                                     .clean_terminated_process_records_vectors();
                                 metric_generator.topology.refresh();
+                                *last_request = now;
                             }
                         }
-                        *last_request = now;
 
                         info!("{}: Refresh data", Utc::now().format("%Y-%m-%dT%H:%M:%S"));
 
