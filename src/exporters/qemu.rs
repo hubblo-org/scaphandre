@@ -56,7 +56,15 @@ impl QemuExporter {
         trace!("path: {}", path);
 
         self.topology.refresh();
-        if let Some(topo_energy) = self.topology.get_records_diff_power_microwatts() {
+        // Use the raw energy delta (in microjoules) between the last two records
+        // instead of get_records_diff_power_microwatts(), which returns an
+        // instantaneous power (microjoules / elapsed seconds). Reconstructing an
+        // energy value from that power would require multiplying back by the loop's
+        // step duration, which is easy to get wrong (see the bug this fixes) and
+        // drifts from the actual elapsed time whenever the loop is delayed (e.g. by
+        // scheduler jitter). get_records_diff() already reflects the real interval
+        // between the two refreshes, so it stays correct regardless of timing.
+        if let Some(topo_energy) = self.topology.get_records_diff() {
             let processes = self.topology.proc_tracker.get_alive_processes();
             let qemu_processes = QemuExporter::filter_qemu_vm_processes(&processes);
             for qp in qemu_processes {
