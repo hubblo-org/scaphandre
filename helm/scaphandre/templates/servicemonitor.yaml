@@ -9,7 +9,10 @@ metadata:
   namespace: {{ .Release.Namespace }}
   {{- end }}
   labels:
-    app.kubernetes.io/name: {{ template "scaphandre.name" . }}
+    {{- include "labels.common" . | nindent 4 }}
+    {{- if .Values.serviceMonitor.labels }}
+    {{- toYaml .Values.serviceMonitor.labels | nindent 4 }}
+    {{- end }}
 spec:
   endpoints:
     - path: /metrics
@@ -18,7 +21,11 @@ spec:
       {{- if .Values.serviceMonitor.interval }}
       interval: {{ .Values.serviceMonitor.interval }}
       {{- end }}
-      scrapeTimeout: 30s
+      scrapeTimeout:  {{ .Values.serviceMonitor.scrapeTimeout }}
+      {{- if .Values.serviceMonitor.relabelings }}
+      relabelings:
+          {{ toYaml .Values.serviceMonitor.relabelings | nindent 8 }}
+      {{- end }}
   namespaceSelector:
     matchNames:
       - {{ .Release.Namespace }}
