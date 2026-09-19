@@ -114,6 +114,13 @@ pub trait Exporter {
     fn kind(&self) -> &str;
 }
 
+/// Interval, in seconds, between two refreshes of the Docker containers list
+/// metadata (names, labels, ...). The list is polled directly from the Docker
+/// `/containers/json` endpoint so that containers created after scaphandre
+/// startup get their metadata without requiring a restart.
+#[cfg(feature = "containers")]
+const CONTAINERS_REFRESH_INTERVAL_SECONDS: u64 = 5;
+
 /// MetricGenerator is an exporter helper structure to collect Scaphandre metrics.
 /// The goal is to provide a standard Vec\<Metric\> that can be used by exporters
 /// to avoid code duplication.
@@ -131,9 +138,10 @@ pub struct MetricGenerator {
     /// Tells MetricGenerator if it has to watch for containers.
     #[cfg(feature = "containers")]
     watch_containers: bool,
-    /// Last time, containers state has been checked.
+    /// Epoch timestamp (seconds) of the last successful refresh of the Docker
+    /// containers list metadata. `0` means it has never been refreshed yet.
     #[cfg(feature = "containers")]
-    containers_last_check: String,
+    containers_last_refresh: u64,
     /// `containers` contains the containers descriptions when --containers is true
     #[cfg(feature = "containers")]
     containers: Vec<Container>,
@@ -209,7 +217,7 @@ impl MetricGenerator {
                 containers,
                 #[cfg(target_os = "linux")]
                 qemu: _qemu,
-                containers_last_check: String::from(""),
+                containers_last_refresh: 0,
                 docker_version,
                 docker_client,
                 watch_containers: _watch_containers,
@@ -831,16 +839,24 @@ impl MetricGenerator {
     /// If *self.watch_docker* is true and *self.docker_client* is Some
     /// gets the list of docker containers running on the machine, thanks
     /// to *self.docker_client*. Stores the resulting vector as *self.containers*.
-    /// Updates *self.containers_last_check* to the current timestamp, if the
+    /// Updates *self.containers_last_refresh* to the current timestamp, if the
     /// operation is successful.
+    ///
+    /// On failure the previously known *self.containers* is kept as is: a
+    /// transient Docker API error must never drop metadata (names, labels, ...)
+    /// that scaphandre already has.
     #[cfg(feature = "containers")]
     fn gen_docker_containers_basic_metadata(&mut self) {
         if self.watch_docker && self.docker_client.is_some() {
             if let Some(docker) = self.docker_client.as_mut() {
-                if let Ok(containers_result) = docker.get_containers(false) {
-                    self.containers = containers_result;
-                    self.containers_last_check =
-                        current_system_time_since_epoch().as_secs().to_string();
+                match docker.get_containers(false) {
+                    Ok(containers_result) => {
+                        self.containers = containers_result;
+                        self.containers_last_refresh = current_system_time_since_epoch().as_secs();
+                    }
+                    Err(err) => {
+                        debug!("Couldn't refresh the Docker containers list: {}", err);
+                    }
                 }
             } else {
                 debug!("Docker socket is None.");
@@ -874,37 +890,33 @@ impl MetricGenerator {
         trace!("In gen_process_metrics.");
         #[cfg(feature = "containers")]
         if self.watch_containers {
-            let now = current_system_time_since_epoch().as_secs().to_string();
+            let now_secs = current_system_time_since_epoch().as_secs();
+            let now = now_secs.to_string();
             if self.watch_docker && self.docker_client.is_some() {
-                let last_check = self.containers_last_check.clone();
-                if last_check.is_empty() {
+                // Query the Docker daemon version only once: it is exposed as the
+                // `container_docker_version` label and does not change at runtime.
+                if self.docker_version.is_empty() {
                     match self.docker_client.as_mut().unwrap().get_version() {
                         Ok(version_response) => {
                             self.docker_version = String::from(version_response.Version.as_str());
-                            self.gen_docker_containers_basic_metadata();
                         }
                         Err(error) => {
                             info!("Couldn't query the docker socket: {}", error);
                             self.watch_docker = false;
                         }
                     }
-                } else {
-                    match self
-                        .docker_client
-                        .as_mut()
-                        .unwrap()
-                        .get_events(Some(last_check), Some(now.clone()))
-                    {
-                        Ok(events) => {
-                            if !events.is_empty() {
-                                self.gen_docker_containers_basic_metadata();
-                            }
-                        }
-                        Err(err) => debug!("couldn't get docker events - {:?} - {}", err, err),
-                    }
                 }
-                self.containers_last_check =
-                    current_system_time_since_epoch().as_secs().to_string();
+                // Refresh the containers list metadata periodically by polling
+                // `/containers/json` directly. This replaces the previous
+                // Docker events stream mechanism (which docker-sync 0.1.2 fails
+                // to parse) and is what lets containers created after scaphandre
+                // startup show up with their names and labels without a restart.
+                if self.watch_docker
+                    && now_secs
+                        >= self.containers_last_refresh + CONTAINERS_REFRESH_INTERVAL_SECONDS
+                {
+                    self.gen_docker_containers_basic_metadata();
+                }
             }
             if self.watch_kubernetes && self.kubernetes_client.is_some() {
                 if self.pods_last_check.is_empty() {
