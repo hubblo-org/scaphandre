@@ -19,6 +19,12 @@ use sysinfo::{CpuExt, Pid, System, SystemExt};
 use sysinfo::{DiskExt, DiskType};
 use utils::{IProcess, ProcessTracker, current_system_time_since_epoch};
 
+/// Record timestamps come from `SystemTime` (wall clock, not monotonic), so a clock
+/// adjustment between two consecutive records can make their time diff implausibly
+/// small. Below this floor, `get_records_diff_power_microwatts` discards the sample
+/// instead of dividing by it, which would otherwise produce a bogus power spike.
+const MIN_RECORD_TIME_DIFF_S: f64 = 0.01;
+
 // !!!!!!!!!!!!!!!!! Sensor !!!!!!!!!!!!!!!!!!!!!!!
 /// Sensor trait, the Sensor API.
 pub trait Sensor {
@@ -456,6 +462,17 @@ impl Topology {
                         let microjoules = last_microjoules - previous_microjoules;
                         let time_diff = last_record.timestamp.as_secs_f64()
                             - previous_record.timestamp.as_secs_f64();
+                        if time_diff < MIN_RECORD_TIME_DIFF_S {
+                            // `timestamp` comes from SystemTime, not a monotonic clock: a
+                            // clock adjustment between two records can make this interval
+                            // implausibly small, which would blow up the division below into
+                            // a bogus power spike.
+                            warn!(
+                                "topology: discarding power sample, time_diff too small: {}s",
+                                time_diff
+                            );
+                            return None;
+                        }
                         let microwatts = microjoules as f64 / time_diff;
                         return Some(Record::new(
                             last_record.timestamp,
@@ -1288,6 +1305,13 @@ impl CPUSocket {
                 }
                 let time_diff =
                     last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
+                if time_diff < MIN_RECORD_TIME_DIFF_S {
+                    warn!(
+                        "socket: discarding power sample, time_diff too small: {}s",
+                        time_diff
+                    );
+                    return None;
+                }
                 let microwatts = microjoules as f64 / time_diff;
                 debug!("socket : l1067: microwatts: {}", microwatts);
                 return Some(Record::new(
@@ -1465,6 +1489,13 @@ impl Domain {
                 let microjoules = last_microjoules - previous_microjoules;
                 let time_diff =
                     last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
+                if time_diff < MIN_RECORD_TIME_DIFF_S {
+                    warn!(
+                        "domain: discarding power sample, time_diff too small: {}s",
+                        time_diff
+                    );
+                    return None;
+                }
                 let microwatts = microjoules as f64 / time_diff;
                 return Some(Record::new(
                     last_record.timestamp,
@@ -1658,6 +1689,76 @@ mod tests {
         for s in topo.get_sockets() {
             println!("{:?}", s.read_stats());
         }
+    }
+
+    /// `Record::timestamp` comes from `SystemTime`, not a monotonic clock: a clock
+    /// adjustment between two consecutive records can make their diff implausibly
+    /// small, which used to blow up `get_records_diff_power_microwatts` into a bogus
+    /// power spike. This locks in the fix: a too-small time_diff is discarded
+    /// (`None`) instead of being divided by.
+    #[test]
+    fn discards_power_sample_when_time_diff_too_small() {
+        let mut topo = Topology::new(HashMap::new());
+        topo.record_buffer.push(Record::new(
+            Duration::from_secs(1000),
+            "1000000".to_string(), // 1 J
+            units::Unit::MicroJoule,
+        ));
+        topo.record_buffer.push(Record::new(
+            Duration::from_secs_f64(1000.0005), // 0.5 ms later: below the 10 ms floor
+            "1000030".to_string(),              // +30 uJ, a perfectly normal delta
+            units::Unit::MicroJoule,
+        ));
+        assert!(topo.get_records_diff_power_microwatts().is_none());
+    }
+
+    #[test]
+    fn computes_power_sample_when_time_diff_is_plausible() {
+        let mut topo = Topology::new(HashMap::new());
+        topo.record_buffer.push(Record::new(
+            Duration::from_secs(1000),
+            "1000000".to_string(),
+            units::Unit::MicroJoule,
+        ));
+        topo.record_buffer.push(Record::new(
+            Duration::from_secs(1030), // 30s later, a normal scrape interval
+            "31000000".to_string(),    // +30_000_000 uJ over 30s -> 1W
+            units::Unit::MicroJoule,
+        ));
+        let power = topo.get_records_diff_power_microwatts().unwrap();
+        assert_eq!(power.value, "1000000"); // 1_000_000 uW = 1W
+    }
+
+    /// Same reproduction as above but against this host's *real* RAPL counter
+    /// instead of synthetic values: a real ~2s energy delta with the second
+    /// record's timestamp corrupted to be 0.5ms after the first one's, simulating
+    /// a wall-clock adjustment. Confirms the fix discards the sample
+    /// instead of computing a bogus power spike (the unpatched code returned
+    /// ~54.7 kW here on this machine). Needs root (reads
+    /// /sys/class/powercap/.../energy_uj) and real RAPL hardware, so it's
+    /// `#[ignore]`d by default: run explicitly with
+    /// `sudo <test-binary> --ignored sensors::tests::repro_bogus_power_spike_on_real_hardware`.
+    #[test]
+    #[ignore]
+    fn repro_bogus_power_spike_on_real_hardware() {
+        #[cfg(target_os = "linux")]
+        let sensor = powercap_rapl::PowercapRAPLSensor::new(8, 8, false);
+        #[cfg(not(target_os = "linux"))]
+        let sensor = msr_rapl::MsrRAPLSensor::new();
+        let mut topo = (*sensor.get_topology()).unwrap();
+
+        topo.refresh_record();
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        topo.refresh_record();
+
+        let n = topo.record_buffer.len();
+        let first_ts = topo.record_buffer[n - 2].timestamp;
+        topo.record_buffer[n - 1].timestamp = first_ts + std::time::Duration::from_micros(500);
+
+        assert!(
+            topo.get_records_diff_power_microwatts().is_none(),
+            "expected the corrupted-timestamp sample to be discarded"
+        );
     }
 }
 
