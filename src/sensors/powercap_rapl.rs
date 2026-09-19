@@ -82,26 +82,35 @@ impl RecordReader for Topology {
             let mut total: i128 = 0;
             debug!("Suming socket PKG and DRAM metrics to get host metric");
             for s in &self.sockets {
-                if let Ok(r) = s.read_record() {
-                    match r.value.trim().parse::<i128>() {
-                        Ok(val) => {
-                            total += val;
-                        }
-                        Err(e) => {
-                            warn!("Couldn't convert {} to i128: {}", r.value.trim(), e);
-                        }
+                let r = s.read_record()?;
+                match r.value.trim().parse::<i128>() {
+                    Ok(val) => {
+                        total += val;
+                    }
+                    Err(e) => {
+                        // A source file that reads back empty (e.g. a torn read of a
+                        // non-atomically-rewritten file, as with the --vm virtiofs
+                        // energy_uj share) is not "this socket contributed 0 uJ" --
+                        // it's "we don't actually know this socket's cumulative energy
+                        // right now". Silently treating it as 0 would understate the
+                        // whole (cumulative, ever-increasing) total for this record,
+                        // making the *next* successful reading look like a huge energy
+                        // jump once diffed -- a bogus power spike. Discard the whole
+                        // record instead of returning a partial one.
+                        warn!("Couldn't convert {} to i128: {}", r.value.trim(), e);
+                        return Err(Box::new(e));
                     }
                 }
                 for d in &s.domains {
-                    if d.name == "dram"
-                        && let Ok(dr) = d.read_record()
-                    {
+                    if d.name == "dram" {
+                        let dr = d.read_record()?;
                         match dr.value.trim().parse::<i128>() {
                             Ok(val) => {
                                 total += val;
                             }
                             Err(e) => {
                                 warn!("Couldn't convert {} to i128: {}", dr.value.trim(), e);
+                                return Err(Box::new(e));
                             }
                         }
                     }
