@@ -504,7 +504,7 @@ impl ProcessTracker {
                                     );
                                     if let Some(labels) = &container.Labels {
                                         for (k, v) in labels {
-                                            let escape_list = ["-", ".", ":", " "];
+                                            let escape_list = ["-", ".", ":", " ", "/"];
                                             let mut key = k.clone();
                                             for e in escape_list.iter() {
                                                 key = key.replace(e, "_");
