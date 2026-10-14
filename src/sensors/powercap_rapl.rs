@@ -70,6 +70,17 @@ impl PowercapRAPLSensor {
     }
 }
 
+/// Stores the zone's max_energy_range_uj (the value at which its energy_uj
+/// counter wraps) in sensor_data, if the kernel exposes it.
+fn insert_max_energy_range(sensor_data: &mut HashMap<String, String>, zone_folder: &str) {
+    if let Ok(max) = fs::read_to_string(format!("{zone_folder}/max_energy_range_uj")) {
+        sensor_data.insert(
+            String::from("max_energy_range_uj"),
+            String::from(max.trim()),
+        );
+    }
+}
+
 impl RecordReader for Topology {
     fn read_record(&self) -> Result<Record, Box<dyn Error>> {
         // if psys is available, return psys
@@ -171,6 +182,10 @@ impl Sensor for PowercapRAPLSensor {
                     String::from("source_file"),
                     format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
                 );
+                insert_max_energy_range(
+                    &mut sensor_data_for_socket,
+                    &format!("{}/intel-rapl:{}", self.base_path, socket_id),
+                );
                 topo.safe_add_socket(
                     socket_id,
                     vec![],
@@ -187,6 +202,7 @@ impl Sensor for PowercapRAPLSensor {
                         self.base_path, socket_id, domain_id
                     ),
                 );
+                insert_max_energy_range(&mut sensor_data_for_domain, &folder_name);
                 if let Ok(domain_name) = &fs::read_to_string(format!("{folder_name}/name")) {
                     topo.safe_add_domain_to_socket(
                         socket_id,
@@ -250,6 +266,7 @@ impl Sensor for PowercapRAPLSensor {
                             String::from("source_file"),
                             format!("{}/intel-rapl:{}/energy_uj", self.base_path, socket_id),
                         );
+                        insert_max_energy_range(&mut sensor_data_for_socket, &folder_name);
                         topo.safe_add_socket(
                             socket_id,
                             vec![],
@@ -275,6 +292,7 @@ impl Sensor for PowercapRAPLSensor {
                     let domain_name_trimed = domain_name.trim();
                     if domain_name_trimed == "psys" {
                         debug!("Found PSYS domain RAPL folder.");
+                        insert_max_energy_range(&mut topo._sensor_data, &folder_name);
                         topo._sensor_data.insert(String::from("psys"), folder_name);
                     }
                 }
@@ -300,6 +318,7 @@ impl Sensor for PowercapRAPLSensor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sensors::RecordGenerator;
     use std::any::type_name;
 
     fn type_of<T>(_: T) -> &'static str {
@@ -313,6 +332,95 @@ mod tests {
             "alloc::boxed::Box<core::option::Option<scaphandre::sensors::Topology>>",
             type_of(topology)
         )
+    }
+
+    fn write_zone(base: &std::path::Path, zone: &str, name: &str, energy: u64, max: u64) {
+        let dir = base.join(zone);
+        fs::create_dir_all(&dir).unwrap();
+        // sysfs values end with a newline
+        fs::write(dir.join("name"), format!("{name}\n")).unwrap();
+        fs::write(dir.join("energy_uj"), format!("{energy}\n")).unwrap();
+        fs::write(dir.join("max_energy_range_uj"), format!("{max}\n")).unwrap();
+    }
+
+    fn set_energy(base: &std::path::Path, zone: &str, energy: u64) {
+        fs::write(base.join(zone).join("energy_uj"), format!("{energy}\n")).unwrap();
+    }
+
+    #[test]
+    fn powercap_counters_wraparound() {
+        let base = env::temp_dir().join(format!("scaphandre-powercap-wrap-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        write_zone(
+            &base,
+            "intel-rapl:0",
+            "package-0",
+            262_143_000_000,
+            262_143_328_850,
+        );
+        write_zone(
+            &base,
+            "intel-rapl:0:0",
+            "dram",
+            65_712_000_000,
+            65_712_999_613,
+        );
+        write_zone(
+            &base,
+            "intel-rapl:1",
+            "psys",
+            262_143_200_000,
+            262_143_328_850,
+        );
+        // SAFETY: SCAPHANDRE_POWERCAP_PATH is only read in --vm mode, which no other test uses.
+        unsafe { env::set_var("SCAPHANDRE_POWERCAP_PATH", &base) };
+        let sensor = PowercapRAPLSensor::new(1, 1, true);
+        let mut topo = sensor.generate_topology().unwrap();
+
+        let socket = &topo.sockets[0];
+        assert_eq!(socket.sensor_data["max_energy_range_uj"], "262143328850");
+        assert_eq!(
+            socket.domains[0].sensor_data["max_energy_range_uj"],
+            "65712999613"
+        );
+        assert_eq!(topo._sensor_data["max_energy_range_uj"], "262143328850");
+
+        let refresh = |topo: &mut Topology| {
+            topo.refresh_record();
+            for s in topo.get_sockets() {
+                s.refresh_record();
+                for d in s.get_domains() {
+                    d.refresh_record();
+                }
+            }
+        };
+        refresh(&mut topo);
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        // every counter wraps between the two reads
+        set_energy(&base, "intel-rapl:0", 1_000_000);
+        set_energy(&base, "intel-rapl:0:0", 2_000_000);
+        set_energy(&base, "intel-rapl:1", 3_000_000);
+        refresh(&mut topo);
+
+        let expected = |records: &[Record], uj: u64| {
+            let secs = records[1].timestamp.as_secs_f64() - records[0].timestamp.as_secs_f64();
+            ((uj as f64 / secs) as u64).to_string()
+        };
+        let socket = &topo.sockets[0];
+        assert_eq!(
+            socket.get_records_diff_power_microwatts().unwrap().value,
+            expected(&socket.record_buffer, 328_850 + 1_000_000)
+        );
+        let dram = &socket.domains[0];
+        assert_eq!(
+            dram.get_records_diff_power_microwatts().unwrap().value,
+            expected(&dram.record_buffer, 999_613 + 2_000_000)
+        );
+        assert_eq!(
+            topo.get_records_diff_power_microwatts().unwrap().value,
+            expected(&topo.record_buffer, 128_850 + 3_000_000)
+        );
+        fs::remove_dir_all(&base).unwrap();
     }
 }
 

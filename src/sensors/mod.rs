@@ -38,6 +38,30 @@ pub trait RecordReader {
     fn read_record(&self) -> Result<Record, Box<dyn Error>>;
 }
 
+/// Returns the energy consumed between two readings of a RAPL energy counter.
+///
+/// RAPL counters (powercap `energy_uj`) wrap back to zero after reaching
+/// `max_energy_range_uj`. If `last < prev` the counter wrapped and the energy
+/// consumed is `(max_range - prev) + last`. Returns None when the counter went
+/// backwards and the range is unknown (0) or smaller than `prev`.
+pub fn counter_delta(prev: u64, last: u64, max_range: u64) -> Option<u64> {
+    if last >= prev {
+        Some(last - prev)
+    } else if max_range > 0 && prev <= max_range {
+        Some(max_range - prev + last)
+    } else {
+        None
+    }
+}
+
+/// Reads the counter range stored by the sensor under "max_energy_range_uj", 0 if unknown.
+fn max_energy_range_uj(sensor_data: &HashMap<String, String>) -> u64 {
+    sensor_data
+        .get("max_energy_range_uj")
+        .and_then(|v| v.trim().parse::<u64>().ok())
+        .unwrap_or(0)
+}
+
 // !!!!!!!!!!!!!!!!! Topology !!!!!!!!!!!!!!!!!!!!!!!
 /// Topology struct represents the whole CPUSocket architecture,
 /// from the electricity consumption point of view,
@@ -428,14 +452,39 @@ impl Topology {
         if len > 2 {
             let last = self.record_buffer.last().unwrap();
             let previous = self.record_buffer.get(len - 2).unwrap();
-            let last_value = last.value.parse::<u64>().unwrap();
-            let previous_value = previous.value.parse::<u64>().unwrap();
-            if previous_value <= last_value {
-                let diff = last_value - previous_value;
+            let last_value = last.value.trim().parse::<u64>().unwrap();
+            let previous_value = previous.value.trim().parse::<u64>().unwrap();
+            if let Some(diff) =
+                counter_delta(previous_value, last_value, self.host_energy_max_range_uj())
+            {
                 return Some(Record::new(last.timestamp, diff.to_string(), last.unit));
             }
         }
         None
+    }
+
+    /// Returns the wraparound range of the host energy counter, or 0 if unknown.
+    /// The range is only known when the host record comes from a single
+    /// counter: psys, or the PKG counter of a single socket without a DRAM domain.
+    /// A sum of several counters that wrap independently has no single range.
+    fn host_energy_max_range_uj(&self) -> u64 {
+        if self._sensor_data.contains_key("psys") {
+            return max_energy_range_uj(&self._sensor_data);
+        }
+        let mut counters = vec![];
+        for s in &self.sockets {
+            counters.push(&s.sensor_data);
+            for d in &s.domains {
+                if d.name == "dram" {
+                    counters.push(&d.sensor_data);
+                }
+            }
+        }
+        if counters.len() == 1 {
+            max_energy_range_uj(counters[0])
+        } else {
+            0
+        }
     }
 
     /// Returns a Record instance containing the power consumed between
@@ -447,13 +496,14 @@ impl Topology {
                 .record_buffer
                 .get(self.record_buffer.len() - 2)
                 .unwrap();
-            match previous_record.value.trim().parse::<u128>() {
-                Ok(previous_microjoules) => match last_record.value.trim().parse::<u128>() {
+            match previous_record.value.trim().parse::<u64>() {
+                Ok(previous_microjoules) => match last_record.value.trim().parse::<u64>() {
                     Ok(last_microjoules) => {
-                        if previous_microjoules > last_microjoules {
-                            return None;
-                        }
-                        let microjoules = last_microjoules - previous_microjoules;
+                        let microjoules = counter_delta(
+                            previous_microjoules,
+                            last_microjoules,
+                            self.host_energy_max_range_uj(),
+                        )?;
                         let time_diff = last_record.timestamp.as_secs_f64()
                             - previous_record.timestamp.as_secs_f64();
                         let microwatts = microjoules as f64 / time_diff;
@@ -1277,15 +1327,17 @@ impl CPUSocket {
             if let (Ok(last_microjoules), Ok(previous_microjoules)) =
                 (last_rec_val.parse::<u64>(), prev_rec_val.parse::<u64>())
             {
-                let mut microjoules = 0;
-                if last_microjoules >= previous_microjoules {
-                    microjoules = last_microjoules - previous_microjoules;
-                } else {
+                let Some(microjoules) = counter_delta(
+                    previous_microjoules,
+                    last_microjoules,
+                    max_energy_range_uj(&self.sensor_data),
+                ) else {
                     debug!(
-                        "socket: previous_microjoules ({}) > last_microjoules ({})",
+                        "socket: previous_microjoules ({}) > last_microjoules ({}), wraparound could not be resolved",
                         previous_microjoules, last_microjoules
                     );
-                }
+                    return None;
+                };
                 let time_diff =
                     last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
                 let microwatts = microjoules as f64 / time_diff;
@@ -1459,10 +1511,11 @@ impl Domain {
                 last_record.value.trim().parse::<u64>(),
                 previous_record.value.trim().parse::<u64>(),
             ) {
-                if previous_microjoules > last_microjoules {
-                    return None;
-                }
-                let microjoules = last_microjoules - previous_microjoules;
+                let microjoules = counter_delta(
+                    previous_microjoules,
+                    last_microjoules,
+                    max_energy_range_uj(&self.sensor_data),
+                )?;
                 let time_diff =
                     last_record.timestamp.as_secs_f64() - previous_record.timestamp.as_secs_f64();
                 let microwatts = microjoules as f64 / time_diff;
@@ -1658,6 +1711,95 @@ mod tests {
         for s in topo.get_sockets() {
             println!("{:?}", s.read_stats());
         }
+    }
+
+    fn uj_record(secs: u64, value: u64) -> Record {
+        Record::new(
+            Duration::from_secs(secs),
+            value.to_string(),
+            units::Unit::MicroJoule,
+        )
+    }
+
+    fn range_data(max: Option<u64>) -> HashMap<String, String> {
+        let mut data = HashMap::new();
+        if let Some(max) = max {
+            data.insert(String::from("max_energy_range_uj"), max.to_string());
+        }
+        data
+    }
+
+    #[test]
+    fn counter_delta_handles_wraparound() {
+        // no wrap
+        assert_eq!(counter_delta(100, 350, 1000), Some(250));
+        assert_eq!(counter_delta(100, 100, 0), Some(0));
+        // one wrap: 900 -> 1000 (100) then 0 -> 150 (150)
+        assert_eq!(counter_delta(900, 150, 1000), Some(250));
+        // typical Intel package range (61 uJ energy unit)
+        assert_eq!(
+            counter_delta(262_143_000_000, 1_000_000, 262_143_328_850),
+            Some(1_328_850)
+        );
+        // range unknown: cannot tell how much energy was consumed
+        assert_eq!(counter_delta(900, 150, 0), None);
+        // inconsistent range
+        assert_eq!(counter_delta(900, 150, 500), None);
+    }
+
+    #[test]
+    fn socket_power_across_wrap() {
+        let mut socket =
+            CPUSocket::new(0, vec![], vec![], String::new(), 1, range_data(Some(1000)));
+        socket.record_buffer = vec![uj_record(10, 900), uj_record(12, 150)];
+        let power = socket.get_records_diff_power_microwatts().unwrap();
+        assert_eq!(power.value, "125");
+        // unknown range: no record instead of a fabricated 0 W
+        socket.sensor_data = range_data(None);
+        assert!(socket.get_records_diff_power_microwatts().is_none());
+    }
+
+    #[test]
+    fn domain_power_across_wrap() {
+        let mut domain = Domain::new(
+            0,
+            String::from("dram"),
+            String::new(),
+            1,
+            range_data(Some(1000)),
+        );
+        domain.record_buffer = vec![uj_record(10, 900), uj_record(12, 150)];
+        let power = domain.get_records_diff_power_microwatts().unwrap();
+        assert_eq!(power.value, "125");
+        domain.sensor_data = range_data(None);
+        assert!(domain.get_records_diff_power_microwatts().is_none());
+    }
+
+    #[test]
+    fn topology_power_across_wrap() {
+        // psys: the host record is a single counter
+        let mut psys_data = range_data(Some(1000));
+        psys_data.insert(String::from("psys"), String::from("/nonexistent"));
+        let mut topo = Topology::new(psys_data);
+        topo.record_buffer = vec![uj_record(8, 0), uj_record(10, 900), uj_record(12, 150)];
+        assert_eq!(
+            topo.get_records_diff_power_microwatts().unwrap().value,
+            "125"
+        );
+        assert_eq!(topo.get_records_diff().unwrap().value, "250");
+
+        // single socket without dram: the host record is the PKG counter
+        let mut topo = Topology::new(HashMap::new());
+        topo.safe_add_socket(0, vec![], vec![], String::new(), 1, range_data(Some(1000)));
+        topo.record_buffer = vec![uj_record(10, 900), uj_record(12, 150)];
+        assert_eq!(
+            topo.get_records_diff_power_microwatts().unwrap().value,
+            "125"
+        );
+
+        // PKG + DRAM: a sum of independently wrapping counters has no single range
+        topo.safe_add_domain_to_socket(0, 0, "dram", "", 1, range_data(Some(1000)));
+        assert!(topo.get_records_diff_power_microwatts().is_none());
     }
 }
 
