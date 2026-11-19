@@ -41,7 +41,7 @@ As always exporter's options can be displayed with `-h`:
     Usage: scaphandre stdout [OPTIONS]
 
     Options:
-      -t, --timeout <TIMEOUT>            Maximum time spent measuring, in seconds. If negative, runs forever [default: 10]
+      -t, --timeout <TIMEOUT>            Maximum time spent measuring, in seconds. If 0 or negative, runs forever [default: 10]
       -s, --step <SECONDS>               Interval between two measurements, in seconds [default: 2]
       -p, --processes <PROCESSES>        Maximum number of processes to display [default: 5]
       -r, --regex-filter <REGEX_FILTER>  Filter processes based on regular expressions (example: 'scaph\\w\\w.e')

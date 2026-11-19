@@ -22,7 +22,7 @@ pub struct StdoutExporter {
 #[command(group(clap::ArgGroup::new("disp").args(["processes", "regex_filter"])))]
 pub struct ExporterArgs {
     /// Maximum time spent measuring, in seconds.
-    /// If negative, runs forever.
+    /// If 0 or negative, runs forever.
     #[arg(short, long, default_value_t = 10)]
     pub timeout: i64,
 
@@ -55,7 +55,7 @@ impl Exporter for StdoutExporter {
     /// Runs [iterate()] every `step` until `timeout`
     fn run(&mut self) {
         let time_step = Duration::from_secs(self.args.step);
-        let time_limit = if self.args.timeout < 0 {
+        let time_limit = if self.args.timeout <= 0 {
             None
         } else {
             Some(Duration::from_secs(self.args.timeout.unsigned_abs()))
